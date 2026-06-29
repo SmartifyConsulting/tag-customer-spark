@@ -201,20 +201,17 @@ function EmailsTab({ defaultTo }: { defaultTo: string }) {
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-warning/40 bg-warning/5">
+      <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-base">Auth emails (password reset, verification)</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            Auth emails <Badge className="bg-emerald-500/15 text-emerald-700"><CheckCircle2 className="mr-1 h-3 w-3" /> Active</Badge>
+          </CardTitle>
           <CardDescription>
-            Authentication emails are sent by your backend's Auth service. To route them through Resend as well, point its SMTP at Resend:
+            Password reset, email verification and magic links are delivered automatically by the platform's built-in email service. No configuration required.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2 font-mono text-xs">
-          <div>Host: <b>smtp.resend.com</b></div>
-          <div>Port: <b>465</b> (SSL)</div>
-          <div>Username: <b>resend</b></div>
-          <div>Password: <b>your Resend API key</b></div>
-          <div>Sender: <b>noreply@mypenguin.co.za</b></div>
-          <p className="mt-3 font-sans text-xs text-muted-foreground">Configure this once in your project's Auth settings. Until then, password reset and verification fall back to the default sender.</p>
+        <CardContent className="text-sm text-muted-foreground">
+          To verify, open the sign-in page, click <b>Forgot password?</b>, and confirm the reset email arrives (check spam on the first send).
         </CardContent>
       </Card>
     </div>
