@@ -28,11 +28,11 @@ type NavItem = {
 };
 
 const NAV: readonly NavItem[] = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, match: ["/dashboard"] },
-  { title: "Engagement", url: "/alerts", icon: Bell, match: ["/alerts", "/customers", "/qr-tags", "/watchlists", "/inbox", "/notifications"] },
-  { title: "Intelligence", url: "/intelligence", icon: Sparkles, match: ["/intelligence", "/intent", "/products"] },
-  { title: "Performance & ROI", url: "/analytics", icon: BarChart3, match: ["/analytics", "/roi", "/commerce"] },
-  { title: "Management", url: "/settings", icon: Settings, match: ["/settings", "/stores", "/staff", "/organisation"] },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, match: ["/dashboard", "/alerts", "/inbox", "/notifications"] },
+  { title: "Engagement", url: "/customers", icon: Bell, match: ["/customers", "/products", "/qr-tags", "/watchlists"] },
+  { title: "Intelligence", url: "/intelligence", icon: Sparkles, match: ["/intelligence", "/intent"] },
+  { title: "Performance & ROI", url: "/roi", icon: BarChart3, match: ["/roi", "/commerce", "/analytics"] },
+  { title: "Management", url: "/stores", icon: Settings, match: ["/stores", "/staff", "/organisation", "/settings"] },
 ] as const;
 
 export function AppSidebar() {
