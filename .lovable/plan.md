@@ -1,19 +1,17 @@
-The sidebar was reverted to the old multi-group expanded structure. Restore the flat 5-item icon-only nav that pairs with the SectionTabs strip.
+The five sidebar items currently point at URLs that don't always match the section the SectionTabs strip recognizes, so several tabbed sub-pages aren't reachable from the sidebar (e.g. clicking "Engagement" goes to `/alerts`, which is in the Dashboard section, hiding the Customers/Products/Watchlists/Compare tabs).
+
+Realign the sidebar so each item lands on its section's root and the full tab strip (and therefore every screen) reappears.
 
 ## Changes
 
-**`src/components/app-sidebar.tsx`**
-- Replace the 8-group `NAV` array with a flat 5-item list matching the section tabs:
-  1. Dashboard → `/dashboard` (LayoutDashboard)
-  2. Engagement → `/alerts` (Bell)
-  3. Intelligence → `/intelligence` (Sparkles)
-  4. Performance & ROI → `/analytics` (BarChart3)
-  5. Management → `/settings` (Settings)
-- Remove `SidebarGroupLabel` rendering (no group headings).
-- Render items as a single `SidebarMenu` with icon-only styling (label hidden, tooltip on hover).
-- Keep navy background + mint active indicator already in place.
-- Keep the enlarged logo header and footer untouched.
+**`src/components/app-sidebar.tsx`** — update the 5 `NAV` entries to use each section's `rootPath` and broaden `match` to keep the correct item active across all child routes:
 
-Active-state matching should use the section's route prefix (e.g. `/intelligence/*` keeps Intelligence active) so sub-routes still highlight the correct top-level item — same logic `SectionTabs` uses.
+1. Dashboard → `/dashboard` — match `/dashboard`, `/alerts`, `/inbox`, `/notifications`
+2. Engagement → `/customers` — match `/customers`, `/products`, `/qr-tags`, `/watchlists`
+3. Intelligence → `/intelligence` — match `/intelligence`, `/intent`
+4. Performance & ROI → `/roi` — match `/roi`, `/commerce`, `/analytics`
+5. Management → `/stores` — match `/stores`, `/staff`, `/organisation`, `/settings`
 
-No other files change.
+No changes to `section-tabs.tsx` (already exposes every screen). No new routes — all referenced screens already exist under `src/routes/_authenticated/`.
+
+Result: every sidebar click reveals the correct horizontal tab strip, and every screen (Customers, Products, QR Tags, Watchlists, Compare, Intent Engine, Insights, Forecasting, Trends, ROI, Pricing, Funnel, Analytics, History, Stores, Staff, Permissions, Settings, Alerts) is reachable in two clicks.
