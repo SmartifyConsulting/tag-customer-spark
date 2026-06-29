@@ -68,7 +68,7 @@ function ProductsListPage() {
   useEffect(() => {
     const t = setTimeout(() => {
       if (searchTerm !== search.search) {
-        navigate({ search: (p) => ({ ...p, search: searchTerm, page: 1 }) });
+        if (searchTerm !== search.search) navigate({ search: (p: any) => ({ ...p, search: searchTerm, page: 1 }) });
       }
     }, 300);
     return () => clearTimeout(t);
