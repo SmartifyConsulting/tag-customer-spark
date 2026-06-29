@@ -16,9 +16,11 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ScanShortCodeRouteImport } from './routes/scan.$shortCode'
 import { Route as NMessageIdRouteImport } from './routes/n.$messageId'
+import { Route as AuthenticatedWatchlistsRouteImport } from './routes/_authenticated/watchlists'
 import { Route as AuthenticatedStoresRouteImport } from './routes/_authenticated/stores'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedRoiRouteImport } from './routes/_authenticated/roi'
 import { Route as AuthenticatedQrTagsRouteImport } from './routes/_authenticated/qr-tags'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
@@ -72,6 +74,11 @@ const NMessageIdRoute = NMessageIdRouteImport.update({
   path: '/n/$messageId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedWatchlistsRoute = AuthenticatedWatchlistsRouteImport.update({
+  id: '/watchlists',
+  path: '/watchlists',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedStoresRoute = AuthenticatedStoresRouteImport.update({
   id: '/stores',
   path: '/stores',
@@ -85,6 +92,11 @@ const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRoiRoute = AuthenticatedRoiRouteImport.update({
+  id: '/roi',
+  path: '/roi',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedQrTagsRoute = AuthenticatedQrTagsRouteImport.update({
@@ -201,9 +213,11 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof AuthenticatedNotificationsRouteWithChildren
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/qr-tags': typeof AuthenticatedQrTagsRoute
+  '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stores': typeof AuthenticatedStoresRoute
+  '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRoute
@@ -228,9 +242,11 @@ export interface FileRoutesByTo {
   '/intelligence': typeof AuthenticatedIntelligenceRoute
   '/intent': typeof AuthenticatedIntentRoute
   '/qr-tags': typeof AuthenticatedQrTagsRoute
+  '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stores': typeof AuthenticatedStoresRoute
+  '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRoute
@@ -259,9 +275,11 @@ export interface FileRoutesById {
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRouteWithChildren
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/qr-tags': typeof AuthenticatedQrTagsRoute
+  '/_authenticated/roi': typeof AuthenticatedRoiRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stores': typeof AuthenticatedStoresRoute
+  '/_authenticated/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/_authenticated/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRoute
@@ -290,9 +308,11 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/products'
     | '/qr-tags'
+    | '/roi'
     | '/settings'
     | '/staff'
     | '/stores'
+    | '/watchlists'
     | '/n/$messageId'
     | '/scan/$shortCode'
     | '/notifications/$campaignId'
@@ -317,9 +337,11 @@ export interface FileRouteTypes {
     | '/intelligence'
     | '/intent'
     | '/qr-tags'
+    | '/roi'
     | '/settings'
     | '/staff'
     | '/stores'
+    | '/watchlists'
     | '/n/$messageId'
     | '/scan/$shortCode'
     | '/notifications/$campaignId'
@@ -347,9 +369,11 @@ export interface FileRouteTypes {
     | '/_authenticated/notifications'
     | '/_authenticated/products'
     | '/_authenticated/qr-tags'
+    | '/_authenticated/roi'
     | '/_authenticated/settings'
     | '/_authenticated/staff'
     | '/_authenticated/stores'
+    | '/_authenticated/watchlists'
     | '/n/$messageId'
     | '/scan/$shortCode'
     | '/_authenticated/notifications/$campaignId'
@@ -428,6 +452,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NMessageIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/watchlists': {
+      id: '/_authenticated/watchlists'
+      path: '/watchlists'
+      fullPath: '/watchlists'
+      preLoaderRoute: typeof AuthenticatedWatchlistsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/stores': {
       id: '/_authenticated/stores'
       path: '/stores'
@@ -447,6 +478,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/roi': {
+      id: '/_authenticated/roi'
+      path: '/roi'
+      fullPath: '/roi'
+      preLoaderRoute: typeof AuthenticatedRoiRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/qr-tags': {
@@ -622,9 +660,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRouteWithChildren
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedQrTagsRoute: typeof AuthenticatedQrTagsRoute
+  AuthenticatedRoiRoute: typeof AuthenticatedRoiRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStoresRoute: typeof AuthenticatedStoresRoute
+  AuthenticatedWatchlistsRoute: typeof AuthenticatedWatchlistsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -637,9 +677,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRouteWithChildren,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedQrTagsRoute: AuthenticatedQrTagsRoute,
+  AuthenticatedRoiRoute: AuthenticatedRoiRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStoresRoute: AuthenticatedStoresRoute,
+  AuthenticatedWatchlistsRoute: AuthenticatedWatchlistsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
