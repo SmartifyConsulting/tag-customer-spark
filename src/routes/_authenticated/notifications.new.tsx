@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { WhatsAppPreview } from "@/components/notifications/whatsapp-preview";
+import { AiCampaignAssist } from "@/components/notifications/ai-campaign-assist";
 
 export const Route = createFileRoute("/_authenticated/notifications/new")({
   head: () => ({ meta: [{ title: "New campaign — Tag" }] }),
@@ -189,6 +190,20 @@ function NewCampaign() {
           </Card>
 
           <Card className="p-5 space-y-4">
+            <AiCampaignAssist
+              type={type}
+              productId={productId}
+              headline={headline}
+              body={body}
+              ctaLabel={ctaLabel}
+              audienceSize={audience}
+              onApply={({ headline: h, body: b, cta_label }) => {
+                setHeadline(h);
+                setBody(b);
+                setCtaLabel(cta_label);
+              }}
+              onRecommendTime={(iso) => setScheduledAt(new Date(iso).toISOString().slice(0,16))}
+            />
             <div className="space-y-1.5">
               <Label htmlFor="image">Hero image URL</Label>
               <Input
