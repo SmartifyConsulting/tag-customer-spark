@@ -33,7 +33,7 @@ export function ProductIntentPanel({ productId }: { productId: string }) {
   const p = data.product as any;
   const sig = (data.signals ?? {}) as any;
   const fc = (data.forecast ?? {}) as any;
-  const history = (data.history ?? []).map((h: any) => ({
+  const history: Array<{ date: string; score: number; forecast?: boolean }> = (data.history ?? []).map((h: any) => ({
     date: h.snapshot_date,
     score: Number(h.intent_score),
   }));
