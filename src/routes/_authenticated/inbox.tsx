@@ -12,6 +12,7 @@ import {
   StickyNote,
   Tag as TagIcon,
   UserPlus,
+  Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -21,6 +22,8 @@ import {
   updateConversation,
   listAssignableStaff,
 } from "@/lib/inbox.functions";
+import { summariseConversation } from "@/lib/ai.functions";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -294,6 +297,7 @@ function ConversationPane({ id }: { id: string }) {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            <SummariseButton conversationId={c.id} onSuggestion={(s) => setText((t) => t || s)} />
             <Button
               variant={c.is_resolved ? "secondary" : "default"}
               size="sm"
