@@ -1,110 +1,93 @@
-## Database Build Plan
+## Executive Dashboard — Build Plan
 
-Build a fully normalized schema for Tag with 17 tables, RLS scoped to retailer ownership, and realistic demo seed data.
+Note on the referenced skill: `sign-up-and-authenticate` covers auth flows (forgot password, password visibility, etc.). Those are already in place from the scaffolding. The dashboard work below sits inside the authenticated layout, so the skill's rules continue to apply but no auth code changes here.
 
-### Conventions applied to every table
-- `id uuid primary key default gen_random_uuid()`
-- `created_at timestamptz not null default now()`
-- `updated_at timestamptz not null default now()` (with `tg_set_updated_at` trigger)
-- `created_by uuid references auth.users(id)`
-- `status` — table-specific enum (defaulted), never nullable
-- `retailer_id uuid` on every tenant-scoped table for fast RLS
-- GRANTs to `authenticated` + `service_role` in the same migration
-- RLS enabled with policies driven by a `belongs_to_retailer(auth.uid(), retailer_id)` security-definer helper, plus `has_role(auth.uid(), 'super_admin')` override for Super Administrators
+### Data layer
 
-### Enums
-- `retailer_status`: active, suspended, cancelled
-- `store_status`: active, closed, pending
-- `staff_status`: active, invited, disabled
-- `product_status`: active, draft, archived
-- `category_status`: active, archived
-- `qr_status`: active, inactive, retired
-- `customer_status`: subscribed, unsubscribed, blocked
-- `interest_status`: active, notified, converted, expired
-- `campaign_type`: sale, low_stock, back_in_stock, promotion
-- `campaign_status`: draft, scheduled, sending, sent, cancelled
-- `notification_status`: queued, sent, delivered, read, failed
-- `conversation_status`: open, closed, archived
-- `message_direction`: inbound, outbound
-- `message_status`: sent, delivered, read, failed
-- `promotion_status`: scheduled, active, ended, cancelled
-- `redemption_status`: issued, redeemed, expired, void
-- `recovery_status`: attributed, pending, rejected
-- `audit_status`: success, warning, failure
-- `subscription_status`: trialing, active, past_due, cancelled
+Single TanStack server function `getDashboardOverview()` (under `src/lib/dashboard.functions.ts`) using `requireSupabaseAuth` so RLS scopes everything to the caller's retailer automatically. Returns one serializable DTO:
 
-### Tables and key relationships
-
-```text
-retailers ──┬─ stores ──┬─ staff (also -> auth.users)
-            │           └─ qr_tags ─ products
-            ├─ product_categories ─ products
-            ├─ customers ──┬─ customer_interests ─ products
-            │              ├─ conversations ─ conversation_messages
-            │              └─ notification_history ─ notification_campaigns
-            ├─ promotion_events ─ products
-            │                └─ redemption_codes ─ customers
-            ├─ sales_recoveries ─ customers, products, notification_history
-            ├─ audit_logs (actor_user_id -> auth.users)
-            └─ subscriptions (one current per retailer)
+```ts
+{
+  kpis: {
+    todaysScans, customersWaiting, revenueRecoveredCents, currency,
+    notificationsSent, notificationConversionPct,
+    lowStockCount, onPromotionCount,
+  },
+  topProducts: [{ id, name, interestCount, stockQty }],
+  lowStockProducts: [{ id, name, stockQty, lowStockThreshold }],
+  promotionProducts: [{ id, name, discountPct, endsAt }],
+  scansDaily: [{ date, count }],         // last 14 days
+  scansWeekly: [{ weekStart, count }],   // last 12 weeks
+  scansMonthly: [{ month, count }],      // last 12 months
+  customerGrowth: [{ date, total }],     // cumulative, last 30 days
+  notificationPerf: [{ date, sent, delivered, read }], // last 14 days
+  recentActivity: [                       // last 15 events
+    { type: 'scan'|'opt_in'|'notification'|'recovery', at, label, sublabel }
+  ],
+}
 ```
 
-Notable columns beyond standard fields:
-- **retailers**: name, slug, contact_email, plan
-- **stores**: retailer_id, name, address, city, country, timezone
-- **staff**: retailer_id, store_id, user_id (auth.users), role (app_role), invite_email
-- **product_categories**: retailer_id, name, parent_id (self FK)
-- **products**: retailer_id, category_id, sku, name, description, price_cents, currency, stock_qty, low_stock_threshold, image_url
-- **qr_tags**: retailer_id, store_id, product_id, code (unique), scan_count, last_scanned_at
-- **customers**: retailer_id, whatsapp_e164 (unique per retailer), full_name, locale, opted_in_at
-- **customer_interests**: retailer_id, customer_id, product_id, qr_tag_id, source
-- **notification_campaigns**: retailer_id, type, product_id (nullable), title, message_template, scheduled_at, sent_at
-- **notification_history**: retailer_id, campaign_id, customer_id, channel, payload, sent_at, delivered_at, read_at, error
-- **conversations**: retailer_id, customer_id, store_id, last_message_at
-- **conversation_messages**: conversation_id, direction, body, media_url, status, sent_at
-- **promotion_events**: retailer_id, product_id, type (sale/promo), discount_pct, starts_at, ends_at
-- **redemption_codes**: retailer_id, promotion_id, customer_id, code (unique), redeemed_at, expires_at
-- **sales_recoveries**: retailer_id, customer_id, product_id, notification_id, amount_cents, currency, recovered_at
-- **audit_logs**: retailer_id (nullable for platform-level), actor_user_id, action, entity_type, entity_id, metadata jsonb
-- **subscriptions**: retailer_id, plan, current_period_start, current_period_end, seats, provider_ref
+Implementation: small set of grouped SQL queries via the supabase JS client (interests grouped by created_at::date for scans; customers count where opt-in within 30d for growth; notification_history by status; sales_recoveries sum; promotion_events where status='active'; products where stock_qty <= low_stock_threshold). All scoped by `auth.uid()`'s retailer through RLS.
 
-### RLS model
-1. Add `retailer_id` to `user_roles` (nullable) so each role grants membership in a retailer. Super admins keep `retailer_id = null`.
-2. Security-definer helpers (`SET search_path = public`, `STABLE`):
-   - `current_retailer_ids(uuid) returns setof uuid`
-   - `belongs_to_retailer(uuid, uuid) returns boolean`
-3. Policies per tenant table:
-   - SELECT: `has_role(auth.uid(),'super_admin') OR belongs_to_retailer(auth.uid(), retailer_id)`
-   - INSERT/UPDATE/DELETE: same + role gating (admins write, sales_assistant read-mostly via narrower policies on customers/interests/messages)
-4. `audit_logs`: insert allowed for any retailer member; select restricted to retail_admin+; super_admin sees all.
-5. `subscriptions`: select/update restricted to retail_admin + super_admin.
-6. `profiles` + `user_roles` policies stay as-is; add a super_admin SELECT policy on `user_roles` so admins can manage roles later.
+Conversion = `read / sent` for the trailing 14 days.
 
-### Seed data
-Inserted via a follow-up `supabase--insert` call (data, not schema). Plan:
-- 2 retailers ("Aurora Apparel", "Cape Coffee Co.")
-- 4 stores total across retailers
-- 6 staff rows (mix of roles, including one invite-pending). User auth rows are NOT created — staff seeds use null `user_id` except the currently signed-in user is left for the user to claim after they tell us which retailer to attach them to. (Confirming below.)
-- 6 product categories, 18 products with varied stock/pricing
-- 24 QR tags (one per product + duplicates in second store)
-- 30 customers with valid E.164 numbers
-- ~60 customer_interests spread across products
-- 5 notification_campaigns covering all 4 types
-- ~40 notification_history entries with mixed delivery states
-- 8 conversations + ~30 conversation_messages (inbound/outbound)
-- 4 promotion_events, 20 redemption_codes (mix issued/redeemed/expired)
-- 10 sales_recoveries tied to notifications
-- ~25 audit_logs across entity types
-- 2 subscriptions (one trialing, one active)
+### Route + query wiring
 
-### Technical notes
-- All schema work goes through one `supabase--migration` (enums + tables + grants + RLS + helpers + triggers).
-- Seed data goes through `supabase--insert` after migration approval so generated types reflect the new schema before any frontend wiring.
-- No frontend changes in this step — pages remain placeholders.
+`src/routes/_authenticated/dashboard.tsx`:
+- `loader` calls `context.queryClient.ensureQueryData(dashboardOverviewQueryOptions)`.
+- Component uses `useSuspenseQuery`.
+- Adds `errorComponent`, `notFoundComponent`, `pendingComponent` (renders the same skeleton grid).
+- `head()` sets title + meta description.
 
-### One clarification before I write the migration
-For the signed-in account currently testing the app, should I:
-(a) attach it to **Aurora Apparel** as `retail_admin` in the seed so you can see data immediately, or
-(b) leave it role-less (current `sales_assistant` default with no retailer) so you can assign yourself via a future Staff UI?
+`queryOptions` keyed `['dashboard','overview']`, staleTime 60s.
 
-I'll default to (a) unless you say otherwise when you approve.
+### UI composition
+
+`PageHeader` + a responsive grid built from these new components under `src/components/dashboard/`:
+
+1. **KpiCard** — label, big value, trend delta vs. previous period, tiny sparkline (recharts AreaChart). Used 8x:
+   - Today's scans, Customers waiting (active interests), Revenue recovered, Notifications sent, Notification conversion, Low stock count, On promotion count, Top product (compact variant).
+2. **ScanTrendsCard** — Tabs (Daily / Weekly / Monthly) over a single `ChartContainer` AreaChart, switching dataset. Counts as the three required scan charts.
+3. **CustomerGrowthCard** — Line chart, cumulative subscribers, last 30 days.
+4. **TopProductsCard** — Horizontal bar chart of top 5 products by interest count, with product name + count.
+5. **NotificationPerformanceCard** — Stacked bar (sent vs delivered vs read) over 14 days.
+6. **LowStockCard** — List with stock pill (orange when <= threshold, red at 0) and "Notify waitlist" affordance (visual only this step).
+7. **PromotionsCard** — List of active promotions with discount % and end countdown.
+8. **RecentActivityCard** — Timeline list, color-coded icon per event type.
+
+### Skeletons, empty states, animations
+
+- `DashboardSkeleton` — mirrors the real grid using `Skeleton` blocks; used by both `pendingComponent` and `<Suspense fallback>` patterns.
+- `EmptyState` — small reusable component (icon + title + helper text + optional CTA) used inside any card whose dataset is empty (e.g. no scans today, no low-stock products).
+- Animations:
+  - Cards animate in with `animate-fade-in` + a 60ms cascading delay via inline style.
+  - KPI values count up using a tiny `useCountUp` hook (no extra dep).
+  - Hover lift: `hover-scale` utility on interactive cards only (KPI + product/promotion list rows).
+
+### Design tokens
+
+Reuses existing tokens (Navy primary, Emerald success, Orange warning). Adds two chart-specific tokens in `src/styles.css` only if needed: `--chart-1` … `--chart-5` mapped to existing palette (primary, success, warning, muted-foreground, accent). Verifies dark mode contrast.
+
+### Files added/changed
+
+- `src/lib/dashboard.functions.ts` (new) — `getDashboardOverview` server fn.
+- `src/lib/dashboard.ts` (new) — `dashboardOverviewQueryOptions` + shared types.
+- `src/components/dashboard/kpi-card.tsx`
+- `src/components/dashboard/scan-trends-card.tsx`
+- `src/components/dashboard/customer-growth-card.tsx`
+- `src/components/dashboard/top-products-card.tsx`
+- `src/components/dashboard/notification-performance-card.tsx`
+- `src/components/dashboard/low-stock-card.tsx`
+- `src/components/dashboard/promotions-card.tsx`
+- `src/components/dashboard/recent-activity-card.tsx`
+- `src/components/dashboard/dashboard-skeleton.tsx`
+- `src/components/empty-state.tsx`
+- `src/hooks/use-count-up.ts`
+- `src/routes/_authenticated/dashboard.tsx` — rewritten to compose the above.
+- `src/styles.css` — chart token additions only if needed.
+
+### Out of scope (deliberate)
+
+- Wiring "Notify waitlist", clicking through to product detail, date-range picker, CSV export — placeholders/links only.
+- Realtime updates; relies on 60s `staleTime` + manual refresh.
+- Per-store filtering — added in a later pass when Stores UI lands.
