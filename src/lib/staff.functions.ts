@@ -66,6 +66,22 @@ export const inviteStaff = createServerFn({ method: "POST" })
       created_by: userId,
     });
     if (error) throw new Error(error.message);
+
+    // Fire-and-forget email via Resend
+    try {
+      const { sendEmail, staffInviteTemplate } = await import("./email.server");
+      const { data: retailer } = await supabase.from("retailers").select("name").eq("id", retailerId).maybeSingle();
+      const ws = retailer?.name ?? "Tag";
+      const inviteUrl = `${process.env.SITE_URL ?? "https://tag-customer-spark.lovable.app"}/auth`;
+      await sendEmail({
+        to: data.email,
+        subject: `You've been invited to ${ws} on Tag`,
+        html: staffInviteTemplate({ name: data.full_name, workspace: ws, role: data.role, inviteUrl }),
+      });
+    } catch (e) {
+      console.error("staff invite email failed", e);
+    }
+
     return { ok: true };
   });
 

@@ -238,6 +238,43 @@ export const enqueueCampaign = createServerFn({ method: "POST" })
     };
     if (data.sendNow) update.sent_at = new Date().toISOString();
     await supabase.from("notification_campaigns").update(update).eq("id", data.id);
+
+    // Fire-and-forget: also email customers who have an email address on file
+    if (data.sendNow) {
+      try {
+        const filter = (campaign.audience_filter ?? {}) as any;
+        let productIds: string[] = filter.product_ids ?? [];
+        if (!productIds.length && campaign.product_id) productIds = [campaign.product_id];
+        let iq = supabase.from("customer_interests").select("customer_id").eq("retailer_id", campaign.retailer_id).eq("status", "active");
+        if (productIds.length) iq = iq.in("product_id", productIds);
+        const { data: ints } = await iq;
+        const ids = Array.from(new Set((ints ?? []).map((r: any) => r.customer_id)));
+        if (ids.length) {
+          const { data: custs } = await supabase.from("customers").select("email").in("id", ids).not("email", "is", null);
+          const { data: retailer } = await supabase.from("retailers").select("name").eq("id", campaign.retailer_id).maybeSingle();
+          const recipients = (custs ?? []).map((c: any) => c.email).filter(Boolean).slice(0, 200);
+          if (recipients.length) {
+            const { sendEmail, customerCampaignTemplate } = await import("./email.server");
+            const html = customerCampaignTemplate({
+              headline: campaign.headline ?? campaign.title,
+              body: campaign.body ?? "",
+              ctaLabel: campaign.cta_label,
+              ctaUrl: campaign.cta_url,
+              imageUrl: campaign.image_url,
+              workspace: retailer?.name ?? "Tag",
+            });
+            await Promise.allSettled(
+              recipients.map((to: string) =>
+                sendEmail({ to, subject: campaign.headline ?? campaign.title, html }),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        console.error("campaign email fanout failed", e);
+      }
+    }
+
     return { queued };
   });
 
