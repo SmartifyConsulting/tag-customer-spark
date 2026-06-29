@@ -35,6 +35,7 @@ import {
 } from "@/lib/products.functions";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { ProductQrPanel } from "@/components/qr/product-qr-panel";
+import { ProductIntentPanel } from "@/components/intent/product-intent-panel";
 import { ScansTable } from "@/components/qr/scans-table";
 import { formatMoney } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
@@ -191,6 +192,8 @@ function ProductDetail() {
           )}
         </div>
       </div>
+
+      <ProductIntentPanel productId={productId} />
 
       <Tabs defaultValue="qr">
         <TabsList>
