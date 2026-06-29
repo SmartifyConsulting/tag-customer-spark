@@ -12,7 +12,7 @@ export type SectionDef = {
 export const SECTIONS: SectionDef[] = [
   {
     key: "workspace",
-    label: "Workspace",
+    label: "Dashboard",
     rootPath: "/dashboard",
     tabs: [
       { label: "Dashboard", to: "/dashboard", match: ["/dashboard"] },
