@@ -14,6 +14,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ScanShortCodeRouteImport } from './routes/scan.$shortCode'
 import { Route as AuthenticatedStoresRouteImport } from './routes/_authenticated/stores'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -23,6 +24,9 @@ import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authen
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
+import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products.$productId'
+import { Route as ApiPublicSShortCodeRouteImport } from './routes/api/public/s.$shortCode'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -46,6 +50,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanShortCodeRoute = ScanShortCodeRouteImport.update({
+  id: '/scan/$shortCode',
+  path: '/scan/$shortCode',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStoresRoute = AuthenticatedStoresRouteImport.update({
@@ -94,6 +103,23 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProductsIndexRoute =
+  AuthenticatedProductsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedProductsRoute,
+  } as any)
+const AuthenticatedProductsProductIdRoute =
+  AuthenticatedProductsProductIdRouteImport.update({
+    id: '/$productId',
+    path: '/$productId',
+    getParentRoute: () => AuthenticatedProductsRoute,
+  } as any)
+const ApiPublicSShortCodeRoute = ApiPublicSShortCodeRouteImport.update({
+  id: '/api/public/s/$shortCode',
+  path: '/api/public/s/$shortCode',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -104,11 +130,15 @@ export interface FileRoutesByFullPath {
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
-  '/products': typeof AuthenticatedProductsRoute
+  '/products': typeof AuthenticatedProductsRouteWithChildren
   '/qr-tags': typeof AuthenticatedQrTagsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stores': typeof AuthenticatedStoresRoute
+  '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/products/$productId': typeof AuthenticatedProductsProductIdRoute
+  '/products/': typeof AuthenticatedProductsIndexRoute
+  '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -119,11 +149,14 @@ export interface FileRoutesByTo {
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
-  '/products': typeof AuthenticatedProductsRoute
   '/qr-tags': typeof AuthenticatedQrTagsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stores': typeof AuthenticatedStoresRoute
+  '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/products/$productId': typeof AuthenticatedProductsProductIdRoute
+  '/products': typeof AuthenticatedProductsIndexRoute
+  '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -136,11 +169,15 @@ export interface FileRoutesById {
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
-  '/_authenticated/products': typeof AuthenticatedProductsRoute
+  '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/qr-tags': typeof AuthenticatedQrTagsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stores': typeof AuthenticatedStoresRoute
+  '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
+  '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
+  '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -158,6 +195,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/staff'
     | '/stores'
+    | '/scan/$shortCode'
+    | '/products/$productId'
+    | '/products/'
+    | '/api/public/s/$shortCode'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -168,11 +209,14 @@ export interface FileRouteTypes {
     | '/customers'
     | '/dashboard'
     | '/notifications'
-    | '/products'
     | '/qr-tags'
     | '/settings'
     | '/staff'
     | '/stores'
+    | '/scan/$shortCode'
+    | '/products/$productId'
+    | '/products'
+    | '/api/public/s/$shortCode'
   id:
     | '__root__'
     | '/'
@@ -189,6 +233,10 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/staff'
     | '/_authenticated/stores'
+    | '/scan/$shortCode'
+    | '/_authenticated/products/$productId'
+    | '/_authenticated/products/'
+    | '/api/public/s/$shortCode'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,6 +245,8 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ScanShortCodeRoute: typeof ScanShortCodeRoute
+  ApiPublicSShortCodeRoute: typeof ApiPublicSShortCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -234,6 +284,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan/$shortCode': {
+      id: '/scan/$shortCode'
+      path: '/scan/$shortCode'
+      fullPath: '/scan/$shortCode'
+      preLoaderRoute: typeof ScanShortCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/stores': {
@@ -299,15 +356,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/products/': {
+      id: '/_authenticated/products/'
+      path: '/'
+      fullPath: '/products/'
+      preLoaderRoute: typeof AuthenticatedProductsIndexRouteImport
+      parentRoute: typeof AuthenticatedProductsRoute
+    }
+    '/_authenticated/products/$productId': {
+      id: '/_authenticated/products/$productId'
+      path: '/$productId'
+      fullPath: '/products/$productId'
+      preLoaderRoute: typeof AuthenticatedProductsProductIdRouteImport
+      parentRoute: typeof AuthenticatedProductsRoute
+    }
+    '/api/public/s/$shortCode': {
+      id: '/api/public/s/$shortCode'
+      path: '/api/public/s/$shortCode'
+      fullPath: '/api/public/s/$shortCode'
+      preLoaderRoute: typeof ApiPublicSShortCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
+
+interface AuthenticatedProductsRouteChildren {
+  AuthenticatedProductsProductIdRoute: typeof AuthenticatedProductsProductIdRoute
+  AuthenticatedProductsIndexRoute: typeof AuthenticatedProductsIndexRoute
+}
+
+const AuthenticatedProductsRouteChildren: AuthenticatedProductsRouteChildren = {
+  AuthenticatedProductsProductIdRoute: AuthenticatedProductsProductIdRoute,
+  AuthenticatedProductsIndexRoute: AuthenticatedProductsIndexRoute,
+}
+
+const AuthenticatedProductsRouteWithChildren =
+  AuthenticatedProductsRoute._addFileChildren(
+    AuthenticatedProductsRouteChildren,
+  )
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
-  AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
+  AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedQrTagsRoute: typeof AuthenticatedQrTagsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
@@ -319,7 +412,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
-  AuthenticatedProductsRoute: AuthenticatedProductsRoute,
+  AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedQrTagsRoute: AuthenticatedQrTagsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
@@ -335,6 +428,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ScanShortCodeRoute: ScanShortCodeRoute,
+  ApiPublicSShortCodeRoute: ApiPublicSShortCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
