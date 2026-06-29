@@ -477,54 +477,78 @@ export type Database = {
       }
       products: {
         Row: {
+          brand: string | null
           category_id: string | null
+          color: string | null
           created_at: string
           created_by: string | null
           currency: string
           description: string | null
           id: string
           image_url: string | null
+          images: Json
           low_stock_threshold: number
           name: string
           price_cents: number
+          promotion_end_date: string | null
+          promotion_start_date: string | null
           retailer_id: string
+          sale_price_cents: number | null
+          size: string | null
           sku: string
           status: Database["public"]["Enums"]["product_status"]
           stock_qty: number
+          store_id: string | null
           updated_at: string
         }
         Insert: {
+          brand?: string | null
           category_id?: string | null
+          color?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
           description?: string | null
           id?: string
           image_url?: string | null
+          images?: Json
           low_stock_threshold?: number
           name: string
           price_cents?: number
+          promotion_end_date?: string | null
+          promotion_start_date?: string | null
           retailer_id: string
+          sale_price_cents?: number | null
+          size?: string | null
           sku: string
           status?: Database["public"]["Enums"]["product_status"]
           stock_qty?: number
+          store_id?: string | null
           updated_at?: string
         }
         Update: {
+          brand?: string | null
           category_id?: string | null
+          color?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
           description?: string | null
           id?: string
           image_url?: string | null
+          images?: Json
           low_stock_threshold?: number
           name?: string
           price_cents?: number
+          promotion_end_date?: string | null
+          promotion_start_date?: string | null
           retailer_id?: string
+          sale_price_cents?: number | null
+          size?: string | null
           sku?: string
           status?: Database["public"]["Enums"]["product_status"]
           stock_qty?: number
+          store_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -540,6 +564,13 @@ export type Database = {
             columns: ["retailer_id"]
             isOneToOne: false
             referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -625,45 +656,144 @@ export type Database = {
           },
         ]
       }
+      qr_scans: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          device_type: string | null
+          id: string
+          ip_hash: string | null
+          product_id: string
+          qr_tag_id: string
+          qr_version: number | null
+          referrer: string | null
+          retailer_id: string
+          scanned_at: string
+          store_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          device_type?: string | null
+          id?: string
+          ip_hash?: string | null
+          product_id: string
+          qr_tag_id: string
+          qr_version?: number | null
+          referrer?: string | null
+          retailer_id: string
+          scanned_at?: string
+          store_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          device_type?: string | null
+          id?: string
+          ip_hash?: string | null
+          product_id?: string
+          qr_tag_id?: string
+          qr_version?: number | null
+          referrer?: string | null
+          retailer_id?: string
+          scanned_at?: string
+          store_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_scans_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_scans_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_scans_qr_tag_id_fkey"
+            columns: ["qr_tag_id"]
+            isOneToOne: false
+            referencedRelation: "qr_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_scans_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_scans_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qr_tags: {
         Row: {
           code: string
           created_at: string
           created_by: string | null
           id: string
+          is_active: boolean
           last_scanned_at: string | null
           product_id: string
+          regenerated_from: string | null
           retailer_id: string
           scan_count: number
+          short_code: string
           status: Database["public"]["Enums"]["qr_status"]
           store_id: string | null
+          template: string
           updated_at: string
+          version: number
         }
         Insert: {
           code: string
           created_at?: string
           created_by?: string | null
           id?: string
+          is_active?: boolean
           last_scanned_at?: string | null
           product_id: string
+          regenerated_from?: string | null
           retailer_id: string
           scan_count?: number
+          short_code: string
           status?: Database["public"]["Enums"]["qr_status"]
           store_id?: string | null
+          template?: string
           updated_at?: string
+          version?: number
         }
         Update: {
           code?: string
           created_at?: string
           created_by?: string | null
           id?: string
+          is_active?: boolean
           last_scanned_at?: string | null
           product_id?: string
+          regenerated_from?: string | null
           retailer_id?: string
           scan_count?: number
+          short_code?: string
           status?: Database["public"]["Enums"]["qr_status"]
           store_id?: string | null
+          template?: string
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -671,6 +801,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_tags_regenerated_from_fkey"
+            columns: ["regenerated_from"]
+            isOneToOne: false
+            referencedRelation: "qr_tags"
             referencedColumns: ["id"]
           },
           {
@@ -759,6 +896,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          logo_url: string | null
           name: string
           plan: string
           slug: string
@@ -770,6 +908,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          logo_url?: string | null
           name: string
           plan?: string
           slug: string
@@ -781,6 +920,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          logo_url?: string | null
           name?: string
           plan?: string
           slug?: string
