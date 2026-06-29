@@ -12,7 +12,7 @@ export type SectionDef = {
 export const SECTIONS: SectionDef[] = [
   {
     key: "workspace",
-    label: "Workspace",
+    label: "Dashboard",
     rootPath: "/dashboard",
     tabs: [
       { label: "Dashboard", to: "/dashboard", match: ["/dashboard"] },
@@ -111,10 +111,6 @@ export function SectionTabs() {
   return (
     <div className="sticky top-16 z-[5] -mx-4 border-b border-border bg-background/85 px-4 backdrop-blur-md sm:-mx-8 sm:px-8">
       <div className="mx-auto flex max-w-7xl items-end gap-1 overflow-x-auto">
-        <div className="mr-3 hidden shrink-0 items-center text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70 md:flex">
-          {section.label}
-          <span className="mx-3 h-3 w-px bg-border" />
-        </div>
         {section.tabs.map((t) => {
           const isActive = activeTab?.to === t.to;
           return (

@@ -10,8 +10,9 @@ export function TagLogo({
   size?: "default" | "sm" | "lg";
 }) {
   // Doubled in size per latest brief.
+  // Sidebar logo enlarged 40% from previous lg (h-28 → h-40).
   const dim =
-    size === "sm" ? "h-16 w-16" : size === "lg" ? "h-28 w-28" : "h-24 w-24";
+    size === "sm" ? "h-[88px] w-[88px]" : size === "lg" ? "h-40 w-40" : "h-32 w-32";
   return (
     <div className={`flex items-center justify-center ${className ?? ""}`}>
       <img

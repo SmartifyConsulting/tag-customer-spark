@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { dashboardOverviewQueryOptions } from "@/lib/dashboard";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
@@ -96,6 +97,7 @@ function DashboardPage() {
 
 function DashboardContent() {
   const { data } = useSuspenseQuery(dashboardOverviewQueryOptions);
+  const { profile, user } = useAuth();
   const k = data.kpis;
 
   const dailySpark = data.scansDaily.slice(-7).map((d) => ({ v: d.count }));
@@ -103,12 +105,23 @@ function DashboardContent() {
   const notifSpark = data.notificationPerf.slice(-7).map((d) => ({ v: d.sent }));
   const readSpark = data.notificationPerf.slice(-7).map((d) => ({ v: d.read }));
 
+  const hour = new Date().getHours();
+  const partOfDay = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+  const fullName = profile?.full_name?.trim() || user?.email?.split("@")[0] || "there";
+  const firstName = fullName.split(" ")[0];
+  const today = new Date().toLocaleDateString(undefined, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Dashboard"
-        description="A snapshot of in-store engagement, recovered sales and notification performance."
+        title={`Good ${partOfDay}, ${firstName} 👋`}
+        description={`${today} · Here's what's happening across your stores today.`}
       />
+
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard

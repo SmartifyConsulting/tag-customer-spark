@@ -2,9 +2,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { TagLogo } from "@/components/tag-logo";
+
 import { ArrowRight, QrCode, MessageCircle, TrendingUp, Sparkles, Bell, BarChart3 } from "lucide-react";
 import logoAsset from "@/assets/tag-logo.png.asset.json";
+import heroLogo from "@/assets/tag-logo-hero.png.asset.json";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -36,7 +37,7 @@ function Landing() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Nav */}
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-        <TagLogo withWordmark={false} className="[&_img]:h-10 [&_img]:w-10" />
+        <img src={heroLogo.url} alt="Tag" className="h-[240px] w-auto object-contain" />
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
           <a href="#features" className="hover:text-foreground">Features</a>
           <a href="#how" className="hover:text-foreground">How it works</a>
