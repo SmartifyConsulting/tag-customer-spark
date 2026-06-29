@@ -444,3 +444,45 @@ function MessageBubble({ message }: { message: any }) {
     </div>
   );
 }
+
+function SummariseButton({ conversationId, onSuggestion }: { conversationId: string; onSuggestion: (s: string) => void }) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ summary: string; suggested_reply: string; sentiment: string } | null>(null);
+  async function run() {
+    setLoading(true);
+    try {
+      const r: any = await summariseConversation({ data: { conversation_id: conversationId } });
+      setResult(r);
+    } catch (e: any) {
+      toast.error(e?.message ?? "AI failed");
+    } finally { setLoading(false); }
+  }
+  return (
+    <DropdownMenu onOpenChange={(o) => o && !result && !loading && run()}>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Sparkles className="h-4 w-4 mr-1" /> Summarise
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 p-3 space-y-2">
+        {loading || !result ? (
+          <div className="text-sm text-muted-foreground">Generating…</div>
+        ) : (
+          <>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Summary · {result.sentiment}</div>
+            <p className="text-sm">{result.summary}</p>
+            {result.suggested_reply && (
+              <>
+                <div className="text-xs uppercase tracking-wide text-muted-foreground mt-2">Suggested reply</div>
+                <p className="text-sm rounded-md border bg-muted/40 p-2">{result.suggested_reply}</p>
+                <Button size="sm" className="w-full" onClick={() => onSuggestion(result.suggested_reply)}>
+                  Use as reply
+                </Button>
+              </>
+            )}
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
