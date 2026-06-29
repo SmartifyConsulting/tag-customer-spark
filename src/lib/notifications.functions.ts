@@ -242,7 +242,7 @@ export const enqueueCampaign = createServerFn({ method: "POST" })
     // Fire-and-forget: also email customers who have an email address on file
     if (data.sendNow) {
       try {
-        const filter = campaign.audience_filter ?? {};
+        const filter = (campaign.audience_filter ?? {}) as any;
         let productIds: string[] = filter.product_ids ?? [];
         if (!productIds.length && campaign.product_id) productIds = [campaign.product_id];
         let iq = supabase.from("customer_interests").select("customer_id").eq("retailer_id", campaign.retailer_id).eq("status", "active");
