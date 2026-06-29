@@ -14,6 +14,536 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          created_by: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json
+          retailer_id: string | null
+          status: Database["public"]["Enums"]["audit_status"]
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json
+          retailer_id?: string | null
+          status?: Database["public"]["Enums"]["audit_status"]
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json
+          retailer_id?: string | null
+          status?: Database["public"]["Enums"]["audit_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_messages: {
+        Row: {
+          body: string | null
+          conversation_id: string
+          created_at: string
+          created_by: string | null
+          direction: Database["public"]["Enums"]["message_direction"]
+          id: string
+          media_url: string | null
+          retailer_id: string
+          sent_at: string
+          status: Database["public"]["Enums"]["message_status"]
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          direction: Database["public"]["Enums"]["message_direction"]
+          id?: string
+          media_url?: string | null
+          retailer_id: string
+          sent_at?: string
+          status?: Database["public"]["Enums"]["message_status"]
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          direction?: Database["public"]["Enums"]["message_direction"]
+          id?: string
+          media_url?: string | null
+          retailer_id?: string
+          sent_at?: string
+          status?: Database["public"]["Enums"]["message_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_messages_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+          last_message_at: string | null
+          retailer_id: string
+          status: Database["public"]["Enums"]["conversation_status"]
+          store_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+          last_message_at?: string | null
+          retailer_id: string
+          status?: Database["public"]["Enums"]["conversation_status"]
+          store_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+          last_message_at?: string | null
+          retailer_id?: string
+          status?: Database["public"]["Enums"]["conversation_status"]
+          store_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_interests: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+          product_id: string
+          qr_tag_id: string | null
+          retailer_id: string
+          source: string
+          status: Database["public"]["Enums"]["interest_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+          product_id: string
+          qr_tag_id?: string | null
+          retailer_id: string
+          source?: string
+          status?: Database["public"]["Enums"]["interest_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+          product_id?: string
+          qr_tag_id?: string | null
+          retailer_id?: string
+          source?: string
+          status?: Database["public"]["Enums"]["interest_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_interests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_interests_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_interests_qr_tag_id_fkey"
+            columns: ["qr_tag_id"]
+            isOneToOne: false
+            referencedRelation: "qr_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_interests_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          full_name: string | null
+          id: string
+          locale: string
+          opted_in_at: string
+          retailer_id: string
+          status: Database["public"]["Enums"]["customer_status"]
+          updated_at: string
+          whatsapp_e164: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          full_name?: string | null
+          id?: string
+          locale?: string
+          opted_in_at?: string
+          retailer_id: string
+          status?: Database["public"]["Enums"]["customer_status"]
+          updated_at?: string
+          whatsapp_e164: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          full_name?: string | null
+          id?: string
+          locale?: string
+          opted_in_at?: string
+          retailer_id?: string
+          status?: Database["public"]["Enums"]["customer_status"]
+          updated_at?: string
+          whatsapp_e164?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          message_template: string
+          product_id: string | null
+          retailer_id: string
+          scheduled_at: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["campaign_status"]
+          title: string
+          type: Database["public"]["Enums"]["campaign_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message_template: string
+          product_id?: string | null
+          retailer_id: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          title: string
+          type: Database["public"]["Enums"]["campaign_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message_template?: string
+          product_id?: string | null
+          retailer_id?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          title?: string
+          type?: Database["public"]["Enums"]["campaign_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_campaigns_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_campaigns_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_history: {
+        Row: {
+          campaign_id: string | null
+          channel: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          delivered_at: string | null
+          error: string | null
+          id: string
+          payload: Json
+          read_at: string | null
+          retailer_id: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["notification_status"]
+          updated_at: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          delivered_at?: string | null
+          error?: string | null
+          id?: string
+          payload?: Json
+          read_at?: string | null
+          retailer_id: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["notification_status"]
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string | null
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          delivered_at?: string | null
+          error?: string | null
+          id?: string
+          payload?: Json
+          read_at?: string | null
+          retailer_id?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["notification_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_history_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "notification_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_history_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_history_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_categories: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          retailer_id: string
+          status: Database["public"]["Enums"]["category_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          retailer_id: string
+          status?: Database["public"]["Enums"]["category_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          retailer_id?: string
+          status?: Database["public"]["Enums"]["category_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_categories_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          description: string | null
+          id: string
+          image_url: string | null
+          low_stock_threshold: number
+          name: string
+          price_cents: number
+          retailer_id: string
+          sku: string
+          status: Database["public"]["Enums"]["product_status"]
+          stock_qty: number
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          low_stock_threshold?: number
+          name: string
+          price_cents?: number
+          retailer_id: string
+          sku: string
+          status?: Database["public"]["Enums"]["product_status"]
+          stock_qty?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          low_stock_threshold?: number
+          name?: string
+          price_cents?: number
+          retailer_id?: string
+          sku?: string
+          status?: Database["public"]["Enums"]["product_status"]
+          stock_qty?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -38,22 +568,477 @@ export type Database = {
         }
         Relationships: []
       }
+      promotion_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          discount_pct: number
+          ends_at: string | null
+          id: string
+          name: string
+          product_id: string | null
+          retailer_id: string
+          starts_at: string
+          status: Database["public"]["Enums"]["promotion_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          discount_pct?: number
+          ends_at?: string | null
+          id?: string
+          name: string
+          product_id?: string | null
+          retailer_id: string
+          starts_at?: string
+          status?: Database["public"]["Enums"]["promotion_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          discount_pct?: number
+          ends_at?: string | null
+          id?: string
+          name?: string
+          product_id?: string | null
+          retailer_id?: string
+          starts_at?: string
+          status?: Database["public"]["Enums"]["promotion_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_events_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_events_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qr_tags: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          last_scanned_at: string | null
+          product_id: string
+          retailer_id: string
+          scan_count: number
+          status: Database["public"]["Enums"]["qr_status"]
+          store_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_scanned_at?: string | null
+          product_id: string
+          retailer_id: string
+          scan_count?: number
+          status?: Database["public"]["Enums"]["qr_status"]
+          store_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_scanned_at?: string | null
+          product_id?: string
+          retailer_id?: string
+          scan_count?: number
+          status?: Database["public"]["Enums"]["qr_status"]
+          store_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_tags_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_tags_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_tags_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      redemption_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          expires_at: string | null
+          id: string
+          promotion_id: string | null
+          redeemed_at: string | null
+          retailer_id: string
+          status: Database["public"]["Enums"]["redemption_status"]
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          expires_at?: string | null
+          id?: string
+          promotion_id?: string | null
+          redeemed_at?: string | null
+          retailer_id: string
+          status?: Database["public"]["Enums"]["redemption_status"]
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          expires_at?: string | null
+          id?: string
+          promotion_id?: string | null
+          redeemed_at?: string | null
+          retailer_id?: string
+          status?: Database["public"]["Enums"]["redemption_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "redemption_codes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "redemption_codes_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "redemption_codes_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      retailers: {
+        Row: {
+          contact_email: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          plan: string
+          slug: string
+          status: Database["public"]["Enums"]["retailer_status"]
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          plan?: string
+          slug: string
+          status?: Database["public"]["Enums"]["retailer_status"]
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          plan?: string
+          slug?: string
+          status?: Database["public"]["Enums"]["retailer_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sales_recoveries: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_id: string
+          id: string
+          notification_id: string | null
+          product_id: string | null
+          recovered_at: string
+          retailer_id: string
+          status: Database["public"]["Enums"]["recovery_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount_cents?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id: string
+          id?: string
+          notification_id?: string | null
+          product_id?: string | null
+          recovered_at?: string
+          retailer_id: string
+          status?: Database["public"]["Enums"]["recovery_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id?: string
+          id?: string
+          notification_id?: string | null
+          product_id?: string | null
+          recovered_at?: string
+          retailer_id?: string
+          status?: Database["public"]["Enums"]["recovery_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_recoveries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_recoveries_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notification_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_recoveries_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_recoveries_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          full_name: string | null
+          id: string
+          invite_email: string | null
+          retailer_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: Database["public"]["Enums"]["staff_status"]
+          store_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          full_name?: string | null
+          id?: string
+          invite_email?: string | null
+          retailer_id: string
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: Database["public"]["Enums"]["staff_status"]
+          store_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          full_name?: string | null
+          id?: string
+          invite_email?: string | null
+          retailer_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: Database["public"]["Enums"]["staff_status"]
+          store_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stores: {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          retailer_id: string
+          status: Database["public"]["Enums"]["store_status"]
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          retailer_id: string
+          status?: Database["public"]["Enums"]["store_status"]
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          retailer_id?: string
+          status?: Database["public"]["Enums"]["store_status"]
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stores_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_period_end: string | null
+          current_period_start: string
+          id: string
+          plan: string
+          provider_ref: string | null
+          retailer_id: string
+          seats: number
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_period_end?: string | null
+          current_period_start?: string
+          id?: string
+          plan?: string
+          provider_ref?: string | null
+          retailer_id: string
+          seats?: number
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_period_end?: string | null
+          current_period_start?: string
+          id?: string
+          plan?: string
+          provider_ref?: string | null
+          retailer_id?: string
+          seats?: number
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
           id: string
+          retailer_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          retailer_id?: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          retailer_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
@@ -64,6 +1049,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      belongs_to_retailer: {
+        Args: { _retailer_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_manage_retailer: {
+        Args: { _retailer_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_any_role: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -78,6 +1078,25 @@ export type Database = {
         | "retail_admin"
         | "store_manager"
         | "sales_assistant"
+      audit_status: "success" | "warning" | "failure"
+      campaign_status: "draft" | "scheduled" | "sending" | "sent" | "cancelled"
+      campaign_type: "sale" | "low_stock" | "back_in_stock" | "promotion"
+      category_status: "active" | "archived"
+      conversation_status: "open" | "closed" | "archived"
+      customer_status: "subscribed" | "unsubscribed" | "blocked"
+      interest_status: "active" | "notified" | "converted" | "expired"
+      message_direction: "inbound" | "outbound"
+      message_status: "sent" | "delivered" | "read" | "failed"
+      notification_status: "queued" | "sent" | "delivered" | "read" | "failed"
+      product_status: "active" | "draft" | "archived"
+      promotion_status: "scheduled" | "active" | "ended" | "cancelled"
+      qr_status: "active" | "inactive" | "retired"
+      recovery_status: "attributed" | "pending" | "rejected"
+      redemption_status: "issued" | "redeemed" | "expired" | "void"
+      retailer_status: "active" | "suspended" | "cancelled"
+      staff_status: "active" | "invited" | "disabled"
+      store_status: "active" | "closed" | "pending"
+      subscription_status: "trialing" | "active" | "past_due" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -211,6 +1230,25 @@ export const Constants = {
         "store_manager",
         "sales_assistant",
       ],
+      audit_status: ["success", "warning", "failure"],
+      campaign_status: ["draft", "scheduled", "sending", "sent", "cancelled"],
+      campaign_type: ["sale", "low_stock", "back_in_stock", "promotion"],
+      category_status: ["active", "archived"],
+      conversation_status: ["open", "closed", "archived"],
+      customer_status: ["subscribed", "unsubscribed", "blocked"],
+      interest_status: ["active", "notified", "converted", "expired"],
+      message_direction: ["inbound", "outbound"],
+      message_status: ["sent", "delivered", "read", "failed"],
+      notification_status: ["queued", "sent", "delivered", "read", "failed"],
+      product_status: ["active", "draft", "archived"],
+      promotion_status: ["scheduled", "active", "ended", "cancelled"],
+      qr_status: ["active", "inactive", "retired"],
+      recovery_status: ["attributed", "pending", "rejected"],
+      redemption_status: ["issued", "redeemed", "expired", "void"],
+      retailer_status: ["active", "suspended", "cancelled"],
+      staff_status: ["active", "invited", "disabled"],
+      store_status: ["active", "closed", "pending"],
+      subscription_status: ["trialing", "active", "past_due", "cancelled"],
     },
   },
 } as const
