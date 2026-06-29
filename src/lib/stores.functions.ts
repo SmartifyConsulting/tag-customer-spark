@@ -74,7 +74,7 @@ export const upsertStore = createServerFn({ method: "POST" })
         city: z.string().trim().max(80).optional().nullable(),
         country: z.string().trim().max(80).optional().nullable(),
         timezone: z.string().trim().max(80).optional().nullable(),
-        status: z.enum(["active", "inactive"]).default("active"),
+        status: z.enum(["active", "closed", "pending"]).default("active"),
       })
       .parse(d),
   )
@@ -82,13 +82,14 @@ export const upsertStore = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer");
-    if (data.id) {
-      const { error } = await supabase.from("stores").update(data).eq("id", data.id);
+    const { id, ...payload } = data;
+    if (id) {
+      const { error } = await supabase.from("stores").update(payload).eq("id", id);
       if (error) throw new Error(error.message);
     } else {
       const { error } = await supabase
         .from("stores")
-        .insert({ ...data, retailer_id: retailerId, created_by: userId });
+        .insert({ ...payload, retailer_id: retailerId, created_by: userId } as any);
       if (error) throw new Error(error.message);
     }
     return { ok: true };

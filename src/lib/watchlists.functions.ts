@@ -40,13 +40,13 @@ export const listWatchlists = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(200);
 
-    if (data.status !== "all") q = q.eq("status", data.status);
-    if (data.trigger) q = q.eq("trigger", data.trigger);
+    if (data.status !== "all") q = q.eq("status", data.status as any);
+    if (data.trigger) q = q.eq("trigger", data.trigger as any);
 
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
 
-    let result = rows ?? [];
+    let result = (rows ?? []) as any[];
     if (data.search) {
       const s = data.search.toLowerCase();
       result = result.filter(

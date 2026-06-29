@@ -72,7 +72,7 @@ export const inviteStaff = createServerFn({ method: "POST" })
 export const updateStaffStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ id: z.string().uuid(), status: z.enum(["active", "invited", "suspended"]) }).parse(d),
+    z.object({ id: z.string().uuid(), status: z.enum(["active", "invited", "disabled"]) }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("staff").update({ status: data.status }).eq("id", data.id);
