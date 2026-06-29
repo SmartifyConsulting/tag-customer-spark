@@ -156,7 +156,7 @@ function ProductsListPage() {
             return;
           }
           navigate({
-            search: (p) => ({
+            search: (p: any) => ({
               ...p,
               status: next.status ?? p.status,
               category: "category_id" in next ? next.category_id ?? null : p.category,
@@ -211,7 +211,7 @@ function ProductsListPage() {
         page={search.page}
         pageSize={20}
         total={data?.total ?? 0}
-        onPage={(p) => navigate({ search: (s) => ({ ...s, page: p }) })}
+        onPage={(p) => navigate({ search: (s: any) => ({ ...s, page: p }) })}
       />
 
       {canManage && (
