@@ -12,6 +12,8 @@ import {
   Settings,
   Sparkles,
   Gauge,
+  Eye,
+  DollarSign,
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,6 +34,8 @@ const mainNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Intelligence", url: "/intelligence", icon: Sparkles },
   { title: "Intent Engine", url: "/intent", icon: Gauge },
+  { title: "Watchlists", url: "/watchlists", icon: Eye },
+  { title: "ROI Engine", url: "/roi", icon: DollarSign },
   { title: "Products", url: "/products", icon: Package },
   { title: "QR Tags", url: "/qr-tags", icon: QrCode },
   { title: "Customers", url: "/customers", icon: Users },
