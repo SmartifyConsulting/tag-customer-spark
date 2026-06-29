@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { dashboardOverviewQueryOptions } from "@/lib/dashboard";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
