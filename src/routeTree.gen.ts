@@ -30,11 +30,23 @@ import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as AuthenticatedAlertsRouteImport } from './routes/_authenticated/alerts'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
 import { Route as AuthenticatedNotificationsIndexRouteImport } from './routes/_authenticated/notifications.index'
+import { Route as AuthenticatedProductsCompareRouteImport } from './routes/_authenticated/products.compare'
 import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products.$productId'
+import { Route as AuthenticatedOrganisationRolesRouteImport } from './routes/_authenticated/organisation.roles'
 import { Route as AuthenticatedNotificationsNewRouteImport } from './routes/_authenticated/notifications.new'
 import { Route as AuthenticatedNotificationsCampaignIdRouteImport } from './routes/_authenticated/notifications.$campaignId'
+import { Route as AuthenticatedIntelligenceTrendsRouteImport } from './routes/_authenticated/intelligence.trends'
+import { Route as AuthenticatedIntelligenceIntentRouteImport } from './routes/_authenticated/intelligence.intent'
+import { Route as AuthenticatedIntelligenceInsightsRouteImport } from './routes/_authenticated/intelligence.insights'
+import { Route as AuthenticatedIntelligenceForecastingRouteImport } from './routes/_authenticated/intelligence.forecasting'
+import { Route as AuthenticatedCommerceRoiRouteImport } from './routes/_authenticated/commerce.roi'
+import { Route as AuthenticatedCommercePricingRouteImport } from './routes/_authenticated/commerce.pricing'
+import { Route as AuthenticatedCommerceFunnelRouteImport } from './routes/_authenticated/commerce.funnel'
+import { Route as AuthenticatedAnalyticsReportsRouteImport } from './routes/_authenticated/analytics.reports'
+import { Route as AuthenticatedAnalyticsHistoryRouteImport } from './routes/_authenticated/analytics.history'
 import { Route as ApiPublicScanInterestRouteImport } from './routes/api/public/scan.interest'
 import { Route as ApiPublicSShortCodeRouteImport } from './routes/api/public/s.$shortCode'
 import { Route as ApiPublicHooksNotificationsTickRouteImport } from './routes/api/public/hooks.notifications-tick'
@@ -146,6 +158,11 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAlertsRoute = AuthenticatedAlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProductsIndexRoute =
   AuthenticatedProductsIndexRouteImport.update({
     id: '/',
@@ -158,11 +175,23 @@ const AuthenticatedNotificationsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedNotificationsRoute,
   } as any)
+const AuthenticatedProductsCompareRoute =
+  AuthenticatedProductsCompareRouteImport.update({
+    id: '/compare',
+    path: '/compare',
+    getParentRoute: () => AuthenticatedProductsRoute,
+  } as any)
 const AuthenticatedProductsProductIdRoute =
   AuthenticatedProductsProductIdRouteImport.update({
     id: '/$productId',
     path: '/$productId',
     getParentRoute: () => AuthenticatedProductsRoute,
+  } as any)
+const AuthenticatedOrganisationRolesRoute =
+  AuthenticatedOrganisationRolesRouteImport.update({
+    id: '/organisation/roles',
+    path: '/organisation/roles',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedNotificationsNewRoute =
   AuthenticatedNotificationsNewRouteImport.update({
@@ -175,6 +204,60 @@ const AuthenticatedNotificationsCampaignIdRoute =
     id: '/$campaignId',
     path: '/$campaignId',
     getParentRoute: () => AuthenticatedNotificationsRoute,
+  } as any)
+const AuthenticatedIntelligenceTrendsRoute =
+  AuthenticatedIntelligenceTrendsRouteImport.update({
+    id: '/trends',
+    path: '/trends',
+    getParentRoute: () => AuthenticatedIntelligenceRoute,
+  } as any)
+const AuthenticatedIntelligenceIntentRoute =
+  AuthenticatedIntelligenceIntentRouteImport.update({
+    id: '/intent',
+    path: '/intent',
+    getParentRoute: () => AuthenticatedIntelligenceRoute,
+  } as any)
+const AuthenticatedIntelligenceInsightsRoute =
+  AuthenticatedIntelligenceInsightsRouteImport.update({
+    id: '/insights',
+    path: '/insights',
+    getParentRoute: () => AuthenticatedIntelligenceRoute,
+  } as any)
+const AuthenticatedIntelligenceForecastingRoute =
+  AuthenticatedIntelligenceForecastingRouteImport.update({
+    id: '/forecasting',
+    path: '/forecasting',
+    getParentRoute: () => AuthenticatedIntelligenceRoute,
+  } as any)
+const AuthenticatedCommerceRoiRoute =
+  AuthenticatedCommerceRoiRouteImport.update({
+    id: '/commerce/roi',
+    path: '/commerce/roi',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCommercePricingRoute =
+  AuthenticatedCommercePricingRouteImport.update({
+    id: '/commerce/pricing',
+    path: '/commerce/pricing',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCommerceFunnelRoute =
+  AuthenticatedCommerceFunnelRouteImport.update({
+    id: '/commerce/funnel',
+    path: '/commerce/funnel',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAnalyticsReportsRoute =
+  AuthenticatedAnalyticsReportsRouteImport.update({
+    id: '/reports',
+    path: '/reports',
+    getParentRoute: () => AuthenticatedAnalyticsRoute,
+  } as any)
+const AuthenticatedAnalyticsHistoryRoute =
+  AuthenticatedAnalyticsHistoryRouteImport.update({
+    id: '/history',
+    path: '/history',
+    getParentRoute: () => AuthenticatedAnalyticsRoute,
   } as any)
 const ApiPublicScanInterestRoute = ApiPublicScanInterestRouteImport.update({
   id: '/api/public/scan/interest',
@@ -204,11 +287,12 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/alerts': typeof AuthenticatedAlertsRoute
+  '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
-  '/intelligence': typeof AuthenticatedIntelligenceRoute
+  '/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/intent': typeof AuthenticatedIntentRoute
   '/notifications': typeof AuthenticatedNotificationsRouteWithChildren
   '/products': typeof AuthenticatedProductsRouteWithChildren
@@ -220,9 +304,20 @@ export interface FileRoutesByFullPath {
   '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
+  '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
+  '/commerce/funnel': typeof AuthenticatedCommerceFunnelRoute
+  '/commerce/pricing': typeof AuthenticatedCommercePricingRoute
+  '/commerce/roi': typeof AuthenticatedCommerceRoiRoute
+  '/intelligence/forecasting': typeof AuthenticatedIntelligenceForecastingRoute
+  '/intelligence/insights': typeof AuthenticatedIntelligenceInsightsRoute
+  '/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
+  '/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRoute
   '/notifications/new': typeof AuthenticatedNotificationsNewRoute
+  '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
+  '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
@@ -235,11 +330,12 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/alerts': typeof AuthenticatedAlertsRoute
+  '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
-  '/intelligence': typeof AuthenticatedIntelligenceRoute
+  '/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/intent': typeof AuthenticatedIntentRoute
   '/qr-tags': typeof AuthenticatedQrTagsRoute
   '/roi': typeof AuthenticatedRoiRoute
@@ -249,9 +345,20 @@ export interface FileRoutesByTo {
   '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
+  '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
+  '/commerce/funnel': typeof AuthenticatedCommerceFunnelRoute
+  '/commerce/pricing': typeof AuthenticatedCommercePricingRoute
+  '/commerce/roi': typeof AuthenticatedCommerceRoiRoute
+  '/intelligence/forecasting': typeof AuthenticatedIntelligenceForecastingRoute
+  '/intelligence/insights': typeof AuthenticatedIntelligenceInsightsRoute
+  '/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
+  '/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRoute
   '/notifications/new': typeof AuthenticatedNotificationsNewRoute
+  '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
+  '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/notifications': typeof AuthenticatedNotificationsIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
@@ -266,11 +373,12 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
+  '/_authenticated/alerts': typeof AuthenticatedAlertsRoute
+  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
-  '/_authenticated/intelligence': typeof AuthenticatedIntelligenceRoute
+  '/_authenticated/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/_authenticated/intent': typeof AuthenticatedIntentRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRouteWithChildren
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
@@ -282,9 +390,20 @@ export interface FileRoutesById {
   '/_authenticated/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/_authenticated/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
+  '/_authenticated/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
+  '/_authenticated/commerce/funnel': typeof AuthenticatedCommerceFunnelRoute
+  '/_authenticated/commerce/pricing': typeof AuthenticatedCommercePricingRoute
+  '/_authenticated/commerce/roi': typeof AuthenticatedCommerceRoiRoute
+  '/_authenticated/intelligence/forecasting': typeof AuthenticatedIntelligenceForecastingRoute
+  '/_authenticated/intelligence/insights': typeof AuthenticatedIntelligenceInsightsRoute
+  '/_authenticated/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
+  '/_authenticated/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/_authenticated/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRoute
   '/_authenticated/notifications/new': typeof AuthenticatedNotificationsNewRoute
+  '/_authenticated/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
+  '/_authenticated/products/compare': typeof AuthenticatedProductsCompareRoute
   '/_authenticated/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
@@ -299,6 +418,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/forgot-password'
     | '/reset-password'
+    | '/alerts'
     | '/analytics'
     | '/customers'
     | '/dashboard'
@@ -315,9 +435,20 @@ export interface FileRouteTypes {
     | '/watchlists'
     | '/n/$messageId'
     | '/scan/$shortCode'
+    | '/analytics/history'
+    | '/analytics/reports'
+    | '/commerce/funnel'
+    | '/commerce/pricing'
+    | '/commerce/roi'
+    | '/intelligence/forecasting'
+    | '/intelligence/insights'
+    | '/intelligence/intent'
+    | '/intelligence/trends'
     | '/notifications/$campaignId'
     | '/notifications/new'
+    | '/organisation/roles'
     | '/products/$productId'
+    | '/products/compare'
     | '/notifications/'
     | '/products/'
     | '/api/public/hooks/intent-tick'
@@ -330,6 +461,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/forgot-password'
     | '/reset-password'
+    | '/alerts'
     | '/analytics'
     | '/customers'
     | '/dashboard'
@@ -344,9 +476,20 @@ export interface FileRouteTypes {
     | '/watchlists'
     | '/n/$messageId'
     | '/scan/$shortCode'
+    | '/analytics/history'
+    | '/analytics/reports'
+    | '/commerce/funnel'
+    | '/commerce/pricing'
+    | '/commerce/roi'
+    | '/intelligence/forecasting'
+    | '/intelligence/insights'
+    | '/intelligence/intent'
+    | '/intelligence/trends'
     | '/notifications/$campaignId'
     | '/notifications/new'
+    | '/organisation/roles'
     | '/products/$productId'
+    | '/products/compare'
     | '/notifications'
     | '/products'
     | '/api/public/hooks/intent-tick'
@@ -360,6 +503,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/forgot-password'
     | '/reset-password'
+    | '/_authenticated/alerts'
     | '/_authenticated/analytics'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
@@ -376,9 +520,20 @@ export interface FileRouteTypes {
     | '/_authenticated/watchlists'
     | '/n/$messageId'
     | '/scan/$shortCode'
+    | '/_authenticated/analytics/history'
+    | '/_authenticated/analytics/reports'
+    | '/_authenticated/commerce/funnel'
+    | '/_authenticated/commerce/pricing'
+    | '/_authenticated/commerce/roi'
+    | '/_authenticated/intelligence/forecasting'
+    | '/_authenticated/intelligence/insights'
+    | '/_authenticated/intelligence/intent'
+    | '/_authenticated/intelligence/trends'
     | '/_authenticated/notifications/$campaignId'
     | '/_authenticated/notifications/new'
+    | '/_authenticated/organisation/roles'
     | '/_authenticated/products/$productId'
+    | '/_authenticated/products/compare'
     | '/_authenticated/notifications/'
     | '/_authenticated/products/'
     | '/api/public/hooks/intent-tick'
@@ -550,6 +705,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/alerts': {
+      id: '/_authenticated/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AuthenticatedAlertsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/products/': {
       id: '/_authenticated/products/'
       path: '/'
@@ -564,12 +726,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotificationsIndexRouteImport
       parentRoute: typeof AuthenticatedNotificationsRoute
     }
+    '/_authenticated/products/compare': {
+      id: '/_authenticated/products/compare'
+      path: '/compare'
+      fullPath: '/products/compare'
+      preLoaderRoute: typeof AuthenticatedProductsCompareRouteImport
+      parentRoute: typeof AuthenticatedProductsRoute
+    }
     '/_authenticated/products/$productId': {
       id: '/_authenticated/products/$productId'
       path: '/$productId'
       fullPath: '/products/$productId'
       preLoaderRoute: typeof AuthenticatedProductsProductIdRouteImport
       parentRoute: typeof AuthenticatedProductsRoute
+    }
+    '/_authenticated/organisation/roles': {
+      id: '/_authenticated/organisation/roles'
+      path: '/organisation/roles'
+      fullPath: '/organisation/roles'
+      preLoaderRoute: typeof AuthenticatedOrganisationRolesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/notifications/new': {
       id: '/_authenticated/notifications/new'
@@ -584,6 +760,69 @@ declare module '@tanstack/react-router' {
       fullPath: '/notifications/$campaignId'
       preLoaderRoute: typeof AuthenticatedNotificationsCampaignIdRouteImport
       parentRoute: typeof AuthenticatedNotificationsRoute
+    }
+    '/_authenticated/intelligence/trends': {
+      id: '/_authenticated/intelligence/trends'
+      path: '/trends'
+      fullPath: '/intelligence/trends'
+      preLoaderRoute: typeof AuthenticatedIntelligenceTrendsRouteImport
+      parentRoute: typeof AuthenticatedIntelligenceRoute
+    }
+    '/_authenticated/intelligence/intent': {
+      id: '/_authenticated/intelligence/intent'
+      path: '/intent'
+      fullPath: '/intelligence/intent'
+      preLoaderRoute: typeof AuthenticatedIntelligenceIntentRouteImport
+      parentRoute: typeof AuthenticatedIntelligenceRoute
+    }
+    '/_authenticated/intelligence/insights': {
+      id: '/_authenticated/intelligence/insights'
+      path: '/insights'
+      fullPath: '/intelligence/insights'
+      preLoaderRoute: typeof AuthenticatedIntelligenceInsightsRouteImport
+      parentRoute: typeof AuthenticatedIntelligenceRoute
+    }
+    '/_authenticated/intelligence/forecasting': {
+      id: '/_authenticated/intelligence/forecasting'
+      path: '/forecasting'
+      fullPath: '/intelligence/forecasting'
+      preLoaderRoute: typeof AuthenticatedIntelligenceForecastingRouteImport
+      parentRoute: typeof AuthenticatedIntelligenceRoute
+    }
+    '/_authenticated/commerce/roi': {
+      id: '/_authenticated/commerce/roi'
+      path: '/commerce/roi'
+      fullPath: '/commerce/roi'
+      preLoaderRoute: typeof AuthenticatedCommerceRoiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/commerce/pricing': {
+      id: '/_authenticated/commerce/pricing'
+      path: '/commerce/pricing'
+      fullPath: '/commerce/pricing'
+      preLoaderRoute: typeof AuthenticatedCommercePricingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/commerce/funnel': {
+      id: '/_authenticated/commerce/funnel'
+      path: '/commerce/funnel'
+      fullPath: '/commerce/funnel'
+      preLoaderRoute: typeof AuthenticatedCommerceFunnelRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/analytics/reports': {
+      id: '/_authenticated/analytics/reports'
+      path: '/reports'
+      fullPath: '/analytics/reports'
+      preLoaderRoute: typeof AuthenticatedAnalyticsReportsRouteImport
+      parentRoute: typeof AuthenticatedAnalyticsRoute
+    }
+    '/_authenticated/analytics/history': {
+      id: '/_authenticated/analytics/history'
+      path: '/history'
+      fullPath: '/analytics/history'
+      preLoaderRoute: typeof AuthenticatedAnalyticsHistoryRouteImport
+      parentRoute: typeof AuthenticatedAnalyticsRoute
     }
     '/api/public/scan/interest': {
       id: '/api/public/scan/interest'
@@ -616,6 +855,44 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAnalyticsRouteChildren {
+  AuthenticatedAnalyticsHistoryRoute: typeof AuthenticatedAnalyticsHistoryRoute
+  AuthenticatedAnalyticsReportsRoute: typeof AuthenticatedAnalyticsReportsRoute
+}
+
+const AuthenticatedAnalyticsRouteChildren: AuthenticatedAnalyticsRouteChildren =
+  {
+    AuthenticatedAnalyticsHistoryRoute: AuthenticatedAnalyticsHistoryRoute,
+    AuthenticatedAnalyticsReportsRoute: AuthenticatedAnalyticsReportsRoute,
+  }
+
+const AuthenticatedAnalyticsRouteWithChildren =
+  AuthenticatedAnalyticsRoute._addFileChildren(
+    AuthenticatedAnalyticsRouteChildren,
+  )
+
+interface AuthenticatedIntelligenceRouteChildren {
+  AuthenticatedIntelligenceForecastingRoute: typeof AuthenticatedIntelligenceForecastingRoute
+  AuthenticatedIntelligenceInsightsRoute: typeof AuthenticatedIntelligenceInsightsRoute
+  AuthenticatedIntelligenceIntentRoute: typeof AuthenticatedIntelligenceIntentRoute
+  AuthenticatedIntelligenceTrendsRoute: typeof AuthenticatedIntelligenceTrendsRoute
+}
+
+const AuthenticatedIntelligenceRouteChildren: AuthenticatedIntelligenceRouteChildren =
+  {
+    AuthenticatedIntelligenceForecastingRoute:
+      AuthenticatedIntelligenceForecastingRoute,
+    AuthenticatedIntelligenceInsightsRoute:
+      AuthenticatedIntelligenceInsightsRoute,
+    AuthenticatedIntelligenceIntentRoute: AuthenticatedIntelligenceIntentRoute,
+    AuthenticatedIntelligenceTrendsRoute: AuthenticatedIntelligenceTrendsRoute,
+  }
+
+const AuthenticatedIntelligenceRouteWithChildren =
+  AuthenticatedIntelligenceRoute._addFileChildren(
+    AuthenticatedIntelligenceRouteChildren,
+  )
+
 interface AuthenticatedNotificationsRouteChildren {
   AuthenticatedNotificationsCampaignIdRoute: typeof AuthenticatedNotificationsCampaignIdRoute
   AuthenticatedNotificationsNewRoute: typeof AuthenticatedNotificationsNewRoute
@@ -637,11 +914,13 @@ const AuthenticatedNotificationsRouteWithChildren =
 
 interface AuthenticatedProductsRouteChildren {
   AuthenticatedProductsProductIdRoute: typeof AuthenticatedProductsProductIdRoute
+  AuthenticatedProductsCompareRoute: typeof AuthenticatedProductsCompareRoute
   AuthenticatedProductsIndexRoute: typeof AuthenticatedProductsIndexRoute
 }
 
 const AuthenticatedProductsRouteChildren: AuthenticatedProductsRouteChildren = {
   AuthenticatedProductsProductIdRoute: AuthenticatedProductsProductIdRoute,
+  AuthenticatedProductsCompareRoute: AuthenticatedProductsCompareRoute,
   AuthenticatedProductsIndexRoute: AuthenticatedProductsIndexRoute,
 }
 
@@ -651,11 +930,12 @@ const AuthenticatedProductsRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
+  AuthenticatedAlertsRoute: typeof AuthenticatedAlertsRoute
+  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRouteWithChildren
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
-  AuthenticatedIntelligenceRoute: typeof AuthenticatedIntelligenceRoute
+  AuthenticatedIntelligenceRoute: typeof AuthenticatedIntelligenceRouteWithChildren
   AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRouteWithChildren
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
@@ -665,14 +945,19 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStoresRoute: typeof AuthenticatedStoresRoute
   AuthenticatedWatchlistsRoute: typeof AuthenticatedWatchlistsRoute
+  AuthenticatedCommerceFunnelRoute: typeof AuthenticatedCommerceFunnelRoute
+  AuthenticatedCommercePricingRoute: typeof AuthenticatedCommercePricingRoute
+  AuthenticatedCommerceRoiRoute: typeof AuthenticatedCommerceRoiRoute
+  AuthenticatedOrganisationRolesRoute: typeof AuthenticatedOrganisationRolesRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
+  AuthenticatedAlertsRoute: AuthenticatedAlertsRoute,
+  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRouteWithChildren,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
-  AuthenticatedIntelligenceRoute: AuthenticatedIntelligenceRoute,
+  AuthenticatedIntelligenceRoute: AuthenticatedIntelligenceRouteWithChildren,
   AuthenticatedIntentRoute: AuthenticatedIntentRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRouteWithChildren,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
@@ -682,6 +967,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStoresRoute: AuthenticatedStoresRoute,
   AuthenticatedWatchlistsRoute: AuthenticatedWatchlistsRoute,
+  AuthenticatedCommerceFunnelRoute: AuthenticatedCommerceFunnelRoute,
+  AuthenticatedCommercePricingRoute: AuthenticatedCommercePricingRoute,
+  AuthenticatedCommerceRoiRoute: AuthenticatedCommerceRoiRoute,
+  AuthenticatedOrganisationRolesRoute: AuthenticatedOrganisationRolesRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

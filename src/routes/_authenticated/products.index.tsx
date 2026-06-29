@@ -180,17 +180,48 @@ function ProductsListPage() {
         </div>
       ) : rows.length === 0 ? (
         <EmptyState
+          size="lg"
           icon={Package}
-          title="No products match"
+          title={
+            search.search || search.status !== "all" || search.category || search.store || search.promo || search.lowStock
+              ? "No products match your filters"
+              : "Your catalogue is empty"
+          }
           description={
-            search.search || search.status !== "all"
-              ? "Try clearing filters or search."
-              : "Add your first product to start tagging."
+            search.search || search.status !== "all" || search.category || search.store || search.promo || search.lowStock
+              ? "Try clearing filters or refining your search — your full catalogue is one click away."
+              : "Add your first product to start generating QR tags, tracking intent and recovering lost sales."
           }
           action={
             canManage ? (
-              <Button onClick={() => setCreateOpen(true)} size="sm">
-                <Plus className="mr-2 h-4 w-4" /> Add product
+              <Button
+                onClick={() => setCreateOpen(true)}
+                className="bg-[color:var(--mint)] text-[color:var(--mint-foreground)] hover:bg-[color:var(--mint)]/90"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add your first product
+              </Button>
+            ) : undefined
+          }
+          secondaryAction={
+            (search.search || search.status !== "all" || search.category || search.store || search.promo || search.lowStock) ? (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  navigate({
+                    search: () => ({
+                      search: "",
+                      status: "all" as const,
+                      category: null,
+                      store: null,
+                      promo: false,
+                      lowStock: false,
+                      sort: "recent" as const,
+                      page: 1,
+                    }),
+                  })
+                }
+              >
+                Clear filters
               </Button>
             ) : undefined
           }
