@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { CommandPalette } from "@/components/command-palette";
 import { Button } from "@/components/ui/button";
 import { Command as CommandIcon } from "lucide-react";
+import { SectionTabs } from "@/components/section-tabs";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -46,6 +47,7 @@ function AuthenticatedLayout() {
             </div>
           </header>
           <CommandPalette />
+          <SectionTabs />
           <main className="flex-1 px-4 py-8 sm:px-8 sm:py-10">
             <div className="mx-auto w-full max-w-7xl">
               <Outlet />
