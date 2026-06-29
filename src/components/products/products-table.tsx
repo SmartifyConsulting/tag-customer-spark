@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatMoney } from "@/lib/format";
+import { IntentBadge } from "@/components/intent/intent-badge";
 
 export type ProductRow = {
   id: string;
@@ -170,6 +171,14 @@ export function ProductsTable({
                   >
                     {r.stock_qty}
                   </span>
+                </TableCell>
+                <TableCell className="hidden xl:table-cell">
+                  <IntentBadge
+                    score={r.intent_score ?? 50}
+                    trend={(r.intent_score_trend as any) ?? "stable"}
+                    confidence={r.intent_score_confidence ?? 0}
+                    size="sm"
+                  />
                 </TableCell>
                 <TableCell>
                   <StatusBadge value={r.status} />
