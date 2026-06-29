@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { TagLogo } from "@/components/tag-logo";
+
 import { ArrowRight, QrCode, MessageCircle, TrendingUp, Sparkles, Bell, BarChart3 } from "lucide-react";
 import logoAsset from "@/assets/tag-logo.png.asset.json";
 import heroLogo from "@/assets/tag-logo-hero.png.asset.json";
