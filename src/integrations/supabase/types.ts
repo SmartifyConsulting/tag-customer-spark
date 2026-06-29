@@ -1601,6 +1601,204 @@ export type Database = {
         }
         Relationships: []
       }
+      roi_attributions: {
+        Row: {
+          attributed_at: string
+          attributed_revenue_cents: number
+          campaign_id: string | null
+          cost_cents: number
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          id: string
+          margin_cents: number
+          model: Database["public"]["Enums"]["roi_attribution_model"]
+          notification_id: string | null
+          product_id: string | null
+          qr_tag_id: string | null
+          retailer_id: string
+          sales_recovery_id: string
+          status: string
+          touchpoint: Database["public"]["Enums"]["roi_touchpoint"]
+          updated_at: string
+          watchlist_id: string | null
+        }
+        Insert: {
+          attributed_at?: string
+          attributed_revenue_cents?: number
+          campaign_id?: string | null
+          cost_cents?: number
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          margin_cents?: number
+          model?: Database["public"]["Enums"]["roi_attribution_model"]
+          notification_id?: string | null
+          product_id?: string | null
+          qr_tag_id?: string | null
+          retailer_id: string
+          sales_recovery_id: string
+          status?: string
+          touchpoint: Database["public"]["Enums"]["roi_touchpoint"]
+          updated_at?: string
+          watchlist_id?: string | null
+        }
+        Update: {
+          attributed_at?: string
+          attributed_revenue_cents?: number
+          campaign_id?: string | null
+          cost_cents?: number
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          margin_cents?: number
+          model?: Database["public"]["Enums"]["roi_attribution_model"]
+          notification_id?: string | null
+          product_id?: string | null
+          qr_tag_id?: string | null
+          retailer_id?: string
+          sales_recovery_id?: string
+          status?: string
+          touchpoint?: Database["public"]["Enums"]["roi_touchpoint"]
+          updated_at?: string
+          watchlist_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roi_attributions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "notification_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roi_attributions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roi_attributions_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notification_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roi_attributions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roi_attributions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "roi_attributions_qr_tag_id_fkey"
+            columns: ["qr_tag_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["qr_tag_id"]
+          },
+          {
+            foreignKeyName: "roi_attributions_qr_tag_id_fkey"
+            columns: ["qr_tag_id"]
+            isOneToOne: false
+            referencedRelation: "qr_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roi_attributions_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "roi_attributions_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roi_attributions_sales_recovery_id_fkey"
+            columns: ["sales_recovery_id"]
+            isOneToOne: true
+            referencedRelation: "sales_recoveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roi_attributions_watchlist_id_fkey"
+            columns: ["watchlist_id"]
+            isOneToOne: false
+            referencedRelation: "watchlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roi_settings: {
+        Row: {
+          attribution_window_hours: number
+          cost_per_message_cents: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          default_margin_pct: number
+          model: Database["public"]["Enums"]["roi_attribution_model"]
+          retailer_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attribution_window_hours?: number
+          cost_per_message_cents?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          default_margin_pct?: number
+          model?: Database["public"]["Enums"]["roi_attribution_model"]
+          retailer_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attribution_window_hours?: number
+          cost_per_message_cents?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          default_margin_pct?: number
+          model?: Database["public"]["Enums"]["roi_attribution_model"]
+          retailer_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roi_settings_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: true
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "roi_settings_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: true
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_recoveries: {
         Row: {
           amount_cents: number
@@ -1891,6 +2089,155 @@ export type Database = {
         }
         Relationships: []
       }
+      watchlist_events: {
+        Row: {
+          created_at: string
+          id: string
+          notification_id: string | null
+          payload: Json
+          retailer_id: string
+          status: string
+          trigger: Database["public"]["Enums"]["watchlist_trigger"]
+          watchlist_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notification_id?: string | null
+          payload?: Json
+          retailer_id: string
+          status?: string
+          trigger: Database["public"]["Enums"]["watchlist_trigger"]
+          watchlist_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notification_id?: string | null
+          payload?: Json
+          retailer_id?: string
+          status?: string
+          trigger?: Database["public"]["Enums"]["watchlist_trigger"]
+          watchlist_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watchlist_events_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notification_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watchlist_events_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "watchlist_events_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watchlist_events_watchlist_id_fkey"
+            columns: ["watchlist_id"]
+            isOneToOne: false
+            referencedRelation: "watchlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      watchlists: {
+        Row: {
+          channel: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          expires_at: string | null
+          fired_count: number
+          id: string
+          last_fired_at: string | null
+          product_id: string
+          retailer_id: string
+          status: Database["public"]["Enums"]["watchlist_status"]
+          target_price_cents: number | null
+          trigger: Database["public"]["Enums"]["watchlist_trigger"]
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          expires_at?: string | null
+          fired_count?: number
+          id?: string
+          last_fired_at?: string | null
+          product_id: string
+          retailer_id: string
+          status?: Database["public"]["Enums"]["watchlist_status"]
+          target_price_cents?: number | null
+          trigger?: Database["public"]["Enums"]["watchlist_trigger"]
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          expires_at?: string | null
+          fired_count?: number
+          id?: string
+          last_fired_at?: string | null
+          product_id?: string
+          retailer_id?: string
+          status?: Database["public"]["Enums"]["watchlist_status"]
+          target_price_cents?: number | null
+          trigger?: Database["public"]["Enums"]["watchlist_trigger"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watchlists_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watchlists_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watchlists_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "watchlists_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "watchlists_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       public_scan_view: {
@@ -1965,6 +2312,10 @@ export type Database = {
         Args: { _product_id: string }
         Returns: undefined
       }
+      run_roi_attribution_sweep: {
+        Args: { _retailer_id?: string }
+        Returns: number
+      }
     }
     Enums: {
       ai_insight_kind:
@@ -2013,9 +2364,18 @@ export type Database = {
       recovery_status: "attributed" | "pending" | "rejected"
       redemption_status: "issued" | "redeemed" | "expired" | "void"
       retailer_status: "active" | "suspended" | "cancelled"
+      roi_attribution_model: "last_touch" | "first_touch" | "linear"
+      roi_touchpoint: "scan" | "notification" | "watchlist" | "manual"
       staff_status: "active" | "invited" | "disabled"
       store_status: "active" | "closed" | "pending"
       subscription_status: "trialing" | "active" | "past_due" | "cancelled"
+      watchlist_status: "active" | "paused" | "fired" | "expired" | "cancelled"
+      watchlist_trigger:
+        | "on_sale"
+        | "back_in_stock"
+        | "low_stock"
+        | "price_drop_below"
+        | "any_update"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2194,9 +2554,19 @@ export const Constants = {
       recovery_status: ["attributed", "pending", "rejected"],
       redemption_status: ["issued", "redeemed", "expired", "void"],
       retailer_status: ["active", "suspended", "cancelled"],
+      roi_attribution_model: ["last_touch", "first_touch", "linear"],
+      roi_touchpoint: ["scan", "notification", "watchlist", "manual"],
       staff_status: ["active", "invited", "disabled"],
       store_status: ["active", "closed", "pending"],
       subscription_status: ["trialing", "active", "past_due", "cancelled"],
+      watchlist_status: ["active", "paused", "fired", "expired", "cancelled"],
+      watchlist_trigger: [
+        "on_sale",
+        "back_in_stock",
+        "low_stock",
+        "price_drop_below",
+        "any_update",
+      ],
     },
   },
 } as const
