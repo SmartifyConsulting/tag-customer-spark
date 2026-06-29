@@ -1,93 +1,92 @@
-## Executive Dashboard — Build Plan
 
-Note on the referenced skill: `sign-up-and-authenticate` covers auth flows (forgot password, password visibility, etc.). Those are already in place from the scaffolding. The dashboard work below sits inside the authenticated layout, so the skill's rules continue to apply but no auth code changes here.
+## Products Module + Per-Product QR Codes
 
-### Data layer
+Build a complete Products module scoped to the signed-in user's retailer, plus per-product QR generation, printable PDF cards, and scan tracking. Stripe-meets-Notion styling, reusing existing dashboard components.
 
-Single TanStack server function `getDashboardOverview()` (under `src/lib/dashboard.functions.ts`) using `requireSupabaseAuth` so RLS scopes everything to the caller's retailer automatically. Returns one serializable DTO:
+### 1. Backend (database + storage)
 
-```ts
-{
-  kpis: {
-    todaysScans, customersWaiting, revenueRecoveredCents, currency,
-    notificationsSent, notificationConversionPct,
-    lowStockCount, onPromotionCount,
-  },
-  topProducts: [{ id, name, interestCount, stockQty }],
-  lowStockProducts: [{ id, name, stockQty, lowStockThreshold }],
-  promotionProducts: [{ id, name, discountPct, endsAt }],
-  scansDaily: [{ date, count }],         // last 14 days
-  scansWeekly: [{ weekStart, count }],   // last 12 weeks
-  scansMonthly: [{ month, count }],      // last 12 months
-  customerGrowth: [{ date, total }],     // cumulative, last 30 days
-  notificationPerf: [{ date, sent, delivered, read }], // last 14 days
-  recentActivity: [                       // last 15 events
-    { type: 'scan'|'opt_in'|'notification'|'recovery', at, label, sublabel }
-  ],
-}
-```
+**Storage buckets** (created via storage tool):
+- `product-images` — public read, authenticated write. RLS on `storage.objects` restricts insert/update/delete to users who `belongs_to_retailer` for the path prefix `{retailer_id}/{product_id}/...`.
+- `retailer-logos` — public read; admin/retail_admin write under `{retailer_id}/...`.
 
-Implementation: small set of grouped SQL queries via the supabase JS client (interests grouped by created_at::date for scans; customers count where opt-in within 30d for growth; notification_history by status; sales_recoveries sum; promotion_events where status='active'; products where stock_qty <= low_stock_threshold). All scoped by `auth.uid()`'s retailer through RLS.
+**Schema migration**:
+- `products`: add `brand text`, `color text`, `size text`, `images jsonb default '[]'`, `promotion_start_date timestamptz`, `promotion_end_date timestamptz`. Existing fields kept.
+- `retailers`: add `logo_url text` if missing.
+- `product_status`: ensure `archived` value exists.
+- Reuse existing `qr_tags` table; add columns if missing: `template text default 'classic'`, `short_code text unique`, `version int default 1`, `is_active boolean default true`, `regenerated_from uuid references qr_tags(id)`.
+- Extend `qr_scans` (or create if absent) with: `qr_tag_id`, `product_id`, `retailer_id`, `store_id`, `scanned_at timestamptz`, `device_type text`, `user_agent text`, `ip_hash text`, `referrer text`, `customer_id` (nullable). Indexes on `(retailer_id, scanned_at desc)`, `(qr_tag_id)`, `(product_id)`.
+- Indexes: `products(retailer_id, status)`, `products(retailer_id, name)`, `products(retailer_id, sku)`, `qr_tags(product_id, is_active)`.
+- RLS: retailer-scoped via existing helpers. retail_admin / store_manager full CRUD on products + qr_tags; sales_assistant read-only. `qr_scans` insert open to `anon` (scan endpoint is public), select retailer-scoped.
 
-Conversion = `read / sent` for the trailing 14 days.
+### 2. Server functions
 
-### Route + query wiring
+`src/lib/products.functions.ts` (auth required):
+- `listProducts({ search, status, categoryId, storeId, promotion, lowStock, sort, page, pageSize })` — paginated rows + total + facet counts.
+- `getProduct({ id })` — product + category + store + active qr_tag + analytics summary.
+- `getProductFormOptions()` — categories + stores for current retailer.
+- `createProduct` / `updateProduct` / `archiveProduct` / `deleteProduct` — Zod-validated.
+- `createProductImageUploadUrl({ productId, filename, contentType })` — signed upload URL (admin client loaded inside handler).
+- `setProductImages({ id, images })` — persist ordered array.
 
-`src/routes/_authenticated/dashboard.tsx`:
-- `loader` calls `context.queryClient.ensureQueryData(dashboardOverviewQueryOptions)`.
-- Component uses `useSuspenseQuery`.
-- Adds `errorComponent`, `notFoundComponent`, `pendingComponent` (renders the same skeleton grid).
-- `head()` sets title + meta description.
+`src/lib/qr.functions.ts` (auth required):
+- `getProductQr({ productId })` — current active tag (short_code, version, scan URL, template).
+- `regenerateProductQr({ productId, template? })` — deactivates current tag, inserts new one with new `short_code` + incremented `version`, sets `regenerated_from`.
+- `bulkGenerateQrs({ productIds | filter, template })` — generate/regenerate for many products in one call; returns summary.
+- `listProductScans({ productId, range, page })` — paginated scan log with date/time, store, device, qr_tag version.
 
-`queryOptions` keyed `['dashboard','overview']`, staleTime 60s.
+`src/lib/qr-pdf.functions.ts` (auth required):
+- `renderQrPdf({ productIds, template, layout })` — server-side PDF using `pdf-lib` (Worker-compatible). Generates A4 pages laid out by template (see §4). Returns `{ url }` to a short-lived signed PDF in a private `qr-exports` bucket, or streams base64.
 
-### UI composition
+Public scan endpoint (server route, no auth):
+- `src/routes/api/public/s/$shortCode.ts` — `GET`: look up active `qr_tag` by `short_code`, insert `qr_scans` row (parse UA → device_type, hash IP, capture referrer, infer store from tag), then 302 redirect to the customer-facing opt-in page `/scan/$shortCode`. Same prefix bypasses published-site auth; verifies nothing because scans are intentionally public.
 
-`PageHeader` + a responsive grid built from these new components under `src/components/dashboard/`:
+### 3. Routes
 
-1. **KpiCard** — label, big value, trend delta vs. previous period, tiny sparkline (recharts AreaChart). Used 8x:
-   - Today's scans, Customers waiting (active interests), Revenue recovered, Notifications sent, Notification conversion, Low stock count, On promotion count, Top product (compact variant).
-2. **ScanTrendsCard** — Tabs (Daily / Weekly / Monthly) over a single `ChartContainer` AreaChart, switching dataset. Counts as the three required scan charts.
-3. **CustomerGrowthCard** — Line chart, cumulative subscribers, last 30 days.
-4. **TopProductsCard** — Horizontal bar chart of top 5 products by interest count, with product name + count.
-5. **NotificationPerformanceCard** — Stacked bar (sent vs delivered vs read) over 14 days.
-6. **LowStockCard** — List with stock pill (orange when <= threshold, red at 0) and "Notify waitlist" affordance (visual only this step).
-7. **PromotionsCard** — List of active promotions with discount % and end countdown.
-8. **RecentActivityCard** — Timeline list, color-coded icon per event type.
+- `src/routes/_authenticated/products.tsx` — pathless layout wrapper with `<Outlet />`.
+- `src/routes/_authenticated/products.index.tsx` — list (`/products`).
+- `src/routes/_authenticated/products.$productId.tsx` — detail (`/products/:productId`) with tabs: Overview, QR Code, Scans, Analytics.
+- (Customer-facing `/scan/$shortCode` opt-in page is out of scope for this turn — endpoint exists, full opt-in lives with Customers/Notifications modules.)
 
-### Skeletons, empty states, animations
+Create/edit uses a Shadcn Dialog on the list page (faster, in-context) — happy to switch to dedicated routes if preferred.
 
-- `DashboardSkeleton` — mirrors the real grid using `Skeleton` blocks; used by both `pendingComponent` and `<Suspense fallback>` patterns.
-- `EmptyState` — small reusable component (icon + title + helper text + optional CTA) used inside any card whose dataset is empty (e.g. no scans today, no low-stock products).
-- Animations:
-  - Cards animate in with `animate-fade-in` + a 60ms cascading delay via inline style.
-  - KPI values count up using a tiny `useCountUp` hook (no extra dep).
-  - Hover lift: `hover-scale` utility on interactive cards only (KPI + product/promotion list rows).
+URL search params (Zod + `fallback`): `search`, `status`, `category`, `store`, `promo`, `lowStock`, `sort`, `page`, `pageSize`.
 
-### Design tokens
+### 4. UI components
 
-Reuses existing tokens (Navy primary, Emerald success, Orange warning). Adds two chart-specific tokens in `src/styles.css` only if needed: `--chart-1` … `--chart-5` mapped to existing palette (primary, success, warning, muted-foreground, accent). Verifies dark mode contrast.
+`src/components/products/`:
+- `ProductsTable` — thumbnail, name+SKU, brand, category, store, price (strike-through on sale), stock badge (emerald/orange/red), status badge, row actions.
+- `ProductsToolbar` — debounced search, status/category/store filters, promo & low-stock toggles, "Add product", "Bulk QR PDF".
+- `ProductsPagination` — page size + prev/next.
+- `ProductFormDialog` — react-hook-form + Zod. Sections: Basics, Pricing, Inventory, Variants (colour/size), Promotion (date range picker), Images.
+- `ProductImageUploader` — signed-URL upload, progress, reorder, primary image.
+- `ProductDetailHeader` — gallery + key facts + actions.
+- `ProductAnalyticsCards` — scans, unique customers interested, notifications sent, recoveries + 30-day scan area chart + recent activity.
 
-### Files added/changed
+`src/components/qr/`:
+- `ProductQrPanel` (Overview tab) — current QR preview, short URL, version, copy/download PNG, Regenerate (confirm dialog), Template picker, "Download printable PDF".
+- `QrTemplatePicker` — choose template: **Classic**, **Minimal**, **Bold Promo**, **Compact** (4 templates).
+- `BulkQrDialog` — pick products (filter-driven or checkbox selection), template, cards-per-A4 page (1, 2, 4, 8), then download.
+- `ScansTable` — date, time, store, device, QR version, short_code; CSV export.
+- Loading skeletons + empty states reusing `empty-state.tsx`.
 
-- `src/lib/dashboard.functions.ts` (new) — `getDashboardOverview` server fn.
-- `src/lib/dashboard.ts` (new) — `dashboardOverviewQueryOptions` + shared types.
-- `src/components/dashboard/kpi-card.tsx`
-- `src/components/dashboard/scan-trends-card.tsx`
-- `src/components/dashboard/customer-growth-card.tsx`
-- `src/components/dashboard/top-products-card.tsx`
-- `src/components/dashboard/notification-performance-card.tsx`
-- `src/components/dashboard/low-stock-card.tsx`
-- `src/components/dashboard/promotions-card.tsx`
-- `src/components/dashboard/recent-activity-card.tsx`
-- `src/components/dashboard/dashboard-skeleton.tsx`
-- `src/components/empty-state.tsx`
-- `src/hooks/use-count-up.ts`
-- `src/routes/_authenticated/dashboard.tsx` — rewritten to compose the above.
-- `src/styles.css` — chart token additions only if needed.
+### 5. Printable QR PDF
 
-### Out of scope (deliberate)
+- Server-side PDF via `pdf-lib` (Worker-compatible). A4 page size, configurable layout (1 / 2 / 4 / 8 cards per page) with crop marks between cards.
+- Each card renders: retailer logo (from `retailers.logo_url`), primary product image, product name, QR code (generated with `qrcode` npm package → PNG bytes), short message.
+- Default short message: *"Love this item? Scan here to receive WhatsApp updates if the price drops."* — editable per generation via `BulkQrDialog`.
+- Templates differ in layout, typography, accent block, and message placement; all share the same data.
+- QR payload = `https://<site>/api/public/s/<short_code>` so every scan hits the tracking endpoint.
 
-- Wiring "Notify waitlist", clicking through to product detail, date-range picker, CSV export — placeholders/links only.
-- Realtime updates; relies on 60s `staleTime` + manual refresh.
-- Per-store filtering — added in a later pass when Stores UI lands.
+### 6. Scan tracking
+
+- Every redirect through `/api/public/s/$shortCode` inserts one `qr_scans` row capturing date/time, store (resolved from tag), device (UA parsing), qr_tag id + version.
+- Detail page → **Scans** tab shows the log; **Analytics** tab shows scans over time + device breakdown + per-store split.
+
+### 7. Validation & permissions
+
+- Zod schemas in `src/lib/products.schemas.ts` (shared between form resolver and server `inputValidator`).
+- Super admin / retail admin / store manager: full CRUD + QR ops. Sales assistant: read-only (action buttons hidden, server fns reject 403).
+
+### Out of scope (this turn)
+
+Customer-facing `/scan/$shortCode` opt-in screen, WhatsApp send pipeline, CSV/bulk product import — separate modules.
