@@ -7,7 +7,7 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-10">
       <div className="w-full max-w-md space-y-6">
         <div className="flex justify-center">
-          <TagLogo />
+          <TagLogo withWordmark={false} className="[&_img]:h-40 [&_img]:w-40" />
         </div>
         <Card className="rounded-2xl border-border/60 p-6 sm:p-8 shadow-sm">
           <div className="mb-6 space-y-1 text-center">
