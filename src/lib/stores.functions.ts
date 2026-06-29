@@ -84,7 +84,7 @@ export const upsertStore = createServerFn({ method: "POST" })
     if (!retailerId) throw new Error("No retailer");
     const { id, ...payload } = data;
     if (id) {
-      const { error } = await supabase.from("stores").update(payload).eq("id", id);
+      const { error } = await supabase.from("stores").update(payload as any).eq("id", id);
       if (error) throw new Error(error.message);
     } else {
       const { error } = await supabase
