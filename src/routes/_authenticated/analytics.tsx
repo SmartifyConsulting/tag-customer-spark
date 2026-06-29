@@ -61,10 +61,12 @@ function AnalyticsPage() {
     );
   }
 
-  const t = data.totals;
+  const analytics = data;
+  const t = analytics.totals;
 
   function exportCSV() {
-    const rows = data.campaignPerformance.map((c) => ({
+    const rows = analytics.campaignPerformance.map((c) => ({
+
       Campaign: c.title, Type: c.type, Sent: c.sent, Delivered: c.delivered, Read: c.read, Clicked: c.clicked, Redeemed: c.redeemed, CTR: `${c.ctr}%`,
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
