@@ -46,6 +46,9 @@ export type ProductRow = {
   image_url: string | null;
   category: { name: string } | null;
   store: { name: string } | null;
+  intent_score?: number | null;
+  intent_score_trend?: "rising" | "falling" | "stable" | null;
+  intent_score_confidence?: number | null;
 };
 
 export function ProductsTable({
@@ -93,6 +96,7 @@ export function ProductsTable({
             <TableHead className="hidden lg:table-cell">Store</TableHead>
             <TableHead className="text-right">Price</TableHead>
             <TableHead className="text-right">Stock</TableHead>
+            <TableHead className="hidden xl:table-cell">Intent</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-10" />
           </TableRow>
