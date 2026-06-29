@@ -1,17 +1,18 @@
-The five sidebar items currently point at URLs that don't always match the section the SectionTabs strip recognizes, so several tabbed sub-pages aren't reachable from the sidebar (e.g. clicking "Engagement" goes to `/alerts`, which is in the Dashboard section, hiding the Customers/Products/Watchlists/Compare tabs).
-
-Realign the sidebar so each item lands on its section's root and the full tab strip (and therefore every screen) reappears.
+Restyle the SectionTabs strip site-wide (used by every section, including Engagement) to match the user's spec, and tighten the Engagement tab set so all its existing screens (Customers, Products & QR Tags, Watchlists, Compare) are surfaced prominently. All target screens already exist under `src/routes/_authenticated/` — no new routes needed.
 
 ## Changes
 
-**`src/components/app-sidebar.tsx`** — update the 5 `NAV` entries to use each section's `rootPath` and broaden `match` to keep the correct item active across all child routes:
+**`src/components/section-tabs.tsx`**
+- Replace the current understated underline tabs with prominent rounded pill tabs.
+  - Active pill: solid mint/green background (`bg-[color:var(--mint)]`), white text, medium weight, subtle shadow — no glow halo.
+  - Inactive pill: transparent background, muted foreground, hover → light mint tint + foreground text.
+  - Increase padding (`px-5 py-2.5`), font weight, and gap so tabs read as primary navigation rather than a thin strip.
+  - Remove the mint underline span and its `shadow-[0_0_10px_...]` glow entirely.
+  - Wrap row in a soft surface card (`rounded-full bg-muted/40 p-1`) so the pill bar feels like a control, not a divider.
+- Keep sticky behavior, `findActiveSection` / `findActiveTab` logic, and Link routing untouched.
 
-1. Dashboard → `/dashboard` — match `/dashboard`, `/alerts`, `/inbox`, `/notifications`
-2. Engagement → `/customers` — match `/customers`, `/products`, `/qr-tags`, `/watchlists`
-3. Intelligence → `/intelligence` — match `/intelligence`, `/intent`
-4. Performance & ROI → `/roi` — match `/roi`, `/commerce`, `/analytics`
-5. Management → `/stores` — match `/stores`, `/staff`, `/organisation`, `/settings`
+**`src/components/section-tabs.tsx` — Engagement tab order**
+- Reorder Engagement tabs for clarity: Customers · Products · QR Tags · Watchlists · Compare.
+  (Split the current combined "QR Tags & Catalogue" into two tabs since both routes exist.)
 
-No changes to `section-tabs.tsx` (already exposes every screen). No new routes — all referenced screens already exist under `src/routes/_authenticated/`.
-
-Result: every sidebar click reveals the correct horizontal tab strip, and every screen (Customers, Products, QR Tags, Watchlists, Compare, Intent Engine, Insights, Forecasting, Trends, ROI, Pricing, Funnel, Analytics, History, Stores, Staff, Permissions, Settings, Alerts) is reachable in two clicks.
+No backend, no new routes, no other sections modified.

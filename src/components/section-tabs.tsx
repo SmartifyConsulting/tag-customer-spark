@@ -25,7 +25,8 @@ export const SECTIONS: SectionDef[] = [
     rootPath: "/customers",
     tabs: [
       { label: "Customers", to: "/customers", match: ["/customers"] },
-      { label: "QR Tags & Catalogue", to: "/products", match: ["/products", "/qr-tags"] },
+      { label: "Products", to: "/products", match: ["/products"] },
+      { label: "QR Tags", to: "/qr-tags", match: ["/qr-tags"] },
       { label: "Watchlists", to: "/watchlists", match: ["/watchlists"] },
       { label: "Compare", to: "/products/compare", match: ["/products/compare"] },
     ],
