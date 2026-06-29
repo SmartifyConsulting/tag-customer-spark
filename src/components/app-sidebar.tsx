@@ -5,6 +5,7 @@ import {
   QrCode,
   Users,
   Bell,
+  Inbox,
   BarChart3,
   Store,
   UserCog,
@@ -30,9 +31,11 @@ const mainNav = [
   { title: "Products", url: "/products", icon: Package },
   { title: "QR Tags", url: "/qr-tags", icon: QrCode },
   { title: "Customers", url: "/customers", icon: Users },
+  { title: "Inbox", url: "/inbox", icon: Inbox },
   { title: "Notifications", url: "/notifications", icon: Bell },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
 ] as const;
+
 
 const orgNav = [
   { title: "Stores", url: "/stores", icon: Store },

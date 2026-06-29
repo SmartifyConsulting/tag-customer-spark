@@ -15,18 +15,25 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ScanShortCodeRouteImport } from './routes/scan.$shortCode'
+import { Route as NMessageIdRouteImport } from './routes/n.$messageId'
 import { Route as AuthenticatedStoresRouteImport } from './routes/_authenticated/stores'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedQrTagsRouteImport } from './routes/_authenticated/qr-tags'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
+import { Route as AuthenticatedNotificationsIndexRouteImport } from './routes/_authenticated/notifications.index'
 import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products.$productId'
+import { Route as AuthenticatedNotificationsNewRouteImport } from './routes/_authenticated/notifications.new'
+import { Route as AuthenticatedNotificationsCampaignIdRouteImport } from './routes/_authenticated/notifications.$campaignId'
+import { Route as ApiPublicScanInterestRouteImport } from './routes/api/public/scan.interest'
 import { Route as ApiPublicSShortCodeRouteImport } from './routes/api/public/s.$shortCode'
+import { Route as ApiPublicHooksNotificationsTickRouteImport } from './routes/api/public/hooks.notifications-tick'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -55,6 +62,11 @@ const IndexRoute = IndexRouteImport.update({
 const ScanShortCodeRoute = ScanShortCodeRouteImport.update({
   id: '/scan/$shortCode',
   path: '/scan/$shortCode',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NMessageIdRoute = NMessageIdRouteImport.update({
+  id: '/n/$messageId',
+  path: '/n/$messageId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStoresRoute = AuthenticatedStoresRouteImport.update({
@@ -88,6 +100,11 @@ const AuthenticatedNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -109,17 +126,46 @@ const AuthenticatedProductsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedProductsRoute,
   } as any)
+const AuthenticatedNotificationsIndexRoute =
+  AuthenticatedNotificationsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedNotificationsRoute,
+  } as any)
 const AuthenticatedProductsProductIdRoute =
   AuthenticatedProductsProductIdRouteImport.update({
     id: '/$productId',
     path: '/$productId',
     getParentRoute: () => AuthenticatedProductsRoute,
   } as any)
+const AuthenticatedNotificationsNewRoute =
+  AuthenticatedNotificationsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedNotificationsRoute,
+  } as any)
+const AuthenticatedNotificationsCampaignIdRoute =
+  AuthenticatedNotificationsCampaignIdRouteImport.update({
+    id: '/$campaignId',
+    path: '/$campaignId',
+    getParentRoute: () => AuthenticatedNotificationsRoute,
+  } as any)
+const ApiPublicScanInterestRoute = ApiPublicScanInterestRouteImport.update({
+  id: '/api/public/scan/interest',
+  path: '/api/public/scan/interest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSShortCodeRoute = ApiPublicSShortCodeRouteImport.update({
   id: '/api/public/s/$shortCode',
   path: '/api/public/s/$shortCode',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksNotificationsTickRoute =
+  ApiPublicHooksNotificationsTickRouteImport.update({
+    id: '/api/public/hooks/notifications-tick',
+    path: '/api/public/hooks/notifications-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -129,16 +175,23 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/notifications': typeof AuthenticatedNotificationsRoute
+  '/inbox': typeof AuthenticatedInboxRoute
+  '/notifications': typeof AuthenticatedNotificationsRouteWithChildren
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/qr-tags': typeof AuthenticatedQrTagsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stores': typeof AuthenticatedStoresRoute
+  '/n/$messageId': typeof NMessageIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRoute
+  '/notifications/new': typeof AuthenticatedNotificationsNewRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
+  '/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
+  '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
+  '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -148,15 +201,21 @@ export interface FileRoutesByTo {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/notifications': typeof AuthenticatedNotificationsRoute
+  '/inbox': typeof AuthenticatedInboxRoute
   '/qr-tags': typeof AuthenticatedQrTagsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stores': typeof AuthenticatedStoresRoute
+  '/n/$messageId': typeof NMessageIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRoute
+  '/notifications/new': typeof AuthenticatedNotificationsNewRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
+  '/notifications': typeof AuthenticatedNotificationsIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
+  '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
+  '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -168,16 +227,23 @@ export interface FileRoutesById {
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
+  '/_authenticated/inbox': typeof AuthenticatedInboxRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRouteWithChildren
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/qr-tags': typeof AuthenticatedQrTagsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stores': typeof AuthenticatedStoresRoute
+  '/n/$messageId': typeof NMessageIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/_authenticated/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRoute
+  '/_authenticated/notifications/new': typeof AuthenticatedNotificationsNewRoute
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
+  '/_authenticated/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
+  '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
+  '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -189,16 +255,23 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/customers'
     | '/dashboard'
+    | '/inbox'
     | '/notifications'
     | '/products'
     | '/qr-tags'
     | '/settings'
     | '/staff'
     | '/stores'
+    | '/n/$messageId'
     | '/scan/$shortCode'
+    | '/notifications/$campaignId'
+    | '/notifications/new'
     | '/products/$productId'
+    | '/notifications/'
     | '/products/'
+    | '/api/public/hooks/notifications-tick'
     | '/api/public/s/$shortCode'
+    | '/api/public/scan/interest'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -208,15 +281,21 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/customers'
     | '/dashboard'
-    | '/notifications'
+    | '/inbox'
     | '/qr-tags'
     | '/settings'
     | '/staff'
     | '/stores'
+    | '/n/$messageId'
     | '/scan/$shortCode'
+    | '/notifications/$campaignId'
+    | '/notifications/new'
     | '/products/$productId'
+    | '/notifications'
     | '/products'
+    | '/api/public/hooks/notifications-tick'
     | '/api/public/s/$shortCode'
+    | '/api/public/scan/interest'
   id:
     | '__root__'
     | '/'
@@ -227,16 +306,23 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
+    | '/_authenticated/inbox'
     | '/_authenticated/notifications'
     | '/_authenticated/products'
     | '/_authenticated/qr-tags'
     | '/_authenticated/settings'
     | '/_authenticated/staff'
     | '/_authenticated/stores'
+    | '/n/$messageId'
     | '/scan/$shortCode'
+    | '/_authenticated/notifications/$campaignId'
+    | '/_authenticated/notifications/new'
     | '/_authenticated/products/$productId'
+    | '/_authenticated/notifications/'
     | '/_authenticated/products/'
+    | '/api/public/hooks/notifications-tick'
     | '/api/public/s/$shortCode'
+    | '/api/public/scan/interest'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -245,8 +331,11 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  NMessageIdRoute: typeof NMessageIdRoute
   ScanShortCodeRoute: typeof ScanShortCodeRoute
+  ApiPublicHooksNotificationsTickRoute: typeof ApiPublicHooksNotificationsTickRoute
   ApiPublicSShortCodeRoute: typeof ApiPublicSShortCodeRoute
+  ApiPublicScanInterestRoute: typeof ApiPublicScanInterestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -293,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScanShortCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/n/$messageId': {
+      id: '/n/$messageId'
+      path: '/n/$messageId'
+      fullPath: '/n/$messageId'
+      preLoaderRoute: typeof NMessageIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/stores': {
       id: '/_authenticated/stores'
       path: '/stores'
@@ -335,6 +431,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/inbox': {
+      id: '/_authenticated/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof AuthenticatedInboxRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -363,12 +466,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductsIndexRouteImport
       parentRoute: typeof AuthenticatedProductsRoute
     }
+    '/_authenticated/notifications/': {
+      id: '/_authenticated/notifications/'
+      path: '/'
+      fullPath: '/notifications/'
+      preLoaderRoute: typeof AuthenticatedNotificationsIndexRouteImport
+      parentRoute: typeof AuthenticatedNotificationsRoute
+    }
     '/_authenticated/products/$productId': {
       id: '/_authenticated/products/$productId'
       path: '/$productId'
       fullPath: '/products/$productId'
       preLoaderRoute: typeof AuthenticatedProductsProductIdRouteImport
       parentRoute: typeof AuthenticatedProductsRoute
+    }
+    '/_authenticated/notifications/new': {
+      id: '/_authenticated/notifications/new'
+      path: '/new'
+      fullPath: '/notifications/new'
+      preLoaderRoute: typeof AuthenticatedNotificationsNewRouteImport
+      parentRoute: typeof AuthenticatedNotificationsRoute
+    }
+    '/_authenticated/notifications/$campaignId': {
+      id: '/_authenticated/notifications/$campaignId'
+      path: '/$campaignId'
+      fullPath: '/notifications/$campaignId'
+      preLoaderRoute: typeof AuthenticatedNotificationsCampaignIdRouteImport
+      parentRoute: typeof AuthenticatedNotificationsRoute
+    }
+    '/api/public/scan/interest': {
+      id: '/api/public/scan/interest'
+      path: '/api/public/scan/interest'
+      fullPath: '/api/public/scan/interest'
+      preLoaderRoute: typeof ApiPublicScanInterestRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/s/$shortCode': {
       id: '/api/public/s/$shortCode'
@@ -377,8 +508,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSShortCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/notifications-tick': {
+      id: '/api/public/hooks/notifications-tick'
+      path: '/api/public/hooks/notifications-tick'
+      fullPath: '/api/public/hooks/notifications-tick'
+      preLoaderRoute: typeof ApiPublicHooksNotificationsTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
+
+interface AuthenticatedNotificationsRouteChildren {
+  AuthenticatedNotificationsCampaignIdRoute: typeof AuthenticatedNotificationsCampaignIdRoute
+  AuthenticatedNotificationsNewRoute: typeof AuthenticatedNotificationsNewRoute
+  AuthenticatedNotificationsIndexRoute: typeof AuthenticatedNotificationsIndexRoute
+}
+
+const AuthenticatedNotificationsRouteChildren: AuthenticatedNotificationsRouteChildren =
+  {
+    AuthenticatedNotificationsCampaignIdRoute:
+      AuthenticatedNotificationsCampaignIdRoute,
+    AuthenticatedNotificationsNewRoute: AuthenticatedNotificationsNewRoute,
+    AuthenticatedNotificationsIndexRoute: AuthenticatedNotificationsIndexRoute,
+  }
+
+const AuthenticatedNotificationsRouteWithChildren =
+  AuthenticatedNotificationsRoute._addFileChildren(
+    AuthenticatedNotificationsRouteChildren,
+  )
 
 interface AuthenticatedProductsRouteChildren {
   AuthenticatedProductsProductIdRoute: typeof AuthenticatedProductsProductIdRoute
@@ -399,7 +556,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
+  AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRouteWithChildren
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedQrTagsRoute: typeof AuthenticatedQrTagsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -411,7 +569,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
+  AuthenticatedInboxRoute: AuthenticatedInboxRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRouteWithChildren,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedQrTagsRoute: AuthenticatedQrTagsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
@@ -428,8 +587,11 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  NMessageIdRoute: NMessageIdRoute,
   ScanShortCodeRoute: ScanShortCodeRoute,
+  ApiPublicHooksNotificationsTickRoute: ApiPublicHooksNotificationsTickRoute,
   ApiPublicSShortCodeRoute: ApiPublicSShortCodeRoute,
+  ApiPublicScanInterestRoute: ApiPublicScanInterestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

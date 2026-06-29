@@ -59,6 +59,13 @@ export type Database = {
             foreignKeyName: "audit_logs_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "audit_logs_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
             referencedRelation: "retailers"
             referencedColumns: ["id"]
           },
@@ -66,12 +73,14 @@ export type Database = {
       }
       conversation_messages: {
         Row: {
+          author_user_id: string | null
           body: string | null
           conversation_id: string
           created_at: string
           created_by: string | null
           direction: Database["public"]["Enums"]["message_direction"]
           id: string
+          is_internal: boolean
           media_url: string | null
           retailer_id: string
           sent_at: string
@@ -79,12 +88,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          author_user_id?: string | null
           body?: string | null
           conversation_id: string
           created_at?: string
           created_by?: string | null
           direction: Database["public"]["Enums"]["message_direction"]
           id?: string
+          is_internal?: boolean
           media_url?: string | null
           retailer_id: string
           sent_at?: string
@@ -92,12 +103,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          author_user_id?: string | null
           body?: string | null
           conversation_id?: string
           created_at?: string
           created_by?: string | null
           direction?: Database["public"]["Enums"]["message_direction"]
           id?: string
+          is_internal?: boolean
           media_url?: string | null
           retailer_id?: string
           sent_at?: string
@@ -116,6 +129,13 @@ export type Database = {
             foreignKeyName: "conversation_messages_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "conversation_messages_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
             referencedRelation: "retailers"
             referencedColumns: ["id"]
           },
@@ -123,36 +143,51 @@ export type Database = {
       }
       conversations: {
         Row: {
+          assigned_to: string | null
           created_at: string
           created_by: string | null
           customer_id: string
           id: string
+          is_resolved: boolean
           last_message_at: string | null
           retailer_id: string
           status: Database["public"]["Enums"]["conversation_status"]
           store_id: string | null
+          subject: string | null
+          tags: string[]
+          unread_count: number
           updated_at: string
         }
         Insert: {
+          assigned_to?: string | null
           created_at?: string
           created_by?: string | null
           customer_id: string
           id?: string
+          is_resolved?: boolean
           last_message_at?: string | null
           retailer_id: string
           status?: Database["public"]["Enums"]["conversation_status"]
           store_id?: string | null
+          subject?: string | null
+          tags?: string[]
+          unread_count?: number
           updated_at?: string
         }
         Update: {
+          assigned_to?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string
           id?: string
+          is_resolved?: boolean
           last_message_at?: string | null
           retailer_id?: string
           status?: Database["public"]["Enums"]["conversation_status"]
           store_id?: string | null
+          subject?: string | null
+          tags?: string[]
+          unread_count?: number
           updated_at?: string
         }
         Relationships: [
@@ -162,6 +197,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
           },
           {
             foreignKeyName: "conversations_retailer_id_fkey"
@@ -232,11 +274,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "customer_interests_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "customer_interests_qr_tag_id_fkey"
+            columns: ["qr_tag_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["qr_tag_id"]
+          },
+          {
             foreignKeyName: "customer_interests_qr_tag_id_fkey"
             columns: ["qr_tag_id"]
             isOneToOne: false
             referencedRelation: "qr_tags"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_interests_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
           },
           {
             foreignKeyName: "customer_interests_retailer_id_fkey"
@@ -254,8 +317,12 @@ export type Database = {
           full_name: string | null
           id: string
           locale: string
+          marketing_consent_at: string | null
+          notify_consent_at: string | null
           opted_in_at: string
+          privacy_accepted_at: string | null
           retailer_id: string
+          source: string | null
           status: Database["public"]["Enums"]["customer_status"]
           updated_at: string
           whatsapp_e164: string
@@ -266,8 +333,12 @@ export type Database = {
           full_name?: string | null
           id?: string
           locale?: string
+          marketing_consent_at?: string | null
+          notify_consent_at?: string | null
           opted_in_at?: string
+          privacy_accepted_at?: string | null
           retailer_id: string
+          source?: string | null
           status?: Database["public"]["Enums"]["customer_status"]
           updated_at?: string
           whatsapp_e164: string
@@ -278,13 +349,24 @@ export type Database = {
           full_name?: string | null
           id?: string
           locale?: string
+          marketing_consent_at?: string | null
+          notify_consent_at?: string | null
           opted_in_at?: string
+          privacy_accepted_at?: string | null
           retailer_id?: string
+          source?: string | null
           status?: Database["public"]["Enums"]["customer_status"]
           updated_at?: string
           whatsapp_e164?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "customers_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
           {
             foreignKeyName: "customers_retailer_id_fkey"
             columns: ["retailer_id"]
@@ -296,11 +378,21 @@ export type Database = {
       }
       notification_campaigns: {
         Row: {
+          audience_filter: Json
+          audience_size: number
+          body: string | null
           created_at: string
           created_by: string | null
+          cta_label: string | null
+          cta_url: string | null
+          expires_at: string | null
+          funnel: Json
+          headline: string | null
           id: string
+          image_url: string | null
           message_template: string
           product_id: string | null
+          redemption_code: string | null
           retailer_id: string
           scheduled_at: string | null
           sent_at: string | null
@@ -310,11 +402,21 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          audience_filter?: Json
+          audience_size?: number
+          body?: string | null
           created_at?: string
           created_by?: string | null
+          cta_label?: string | null
+          cta_url?: string | null
+          expires_at?: string | null
+          funnel?: Json
+          headline?: string | null
           id?: string
+          image_url?: string | null
           message_template: string
           product_id?: string | null
+          redemption_code?: string | null
           retailer_id: string
           scheduled_at?: string | null
           sent_at?: string | null
@@ -324,11 +426,21 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          audience_filter?: Json
+          audience_size?: number
+          body?: string | null
           created_at?: string
           created_by?: string | null
+          cta_label?: string | null
+          cta_url?: string | null
+          expires_at?: string | null
+          funnel?: Json
+          headline?: string | null
           id?: string
+          image_url?: string | null
           message_template?: string
           product_id?: string | null
+          redemption_code?: string | null
           retailer_id?: string
           scheduled_at?: string | null
           sent_at?: string | null
@@ -346,6 +458,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "notification_campaigns_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "notification_campaigns_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
             foreignKeyName: "notification_campaigns_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
@@ -358,6 +484,7 @@ export type Database = {
         Row: {
           campaign_id: string | null
           channel: string
+          clicked_at: string | null
           created_at: string
           created_by: string | null
           customer_id: string
@@ -365,7 +492,9 @@ export type Database = {
           error: string | null
           id: string
           payload: Json
+          queued_at: string
           read_at: string | null
+          redeemed_at: string | null
           retailer_id: string
           sent_at: string | null
           status: Database["public"]["Enums"]["notification_status"]
@@ -374,6 +503,7 @@ export type Database = {
         Insert: {
           campaign_id?: string | null
           channel?: string
+          clicked_at?: string | null
           created_at?: string
           created_by?: string | null
           customer_id: string
@@ -381,7 +511,9 @@ export type Database = {
           error?: string | null
           id?: string
           payload?: Json
+          queued_at?: string
           read_at?: string | null
+          redeemed_at?: string | null
           retailer_id: string
           sent_at?: string | null
           status?: Database["public"]["Enums"]["notification_status"]
@@ -390,6 +522,7 @@ export type Database = {
         Update: {
           campaign_id?: string | null
           channel?: string
+          clicked_at?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string
@@ -397,7 +530,9 @@ export type Database = {
           error?: string | null
           id?: string
           payload?: Json
+          queued_at?: string
           read_at?: string | null
+          redeemed_at?: string | null
           retailer_id?: string
           sent_at?: string | null
           status?: Database["public"]["Enums"]["notification_status"]
@@ -417,6 +552,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_history_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
           },
           {
             foreignKeyName: "notification_history_retailer_id_fkey"
@@ -465,6 +607,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "product_categories"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_categories_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
           },
           {
             foreignKeyName: "product_categories_retailer_id_fkey"
@@ -563,6 +712,13 @@ export type Database = {
             foreignKeyName: "products_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "products_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
             referencedRelation: "retailers"
             referencedColumns: ["id"]
           },
@@ -648,6 +804,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "promotion_events_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "promotion_events_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
             foreignKeyName: "promotion_events_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
@@ -718,11 +888,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "qr_scans_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "qr_scans_qr_tag_id_fkey"
+            columns: ["qr_tag_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["qr_tag_id"]
+          },
+          {
             foreignKeyName: "qr_scans_qr_tag_id_fkey"
             columns: ["qr_tag_id"]
             isOneToOne: false
             referencedRelation: "qr_tags"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_scans_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
           },
           {
             foreignKeyName: "qr_scans_retailer_id_fkey"
@@ -804,11 +995,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "qr_tags_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "qr_tags_regenerated_from_fkey"
+            columns: ["regenerated_from"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["qr_tag_id"]
+          },
+          {
             foreignKeyName: "qr_tags_regenerated_from_fkey"
             columns: ["regenerated_from"]
             isOneToOne: false
             referencedRelation: "qr_tags"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_tags_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
           },
           {
             foreignKeyName: "qr_tags_retailer_id_fkey"
@@ -880,6 +1092,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "promotion_events"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "redemption_codes_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
           },
           {
             foreignKeyName: "redemption_codes_retailer_id_fkey"
@@ -995,6 +1214,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sales_recoveries_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "sales_recoveries_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
             foreignKeyName: "sales_recoveries_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
@@ -1044,6 +1277,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "staff_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
           {
             foreignKeyName: "staff_retailer_id_fkey"
             columns: ["retailer_id"]
@@ -1105,6 +1345,13 @@ export type Database = {
             foreignKeyName: "stores_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "stores_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
             referencedRelation: "retailers"
             referencedColumns: ["id"]
           },
@@ -1155,6 +1402,13 @@ export type Database = {
             foreignKeyName: "subscriptions_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "subscriptions_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
             referencedRelation: "retailers"
             referencedColumns: ["id"]
           },
@@ -1186,7 +1440,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_scan_view: {
+        Row: {
+          color: string | null
+          currency: string | null
+          image_url: string | null
+          images: Json | null
+          price_cents: number | null
+          product_brand: string | null
+          product_description: string | null
+          product_id: string | null
+          product_name: string | null
+          product_status: Database["public"]["Enums"]["product_status"] | null
+          promotion_end_date: string | null
+          promotion_start_date: string | null
+          qr_active: boolean | null
+          qr_tag_id: string | null
+          retailer_id: string | null
+          retailer_logo: string | null
+          retailer_name: string | null
+          retailer_slug: string | null
+          sale_price_cents: number | null
+          short_code: string | null
+          size: string | null
+          store_id: string | null
+          store_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_tags_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       belongs_to_retailer: {
@@ -1219,15 +1508,33 @@ export type Database = {
         | "store_manager"
         | "sales_assistant"
       audit_status: "success" | "warning" | "failure"
-      campaign_status: "draft" | "scheduled" | "sending" | "sent" | "cancelled"
-      campaign_type: "sale" | "low_stock" | "back_in_stock" | "promotion"
+      campaign_status:
+        | "draft"
+        | "scheduled"
+        | "sending"
+        | "sent"
+        | "cancelled"
+        | "completed"
+      campaign_type:
+        | "sale"
+        | "low_stock"
+        | "back_in_stock"
+        | "promotion"
+        | "custom"
       category_status: "active" | "archived"
       conversation_status: "open" | "closed" | "archived"
       customer_status: "subscribed" | "unsubscribed" | "blocked"
       interest_status: "active" | "notified" | "converted" | "expired"
       message_direction: "inbound" | "outbound"
       message_status: "sent" | "delivered" | "read" | "failed"
-      notification_status: "queued" | "sent" | "delivered" | "read" | "failed"
+      notification_status:
+        | "queued"
+        | "sent"
+        | "delivered"
+        | "read"
+        | "failed"
+        | "clicked"
+        | "redeemed"
       product_status: "active" | "draft" | "archived"
       promotion_status: "scheduled" | "active" | "ended" | "cancelled"
       qr_status: "active" | "inactive" | "retired"
@@ -1371,15 +1678,36 @@ export const Constants = {
         "sales_assistant",
       ],
       audit_status: ["success", "warning", "failure"],
-      campaign_status: ["draft", "scheduled", "sending", "sent", "cancelled"],
-      campaign_type: ["sale", "low_stock", "back_in_stock", "promotion"],
+      campaign_status: [
+        "draft",
+        "scheduled",
+        "sending",
+        "sent",
+        "cancelled",
+        "completed",
+      ],
+      campaign_type: [
+        "sale",
+        "low_stock",
+        "back_in_stock",
+        "promotion",
+        "custom",
+      ],
       category_status: ["active", "archived"],
       conversation_status: ["open", "closed", "archived"],
       customer_status: ["subscribed", "unsubscribed", "blocked"],
       interest_status: ["active", "notified", "converted", "expired"],
       message_direction: ["inbound", "outbound"],
       message_status: ["sent", "delivered", "read", "failed"],
-      notification_status: ["queued", "sent", "delivered", "read", "failed"],
+      notification_status: [
+        "queued",
+        "sent",
+        "delivered",
+        "read",
+        "failed",
+        "clicked",
+        "redeemed",
+      ],
       product_status: ["active", "draft", "archived"],
       promotion_status: ["scheduled", "active", "ended", "cancelled"],
       qr_status: ["active", "inactive", "retired"],
