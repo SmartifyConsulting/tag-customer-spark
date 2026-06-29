@@ -86,9 +86,10 @@ export function ProductFormDialog({
   );
 
   const form = useForm<ProductInput>({
-    resolver: zodResolver(productInputSchema),
+    resolver: zodResolver(productInputSchema) as any,
     defaultValues: defaults,
   });
+
 
   useEffect(() => {
     if (open) form.reset(defaults);
@@ -164,7 +165,7 @@ export function ProductFormDialog({
         </DialogHeader>
 
         <form
-          onSubmit={form.handleSubmit((v) => save.mutate(v))}
+          onSubmit={form.handleSubmit((v) => save.mutate(v as ProductInput))}
           className="grid gap-4 py-2"
         >
           <Section title="Basics">
