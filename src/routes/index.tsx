@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { TagLogo } from "@/components/tag-logo";
 import { ArrowRight, QrCode, MessageCircle, TrendingUp, Sparkles, Bell, BarChart3 } from "lucide-react";
 import logoAsset from "@/assets/tag-logo.png.asset.json";
+import heroLogo from "@/assets/tag-logo-hero.png.asset.json";
 
 export const Route = createFileRoute("/")({
   ssr: false,
