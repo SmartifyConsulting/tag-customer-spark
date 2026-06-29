@@ -45,12 +45,12 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="border-b border-sidebar-border/60">
-        <div className="flex h-20 items-center justify-center px-2">
+        <div className="flex items-center justify-center px-2 pt-8 pb-4">
           <TagLogo size={collapsed ? "sm" : "lg"} />
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-1.5 py-3">
+      <SidebarContent className="px-1.5 pb-3 pt-[113px]">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
