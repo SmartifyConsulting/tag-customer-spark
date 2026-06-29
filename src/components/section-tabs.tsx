@@ -25,7 +25,8 @@ export const SECTIONS: SectionDef[] = [
     rootPath: "/customers",
     tabs: [
       { label: "Customers", to: "/customers", match: ["/customers"] },
-      { label: "QR Tags & Catalogue", to: "/products", match: ["/products", "/qr-tags"] },
+      { label: "Products", to: "/products", match: ["/products"] },
+      { label: "QR Tags", to: "/qr-tags", match: ["/qr-tags"] },
       { label: "Watchlists", to: "/watchlists", match: ["/watchlists"] },
       { label: "Compare", to: "/products/compare", match: ["/products/compare"] },
     ],
@@ -109,8 +110,8 @@ export function SectionTabs() {
   if (!section) return null;
 
   return (
-    <div className="sticky top-16 z-[5] -mx-4 border-b border-border bg-background/85 px-4 backdrop-blur-md sm:-mx-8 sm:px-8">
-      <div className="mx-auto flex max-w-7xl items-end gap-1 overflow-x-auto">
+    <div className="sticky top-16 z-[5] -mx-4 border-b border-border bg-background/85 px-4 py-3 backdrop-blur-md sm:-mx-8 sm:px-8">
+      <div className="mx-auto flex max-w-7xl items-center gap-1.5 overflow-x-auto rounded-full bg-muted/50 p-1.5">
         {section.tabs.map((t) => {
           const isActive = activeTab?.to === t.to;
           return (
@@ -118,21 +119,13 @@ export function SectionTabs() {
               key={t.to}
               to={t.to}
               className={[
-                "relative whitespace-nowrap px-4 py-3 text-sm transition-colors",
+                "whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold transition-colors",
                 isActive
-                  ? "font-semibold text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "bg-[color:var(--mint)] text-white shadow-sm hover:bg-[color:var(--mint)]"
+                  : "text-muted-foreground hover:bg-[color:var(--mint)]/10 hover:text-foreground",
               ].join(" ")}
             >
               {t.label}
-              <span
-                className={[
-                  "pointer-events-none absolute inset-x-3 -bottom-px h-[2px] rounded-full transition-all",
-                  isActive
-                    ? "bg-[color:var(--mint)] shadow-[0_0_10px_color-mix(in_oklab,var(--mint)_60%,transparent)]"
-                    : "bg-transparent",
-                ].join(" ")}
-              />
             </Link>
           );
         })}
