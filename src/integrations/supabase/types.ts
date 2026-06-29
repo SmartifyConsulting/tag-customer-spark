@@ -14,6 +14,150 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_insights: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          generated_at: string
+          id: string
+          kind: Database["public"]["Enums"]["ai_insight_kind"]
+          payload: Json
+          related_entity_id: string | null
+          related_entity_type: string | null
+          retailer_id: string
+          score: number | null
+          status: Database["public"]["Enums"]["ai_insight_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          generated_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["ai_insight_kind"]
+          payload?: Json
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          retailer_id: string
+          score?: number | null
+          status?: Database["public"]["Enums"]["ai_insight_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          generated_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["ai_insight_kind"]
+          payload?: Json
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          retailer_id?: string
+          score?: number | null
+          status?: Database["public"]["Enums"]["ai_insight_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_insights_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "ai_insights_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_recommendations: {
+        Row: {
+          accepted_at: string | null
+          action_type: string
+          confidence: number
+          created_at: string
+          currency: string
+          description: string | null
+          dismissed_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          expires_at: string | null
+          generated_at: string
+          id: string
+          projected_value_cents: number | null
+          retailer_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          action_type: string
+          confidence?: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          dismissed_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          expires_at?: string | null
+          generated_at?: string
+          id?: string
+          projected_value_cents?: number | null
+          retailer_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          action_type?: string
+          confidence?: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          dismissed_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          expires_at?: string | null
+          generated_at?: string
+          id?: string
+          projected_value_cents?: number | null
+          retailer_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_recommendations_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "ai_recommendations_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -376,6 +520,102 @@ export type Database = {
           },
         ]
       }
+      intent_recompute_queue: {
+        Row: {
+          enqueued_at: string
+          product_id: string
+        }
+        Insert: {
+          enqueued_at?: string
+          product_id: string
+        }
+        Update: {
+          enqueued_at?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intent_recompute_queue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intent_recompute_queue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      intent_score_weights: {
+        Row: {
+          forecast_sensitivity: string
+          forecasting_enabled: boolean
+          retailer_id: string
+          update_frequency_minutes: number
+          updated_at: string
+          w_cart: number
+          w_conversion: number
+          w_notif: number
+          w_price: number
+          w_repeat: number
+          w_scans: number
+          w_time: number
+          w_viewers: number
+          w_watchlist: number
+        }
+        Insert: {
+          forecast_sensitivity?: string
+          forecasting_enabled?: boolean
+          retailer_id: string
+          update_frequency_minutes?: number
+          updated_at?: string
+          w_cart?: number
+          w_conversion?: number
+          w_notif?: number
+          w_price?: number
+          w_repeat?: number
+          w_scans?: number
+          w_time?: number
+          w_viewers?: number
+          w_watchlist?: number
+        }
+        Update: {
+          forecast_sensitivity?: string
+          forecasting_enabled?: boolean
+          retailer_id?: string
+          update_frequency_minutes?: number
+          updated_at?: string
+          w_cart?: number
+          w_conversion?: number
+          w_notif?: number
+          w_price?: number
+          w_repeat?: number
+          w_scans?: number
+          w_time?: number
+          w_viewers?: number
+          w_watchlist?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intent_score_weights_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: true
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "intent_score_weights_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: true
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_campaigns: {
         Row: {
           audience_filter: Json
@@ -624,6 +864,204 @@ export type Database = {
           },
         ]
       }
+      product_intent_forecast: {
+        Row: {
+          computed_at: string
+          forecast_confidence: number
+          predicted_score_14d: number
+          predicted_score_7d: number
+          predicted_trend: string
+          product_id: string
+          retailer_id: string
+        }
+        Insert: {
+          computed_at?: string
+          forecast_confidence?: number
+          predicted_score_14d: number
+          predicted_score_7d: number
+          predicted_trend: string
+          product_id: string
+          retailer_id: string
+        }
+        Update: {
+          computed_at?: string
+          forecast_confidence?: number
+          predicted_score_14d?: number
+          predicted_score_7d?: number
+          predicted_trend?: string
+          product_id?: string
+          retailer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_intent_forecast_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_intent_forecast_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_intent_forecast_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "product_intent_forecast_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_intent_history: {
+        Row: {
+          created_at: string
+          id: string
+          intent_score: number
+          product_id: string
+          retailer_id: string
+          sample_size: number
+          snapshot_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          intent_score: number
+          product_id: string
+          retailer_id: string
+          sample_size?: number
+          snapshot_date?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          intent_score?: number
+          product_id?: string
+          retailer_id?: string
+          sample_size?: number
+          snapshot_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_intent_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_intent_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_intent_history_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "product_intent_history_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_intent_signals: {
+        Row: {
+          add_to_cart_rate: number
+          avg_time_on_page_seconds: number
+          conversion_rate: number
+          notif_engagement: number
+          price_impact: number
+          product_id: string
+          repeat_scans: number
+          retailer_id: string
+          sample_size: number
+          scans_total: number
+          scans_unique: number
+          updated_at: string
+          viewers: number
+          watchlist_adds: number
+        }
+        Insert: {
+          add_to_cart_rate?: number
+          avg_time_on_page_seconds?: number
+          conversion_rate?: number
+          notif_engagement?: number
+          price_impact?: number
+          product_id: string
+          repeat_scans?: number
+          retailer_id: string
+          sample_size?: number
+          scans_total?: number
+          scans_unique?: number
+          updated_at?: string
+          viewers?: number
+          watchlist_adds?: number
+        }
+        Update: {
+          add_to_cart_rate?: number
+          avg_time_on_page_seconds?: number
+          conversion_rate?: number
+          notif_engagement?: number
+          price_impact?: number
+          product_id?: string
+          repeat_scans?: number
+          retailer_id?: string
+          sample_size?: number
+          scans_total?: number
+          scans_unique?: number
+          updated_at?: string
+          viewers?: number
+          watchlist_adds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_intent_signals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_intent_signals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_intent_signals_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "product_intent_signals_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           brand: string | null
@@ -636,6 +1074,10 @@ export type Database = {
           id: string
           image_url: string | null
           images: Json
+          intent_score: number
+          intent_score_confidence: number
+          intent_score_trend: string
+          intent_score_updated_at: string
           low_stock_threshold: number
           name: string
           price_cents: number
@@ -661,6 +1103,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           images?: Json
+          intent_score?: number
+          intent_score_confidence?: number
+          intent_score_trend?: string
+          intent_score_updated_at?: string
           low_stock_threshold?: number
           name: string
           price_cents?: number
@@ -686,6 +1132,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           images?: Json
+          intent_score?: number
+          intent_score_confidence?: number
+          intent_score_trend?: string
+          intent_score_updated_at?: string
           low_stock_threshold?: number
           name?: string
           price_cents?: number
@@ -831,6 +1281,7 @@ export type Database = {
           created_at: string
           customer_id: string | null
           device_type: string | null
+          dwell_ms: number | null
           id: string
           ip_hash: string | null
           product_id: string
@@ -846,6 +1297,7 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           device_type?: string | null
+          dwell_ms?: number | null
           id?: string
           ip_hash?: string | null
           product_id: string
@@ -861,6 +1313,7 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           device_type?: string | null
+          dwell_ms?: number | null
           id?: string
           ip_hash?: string | null
           product_id?: string
@@ -1486,6 +1939,14 @@ export type Database = {
         Args: { _retailer_id: string; _user_id: string }
         Returns: boolean
       }
+      enqueue_intent_recompute: {
+        Args: { _product_id: string }
+        Returns: undefined
+      }
+      forecast_product_intent: {
+        Args: { _product_id: string }
+        Returns: undefined
+      }
       has_any_role: {
         Args: {
           _roles: Database["public"]["Enums"]["app_role"][]
@@ -1500,8 +1961,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      recompute_product_intent: {
+        Args: { _product_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
+      ai_insight_kind:
+        | "opportunity"
+        | "executive_summary"
+        | "weekly_report"
+        | "conversation_summary"
+        | "merchandising"
+      ai_insight_status: "active" | "dismissed" | "expired" | "accepted"
       app_role:
         | "super_admin"
         | "retail_admin"
@@ -1671,6 +2143,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ai_insight_kind: [
+        "opportunity",
+        "executive_summary",
+        "weekly_report",
+        "conversation_summary",
+        "merchandising",
+      ],
+      ai_insight_status: ["active", "dismissed", "expired", "accepted"],
       app_role: [
         "super_admin",
         "retail_admin",

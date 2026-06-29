@@ -1,120 +1,192 @@
-## Scope
 
-Four modules built in sequence on top of the existing schema. WhatsApp is **simulated** end-to-end: messages move through queued → sent → delivered → read → clicked → redeemed via background jobs and inbox actions, no external provider. The landing-page form requires only WhatsApp notify consent; marketing + privacy boxes are optional and recorded.
+# Tag — Phased build plan
 
----
+You picked **Two phases**, **phone-based watchlists**, **staff-only redemption**, **Lovable AI (Gemini 3 Flash for live insights, Gemini 2.5 Pro for weekly reports)**.
 
-## 1. Customer scan landing (`/scan/$shortCode`)
-
-Replace the current placeholder with a conversion-tuned, mobile-first page.
-
-- **Public loader** uses a publishable-key client to fetch a safe slice: retailer name + logo, store name, product (name, brand, description, price, sale_price, hero image, currency), and `qr_tag.id`. New narrow `TO anon` SELECT policies projected through a `public_scan_view` so we never widen base tables.
-- **Layout** (one-thumb scroll):
-  1. Retailer logo bar (sticky, soft shadow).
-  2. Full-bleed hero image, rounded-2xl, ~16:10.
-  3. Product name + brand chip.
-  4. Price block — strikethrough original beside sale price in emerald when on promo; price-drop badge.
-  5. 2-line description.
-  6. Primary CTA: "Notify me on WhatsApp" (navy, full-width, sticky on small viewports).
-  7. Trust line: "We only message you about this product. Unsubscribe anytime."
-- **Notify sheet** (Drawer on mobile, Dialog on desktop):
-  - Fields: Name, WhatsApp number (intl phone input with country picker, E.164 normalization), required notify-consent checkbox, optional marketing-consent checkbox, optional privacy-acceptance checkbox.
-  - Zod validation; submit disabled until name + valid phone + notify consent.
-- **Submission** → public server route `POST /api/public/scan/interest`:
-  - Verifies the short code is active.
-  - Upserts `customers` by `(retailer_id, whatsapp_e164)`; stores consent flags + timestamps.
-  - Inserts `customer_interests` row linking customer ↔ product ↔ qr_tag with `status='active'`.
-  - Returns `{ ok, customer_id }`. All writes via `supabaseAdmin` loaded inside the handler; input validated with Zod.
-- **Success state** swaps the CTA for an emerald confirmation card: "You're on the list" + what to expect + "Browse more from {retailer}" link back to retailer landing (optional v2).
-- Framer-motion fade/slide for hero and CTA; confetti pulse on success.
+I'll plan both phases now so the data model is coherent end-to-end, then build **Phase 1 only** in the next turn. Phase 2 builds after you approve Phase 1.
 
 ---
 
-## 2. Notification engine (`/notifications`)
+## PHASE 1 — AI Retail Intelligence + Intent Score (next build turn)
 
-- **List page**: tabs for Drafts / Scheduled / Sending / Completed; cards show type badge, audience size, scheduled time, delivery funnel.
-- **Composer** (`/notifications/new`, also edit):
-  - Type selector chips: Sale, Low Stock, Back in Stock, Promotion, Custom — each pre-fills headline/body templates and inferred audience (e.g. Low Stock → customers interested in products below threshold).
-  - Fields: hero image (Storage upload, optional), headline (60), body (rich plain text, 600), CTA label + URL, expiry datetime, redemption-code link (pick from `redemption_codes` or generate new).
-  - Audience picker: product(s), store(s), interest filters → live count.
-  - Schedule: "Send now" or pick datetime (tz-aware).
-- **WhatsApp preview**: phone-frame mock on the right, live-binding to the form. Shows image bubble, bold headline, body, CTA button styled like WhatsApp interactive template, expiry footer.
-- **Send pipeline** (simulated):
-  - Save → `notification_campaigns` row with `status` (draft/scheduled/sending/completed).
-  - Server fn `enqueueCampaign` fans out `notification_history` rows (one per audience customer) with `status='queued'`.
-  - `pg_cron` job hits a public route `/api/public/hooks/notifications-tick` every minute: promotes queued→sent→delivered→read on staggered timers (simulated delivery rates), records timestamps. Click and redeem transitions happen when the customer (us, simulating) opens the message link → `/n/$messageId` route flips `clicked_at`, and entering the redemption code at checkout endpoint flips `redeemed_at`.
-  - Funnel chart on campaign detail: Queued → Sent → Delivered → Read → Clicked → Redeemed with counts + %.
+### 1. AI Retail Intelligence
 
----
+**New surfaces**
 
-## 3. Customer inbox (`/inbox`)
+- **Opportunity Feed** card on the Dashboard (top of page, above existing KPIs). Cards like "42 customers waiting on 6 products", "Sofa: 137 scans / 0 promos", "Discount Product A 10% → ~R26,000 recoverable".
+- **AI Copilot drawer** on the notification composer:
+  - **Write** (generate WhatsApp campaign from product + type)
+  - **Rewrite** (tighten / change tone: urgent, friendly, premium)
+  - **Predict response** (estimated open/click/redeem % for current audience)
+  - **Best send time** (recommendation based on past scan/notification timing per retailer)
+- **Conversation summary** button in the Inbox header → 2-line TL;DR + suggested reply.
+- **Slow-movers & Hot products** strip on the Products page (AI-tagged, not just rule-based).
+- **Likely-to-buy** column on the Customers page (per-customer purchase probability).
+- **Executive summary** banner on Dashboard (refreshed daily).
+- **Weekly Retailer Report** auto-generated every Monday 06:00 store-local; archived under `/reports`, PDF export.
 
-Intercom-style three-pane layout:
+**AI wiring**
 
-- **Left rail**: filter chips (All, Unread, Mine, Mentions, Resolved), saved searches, tag pills, unread badge per filter.
-- **Middle list**: conversations sorted by last_message_at; row shows customer avatar/initials, last snippet, unread dot, assigned-staff chip, tag chips, time-ago.
-- **Right pane**: message thread with WhatsApp-style bubbles (inbound left, outbound right), composer at bottom.
-  - Composer actions: Reply (logs `conversation_messages` outbound row, status='queued', no external send), Add internal note (separate `is_internal=true` row, yellow background), Assign staff (dropdown of retailer's staff), Tag (multi-select chips), Mark resolved.
-  - Header: customer name, phone, status pill, quick actions.
-- **Customer profile panel** (slide-over from right edge): name, phone, consent flags, lifetime scans, interests list (with product thumbnails), past campaigns received, recoveries.
-- Realtime: subscribe to `conversation_messages` + `conversations` via Supabase Realtime so new inbound messages light up instantly.
-- Search: full-text over messages + customer name/phone (Postgres `ilike` for v1).
+- New helper `src/lib/ai-gateway.server.ts` using the canonical Lovable AI Gateway provider.
+- `src/lib/ai.functions.ts` with server functions: `writeCampaign`, `rewriteCampaign`, `predictCampaignResponse`, `recommendSendTime`, `summariseConversation`, `generateOpportunityFeed`, `generateExecutiveSummary`, `generateWeeklyReport`.
+- Default model `google/gemini-3-flash-preview`. Weekly report uses `google/gemini-2.5-pro`.
+- All AI calls retailer-scoped via `requireSupabaseAuth` + `has_role` check.
+- Structured output (`Output.object` + Zod) so the UI renders cards, not raw prose.
 
-Schema additions: `conversations.assigned_to`, `tags text[]`, `is_resolved`, `conversation_messages.is_internal`.
+**Persistence**
 
----
+- `ai_insights` table: id, retailer_id, kind (`opportunity` | `executive_summary` | `weekly_report` | `conversation_summary`), payload jsonb, related_entity (product/campaign/customer/conversation), score, generated_at, expires_at, status.
+- `ai_recommendations` table for "discount X by 10% → R26k" with `action_type`, `entity_id`, `projected_value_cents`, `confidence`, `accepted_at` / `dismissed_at`.
+- `pg_cron` jobs hitting public hook routes (anon key in `apikey` header):
+  - `06:00 daily` → `/api/public/hooks/ai-daily-brief` (opportunity feed + executive summary per retailer)
+  - `Monday 06:00` → `/api/public/hooks/ai-weekly-report`
+  - `*/15 min` → `/api/public/hooks/notifications-tick` (already exists from previous turn)
 
-## 4. Advanced analytics (`/analytics`)
+### 2. Intent Score Engine v1
 
-- **KPI strip**: Total scans, Unique customers, Returning customers, Recovered revenue, Avg recovery time, Notification CTR.
-- **Charts** (Recharts):
-  - Scan trend (daily/weekly/monthly toggle) with anomaly highlighting.
-  - Customer growth (new vs returning stacked area).
-  - Top products bar (scans + recoveries dual axis).
-  - Top stores bar.
-  - Campaign performance — funnel + table.
-  - Heatmap: scans by weekday × hour (custom SVG grid, navy intensity scale).
-- **Filters bar**: date range, store, category, product — URL-synced.
-- **Exports**:
-  - **CSV** + **Excel** (client-side via `xlsx`) of the filtered dataset.
-  - **Branded PDF report**: server-fn `generateAnalyticsReportPdf` renders with `pdf-lib` — cover page with retailer logo + period, KPI grid, charts rendered server-side as PNG via `@napi-rs/canvas`-free path (we'll pre-render chart data as SVG strings then rasterize with `resvg-wasm` which is Worker-safe), and data tables. Returned as a download.
+**Schema additions**
 
----
+- New table `product_intent_signals` (rolling per-product aggregation, recomputed by trigger + cron):
+  scans_total, scans_unique, repeat_scans, avg_time_on_page_seconds, viewers, watchlist_adds, notif_engagement, conversion_rate, add_to_cart_rate, price_impact, sample_size, updated_at.
+- Add columns to `products`:
+  intent_score numeric(5,2), intent_score_confidence numeric(3,2), intent_score_trend text check (`rising|falling|stable`), intent_score_updated_at timestamptz.
+- New table `product_intent_history` (daily snapshot of score) for trend + forecasting.
+- New table `product_intent_forecast` with predicted_score_7d, predicted_score_14d, predicted_trend, forecast_confidence, computed_at.
+- New table `intent_score_weights` (per retailer override of the default weights from the spec).
+- Add `viewed_at` / `dwell_ms` columns to `qr_scans` (the public scan landing already fires; we'll also POST a dwell beacon on unload).
 
-## Technical details
+**Computation**
 
-- **Migrations**:
-  1. `public_scan_view` + `TO anon` SELECT policies on it; helper RPC `record_interest` (not used — we go through admin route for atomic upsert).
-  2. Add columns: `customers.notify_consent_at`, `marketing_consent_at`, `privacy_accepted_at`; `conversations.assigned_to uuid`, `tags text[]`, `is_resolved bool`; `conversation_messages.is_internal bool`.
-  3. `ALTER PUBLICATION supabase_realtime ADD TABLE conversations, conversation_messages;`
-  4. `pg_cron` job for notification tick (every minute) calling the public hook.
-- **Server functions** (`src/lib/*.functions.ts`):
-  - `scan.functions.ts`: `getPublicScan` (public publishable client).
-  - `notifications.functions.ts`: list/get/upsert/enqueue/cancel campaigns; funnel stats.
-  - `inbox.functions.ts`: list conversations, get thread, post reply/note, assign, tag, resolve.
-  - `analytics.functions.ts`: KPIs, trend, heatmap, top lists, export-dataset, PDF generator.
-- **Public routes**:
-  - `POST /api/public/scan/interest` — submit form.
-  - `POST /api/public/hooks/notifications-tick` — cron-driven simulator.
-  - `GET /n/$messageId` — click-tracking redirect (also public).
-- **Libraries to install**: `react-phone-number-input`, `libphonenumber-js`, `xlsx`, `pdf-lib` (already present), `@resvg/resvg-wasm`, `framer-motion` (if not present), `date-fns-tz`.
-- **Buckets**: reuse `product-images` for campaign hero (separate `campaign-assets` bucket created via tool, private, signed URLs at send time). Retailer logo already in `retailer-logos`.
-- **RLS**: every new column inherits existing retailer-scoped policies via `belongs_to_retailer`. Public view exposes only the safe columns enumerated above.
-- **Build order**: landing → notification engine (schema + composer + simulator) → inbox (schema + UI + realtime) → analytics (charts + exports). Each module ships independently typechecked.
+- Pure SQL function `public.recompute_product_intent(_product_id uuid)` doing the normalization + weighted score in the spec (Scans 0.15 / Repeat 0.10 / Time 0.10 / Viewers 0.10 / Watchlist 0.10 / NotifEng 0.10 / Conversion 0.20 / Cart 0.10 / Price 0.05, ×100, clamp 0–100). Defaults to 50 when sample_size = 0; flags low-confidence when sample_size < 30.
+- Event-driven triggers on `qr_scans`, `customer_interests`, `notification_history`, `sales_recoveries`, `products.price` change → enqueue product id into `intent_recompute_queue`.
+- `pg_cron` every 5 minutes → `/api/public/hooks/intent-recompute` drains the queue (chunked, max 500 products/run) and snapshots history.
+
+**Forecasting v2 (same phase)**
+
+- SQL function `public.forecast_product_intent(_product_id uuid)`:
+  - momentum = (score_now − score_7d_ago) / 7
+  - acceleration = momentum − previous_momentum
+  - predicted_7d = clamp(score_now + momentum·7 + acceleration·3, 0, 100)
+  - predicted_14d = clamp(score_now + momentum·14, 0, 100)
+  - confidence from sample_size + variance of last 14 days
+- Runs nightly via cron; on-demand recompute when a product detail page loads.
+
+**UI**
+
+- **Product list**: Intent Score badge (red/amber/green) + trend arrow on each row, sortable by score.
+- **Product detail**: large score gauge, signal contribution bars, AI-generated insight line, "Demand Forecast" Recharts line (history + 7/14-day projection, dashed forecast segment, confidence band).
+- **Dashboard sections**: "High Intent" (>75), "Rising Intent" (top 7-day delta), "Conversion Gap" (high intent + low conversion).
+- **Settings → Intent Engine** (super_admin / retail_admin only): tweak weights, forecast sensitivity (conservative / balanced / aggressive), update frequency, enable/disable forecasting.
+
+### Phase 1 file list
 
 ```text
-scan QR  ─►  /scan/:code  ─►  POST /api/public/scan/interest
-                                      │
-                                      ▼
-                              customers + customer_interests
-                                      │
-        retailer creates campaign ────┤
-                │                     ▼
-        notification_campaigns ─► notification_history (queued)
-                                      │  pg_cron tick
-                                      ▼
-                          sent → delivered → read → clicked → redeemed
-                                      │
-                                      ▼
-                          inbox conversations + analytics rollups
+supabase/migrations/<ts>_phase1_intent_and_ai.sql
+src/lib/ai-gateway.server.ts
+src/lib/ai.functions.ts
+src/lib/intent.functions.ts
+src/lib/insights.functions.ts
+src/routes/api/public/hooks.ai-daily-brief.ts
+src/routes/api/public/hooks.ai-weekly-report.ts
+src/routes/api/public/hooks.intent-recompute.ts
+src/routes/api/public/scan.dwell.ts
+src/components/dashboard/opportunity-feed.tsx
+src/components/dashboard/executive-summary.tsx
+src/components/dashboard/intent-sections.tsx
+src/components/intent/intent-badge.tsx
+src/components/intent/intent-gauge.tsx
+src/components/intent/intent-signal-bars.tsx
+src/components/intent/intent-forecast-chart.tsx
+src/components/ai/ai-copilot-drawer.tsx       (notification composer)
+src/components/ai/conversation-summary.tsx    (inbox)
+src/routes/_authenticated/reports.tsx          (weekly report archive + PDF download)
+src/routes/_authenticated/settings.intent.tsx  (weights + forecast config)
+edits: dashboard.tsx, products list + detail, notifications.new.tsx, inbox.tsx, customers list
 ```
+
+---
+
+## PHASE 2 — Customer Watchlists + ROI Engine (turn after Phase 1)
+
+### 3. Customer Watchlists (phone-based)
+
+**Schema**
+
+- `watchlists` (id, customer_id, name, status, channel='whatsapp', created_at).
+- `watchlist_items` polymorphic: target_type (`product|brand|category|collection|price_range`), target_id, params jsonb (e.g. `{max_price: 5000, currency:'ZAR'}`), notify_on (`price_drop|back_in_stock|low_stock|weekend_promo|new_collection`).
+- `customer_preferences` (paused_at, paused_until, quiet_hours, total_notifications_sent_30d).
+- `watchlist_engagement` rollup (per watchlist: sent / clicked / redeemed / revenue_recovered_cents).
+
+**Customer surfaces**
+
+- After the scan opt-in success state, prompt: "Want updates on more {brand}? Add to watchlist". Adds an item with one tap, no login.
+- `/me/$token` page (signed token sent over simulated WhatsApp magic link) → manage watchlists, pause/stop. Token in `customer_magic_tokens` (24-hour, single-use to mint a session cookie).
+- WhatsApp keyword handler (inbound webhook stub): `PAUSE`, `PAUSE 7D`, `STOP`, `RESUME` → updates `customer_preferences`. Inbound messages are logged in the existing Inbox.
+
+**Retailer surfaces**
+
+- New sidebar item **Watchlists** (under Customers): top brands followed, top categories followed, members per item, conversion to recovery.
+- Automated trigger rules:
+  - Price drop ≥ 5% on a watched product → enqueue notification.
+  - Stock crosses low_stock_threshold → "Only X Left" notification.
+  - Back-in-stock detection (quantity 0 → >0).
+  - Friday 10:00 local → Weekend Promotion notification per retailer.
+  - New product in followed brand/category → New Collection alert.
+- Quiet hours respected (default 21:00–08:00 local), max 1 alert per customer per 24h.
+
+### 4. ROI Engine (hero feature)
+
+**Schema**
+
+- Every row inserted into `notification_history` already gets a payload; add `redemption_code` (unique per row, base32, 8 chars). Backfill existing rows.
+- `sales_recoveries` already exists — extend with `notification_id` (already there), `redeemed_by_user_id`, `redeemed_at`, `store_id`, `pos_reference`, `notes`.
+- `roi_summary_daily` materialized view (refresh nightly) for fast dashboards.
+
+**Staff redemption surface**
+
+- New top-level page `/redeem` (any staff role): big code input → server function `redeemNotificationCode` validates code, finds the message, prefills customer/product/campaign, asks for purchase value + store, writes `sales_recoveries`, flips notification status to `redeemed`.
+- "Redeem at this store" button on the conversation panel and on customer detail (one-click prefill).
+
+**ROI dashboards**
+
+- New top-level page `/roi`:
+  - Hero KPIs: Revenue recovered (period), Campaign ROI %, Revenue per notification, Avg purchase after notification, Avg recovery time.
+  - **Most profitable campaigns** table (sortable, sparkline of recoveries).
+  - **Store ROI** map/list. **Product ROI** table.
+  - Filters: date range, store, campaign type. Export CSV/Excel/PDF reusing the analytics export wiring.
+- Embed a compact "ROI today" tile on Dashboard, and per-campaign ROI on the campaign detail page (replaces the funnel-only view with funnel + revenue).
+
+### Phase 2 file list (preview only)
+
+```text
+supabase/migrations/<ts>_phase2_watchlists_and_roi.sql
+src/lib/watchlists.functions.ts
+src/lib/roi.functions.ts
+src/routes/api/public/wa.inbound.ts          (WhatsApp keyword webhook stub)
+src/routes/api/public/hooks.watchlist-tick.ts (price drop / restock / weekend scans)
+src/routes/me.$token.tsx                      (customer self-serve)
+src/routes/_authenticated/watchlists.tsx
+src/routes/_authenticated/redeem.tsx
+src/routes/_authenticated/roi.tsx
+src/components/roi/*  src/components/watchlists/*
+edits: scan.$shortCode.tsx (post-success watchlist prompt), notifications.$campaignId.tsx (ROI tab), customers detail
+```
+
+---
+
+## Technical notes (for the technical reader)
+
+- **AI provider boundary**: `src/lib/ai-gateway.server.ts` holds the canonical `createLovableAiGatewayProvider` helper. Server functions import it dynamically inside handlers so the server-only module never reaches client bundles.
+- **Structured AI output**: every AI call uses `Output.object({ schema: z.object(...) })` so the UI renders typed cards. Failures (`429`, `402`, validation) surface as visible error states with retry, not silent fallbacks.
+- **Cron**: all new hooks live under `/api/public/hooks/*` (auth bypassed on published sites). Each handler verifies the `apikey` header matches the project anon key before doing anything; nothing privileged runs on a missing header. `pg_cron` uses the stable `project--<id>.lovable.app` URL.
+- **Idempotency**: redemption codes are unique; `redeemNotificationCode` upserts on `(notification_id)` so re-scans don't double-count revenue. Watchlist tick uses `last_fired_at` per (watchlist_item, rule) with a 24h debounce.
+- **Realtime**: existing `supabase_realtime` publication extended to include `ai_insights` and `sales_recoveries` so the Dashboard and ROI page update live.
+- **RLS**: every new table reuses `belongs_to_retailer` / `can_manage_retailer` helpers. Public-facing tables (`customer_magic_tokens`, `watchlists` via token) read through a narrow security-definer function rather than broad `anon` policies.
+- **Performance**: `product_intent_signals` is the read source for UI; full recompute drains a queue table populated by triggers, so the 5-min cron is cheap. The forecasting line uses `product_intent_history` aggregated server-side, not row-by-row client math.
+- **Migrations**: created tables follow the four-step pattern (CREATE → GRANT → ENABLE RLS → CREATE POLICY) with `service_role` grants for cron-hit hooks.
+
+---
+
+## What I'll do after you approve
+
+Build **Phase 1 only** in the next turn (AI Retail Intelligence + Intent Score + Forecasting). When Phase 1 looks right in preview, say "ship phase 2" and I'll build Watchlists + ROI.

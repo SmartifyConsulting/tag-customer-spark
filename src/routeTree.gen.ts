@@ -22,6 +22,8 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedQrTagsRouteImport } from './routes/_authenticated/qr-tags'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedIntentRouteImport } from './routes/_authenticated/intent'
+import { Route as AuthenticatedIntelligenceRouteImport } from './routes/_authenticated/intelligence'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
@@ -34,6 +36,7 @@ import { Route as AuthenticatedNotificationsCampaignIdRouteImport } from './rout
 import { Route as ApiPublicScanInterestRouteImport } from './routes/api/public/scan.interest'
 import { Route as ApiPublicSShortCodeRouteImport } from './routes/api/public/s.$shortCode'
 import { Route as ApiPublicHooksNotificationsTickRouteImport } from './routes/api/public/hooks.notifications-tick'
+import { Route as ApiPublicHooksIntentTickRouteImport } from './routes/api/public/hooks.intent-tick'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -98,6 +101,17 @@ const AuthenticatedNotificationsRoute =
   AuthenticatedNotificationsRouteImport.update({
     id: '/notifications',
     path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedIntentRoute = AuthenticatedIntentRouteImport.update({
+  id: '/intent',
+  path: '/intent',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedIntelligenceRoute =
+  AuthenticatedIntelligenceRouteImport.update({
+    id: '/intelligence',
+    path: '/intelligence',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
@@ -166,6 +180,12 @@ const ApiPublicHooksNotificationsTickRoute =
     path: '/api/public/hooks/notifications-tick',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksIntentTickRoute =
+  ApiPublicHooksIntentTickRouteImport.update({
+    id: '/api/public/hooks/intent-tick',
+    path: '/api/public/hooks/intent-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -176,6 +196,8 @@ export interface FileRoutesByFullPath {
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
+  '/intelligence': typeof AuthenticatedIntelligenceRoute
+  '/intent': typeof AuthenticatedIntentRoute
   '/notifications': typeof AuthenticatedNotificationsRouteWithChildren
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/qr-tags': typeof AuthenticatedQrTagsRoute
@@ -189,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
+  '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
@@ -202,6 +225,8 @@ export interface FileRoutesByTo {
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
+  '/intelligence': typeof AuthenticatedIntelligenceRoute
+  '/intent': typeof AuthenticatedIntentRoute
   '/qr-tags': typeof AuthenticatedQrTagsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
@@ -213,6 +238,7 @@ export interface FileRoutesByTo {
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/notifications': typeof AuthenticatedNotificationsIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
+  '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
@@ -228,6 +254,8 @@ export interface FileRoutesById {
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
+  '/_authenticated/intelligence': typeof AuthenticatedIntelligenceRoute
+  '/_authenticated/intent': typeof AuthenticatedIntentRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRouteWithChildren
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/qr-tags': typeof AuthenticatedQrTagsRoute
@@ -241,6 +269,7 @@ export interface FileRoutesById {
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
+  '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
@@ -256,6 +285,8 @@ export interface FileRouteTypes {
     | '/customers'
     | '/dashboard'
     | '/inbox'
+    | '/intelligence'
+    | '/intent'
     | '/notifications'
     | '/products'
     | '/qr-tags'
@@ -269,6 +300,7 @@ export interface FileRouteTypes {
     | '/products/$productId'
     | '/notifications/'
     | '/products/'
+    | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
     | '/api/public/s/$shortCode'
     | '/api/public/scan/interest'
@@ -282,6 +314,8 @@ export interface FileRouteTypes {
     | '/customers'
     | '/dashboard'
     | '/inbox'
+    | '/intelligence'
+    | '/intent'
     | '/qr-tags'
     | '/settings'
     | '/staff'
@@ -293,6 +327,7 @@ export interface FileRouteTypes {
     | '/products/$productId'
     | '/notifications'
     | '/products'
+    | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
     | '/api/public/s/$shortCode'
     | '/api/public/scan/interest'
@@ -307,6 +342,8 @@ export interface FileRouteTypes {
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
     | '/_authenticated/inbox'
+    | '/_authenticated/intelligence'
+    | '/_authenticated/intent'
     | '/_authenticated/notifications'
     | '/_authenticated/products'
     | '/_authenticated/qr-tags'
@@ -320,6 +357,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products/$productId'
     | '/_authenticated/notifications/'
     | '/_authenticated/products/'
+    | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
     | '/api/public/s/$shortCode'
     | '/api/public/scan/interest'
@@ -333,6 +371,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   NMessageIdRoute: typeof NMessageIdRoute
   ScanShortCodeRoute: typeof ScanShortCodeRoute
+  ApiPublicHooksIntentTickRoute: typeof ApiPublicHooksIntentTickRoute
   ApiPublicHooksNotificationsTickRoute: typeof ApiPublicHooksNotificationsTickRoute
   ApiPublicSShortCodeRoute: typeof ApiPublicSShortCodeRoute
   ApiPublicScanInterestRoute: typeof ApiPublicScanInterestRoute
@@ -431,6 +470,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/intent': {
+      id: '/_authenticated/intent'
+      path: '/intent'
+      fullPath: '/intent'
+      preLoaderRoute: typeof AuthenticatedIntentRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/intelligence': {
+      id: '/_authenticated/intelligence'
+      path: '/intelligence'
+      fullPath: '/intelligence'
+      preLoaderRoute: typeof AuthenticatedIntelligenceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/inbox': {
       id: '/_authenticated/inbox'
       path: '/inbox'
@@ -515,6 +568,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksNotificationsTickRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/intent-tick': {
+      id: '/api/public/hooks/intent-tick'
+      path: '/api/public/hooks/intent-tick'
+      fullPath: '/api/public/hooks/intent-tick'
+      preLoaderRoute: typeof ApiPublicHooksIntentTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -557,6 +617,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
+  AuthenticatedIntelligenceRoute: typeof AuthenticatedIntelligenceRoute
+  AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRouteWithChildren
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedQrTagsRoute: typeof AuthenticatedQrTagsRoute
@@ -570,6 +632,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
+  AuthenticatedIntelligenceRoute: AuthenticatedIntelligenceRoute,
+  AuthenticatedIntentRoute: AuthenticatedIntentRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRouteWithChildren,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedQrTagsRoute: AuthenticatedQrTagsRoute,
@@ -589,6 +653,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   NMessageIdRoute: NMessageIdRoute,
   ScanShortCodeRoute: ScanShortCodeRoute,
+  ApiPublicHooksIntentTickRoute: ApiPublicHooksIntentTickRoute,
   ApiPublicHooksNotificationsTickRoute: ApiPublicHooksNotificationsTickRoute,
   ApiPublicSShortCodeRoute: ApiPublicSShortCodeRoute,
   ApiPublicScanInterestRoute: ApiPublicScanInterestRoute,

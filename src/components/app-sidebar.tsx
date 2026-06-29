@@ -10,6 +10,8 @@ import {
   Store,
   UserCog,
   Settings,
+  Sparkles,
+  Gauge,
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,6 +30,8 @@ import { TagLogo } from "./tag-logo";
 
 const mainNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Intelligence", url: "/intelligence", icon: Sparkles },
+  { title: "Intent Engine", url: "/intent", icon: Gauge },
   { title: "Products", url: "/products", icon: Package },
   { title: "QR Tags", url: "/qr-tags", icon: QrCode },
   { title: "Customers", url: "/customers", icon: Users },
