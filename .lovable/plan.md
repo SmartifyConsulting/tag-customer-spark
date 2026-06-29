@@ -1,92 +1,120 @@
+## Scope
 
-## Products Module + Per-Product QR Codes
+Four modules built in sequence on top of the existing schema. WhatsApp is **simulated** end-to-end: messages move through queued → sent → delivered → read → clicked → redeemed via background jobs and inbox actions, no external provider. The landing-page form requires only WhatsApp notify consent; marketing + privacy boxes are optional and recorded.
 
-Build a complete Products module scoped to the signed-in user's retailer, plus per-product QR generation, printable PDF cards, and scan tracking. Stripe-meets-Notion styling, reusing existing dashboard components.
+---
 
-### 1. Backend (database + storage)
+## 1. Customer scan landing (`/scan/$shortCode`)
 
-**Storage buckets** (created via storage tool):
-- `product-images` — public read, authenticated write. RLS on `storage.objects` restricts insert/update/delete to users who `belongs_to_retailer` for the path prefix `{retailer_id}/{product_id}/...`.
-- `retailer-logos` — public read; admin/retail_admin write under `{retailer_id}/...`.
+Replace the current placeholder with a conversion-tuned, mobile-first page.
 
-**Schema migration**:
-- `products`: add `brand text`, `color text`, `size text`, `images jsonb default '[]'`, `promotion_start_date timestamptz`, `promotion_end_date timestamptz`. Existing fields kept.
-- `retailers`: add `logo_url text` if missing.
-- `product_status`: ensure `archived` value exists.
-- Reuse existing `qr_tags` table; add columns if missing: `template text default 'classic'`, `short_code text unique`, `version int default 1`, `is_active boolean default true`, `regenerated_from uuid references qr_tags(id)`.
-- Extend `qr_scans` (or create if absent) with: `qr_tag_id`, `product_id`, `retailer_id`, `store_id`, `scanned_at timestamptz`, `device_type text`, `user_agent text`, `ip_hash text`, `referrer text`, `customer_id` (nullable). Indexes on `(retailer_id, scanned_at desc)`, `(qr_tag_id)`, `(product_id)`.
-- Indexes: `products(retailer_id, status)`, `products(retailer_id, name)`, `products(retailer_id, sku)`, `qr_tags(product_id, is_active)`.
-- RLS: retailer-scoped via existing helpers. retail_admin / store_manager full CRUD on products + qr_tags; sales_assistant read-only. `qr_scans` insert open to `anon` (scan endpoint is public), select retailer-scoped.
+- **Public loader** uses a publishable-key client to fetch a safe slice: retailer name + logo, store name, product (name, brand, description, price, sale_price, hero image, currency), and `qr_tag.id`. New narrow `TO anon` SELECT policies projected through a `public_scan_view` so we never widen base tables.
+- **Layout** (one-thumb scroll):
+  1. Retailer logo bar (sticky, soft shadow).
+  2. Full-bleed hero image, rounded-2xl, ~16:10.
+  3. Product name + brand chip.
+  4. Price block — strikethrough original beside sale price in emerald when on promo; price-drop badge.
+  5. 2-line description.
+  6. Primary CTA: "Notify me on WhatsApp" (navy, full-width, sticky on small viewports).
+  7. Trust line: "We only message you about this product. Unsubscribe anytime."
+- **Notify sheet** (Drawer on mobile, Dialog on desktop):
+  - Fields: Name, WhatsApp number (intl phone input with country picker, E.164 normalization), required notify-consent checkbox, optional marketing-consent checkbox, optional privacy-acceptance checkbox.
+  - Zod validation; submit disabled until name + valid phone + notify consent.
+- **Submission** → public server route `POST /api/public/scan/interest`:
+  - Verifies the short code is active.
+  - Upserts `customers` by `(retailer_id, whatsapp_e164)`; stores consent flags + timestamps.
+  - Inserts `customer_interests` row linking customer ↔ product ↔ qr_tag with `status='active'`.
+  - Returns `{ ok, customer_id }`. All writes via `supabaseAdmin` loaded inside the handler; input validated with Zod.
+- **Success state** swaps the CTA for an emerald confirmation card: "You're on the list" + what to expect + "Browse more from {retailer}" link back to retailer landing (optional v2).
+- Framer-motion fade/slide for hero and CTA; confetti pulse on success.
 
-### 2. Server functions
+---
 
-`src/lib/products.functions.ts` (auth required):
-- `listProducts({ search, status, categoryId, storeId, promotion, lowStock, sort, page, pageSize })` — paginated rows + total + facet counts.
-- `getProduct({ id })` — product + category + store + active qr_tag + analytics summary.
-- `getProductFormOptions()` — categories + stores for current retailer.
-- `createProduct` / `updateProduct` / `archiveProduct` / `deleteProduct` — Zod-validated.
-- `createProductImageUploadUrl({ productId, filename, contentType })` — signed upload URL (admin client loaded inside handler).
-- `setProductImages({ id, images })` — persist ordered array.
+## 2. Notification engine (`/notifications`)
 
-`src/lib/qr.functions.ts` (auth required):
-- `getProductQr({ productId })` — current active tag (short_code, version, scan URL, template).
-- `regenerateProductQr({ productId, template? })` — deactivates current tag, inserts new one with new `short_code` + incremented `version`, sets `regenerated_from`.
-- `bulkGenerateQrs({ productIds | filter, template })` — generate/regenerate for many products in one call; returns summary.
-- `listProductScans({ productId, range, page })` — paginated scan log with date/time, store, device, qr_tag version.
+- **List page**: tabs for Drafts / Scheduled / Sending / Completed; cards show type badge, audience size, scheduled time, delivery funnel.
+- **Composer** (`/notifications/new`, also edit):
+  - Type selector chips: Sale, Low Stock, Back in Stock, Promotion, Custom — each pre-fills headline/body templates and inferred audience (e.g. Low Stock → customers interested in products below threshold).
+  - Fields: hero image (Storage upload, optional), headline (60), body (rich plain text, 600), CTA label + URL, expiry datetime, redemption-code link (pick from `redemption_codes` or generate new).
+  - Audience picker: product(s), store(s), interest filters → live count.
+  - Schedule: "Send now" or pick datetime (tz-aware).
+- **WhatsApp preview**: phone-frame mock on the right, live-binding to the form. Shows image bubble, bold headline, body, CTA button styled like WhatsApp interactive template, expiry footer.
+- **Send pipeline** (simulated):
+  - Save → `notification_campaigns` row with `status` (draft/scheduled/sending/completed).
+  - Server fn `enqueueCampaign` fans out `notification_history` rows (one per audience customer) with `status='queued'`.
+  - `pg_cron` job hits a public route `/api/public/hooks/notifications-tick` every minute: promotes queued→sent→delivered→read on staggered timers (simulated delivery rates), records timestamps. Click and redeem transitions happen when the customer (us, simulating) opens the message link → `/n/$messageId` route flips `clicked_at`, and entering the redemption code at checkout endpoint flips `redeemed_at`.
+  - Funnel chart on campaign detail: Queued → Sent → Delivered → Read → Clicked → Redeemed with counts + %.
 
-`src/lib/qr-pdf.functions.ts` (auth required):
-- `renderQrPdf({ productIds, template, layout })` — server-side PDF using `pdf-lib` (Worker-compatible). Generates A4 pages laid out by template (see §4). Returns `{ url }` to a short-lived signed PDF in a private `qr-exports` bucket, or streams base64.
+---
 
-Public scan endpoint (server route, no auth):
-- `src/routes/api/public/s/$shortCode.ts` — `GET`: look up active `qr_tag` by `short_code`, insert `qr_scans` row (parse UA → device_type, hash IP, capture referrer, infer store from tag), then 302 redirect to the customer-facing opt-in page `/scan/$shortCode`. Same prefix bypasses published-site auth; verifies nothing because scans are intentionally public.
+## 3. Customer inbox (`/inbox`)
 
-### 3. Routes
+Intercom-style three-pane layout:
 
-- `src/routes/_authenticated/products.tsx` — pathless layout wrapper with `<Outlet />`.
-- `src/routes/_authenticated/products.index.tsx` — list (`/products`).
-- `src/routes/_authenticated/products.$productId.tsx` — detail (`/products/:productId`) with tabs: Overview, QR Code, Scans, Analytics.
-- (Customer-facing `/scan/$shortCode` opt-in page is out of scope for this turn — endpoint exists, full opt-in lives with Customers/Notifications modules.)
+- **Left rail**: filter chips (All, Unread, Mine, Mentions, Resolved), saved searches, tag pills, unread badge per filter.
+- **Middle list**: conversations sorted by last_message_at; row shows customer avatar/initials, last snippet, unread dot, assigned-staff chip, tag chips, time-ago.
+- **Right pane**: message thread with WhatsApp-style bubbles (inbound left, outbound right), composer at bottom.
+  - Composer actions: Reply (logs `conversation_messages` outbound row, status='queued', no external send), Add internal note (separate `is_internal=true` row, yellow background), Assign staff (dropdown of retailer's staff), Tag (multi-select chips), Mark resolved.
+  - Header: customer name, phone, status pill, quick actions.
+- **Customer profile panel** (slide-over from right edge): name, phone, consent flags, lifetime scans, interests list (with product thumbnails), past campaigns received, recoveries.
+- Realtime: subscribe to `conversation_messages` + `conversations` via Supabase Realtime so new inbound messages light up instantly.
+- Search: full-text over messages + customer name/phone (Postgres `ilike` for v1).
 
-Create/edit uses a Shadcn Dialog on the list page (faster, in-context) — happy to switch to dedicated routes if preferred.
+Schema additions: `conversations.assigned_to`, `tags text[]`, `is_resolved`, `conversation_messages.is_internal`.
 
-URL search params (Zod + `fallback`): `search`, `status`, `category`, `store`, `promo`, `lowStock`, `sort`, `page`, `pageSize`.
+---
 
-### 4. UI components
+## 4. Advanced analytics (`/analytics`)
 
-`src/components/products/`:
-- `ProductsTable` — thumbnail, name+SKU, brand, category, store, price (strike-through on sale), stock badge (emerald/orange/red), status badge, row actions.
-- `ProductsToolbar` — debounced search, status/category/store filters, promo & low-stock toggles, "Add product", "Bulk QR PDF".
-- `ProductsPagination` — page size + prev/next.
-- `ProductFormDialog` — react-hook-form + Zod. Sections: Basics, Pricing, Inventory, Variants (colour/size), Promotion (date range picker), Images.
-- `ProductImageUploader` — signed-URL upload, progress, reorder, primary image.
-- `ProductDetailHeader` — gallery + key facts + actions.
-- `ProductAnalyticsCards` — scans, unique customers interested, notifications sent, recoveries + 30-day scan area chart + recent activity.
+- **KPI strip**: Total scans, Unique customers, Returning customers, Recovered revenue, Avg recovery time, Notification CTR.
+- **Charts** (Recharts):
+  - Scan trend (daily/weekly/monthly toggle) with anomaly highlighting.
+  - Customer growth (new vs returning stacked area).
+  - Top products bar (scans + recoveries dual axis).
+  - Top stores bar.
+  - Campaign performance — funnel + table.
+  - Heatmap: scans by weekday × hour (custom SVG grid, navy intensity scale).
+- **Filters bar**: date range, store, category, product — URL-synced.
+- **Exports**:
+  - **CSV** + **Excel** (client-side via `xlsx`) of the filtered dataset.
+  - **Branded PDF report**: server-fn `generateAnalyticsReportPdf` renders with `pdf-lib` — cover page with retailer logo + period, KPI grid, charts rendered server-side as PNG via `@napi-rs/canvas`-free path (we'll pre-render chart data as SVG strings then rasterize with `resvg-wasm` which is Worker-safe), and data tables. Returned as a download.
 
-`src/components/qr/`:
-- `ProductQrPanel` (Overview tab) — current QR preview, short URL, version, copy/download PNG, Regenerate (confirm dialog), Template picker, "Download printable PDF".
-- `QrTemplatePicker` — choose template: **Classic**, **Minimal**, **Bold Promo**, **Compact** (4 templates).
-- `BulkQrDialog` — pick products (filter-driven or checkbox selection), template, cards-per-A4 page (1, 2, 4, 8), then download.
-- `ScansTable` — date, time, store, device, QR version, short_code; CSV export.
-- Loading skeletons + empty states reusing `empty-state.tsx`.
+---
 
-### 5. Printable QR PDF
+## Technical details
 
-- Server-side PDF via `pdf-lib` (Worker-compatible). A4 page size, configurable layout (1 / 2 / 4 / 8 cards per page) with crop marks between cards.
-- Each card renders: retailer logo (from `retailers.logo_url`), primary product image, product name, QR code (generated with `qrcode` npm package → PNG bytes), short message.
-- Default short message: *"Love this item? Scan here to receive WhatsApp updates if the price drops."* — editable per generation via `BulkQrDialog`.
-- Templates differ in layout, typography, accent block, and message placement; all share the same data.
-- QR payload = `https://<site>/api/public/s/<short_code>` so every scan hits the tracking endpoint.
+- **Migrations**:
+  1. `public_scan_view` + `TO anon` SELECT policies on it; helper RPC `record_interest` (not used — we go through admin route for atomic upsert).
+  2. Add columns: `customers.notify_consent_at`, `marketing_consent_at`, `privacy_accepted_at`; `conversations.assigned_to uuid`, `tags text[]`, `is_resolved bool`; `conversation_messages.is_internal bool`.
+  3. `ALTER PUBLICATION supabase_realtime ADD TABLE conversations, conversation_messages;`
+  4. `pg_cron` job for notification tick (every minute) calling the public hook.
+- **Server functions** (`src/lib/*.functions.ts`):
+  - `scan.functions.ts`: `getPublicScan` (public publishable client).
+  - `notifications.functions.ts`: list/get/upsert/enqueue/cancel campaigns; funnel stats.
+  - `inbox.functions.ts`: list conversations, get thread, post reply/note, assign, tag, resolve.
+  - `analytics.functions.ts`: KPIs, trend, heatmap, top lists, export-dataset, PDF generator.
+- **Public routes**:
+  - `POST /api/public/scan/interest` — submit form.
+  - `POST /api/public/hooks/notifications-tick` — cron-driven simulator.
+  - `GET /n/$messageId` — click-tracking redirect (also public).
+- **Libraries to install**: `react-phone-number-input`, `libphonenumber-js`, `xlsx`, `pdf-lib` (already present), `@resvg/resvg-wasm`, `framer-motion` (if not present), `date-fns-tz`.
+- **Buckets**: reuse `product-images` for campaign hero (separate `campaign-assets` bucket created via tool, private, signed URLs at send time). Retailer logo already in `retailer-logos`.
+- **RLS**: every new column inherits existing retailer-scoped policies via `belongs_to_retailer`. Public view exposes only the safe columns enumerated above.
+- **Build order**: landing → notification engine (schema + composer + simulator) → inbox (schema + UI + realtime) → analytics (charts + exports). Each module ships independently typechecked.
 
-### 6. Scan tracking
-
-- Every redirect through `/api/public/s/$shortCode` inserts one `qr_scans` row capturing date/time, store (resolved from tag), device (UA parsing), qr_tag id + version.
-- Detail page → **Scans** tab shows the log; **Analytics** tab shows scans over time + device breakdown + per-store split.
-
-### 7. Validation & permissions
-
-- Zod schemas in `src/lib/products.schemas.ts` (shared between form resolver and server `inputValidator`).
-- Super admin / retail admin / store manager: full CRUD + QR ops. Sales assistant: read-only (action buttons hidden, server fns reject 403).
-
-### Out of scope (this turn)
-
-Customer-facing `/scan/$shortCode` opt-in screen, WhatsApp send pipeline, CSV/bulk product import — separate modules.
+```text
+scan QR  ─►  /scan/:code  ─►  POST /api/public/scan/interest
+                                      │
+                                      ▼
+                              customers + customer_interests
+                                      │
+        retailer creates campaign ────┤
+                │                     ▼
+        notification_campaigns ─► notification_history (queued)
+                                      │  pg_cron tick
+                                      ▼
+                          sent → delivered → read → clicked → redeemed
+                                      │
+                                      ▼
+                          inbox conversations + analytics rollups
+```
