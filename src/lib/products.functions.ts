@@ -3,9 +3,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { productInputSchema, listProductsSchema } from "./products.schemas";
 
-type SB = Awaited<ReturnType<typeof requireSupabaseAuth.server>> extends never
-  ? never
-  : any;
 
 async function resolveRetailerId(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
