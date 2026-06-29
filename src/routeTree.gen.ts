@@ -14,6 +14,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ScanShortCodeRouteImport } from './routes/scan.$shortCode'
 import { Route as AuthenticatedStoresRouteImport } from './routes/_authenticated/stores'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -23,6 +24,7 @@ import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authen
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as ApiPublicSShortCodeRouteImport } from './routes/api/public/s.$shortCode'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -46,6 +48,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanShortCodeRoute = ScanShortCodeRouteImport.update({
+  id: '/scan/$shortCode',
+  path: '/scan/$shortCode',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStoresRoute = AuthenticatedStoresRouteImport.update({
@@ -94,6 +101,11 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicSShortCodeRoute = ApiPublicSShortCodeRouteImport.update({
+  id: '/api/public/s/$shortCode',
+  path: '/api/public/s/$shortCode',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,6 +121,8 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stores': typeof AuthenticatedStoresRoute
+  '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -124,6 +138,8 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stores': typeof AuthenticatedStoresRoute
+  '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -141,6 +157,8 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stores': typeof AuthenticatedStoresRoute
+  '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -158,6 +176,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/staff'
     | '/stores'
+    | '/scan/$shortCode'
+    | '/api/public/s/$shortCode'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -173,6 +193,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/staff'
     | '/stores'
+    | '/scan/$shortCode'
+    | '/api/public/s/$shortCode'
   id:
     | '__root__'
     | '/'
@@ -189,6 +211,8 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/staff'
     | '/_authenticated/stores'
+    | '/scan/$shortCode'
+    | '/api/public/s/$shortCode'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,6 +221,8 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ScanShortCodeRoute: typeof ScanShortCodeRoute
+  ApiPublicSShortCodeRoute: typeof ApiPublicSShortCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -234,6 +260,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan/$shortCode': {
+      id: '/scan/$shortCode'
+      path: '/scan/$shortCode'
+      fullPath: '/scan/$shortCode'
+      preLoaderRoute: typeof ScanShortCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/stores': {
@@ -299,6 +332,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/s/$shortCode': {
+      id: '/api/public/s/$shortCode'
+      path: '/api/public/s/$shortCode'
+      fullPath: '/api/public/s/$shortCode'
+      preLoaderRoute: typeof ApiPublicSShortCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -335,6 +375,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ScanShortCodeRoute: ScanShortCodeRoute,
+  ApiPublicSShortCodeRoute: ApiPublicSShortCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
