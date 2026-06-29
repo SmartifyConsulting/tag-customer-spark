@@ -75,10 +75,10 @@ function AnalyticsPage() {
   }
   function exportXLSX() {
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.campaignPerformance), "Campaigns");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.popularProducts.map((p) => ({ Product: p.product?.name, Scans: p.count }))), "Top Products");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.scanTrend), "Scan Trend");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.customerGrowth), "Customer Growth");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analytics.campaignPerformance), "Campaigns");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analytics.popularProducts.map((p) => ({ Product: p.product?.name, Scans: p.count }))), "Top Products");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analytics.scanTrend), "Scan Trend");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analytics.customerGrowth), "Customer Growth");
     const blob = new Blob([XLSX.write(wb, { type: "array", bookType: "xlsx" })], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
@@ -110,7 +110,7 @@ function AnalyticsPage() {
     y -= 12;
     page.drawText("Top campaigns", { x: 40, y, size: 14, font: bold });
     y -= 18;
-    for (const c of data.campaignPerformance.slice(0, 10)) {
+    for (const c of analytics.campaignPerformance.slice(0, 10)) {
       page.drawText(`${c.title.slice(0, 40)}  —  sent ${c.sent}, clicked ${c.clicked}, ctr ${c.ctr}%`, { x: 40, y, size: 10, font });
       y -= 14;
       if (y < 60) break;
@@ -158,7 +158,7 @@ function AnalyticsPage() {
         <Kpi label="Avg recovery time" value={`${t.avgRecoveryHours.toFixed(1)}h`} />
         <Kpi label="Notification CTR" value={`${t.overallCtr}%`} />
         <Kpi label="Total customers" value={t.customersTotal.toLocaleString()} />
-        <Kpi label="Active campaigns" value={data.campaignPerformance.length.toString()} />
+        <Kpi label="Active campaigns" value={analytics.campaignPerformance.length.toString()} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
@@ -166,7 +166,7 @@ function AnalyticsPage() {
           <h3 className="text-sm font-semibold mb-3">Scan trend</h3>
           <div className="h-60">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.scanTrend}>
+              <AreaChart data={analytics.scanTrend}>
                 <defs>
                   <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
@@ -187,7 +187,7 @@ function AnalyticsPage() {
           <h3 className="text-sm font-semibold mb-3">Customer growth</h3>
           <div className="h-60">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.customerGrowth}>
+              <LineChart data={analytics.customerGrowth}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                 <XAxis dataKey="date" fontSize={10} />
                 <YAxis fontSize={10} />
@@ -203,7 +203,7 @@ function AnalyticsPage() {
           <h3 className="text-sm font-semibold mb-3">Popular products</h3>
           <div className="h-60">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.popularProducts.map((p) => ({ name: p.product?.name?.slice(0, 16) ?? "—", scans: p.count }))}>
+              <BarChart data={analytics.popularProducts.map((p) => ({ name: p.product?.name?.slice(0, 16) ?? "—", scans: p.count }))}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                 <XAxis dataKey="name" fontSize={10} interval={0} angle={-20} textAnchor="end" height={50} />
                 <YAxis fontSize={10} />
@@ -217,9 +217,9 @@ function AnalyticsPage() {
         <Card className="p-5">
           <h3 className="text-sm font-semibold mb-3">Popular stores</h3>
           <div className="space-y-2">
-            {data.popularStores.length === 0 && <p className="text-sm text-muted-foreground">No store data yet.</p>}
-            {data.popularStores.map((s) => {
-              const max = data.popularStores[0]?.count || 1;
+            {analytics.popularStores.length === 0 && <p className="text-sm text-muted-foreground">No store data yet.</p>}
+            {analytics.popularStores.map((s) => {
+              const max = analytics.popularStores[0]?.count || 1;
               const pct = (s.count / max) * 100;
               return (
                 <div key={s.id}>
@@ -239,7 +239,7 @@ function AnalyticsPage() {
 
       <Card className="p-5">
         <h3 className="text-sm font-semibold mb-3">Scan heatmap (weekday × hour)</h3>
-        <Heatmap data={data.heatmap} />
+        <Heatmap data={analytics.heatmap} />
       </Card>
 
       <Card className="p-5">
@@ -259,10 +259,10 @@ function AnalyticsPage() {
               </tr>
             </thead>
             <tbody>
-              {data.campaignPerformance.length === 0 && (
+              {analytics.campaignPerformance.length === 0 && (
                 <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">No campaigns yet.</td></tr>
               )}
-              {data.campaignPerformance.map((c) => (
+              {analytics.campaignPerformance.map((c) => (
                 <tr key={c.id} className="border-b border-border/40 last:border-0">
                   <td className="py-2 px-2 font-medium">{c.title}</td>
                   <td className="py-2 px-2"><Badge variant="secondary" className="text-[10px]">{c.type}</Badge></td>
