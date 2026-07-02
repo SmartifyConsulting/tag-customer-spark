@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.apply_paid_tier(uuid, tag_tier, text, timestamptz, text, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.apply_paid_tier(uuid, tag_tier, text, timestamptz, text, text) TO service_role;
