@@ -74,6 +74,8 @@ export const upsertStore = createServerFn({ method: "POST" })
         city: z.string().trim().max(80).optional().nullable(),
         country: z.string().trim().max(80).optional().nullable(),
         timezone: z.string().trim().max(80).optional().nullable(),
+        manager_name: z.string().trim().max(120).optional().nullable(),
+        contact_phone: z.string().trim().max(40).optional().nullable(),
         status: z.enum(["active", "closed", "pending"]).default("active"),
       })
       .parse(d),
