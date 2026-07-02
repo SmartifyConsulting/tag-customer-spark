@@ -26,6 +26,7 @@ import { PromotionsCard } from "@/components/dashboard/promotions-card";
 import { RecentActivityCard } from "@/components/dashboard/recent-activity-card";
 import { OpportunityFeedCard } from "@/components/dashboard/opportunity-feed";
 import { IntentSectionsCard } from "@/components/dashboard/intent-sections-card";
+import { LowStockCard } from "@/components/dashboard/low-stock-card";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -212,8 +213,9 @@ function DashboardContent() {
         <NotificationPerformanceCard data={data.notificationPerf} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-3">
         <PromotionsCard promotions={data.promotionProducts} />
+        <LowStockCard products={data.lowStockProducts} />
         <RecentActivityCard items={data.recentActivity} />
       </div>
     </div>
