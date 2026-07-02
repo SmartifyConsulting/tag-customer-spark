@@ -8,7 +8,7 @@ import { PLANS, priceCents, type PlanId, type Cycle } from "./billing/pricing";
  * may initiate billing actions.
  */
 async function requireBillingContext(
-  supabase: Awaited<ReturnType<typeof import("@supabase/supabase-js").createClient>>,
+  supabase: { from: (t: string) => { select: (c: string) => { eq: (col: string, v: string) => Promise<{ data: Array<{ role: string; retailer_id: string | null }> | null }> } } },
   userId: string,
 ) {
   const { data: rolesRow } = await supabase
@@ -16,12 +16,11 @@ async function requireBillingContext(
     .select("role, retailer_id")
     .eq("user_id", userId);
   const roles = rolesRow ?? [];
-  const superAdmin = roles.some((r: { role: string }) => r.role === "super_admin");
+  const superAdmin = roles.some((r) => r.role === "super_admin");
   const adminRow = roles.find(
-    (r: { role: string; retailer_id: string | null }) =>
-      (r.role === "retail_admin" || r.role === "store_manager") && r.retailer_id,
+    (r) => (r.role === "retail_admin" || r.role === "store_manager") && r.retailer_id,
   );
-  const retailerId = adminRow?.retailer_id as string | undefined;
+  const retailerId = adminRow?.retailer_id ?? undefined;
   if (!retailerId && !superAdmin) {
     throw new Error("Only retail admins can manage billing.");
   }
