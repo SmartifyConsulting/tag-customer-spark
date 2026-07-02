@@ -44,11 +44,6 @@ function Landing() {
           <a href="#intelligence" className="hover:text-foreground">Intelligence</a>
         </nav>
         <div className="flex items-center gap-2">
-          {checked && !authed && (
-            <Link to="/auth" className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline">
-              Sign in
-            </Link>
-          )}
           <Button onClick={() => navigate({ to: primaryHref })} className="gap-2">
             {primaryLabel} <ArrowRight className="h-4 w-4" />
           </Button>
