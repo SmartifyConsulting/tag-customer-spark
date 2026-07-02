@@ -37,6 +37,7 @@ export const SECTIONS: SectionDef[] = [
     tabs: [
       { label: "Customers", to: "/customers", match: ["/customers"] },
       { label: "Products", to: "/products", match: ["/products"] },
+      { label: "Stock", to: "/stock", match: ["/stock"] },
       { label: "QR Tags", to: "/qr-tags", match: ["/qr-tags"] },
       { label: "Watchlists", to: "/watchlists", match: ["/watchlists"] },
       { label: "Compare", to: "/products/compare", match: ["/products/compare"] },
