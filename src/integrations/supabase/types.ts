@@ -2075,10 +2075,12 @@ export type Database = {
         Row: {
           address: string | null
           city: string | null
+          contact_phone: string | null
           country: string | null
           created_at: string
           created_by: string | null
           id: string
+          manager_name: string | null
           name: string
           retailer_id: string
           status: Database["public"]["Enums"]["store_status"]
@@ -2088,10 +2090,12 @@ export type Database = {
         Insert: {
           address?: string | null
           city?: string | null
+          contact_phone?: string | null
           country?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
+          manager_name?: string | null
           name: string
           retailer_id: string
           status?: Database["public"]["Enums"]["store_status"]
@@ -2101,10 +2105,12 @@ export type Database = {
         Update: {
           address?: string | null
           city?: string | null
+          contact_phone?: string | null
           country?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
+          manager_name?: string | null
           name?: string
           retailer_id?: string
           status?: Database["public"]["Enums"]["store_status"]
