@@ -53,13 +53,14 @@ export function AppSidebar() {
         {collapsed ? (
           <TagLogo variant="icon" size="sm" />
         ) : (
-          <div className="pointer-events-none absolute left-1/2 bottom-1 -translate-x-1/2">
+          <div className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2">
             <TagLogo variant="wordmark" size="xl" />
           </div>
         )}
       </SidebarHeader>
 
-      <SidebarContent className="px-1.5 pb-3 pt-6">
+      <SidebarContent className="px-1.5 pb-3 pt-[144px]">
+
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
