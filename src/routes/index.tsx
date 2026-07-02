@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
 import { ArrowRight, QrCode, MessageCircle, TrendingUp, Sparkles, Bell, BarChart3 } from "lucide-react";
-import logoAsset from "@/assets/tag-logo.png.asset.json";
+
 import heroLogo from "@/assets/tag-logo-hero.png.asset.json";
 
 export const Route = createFileRoute("/")({
@@ -36,14 +36,14 @@ function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Nav */}
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-        <img src={heroLogo.url} alt="Tag" className="h-[240px] w-auto object-contain" />
-        <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
+      <header className="mx-auto flex max-w-7xl items-start justify-between px-6 py-5">
+        <img src={heroLogo.url} alt="Tag" className="h-[240px] w-auto object-contain mt-[57px]" />
+        <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex mt-3">
           <a href="#features" className="hover:text-foreground">Features</a>
           <a href="#how" className="hover:text-foreground">How it works</a>
           <a href="#intelligence" className="hover:text-foreground">Intelligence</a>
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mt-3">
           <Button onClick={() => navigate({ to: primaryHref })} className="gap-2">
             {primaryLabel} <ArrowRight className="h-4 w-4" />
           </Button>
@@ -92,9 +92,13 @@ function Landing() {
             <div className="absolute inset-0 -z-10 rounded-[2rem] bg-gradient-to-br from-primary/10 to-transparent blur-2xl" />
             <div className="w-full max-w-md rounded-3xl border border-border/60 bg-card p-6 shadow-xl">
               <div className="flex items-center gap-3 border-b border-border/60 pb-4">
-                <img src={logoAsset.url} alt="" className="h-10 w-10 object-contain" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366]">
+                  <svg viewBox="0 0 32 32" className="h-6 w-6 text-white" fill="currentColor" aria-hidden="true">
+                    <path d="M19.11 17.205c-.372 0-1.088 1.39-1.518 1.39a.63.63 0 0 1-.315-.1c-.802-.402-1.504-.817-2.163-1.447-.545-.516-1.146-1.29-1.46-1.963a.426.426 0 0 1-.073-.215c0-.33.99-.945.99-1.49 0-.143-.73-2.09-.832-2.335-.14-.372-.214-.487-.6-.487-.187 0-.36-.043-.53-.043-.302 0-.53.115-.746.315-.688.645-1.032 1.318-1.06 2.264v.114c-.015.99.472 1.977 1.017 2.792 1.23 1.82 2.506 3.41 4.554 4.34.616.287 2.035.888 2.72.888.517 0 2.15-.658 2.478-1.72.187-.573.187-1.088.115-1.19-.13-.14-.302-.216-.63-.373zM16.5 5c-6.348 0-11.5 5.152-11.5 11.5 0 2.024.516 3.976 1.516 5.7L5 27l4.907-1.474a11.4 11.4 0 0 0 5.593 1.474h.005c6.348 0 11.5-5.152 11.5-11.5S22.853 5 16.505 5zm0 21.05a9.5 9.5 0 0 1-4.847-1.32l-.35-.215-3.626 1.09 1.077-3.53-.235-.363a9.5 9.5 0 1 1 8.001 4.339z"/>
+                  </svg>
+                </div>
                 <div>
-                  <div className="text-sm font-semibold">Tag · WhatsApp</div>
+                  <div className="text-sm font-semibold">WhatsApp · Tag</div>
                   <div className="text-xs text-muted-foreground">Notification preview</div>
                 </div>
               </div>
@@ -112,7 +116,7 @@ function Landing() {
               <div className="mt-6 grid grid-cols-3 gap-3 border-t border-border/60 pt-4 text-center text-xs">
                 <div className="rounded-lg bg-muted/60 py-2"><div className="font-semibold text-foreground">Scanned</div><div className="text-muted-foreground">Today 14:02</div></div>
                 <div className="rounded-lg bg-muted/60 py-2"><div className="font-semibold text-foreground">Notified</div><div className="text-muted-foreground">+3 days</div></div>
-                <div className="rounded-lg bg-success/10 py-2"><div className="font-semibold text-success">Recovered</div><div className="text-muted-foreground">R 4,290</div></div>
+                <div className="rounded-lg bg-[color:var(--mint)] py-2 shadow-sm"><div className="font-semibold text-white">Recovered</div><div className="text-white/90">R 4,290</div></div>
               </div>
             </div>
           </div>

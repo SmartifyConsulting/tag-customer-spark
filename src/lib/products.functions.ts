@@ -331,3 +331,60 @@ export const setProductImages = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const updateStock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        stock_qty: z.number().int().min(0).max(999999),
+        low_stock_threshold: z.number().int().min(0).max(999999).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const patch: { stock_qty: number; low_stock_threshold?: number } = {
+      stock_qty: data.stock_qty,
+    };
+    if (data.low_stock_threshold !== undefined)
+      patch.low_stock_threshold = data.low_stock_threshold;
+    const { error } = await context.supabase
+      .from("products")
+      .update(patch)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listStockOverview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        filter: z.enum(["all", "low", "out"]).default("all"),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("products")
+      .select(
+        "id, name, sku, image_url, stock_qty, low_stock_threshold, status, store:stores(id,name)",
+      )
+      .eq("status", "active")
+      .order("stock_qty", { ascending: true })
+      .limit(500);
+    if (error) throw new Error(error.message);
+    const list = (rows ?? []).filter((p: any) => {
+      if (data.filter === "out") return (p.stock_qty ?? 0) <= 0;
+      if (data.filter === "low")
+        return (
+          (p.stock_qty ?? 0) > 0 &&
+          (p.stock_qty ?? 0) <= (p.low_stock_threshold ?? 0)
+        );
+      return true;
+    });
+    return list;
+  });

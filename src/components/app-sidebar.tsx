@@ -48,18 +48,19 @@ export function AppSidebar() {
     item.match.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
   return (
-    <Sidebar collapsible="icon" className="border-r-0">
-      <SidebarHeader className="border-b border-sidebar-border/60 bg-sidebar">
-        <div className="flex items-center justify-center px-3 pt-6 pb-4">
-          {collapsed ? (
-            <TagLogo variant="icon" size="sm" />
-          ) : (
-            <TagLogo variant="wordmark" size="lg" />
-          )}
-        </div>
+    <Sidebar collapsible="icon" className="border-r-0 overflow-visible">
+      <SidebarHeader className="relative h-16 flex-row items-center justify-center overflow-visible border-b border-sidebar-border/60 bg-sidebar p-0">
+        {collapsed ? (
+          <TagLogo variant="icon" size="sm" />
+        ) : (
+          <div className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2">
+            <TagLogo variant="wordmark" size="xl" />
+          </div>
+        )}
       </SidebarHeader>
 
-      <SidebarContent className="px-1.5 pb-3 pt-[38px]">
+      <SidebarContent className="px-1.5 pb-3 pt-[144px]">
+
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -77,13 +78,12 @@ export function AppSidebar() {
                       tooltip={locked ? `${item.title} — upgrade required` : item.title}
                       className={
                         active && !locked
-                          ? "relative bg-[color:var(--mint)]/15 text-[color:var(--mint)] font-semibold hover:bg-[color:var(--mint)]/20 hover:text-[color:var(--mint)] data-[active=true]:bg-[color:var(--mint)]/15 data-[active=true]:text-[color:var(--mint)] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r-full before:bg-[color:var(--mint)]"
+                          ? "bg-[color:var(--mint)] text-white font-semibold hover:bg-[color:var(--mint)] hover:text-white data-[active=true]:bg-[color:var(--mint)] data-[active=true]:text-white [&_svg]:text-white"
                           : locked
                             ? "text-sidebar-foreground/50 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/80"
                             : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
                       }
                     >
-                      
                       <Link {...linkProps} className="flex items-center gap-2.5">
                         <item.icon className="h-4 w-4 shrink-0" />
                         <span className="truncate flex-1">{item.title}</span>
@@ -97,6 +97,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
 
       <SidebarFooter className="border-t border-sidebar-border/60">
         {!collapsed && (

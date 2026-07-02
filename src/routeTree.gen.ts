@@ -19,6 +19,7 @@ import { Route as NMessageIdRouteImport } from './routes/n.$messageId'
 import { Route as AuthenticatedWatchlistsRouteImport } from './routes/_authenticated/watchlists'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
 import { Route as AuthenticatedStoresRouteImport } from './routes/_authenticated/stores'
+import { Route as AuthenticatedStockRouteImport } from './routes/_authenticated/stock'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedRoiRouteImport } from './routes/_authenticated/roi'
@@ -102,6 +103,11 @@ const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
 const AuthenticatedStoresRoute = AuthenticatedStoresRouteImport.update({
   id: '/stores',
   path: '/stores',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedStockRoute = AuthenticatedStockRouteImport.update({
+  id: '/stock',
+  path: '/stock',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
@@ -319,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
+  '/stock': typeof AuthenticatedStockRoute
   '/stores': typeof AuthenticatedStoresRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
@@ -363,6 +370,7 @@ export interface FileRoutesByTo {
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
+  '/stock': typeof AuthenticatedStockRoute
   '/stores': typeof AuthenticatedStoresRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
@@ -411,6 +419,7 @@ export interface FileRoutesById {
   '/_authenticated/roi': typeof AuthenticatedRoiRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
+  '/_authenticated/stock': typeof AuthenticatedStockRoute
   '/_authenticated/stores': typeof AuthenticatedStoresRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/_authenticated/watchlists': typeof AuthenticatedWatchlistsRoute
@@ -459,6 +468,7 @@ export interface FileRouteTypes {
     | '/roi'
     | '/settings'
     | '/staff'
+    | '/stock'
     | '/stores'
     | '/upgrade'
     | '/watchlists'
@@ -503,6 +513,7 @@ export interface FileRouteTypes {
     | '/roi'
     | '/settings'
     | '/staff'
+    | '/stock'
     | '/stores'
     | '/upgrade'
     | '/watchlists'
@@ -550,6 +561,7 @@ export interface FileRouteTypes {
     | '/_authenticated/roi'
     | '/_authenticated/settings'
     | '/_authenticated/staff'
+    | '/_authenticated/stock'
     | '/_authenticated/stores'
     | '/_authenticated/upgrade'
     | '/_authenticated/watchlists'
@@ -665,6 +677,13 @@ declare module '@tanstack/react-router' {
       path: '/stores'
       fullPath: '/stores'
       preLoaderRoute: typeof AuthenticatedStoresRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/stock': {
+      id: '/_authenticated/stock'
+      path: '/stock'
+      fullPath: '/stock'
+      preLoaderRoute: typeof AuthenticatedStockRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/staff': {
@@ -1003,6 +1022,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRoiRoute: typeof AuthenticatedRoiRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
+  AuthenticatedStockRoute: typeof AuthenticatedStockRoute
   AuthenticatedStoresRoute: typeof AuthenticatedStoresRoute
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedWatchlistsRoute: typeof AuthenticatedWatchlistsRoute
@@ -1026,6 +1046,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRoiRoute: AuthenticatedRoiRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
+  AuthenticatedStockRoute: AuthenticatedStockRoute,
   AuthenticatedStoresRoute: AuthenticatedStoresRoute,
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedWatchlistsRoute: AuthenticatedWatchlistsRoute,

@@ -37,6 +37,7 @@ export const SECTIONS: SectionDef[] = [
     tabs: [
       { label: "Customers", to: "/customers", match: ["/customers"] },
       { label: "Products", to: "/products", match: ["/products"] },
+      { label: "Stock", to: "/stock", match: ["/stock"] },
       { label: "QR Tags", to: "/qr-tags", match: ["/qr-tags"] },
       { label: "Watchlists", to: "/watchlists", match: ["/watchlists"] },
       { label: "Compare", to: "/products/compare", match: ["/products/compare"] },
@@ -124,7 +125,7 @@ export function SectionTabs() {
 
   return (
     <div className="sticky top-16 z-[5] -mx-4 border-b border-border bg-background/85 px-4 py-3 backdrop-blur-md sm:-mx-8 sm:px-8">
-      <div className="mx-auto flex max-w-7xl items-center gap-1.5 overflow-x-auto rounded-full bg-muted/50 p-1.5">
+      <div className="mx-auto flex max-w-7xl items-center gap-1.5 overflow-x-auto rounded-full bg-slate-300/70 p-1.5 dark:bg-slate-700/60">
         {section.tabs.map((t) => {
           const isActive = activeTab?.to === t.to;
           const locked = t.feature ? !hasFeature(tier, t.feature) : false;
