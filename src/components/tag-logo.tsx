@@ -9,12 +9,18 @@ export function TagLogo({
 }: {
   className?: string;
   withWordmark?: boolean;
-  size?: "default" | "sm" | "lg";
+  size?: "default" | "sm" | "lg" | "xl";
   variant?: "icon" | "wordmark";
 }) {
   if (variant === "wordmark") {
     const h =
-      size === "sm" ? "h-10" : size === "lg" ? "h-16" : "h-12";
+      size === "sm"
+        ? "h-10"
+        : size === "lg"
+          ? "h-16"
+          : size === "xl"
+            ? "h-48"
+            : "h-12";
     return (
       <div className={`flex items-center justify-center ${className ?? ""}`}>
         <img
