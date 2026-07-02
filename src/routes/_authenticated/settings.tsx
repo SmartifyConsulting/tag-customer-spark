@@ -15,6 +15,9 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { getWorkspaceSettings, updateRetailerProfile, listAuditLog } from "@/lib/settings.functions";
 import { sendTestEmail, sendDailyBriefingEmail, sendWeeklyRoiEmail } from "@/lib/email.functions";
+import { BillingTab } from "@/components/settings/billing-tab";
+import { PlanAdminTab } from "@/components/settings/plan-admin-tab";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — Tag" }] }),
@@ -25,6 +28,8 @@ function SettingsPage() {
   const qc = useQueryClient();
   const settings = useQuery({ queryKey: ["settings"], queryFn: () => getWorkspaceSettings() });
   const audit = useQuery({ queryKey: ["audit"], queryFn: () => listAuditLog() });
+  const { roles } = useAuth();
+  const isSuperAdmin = (roles ?? []).includes("super_admin");
   const r = settings.data?.retailer;
   const [form, setForm] = useState<any>(null);
   const current = form ?? r ?? { name: "", contact_email: "", logo_url: "" };
@@ -44,6 +49,7 @@ function SettingsPage() {
           <TabsTrigger value="workspace"><Building2 className="mr-1 h-4 w-4" /> Workspace</TabsTrigger>
           <TabsTrigger value="emails"><Mail className="mr-1 h-4 w-4" /> Emails</TabsTrigger>
           <TabsTrigger value="billing"><CreditCard className="mr-1 h-4 w-4" /> Billing</TabsTrigger>
+          {isSuperAdmin && <TabsTrigger value="plan-admin"><ShieldCheck className="mr-1 h-4 w-4" /> Plan admin</TabsTrigger>}
           <TabsTrigger value="security"><ShieldCheck className="mr-1 h-4 w-4" /> Security</TabsTrigger>
           <TabsTrigger value="audit"><History className="mr-1 h-4 w-4" /> Audit log</TabsTrigger>
         </TabsList>
@@ -80,20 +86,14 @@ function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="billing">
-          <Card className="rounded-2xl">
-            <CardHeader><CardTitle>Plan & subscription</CardTitle></CardHeader>
-            <CardContent>
-              {settings.data?.subscription ? (
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <Stat label="Plan" value={String(settings.data.subscription.plan).toUpperCase()} />
-                  <Stat label="Status" value={<Badge>{(settings.data.subscription as any).status}</Badge>} />
-                  <Stat label="Seats" value={(settings.data.subscription as any).seats} />
-                  <Stat label="Renews" value={new Date((settings.data.subscription as any).current_period_end).toLocaleDateString()} />
-                </div>
-              ) : <EmptyState icon={CreditCard} title="No subscription yet" />}
-            </CardContent>
-          </Card>
+          <BillingTab />
         </TabsContent>
+
+        {isSuperAdmin && (
+          <TabsContent value="plan-admin">
+            <PlanAdminTab />
+          </TabsContent>
+        )}
 
         <TabsContent value="security">
           <Card className="rounded-2xl">

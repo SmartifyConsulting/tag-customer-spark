@@ -48,6 +48,8 @@ import { Route as AuthenticatedCommercePricingRouteImport } from './routes/_auth
 import { Route as AuthenticatedCommerceFunnelRouteImport } from './routes/_authenticated/commerce.funnel'
 import { Route as AuthenticatedAnalyticsReportsRouteImport } from './routes/_authenticated/analytics.reports'
 import { Route as AuthenticatedAnalyticsHistoryRouteImport } from './routes/_authenticated/analytics.history'
+import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public/webhooks/paypal'
+import { Route as ApiPublicWebhooksPayfastItnRouteImport } from './routes/api/public/webhooks/payfast-itn'
 import { Route as ApiPublicScanInterestRouteImport } from './routes/api/public/scan.interest'
 import { Route as ApiPublicSShortCodeRouteImport } from './routes/api/public/s.$shortCode'
 import { Route as ApiPublicHooksNotificationsTickRouteImport } from './routes/api/public/hooks.notifications-tick'
@@ -265,6 +267,17 @@ const AuthenticatedAnalyticsHistoryRoute =
     path: '/history',
     getParentRoute: () => AuthenticatedAnalyticsRoute,
   } as any)
+const ApiPublicWebhooksPaypalRoute = ApiPublicWebhooksPaypalRouteImport.update({
+  id: '/api/public/webhooks/paypal',
+  path: '/api/public/webhooks/paypal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicWebhooksPayfastItnRoute =
+  ApiPublicWebhooksPayfastItnRouteImport.update({
+    id: '/api/public/webhooks/payfast-itn',
+    path: '/api/public/webhooks/payfast-itn',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicScanInterestRoute = ApiPublicScanInterestRouteImport.update({
   id: '/api/public/scan/interest',
   path: '/api/public/scan/interest',
@@ -331,6 +344,8 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
+  '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
+  '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -373,6 +388,8 @@ export interface FileRoutesByTo {
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
+  '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
+  '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -419,6 +436,8 @@ export interface FileRoutesById {
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
+  '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
+  '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -465,6 +484,8 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-tick'
     | '/api/public/s/$shortCode'
     | '/api/public/scan/interest'
+    | '/api/public/webhooks/payfast-itn'
+    | '/api/public/webhooks/paypal'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -507,6 +528,8 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-tick'
     | '/api/public/s/$shortCode'
     | '/api/public/scan/interest'
+    | '/api/public/webhooks/payfast-itn'
+    | '/api/public/webhooks/paypal'
   id:
     | '__root__'
     | '/'
@@ -552,6 +575,8 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-tick'
     | '/api/public/s/$shortCode'
     | '/api/public/scan/interest'
+    | '/api/public/webhooks/payfast-itn'
+    | '/api/public/webhooks/paypal'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -566,6 +591,8 @@ export interface RootRouteChildren {
   ApiPublicHooksNotificationsTickRoute: typeof ApiPublicHooksNotificationsTickRoute
   ApiPublicSShortCodeRoute: typeof ApiPublicSShortCodeRoute
   ApiPublicScanInterestRoute: typeof ApiPublicScanInterestRoute
+  ApiPublicWebhooksPayfastItnRoute: typeof ApiPublicWebhooksPayfastItnRoute
+  ApiPublicWebhooksPaypalRoute: typeof ApiPublicWebhooksPaypalRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -843,6 +870,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsHistoryRouteImport
       parentRoute: typeof AuthenticatedAnalyticsRoute
     }
+    '/api/public/webhooks/paypal': {
+      id: '/api/public/webhooks/paypal'
+      path: '/api/public/webhooks/paypal'
+      fullPath: '/api/public/webhooks/paypal'
+      preLoaderRoute: typeof ApiPublicWebhooksPaypalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/webhooks/payfast-itn': {
+      id: '/api/public/webhooks/payfast-itn'
+      path: '/api/public/webhooks/payfast-itn'
+      fullPath: '/api/public/webhooks/payfast-itn'
+      preLoaderRoute: typeof ApiPublicWebhooksPayfastItnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/scan/interest': {
       id: '/api/public/scan/interest'
       path: '/api/public/scan/interest'
@@ -1009,6 +1050,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksNotificationsTickRoute: ApiPublicHooksNotificationsTickRoute,
   ApiPublicSShortCodeRoute: ApiPublicSShortCodeRoute,
   ApiPublicScanInterestRoute: ApiPublicScanInterestRoute,
+  ApiPublicWebhooksPayfastItnRoute: ApiPublicWebhooksPayfastItnRoute,
+  ApiPublicWebhooksPaypalRoute: ApiPublicWebhooksPaypalRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

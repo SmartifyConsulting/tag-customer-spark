@@ -49,9 +49,13 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
-      <SidebarHeader className="border-b border-sidebar-border/60">
-        <div className="flex items-center justify-center px-2 pt-8 pb-4">
-          <TagLogo size={collapsed ? "sm" : "lg"} />
+      <SidebarHeader className="border-b border-sidebar-border/60 bg-sidebar">
+        <div className="flex items-center justify-center px-3 pt-6 pb-4">
+          {collapsed ? (
+            <TagLogo variant="icon" size="sm" />
+          ) : (
+            <TagLogo variant="wordmark" size="lg" />
+          )}
         </div>
       </SidebarHeader>
 

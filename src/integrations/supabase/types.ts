@@ -215,6 +215,51 @@ export type Database = {
           },
         ]
       }
+      billing_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          provider: string
+          retailer_id: string | null
+          signature_ok: boolean
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          provider: string
+          retailer_id?: string | null
+          signature_ok?: boolean
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          provider?: string
+          retailer_id?: string | null
+          signature_ok?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_events_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "billing_events_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_messages: {
         Row: {
           author_user_id: string | null
@@ -802,6 +847,69 @@ export type Database = {
           },
           {
             foreignKeyName: "notification_history_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_purchases: {
+        Row: {
+          amount_cents: number
+          billing_cycle: string
+          created_at: string
+          currency: string
+          id: string
+          plan: string
+          provider: string
+          provider_order_id: string
+          raw: Json
+          retailer_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          billing_cycle?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          plan: string
+          provider: string
+          provider_order_id: string
+          raw?: Json
+          retailer_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          billing_cycle?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          plan?: string
+          provider?: string
+          provider_order_id?: string
+          raw?: Json
+          retailer_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_purchases_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "payment_purchases_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
             referencedRelation: "retailers"
@@ -1564,6 +1672,8 @@ export type Database = {
       }
       retailers: {
         Row: {
+          billing_country: string
+          billing_email: string | null
           contact_email: string | null
           created_at: string
           created_by: string | null
@@ -1575,8 +1685,11 @@ export type Database = {
           status: Database["public"]["Enums"]["retailer_status"]
           tier: Database["public"]["Enums"]["tag_tier"]
           updated_at: string
+          vat_number: string | null
         }
         Insert: {
+          billing_country?: string
+          billing_email?: string | null
           contact_email?: string | null
           created_at?: string
           created_by?: string | null
@@ -1588,8 +1701,11 @@ export type Database = {
           status?: Database["public"]["Enums"]["retailer_status"]
           tier?: Database["public"]["Enums"]["tag_tier"]
           updated_at?: string
+          vat_number?: string | null
         }
         Update: {
+          billing_country?: string
+          billing_email?: string | null
           contact_email?: string | null
           created_at?: string
           created_by?: string | null
@@ -1601,6 +1717,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["retailer_status"]
           tier?: Database["public"]["Enums"]["tag_tier"]
           updated_at?: string
+          vat_number?: string | null
         }
         Relationships: []
       }
@@ -2013,56 +2130,74 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          billing_cycle: string
+          cancel_at_period_end: boolean
           created_at: string
           created_by: string | null
           current_period_end: string | null
           current_period_start: string
           id: string
           plan: string
+          provider: string | null
           provider_ref: string | null
+          provider_subscription_id: string | null
           retailer_id: string
           seats: number
           status: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at: string | null
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
+          billing_cycle?: string
+          cancel_at_period_end?: boolean
           created_at?: string
           created_by?: string | null
           current_period_end?: string | null
           current_period_start?: string
           id?: string
           plan?: string
+          provider?: string | null
           provider_ref?: string | null
+          provider_subscription_id?: string | null
           retailer_id: string
           seats?: number
           status?: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
+          billing_cycle?: string
+          cancel_at_period_end?: boolean
           created_at?: string
           created_by?: string | null
           current_period_end?: string | null
           current_period_start?: string
           id?: string
           plan?: string
+          provider?: string | null
           provider_ref?: string | null
+          provider_subscription_id?: string | null
           retailer_id?: string
           seats?: number
           status?: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "subscriptions_retailer_id_fkey"
             columns: ["retailer_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "public_scan_view"
             referencedColumns: ["retailer_id"]
           },
           {
             foreignKeyName: "subscriptions_retailer_id_fkey"
             columns: ["retailer_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "retailers"
             referencedColumns: ["id"]
           },
@@ -2281,6 +2416,17 @@ export type Database = {
       }
     }
     Functions: {
+      apply_paid_tier: {
+        Args: {
+          _cycle: string
+          _period_end: string
+          _provider: string
+          _provider_sub_id?: string
+          _retailer_id: string
+          _tier: Database["public"]["Enums"]["tag_tier"]
+        }
+        Returns: undefined
+      }
       belongs_to_retailer: {
         Args: { _retailer_id: string; _user_id: string }
         Returns: boolean

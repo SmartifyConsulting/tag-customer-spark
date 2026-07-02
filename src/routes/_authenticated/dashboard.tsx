@@ -21,7 +21,7 @@ import { ScanTrendsCard } from "@/components/dashboard/scan-trends-card";
 import { CustomerGrowthCard } from "@/components/dashboard/customer-growth-card";
 import { TopProductsCard } from "@/components/dashboard/top-products-card";
 import { NotificationPerformanceCard } from "@/components/dashboard/notification-performance-card";
-import { LowStockCard } from "@/components/dashboard/low-stock-card";
+
 import { PromotionsCard } from "@/components/dashboard/promotions-card";
 import { RecentActivityCard } from "@/components/dashboard/recent-activity-card";
 import { OpportunityFeedCard } from "@/components/dashboard/opportunity-feed";
@@ -212,8 +212,7 @@ function DashboardContent() {
         <NotificationPerformanceCard data={data.notificationPerf} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <LowStockCard products={data.lowStockProducts} />
+      <div className="grid gap-4 lg:grid-cols-2">
         <PromotionsCard promotions={data.promotionProducts} />
         <RecentActivityCard items={data.recentActivity} />
       </div>
