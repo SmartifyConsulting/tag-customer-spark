@@ -7,9 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { listCampaigns } from "@/lib/notifications.functions";
 import { EmptyState } from "@/components/empty-state";
+import { requireFeature } from "@/lib/tier-guard";
 
 export const Route = createFileRoute("/_authenticated/commerce/funnel")({
   head: () => ({ meta: [{ title: "Conversion Funnel — Tag" }] }),
+  beforeLoad: ({ context }) => requireFeature(context.queryClient, "roi"),
   component: FunnelPage,
 });
 

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { requireFeature } from "@/lib/tier-guard";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
@@ -23,6 +24,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/roi")({
   head: () => ({ meta: [{ title: "ROI Engine — Tag" }] }),
+  beforeLoad: ({ context }) => requireFeature(context.queryClient, "roi"),
   component: RoiPage,
 });
 

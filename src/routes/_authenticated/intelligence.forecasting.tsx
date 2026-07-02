@@ -4,9 +4,11 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IntentSectionsCard } from "@/components/dashboard/intent-sections-card";
+import { requireFeature } from "@/lib/tier-guard";
 
 export const Route = createFileRoute("/_authenticated/intelligence/forecasting")({
   head: () => ({ meta: [{ title: "Demand Forecasting — Tag" }] }),
+  beforeLoad: ({ context }) => requireFeature(context.queryClient, "intelligence"),
   component: ForecastingPage,
 });
 

@@ -1,12 +1,23 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { Lock } from "lucide-react";
 import { useMemo } from "react";
+import { useTier } from "@/hooks/use-tier";
+import { hasFeature, type TierFeatureKey } from "@/lib/tier";
 
-export type SectionTab = { label: string; to: string; match: string[] };
+export type SectionTab = {
+  label: string;
+  to: string;
+  match: string[];
+  // When set, tab is gated behind this feature.
+  feature?: TierFeatureKey;
+};
 export type SectionDef = {
   key: string;
   label: string;
   rootPath: string;
   tabs: SectionTab[];
+  // When set, the whole section is gated (nav still shows it as locked).
+  feature?: TierFeatureKey;
 };
 
 export const SECTIONS: SectionDef[] = [
@@ -35,24 +46,26 @@ export const SECTIONS: SectionDef[] = [
     key: "intelligence",
     label: "Intelligence",
     rootPath: "/intelligence",
+    feature: "intelligence",
     tabs: [
-      { label: "Overview", to: "/intelligence", match: ["/intelligence"] },
-      { label: "Intent Engine", to: "/intent", match: ["/intent"] },
-      { label: "Demand Insights", to: "/intelligence/insights", match: ["/intelligence/insights"] },
-      { label: "Forecasting", to: "/intelligence/forecasting", match: ["/intelligence/forecasting"] },
-      { label: "Trend Detection", to: "/intelligence/trends", match: ["/intelligence/trends"] },
+      { label: "Overview", to: "/intelligence", match: ["/intelligence"], feature: "intelligence" },
+      { label: "Intent Engine", to: "/intent", match: ["/intent"], feature: "intentEngine" },
+      { label: "Demand Insights", to: "/intelligence/insights", match: ["/intelligence/insights"], feature: "intelligence" },
+      { label: "Forecasting", to: "/intelligence/forecasting", match: ["/intelligence/forecasting"], feature: "intelligence" },
+      { label: "Trend Detection", to: "/intelligence/trends", match: ["/intelligence/trends"], feature: "intelligence" },
     ],
   },
   {
     key: "performance",
     label: "Performance & ROI",
     rootPath: "/roi",
+    feature: "roi",
     tabs: [
-      { label: "ROI Engine", to: "/roi", match: ["/roi"] },
-      { label: "Pricing Sensitivity", to: "/commerce/pricing", match: ["/commerce/pricing"] },
-      { label: "Conversion Funnel", to: "/commerce/funnel", match: ["/commerce/funnel"] },
-      { label: "Executive Reports", to: "/analytics", match: ["/analytics", "/analytics/reports"] },
-      { label: "Historical Trends", to: "/analytics/history", match: ["/analytics/history"] },
+      { label: "ROI Engine", to: "/roi", match: ["/roi"], feature: "roi" },
+      { label: "Pricing Sensitivity", to: "/commerce/pricing", match: ["/commerce/pricing"], feature: "roi" },
+      { label: "Conversion Funnel", to: "/commerce/funnel", match: ["/commerce/funnel"], feature: "roi" },
+      { label: "Executive Reports", to: "/analytics", match: ["/analytics", "/analytics/reports"], feature: "roi" },
+      { label: "Historical Trends", to: "/analytics/history", match: ["/analytics/history"], feature: "roi" },
     ],
   },
   {
@@ -69,7 +82,6 @@ export const SECTIONS: SectionDef[] = [
 ];
 
 function bestMatch(pathname: string, candidates: string[]): number {
-  // longest prefix wins so /intelligence/insights beats /intelligence
   let best = -1;
   for (const c of candidates) {
     if (pathname === c || pathname.startsWith(c + "/")) {
@@ -101,6 +113,7 @@ export function findActiveTab(section: SectionDef, pathname: string): SectionTab
 
 export function SectionTabs() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { tier } = useTier();
   const section = useMemo(() => findActiveSection(pathname), [pathname]);
   const activeTab = useMemo(
     () => (section ? findActiveTab(section, pathname) : null),
@@ -114,12 +127,29 @@ export function SectionTabs() {
       <div className="mx-auto flex max-w-7xl items-center gap-1.5 overflow-x-auto rounded-full bg-muted/50 p-1.5">
         {section.tabs.map((t) => {
           const isActive = activeTab?.to === t.to;
+          const locked = t.feature ? !hasFeature(tier, t.feature) : false;
+          const base =
+            "whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold transition-colors inline-flex items-center gap-1.5";
+          if (locked) {
+            return (
+              <Link
+                key={t.to}
+                to="/upgrade"
+                search={{ feature: t.feature }}
+                className={`${base} text-muted-foreground/70 hover:bg-[color:var(--mint)]/10 hover:text-foreground`}
+                title={`${t.label} is a paid feature`}
+              >
+                <Lock className="h-3.5 w-3.5" />
+                {t.label}
+              </Link>
+            );
+          }
           return (
             <Link
               key={t.to}
               to={t.to}
               className={[
-                "whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold transition-colors",
+                base,
                 isActive
                   ? "bg-[color:var(--mint)] text-white shadow-sm hover:bg-[color:var(--mint)]"
                   : "text-muted-foreground hover:bg-[color:var(--mint)]/10 hover:text-foreground",

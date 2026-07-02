@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { requireFeature } from "@/lib/tier-guard";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/page-header";
 import { IntentSectionsCard } from "@/components/dashboard/intent-sections-card";
@@ -18,6 +19,7 @@ import { Gauge } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/intent")({
   head: () => ({ meta: [{ title: "Intent Engine — Tag" }] }),
+  beforeLoad: ({ context }) => requireFeature(context.queryClient, "intentEngine"),
   component: IntentPage,
 });
 

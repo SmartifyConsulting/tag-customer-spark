@@ -1573,6 +1573,7 @@ export type Database = {
           plan: string
           slug: string
           status: Database["public"]["Enums"]["retailer_status"]
+          tier: Database["public"]["Enums"]["tag_tier"]
           updated_at: string
         }
         Insert: {
@@ -1585,6 +1586,7 @@ export type Database = {
           plan?: string
           slug: string
           status?: Database["public"]["Enums"]["retailer_status"]
+          tier?: Database["public"]["Enums"]["tag_tier"]
           updated_at?: string
         }
         Update: {
@@ -1597,6 +1599,7 @@ export type Database = {
           plan?: string
           slug?: string
           status?: Database["public"]["Enums"]["retailer_status"]
+          tier?: Database["public"]["Enums"]["tag_tier"]
           updated_at?: string
         }
         Relationships: []
@@ -2369,6 +2372,7 @@ export type Database = {
       staff_status: "active" | "invited" | "disabled"
       store_status: "active" | "closed" | "pending"
       subscription_status: "trialing" | "active" | "past_due" | "cancelled"
+      tag_tier: "starter" | "pro" | "enterprise"
       watchlist_status: "active" | "paused" | "fired" | "expired" | "cancelled"
       watchlist_trigger:
         | "on_sale"
@@ -2559,6 +2563,7 @@ export const Constants = {
       staff_status: ["active", "invited", "disabled"],
       store_status: ["active", "closed", "pending"],
       subscription_status: ["trialing", "active", "past_due", "cancelled"],
+      tag_tier: ["starter", "pro", "enterprise"],
       watchlist_status: ["active", "paused", "fired", "expired", "cancelled"],
       watchlist_trigger: [
         "on_sale",
