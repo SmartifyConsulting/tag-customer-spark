@@ -16,8 +16,8 @@ export async function grantTier(
     _cycle: cycle,
     _period_end: pe,
     _provider: provider,
-    _provider_sub_id: providerSubId,
-  });
+    _provider_sub_id: providerSubId ?? undefined,
+  } as never);
   if (error) throw new Error(`apply_paid_tier failed: ${error.message}`);
 }
 
@@ -32,7 +32,7 @@ export async function logBillingEvent(
     retailer_id: retailerId,
     provider,
     event_type: eventType,
-    payload: payload as Record<string, unknown>,
+    payload: payload as never,
     signature_ok: signatureOk,
   });
 }
