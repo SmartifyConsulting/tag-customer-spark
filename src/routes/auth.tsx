@@ -6,10 +6,10 @@ import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { AuthShell } from "@/components/auth-shell";
 import { PasswordInput } from "@/components/password-input";
+import { mapAuthError } from "@/lib/auth-errors";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — Tag" }] }),
@@ -26,13 +26,13 @@ function GoogleIcon() {
 
 function AuthPage() {
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
 
-  // Sign-in
   const [siEmail, setSiEmail] = useState("");
   const [siPassword, setSiPassword] = useState("");
-  // Sign-up
   const [suName, setSuName] = useState("");
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
@@ -45,11 +45,14 @@ function AuthPage() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setInlineError(null);
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email: siEmail, password: siPassword });
     setLoading(false);
     if (error) {
-      toast.error("Email or password is incorrect.");
+      const friendly = mapAuthError(error, "signin");
+      setInlineError(friendly);
+      toast.error(friendly);
       return;
     }
     navigate({ to: "/dashboard", replace: true });
@@ -57,6 +60,7 @@ function AuthPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setInlineError(null);
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email: suEmail,
@@ -68,10 +72,12 @@ function AuthPage() {
     });
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      const friendly = mapAuthError(error, "signup");
+      setInlineError(friendly);
+      toast.error(friendly);
       return;
     }
-    toast.success("Account created");
+    toast.success("Welcome to Tag");
     navigate({ to: "/dashboard", replace: true });
   };
 
@@ -91,95 +97,96 @@ function AuthPage() {
 
   return (
     <AuthShell
-      title="Welcome to Tag"
-      subtitle="Reconnect with in-store shoppers and recover lost sales."
+      title={mode === "signin" ? "Welcome back" : "Create your Tag account"}
+      subtitle={
+        mode === "signin"
+          ? "Reconnect with in-store shoppers and recover lost sales."
+          : "Start recovering lost sales in under a minute."
+      }
     >
-      <Tabs defaultValue="signin" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="signin">Sign in</TabsTrigger>
-          <TabsTrigger value="signup">Create account</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="signin" className="space-y-4 pt-5">
-          <form onSubmit={handleSignIn} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="si-email">Email</Label>
-              <Input
-                id="si-email"
-                type="email"
-                autoComplete="email"
-                required
-                value={siEmail}
-                onChange={(e) => setSiEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="si-password">Password</Label>
-              <PasswordInput
-                id="si-password"
-                autoComplete="current-password"
-                required
-                value={siPassword}
-                onChange={(e) => setSiPassword(e.target.value)}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in…" : "Sign in"}
-            </Button>
-            <div className="text-right">
-              <Link
-                to="/forgot-password"
-                tabIndex={-1}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                Forgot password?
-              </Link>
-            </div>
-          </form>
-        </TabsContent>
-
-        <TabsContent value="signup" className="space-y-4 pt-5">
-          <form onSubmit={handleSignUp} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="su-name">Full name</Label>
-              <Input
-                id="su-name"
-                type="text"
-                autoComplete="name"
-                required
-                value={suName}
-                onChange={(e) => setSuName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="su-email">Email</Label>
-              <Input
-                id="su-email"
-                type="email"
-                autoComplete="email"
-                required
-                value={suEmail}
-                onChange={(e) => setSuEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="su-password">Password</Label>
-              <PasswordInput
-                id="su-password"
-                autoComplete="new-password"
-                required
-                minLength={8}
-                value={suPassword}
-                onChange={(e) => setSuPassword(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">At least 8 characters.</p>
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating account…" : "Create account"}
-            </Button>
-          </form>
-        </TabsContent>
-      </Tabs>
+      {mode === "signin" ? (
+        <form onSubmit={handleSignIn} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="si-email">Email</Label>
+            <Input
+              id="si-email"
+              type="email"
+              autoComplete="email"
+              required
+              value={siEmail}
+              onChange={(e) => setSiEmail(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="si-password">Password</Label>
+            <PasswordInput
+              id="si-password"
+              autoComplete="current-password"
+              required
+              value={siPassword}
+              onChange={(e) => setSiPassword(e.target.value)}
+            />
+          </div>
+          {inlineError && (
+            <p className="text-sm text-destructive" aria-live="polite">{inlineError}</p>
+          )}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Signing in…" : "Sign in"}
+          </Button>
+          <div className="text-right">
+            <Link
+              to="/forgot-password"
+              tabIndex={-1}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Forgot password?
+            </Link>
+          </div>
+        </form>
+      ) : (
+        <form onSubmit={handleSignUp} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="su-name">Full name</Label>
+            <Input
+              id="su-name"
+              type="text"
+              autoComplete="name"
+              required
+              value={suName}
+              onChange={(e) => setSuName(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="su-email">Email</Label>
+            <Input
+              id="su-email"
+              type="email"
+              autoComplete="email"
+              required
+              value={suEmail}
+              onChange={(e) => setSuEmail(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="su-password">Password</Label>
+            <PasswordInput
+              id="su-password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={suPassword}
+              onChange={(e) => setSuPassword(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">At least 8 characters.</p>
+          </div>
+          {inlineError && (
+            <p className="text-sm text-destructive" aria-live="polite">{inlineError}</p>
+          )}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Creating account…" : "Create account"}
+          </Button>
+        </form>
+      )}
 
       <div className="my-5 flex items-center gap-3">
         <Separator className="flex-1" />
@@ -197,6 +204,32 @@ function AuthPage() {
         <GoogleIcon />
         {googleLoading ? "Connecting…" : "Continue with Google"}
       </Button>
+
+      <p className="mt-5 text-center text-sm text-muted-foreground">
+        {mode === "signin" ? (
+          <>
+            New to Tag?{" "}
+            <button
+              type="button"
+              className="font-medium text-foreground underline-offset-2 hover:underline"
+              onClick={() => { setInlineError(null); setMode("signup"); }}
+            >
+              Create an account
+            </button>
+          </>
+        ) : (
+          <>
+            Already have an account?{" "}
+            <button
+              type="button"
+              className="font-medium text-foreground underline-offset-2 hover:underline"
+              onClick={() => { setInlineError(null); setMode("signin"); }}
+            >
+              Sign in
+            </button>
+          </>
+        )}
+      </p>
     </AuthShell>
   );
 }
