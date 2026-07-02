@@ -1,91 +1,77 @@
-MVP realignment with a clearer tier ladder: Starter is the recovery essentials, Pro adds scale + AI assist, Enterprise unlocks Intelligence, ROI, and weekly briefings. Deliverable this round is the matrix + scoped removals + gating plan for the follow-up build turn.
+## 1. UI clean-ups
 
-## Tier ladder at a glance
+**Sidebar (`src/components/app-sidebar.tsx`)**
+- Swap the navy `--sidebar` background for a "chic grey" palette: sidebar bg `oklch(0.97 0 0)` (light) / `oklch(0.22 0 0)` (dark), foreground near-black, mint accent kept for active state (mint pill + left bar).
+- Replace the current icon logo with the hero wordmark `src/assets/tag-logo-hero.png`. Add a `variant="wordmark"` option on `TagLogo` that renders the wordmark, sized appropriately for the sidebar (expanded) and falls back to the icon when collapsed to preserve the icon rail.
+- Adjust footer text colour to sit on the new grey.
 
-- **Starter** — the recovery loop. QR tags, opt-in, notifications, inbox, coupons, 4-KPI dashboard, one store.
-- **Pro** — everything in Starter **plus**: multi-store, bulk QR + PDF export, AI campaign assistant, CSV/XLSX exports, advanced campaign analytics.
-- **Enterprise** — everything in Pro **plus**: Intelligence suite, Performance & ROI, weekly AI briefings & executive summary, intent score engine, scheduled exports, API access, SSO, audit log export.
+**Auth page (`src/routes/auth.tsx`)**
+- Remove the "Sign in / Create account" `TabsList` (that's the duplicate "Sign in" next to the submit button). Replace with a single sign-in form and a "New here? Create account" link that toggles to the sign-up form, or split into `/auth` (sign in) and `/auth/signup`. Chosen approach: keep one route, drop the tabs, render sign-in by default with a small "Create account" text button at the bottom that swaps the form in place.
+- Apply the sign-up-and-authenticate skill rules: password visibility toggle (already via `PasswordInput`), Forgot Password link with `tabIndex={-1}`, tab order Email → Password → Submit, sign-up straight into the app (no email-confirm block), and `mapAuthError` helper for friendly error messages.
 
-## What each tier adds over the previous
+## 2. Backend: billing schema
 
-### Starter (baseline — the recovery essentials)
-- Dashboard: 4 core KPIs (today's scans, customers waiting, revenue recovered, top product interest)
-- Engagement: Customers, Products, QR Tags, Watchlists, Compare
-- Alerts: Inbox, Notification composer, Campaign tracker
-- Basic campaign performance: sent / delivered / read / redeemed / CTR
-- Coupon redemption
-- Watchlist automation triggers (sale / restock / price drop)
-- Single store, Staff, Roles, Settings, Billing
+New migration adds (mirrors Picnic, adapted to Tag's retailer-scoped model):
 
-### Pro adds (on top of Starter)
-- Multi-store management
-- Bulk QR generation + PDF export
-- **AI campaign assistant** (write / rewrite / predict response)
-- CSV and XLSX exports
-- Advanced campaign analytics (segment breakdowns, cohort view)
+- `public.payment_purchases` — `id`, `retailer_id`, `user_id`, `provider` ('paypal'|'payfast'), `provider_order_id` unique per provider, `plan` (tag_tier), `billing_cycle` ('monthly'|'annual'), `amount_cents`, `currency`, `status` ('pending'|'completed'|'failed'|'cancelled'), `raw` jsonb, timestamps.
+- Extend existing `public.subscriptions` (already present) with `provider`, `provider_subscription_id`, `billing_cycle`, `cancel_at_period_end`, `trial_ends_at`, `updated_by`.
+- `public.billing_events` — audit trail of ITN / webhook / capture events (`retailer_id`, `provider`, `event_type`, `payload`, `signature_ok`, timestamps).
+- Extend `retailers` with `billing_email`, `billing_country` (default 'ZA'), `vat_number`.
+- Grants: `authenticated` gets own-retailer SELECT on `payment_purchases`, `subscriptions`, `billing_events`; `service_role` full access. RLS via existing `belongs_to_retailer` / `can_manage_retailer` helpers so only retail_admin can initiate checkout or view invoices; sales_assistant cannot.
+- Function `public.apply_paid_tier(_retailer_id uuid, _tier tag_tier, _cycle text, _period_end timestamptz)` — security definer, upserts subscription row and updates `retailers.tier`.
 
-### Enterprise adds (on top of Pro)
-- **Intelligence suite** — Opportunity feed, Intent, Trends, Forecasting, Insights
-- **Performance & ROI** — ROI engine, Pricing sensitivity, Funnel, Analytics history, Reports, Heatmap
-- **Weekly AI briefings + executive summary**
-- Intent score engine + weight tuning
-- Scheduled exports
-- API access, SSO, audit log export
+## 3. Backend: payment server code (ported from Picnic)
 
-## Full matrix
+- `src/lib/billing/payfast.server.ts` — env, `PAYFAST_PROCESS_URL`, `pfEncode`, `buildPfSignature` (MD5 of alphabetically-sorted fields + passphrase), ITN validate URL.
+- `src/lib/billing/paypal.server.ts` — env, `PAYPAL_BASE`, `getPayPalToken` (client credentials OAuth).
+- `src/lib/billing/pricing.ts` — Tag plans: Starter R0, Pro R499/mo (R4990/yr), Enterprise "contact"; ZAR + USD conversions for PayPal.
+- `src/lib/billing/grant.server.ts` — `grantTier(retailerId, plan, cycle)` calls the SQL function above, writes audit row.
+- `src/lib/billing.functions.ts` — server fns:
+  - `createPayfastCheckout({ plan, cycle })` → inserts pending purchase, returns `{ redirect_url, m_payment_id }`.
+  - `createPaypalOrder({ plan, cycle })` → creates PayPal order, returns `{ order_id, approve_url }`.
+  - `capturePaypalOrder({ order_id })` → captures + grants tier + marks purchase completed.
+  - `listMyPurchases()`, `getMySubscription()`, `cancelSubscription()`.
+  - `adminListSubscriptions()` / `adminSetTier()` — gated by `super_admin` / `retail_admin`.
+- Public server routes (bypass auth, verify signatures inside):
+  - `src/routes/api/public/webhooks/payfast-itn.ts` — verify with PayFast validate endpoint + signature, mark purchase completed, grant tier.
+  - `src/routes/api/public/webhooks/paypal.ts` — verify PayPal webhook signature, handle `CHECKOUT.ORDER.APPROVED` / `PAYMENT.CAPTURE.COMPLETED` / `BILLING.SUBSCRIPTION.CANCELLED`.
+  - `src/routes/api/public/billing/return.ts` and `cancel.ts` — post-checkout landing.
 
-| Feature | Starter | Pro | Enterprise |
-|---|:---:|:---:|:---:|
-| 4-KPI dashboard | ✓ | ✓ | ✓ |
-| Engagement (Customers, Products, QR Tags, Watchlists, Compare) | ✓ | ✓ | ✓ |
-| Alerts (Inbox, Composer, Campaign tracker) | ✓ | ✓ | ✓ |
-| Basic campaign performance | ✓ | ✓ | ✓ |
-| Coupon redemption | ✓ | ✓ | ✓ |
-| Watchlist automation triggers | ✓ | ✓ | ✓ |
-| Staff, Roles, Settings, Billing | ✓ | ✓ | ✓ |
-| Stores | 1 | Unlimited | Unlimited |
-| Bulk QR / PDF export | — | ✓ | ✓ |
-| AI campaign assistant | — | ✓ | ✓ |
-| Advanced campaign analytics | — | ✓ | ✓ |
-| Exports | — | CSV / XLSX | CSV / XLSX + scheduled |
-| **Intelligence suite** | 🔒 | 🔒 | ✓ |
-| **Performance & ROI** | 🔒 | 🔒 | ✓ |
-| Weekly AI briefings + executive summary | 🔒 | 🔒 | ✓ |
-| Intent score engine + weight tuning | 🔒 | 🔒 | ✓ |
-| API access / SSO / audit log export | — | — | ✓ |
+## 4. Secrets
 
-Legend: ✓ available · 🔒 visible in nav with upsell · — not shown.
+Requested via `add_secret` (after plan approval):
+- `PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY`, `PAYFAST_PASSPHRASE`, `PAYFAST_ENV` (default `sandbox`).
+- `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_ENV` (default `sandbox`).
 
-## Stock-management surfaces to remove
+User will paste these into the secret form once the plan is approved. Sandbox URLs are pre-wired; going live is a one-env-var flip.
 
-Tag's job is recovery, not inventory. Remove/retire:
+## 5. UI: Billing + Plan admin
 
-- `src/components/dashboard/low-stock-card.tsx` and its slot on the Dashboard.
-- Any "low stock" KPI tile on the Dashboard overview.
-- Low-stock alert type from the notification composer's built-in templates (keep "back in stock" and "restock" — those drive customer notifications, not inventory ops).
-- Watchlist trigger `low_stock` — retain in DB (still used by triggers) but hide from the Watchlist creation UI; keep `on_sale`, `back_in_stock`, `price_drop_below`, `any_update`.
-- Product form: hide `stock_qty` and `low_stock_threshold` inputs from the Product form dialog.
-- Products table: drop the Stock column from the default view; keep it as an optional column toggle.
-- Remove "Low stock" filter chip from `products-toolbar.tsx`.
+- **User Billing** at `/settings` → new "Billing" tab (retail_admin only):
+  - Current plan card (tier badge, renewal date, cycle toggle).
+  - Change plan panel: three plan cards (Starter / Pro / Enterprise) with monthly/annual toggle and two checkout buttons per paid plan: **Pay with PayFast** (ZAR redirect) and **Pay with PayPal** (approve-in-popup then capture).
+  - Invoices/purchases table sourced from `payment_purchases`.
+  - Cancel subscription action.
+- **Plan admin** at `/settings` → new "Plan admin" tab (super_admin only):
+  - Table of all retailers with tier, provider, status, MRR, last payment.
+  - Force-set tier action, view billing events per retailer.
+- Existing `/upgrade` upsell page gets working "Upgrade" buttons that deep-link to `/settings?tab=billing&plan=pro`.
 
-Nothing dropped from the schema — UI-only surface pruning so Tag doesn't masquerade as an inventory tool.
+## 6. Confirming "stock removed"
 
-## Tier gating plan (for the follow-up build turn)
+Stock UI was trimmed in earlier turns (dashboard low-stock card, product form inventory fields, low-stock filter, low_stock notification template). Confirmed remaining references:
+- `src/components/dashboard/low-stock-card.tsx` still exists on disk — remove file.
+- `low_stock` trigger option remains in the notification composer and DB `watchlists.trigger` enum. Per your MVP scope this stays (low-stock alerts to shoppers are a revenue-recovery mechanic, not a stock-management screen), but the retailer-facing "manage stock" surfaces are gone. Flag if you want the trigger removed too.
 
-1. **Schema**: add `retailers.tier` as enum `tag_tier` (`starter`, `pro`, `enterprise`), default `starter`. Backfill demo retailers to `enterprise` so Georgia keeps seeing everything during dev.
-2. **Server**: extend the existing `resolveRetailerId` helpers with a `resolveRetailerContext` returning `{ retailerId, tier }`, and add a `TIER_FEATURES` map (single source of truth) with booleans like `intelligence`, `roi`, `aiAssistant`, `weeklyBriefings`, `intentEngine`, `bulkQr`, `advancedExports`, `apiAccess`, `multiStore`.
-3. **Client hook**: `useTier()` reading from a new lightweight `getWorkspaceTier` server fn cached in React Query.
-4. **Nav**: `SectionTabs` renders Intelligence and Performance & ROI tabs always, but locked tabs get a lock icon + click routes to `/upgrade?feature=<slug>` instead of the module. The sidebar entry stays visible with the same lock affordance.
-5. **Upsell screen**: new route `/upgrade` (inside `_authenticated`) reads `?feature=` and renders the Starter/Pro/Enterprise comparison table above with contextual copy ("Intelligence is a Tag Enterprise feature").
-6. **Route guards**: for every route under `intelligence.*`, `commerce.*`, `analytics.*`, `intent.tsx` — add `beforeLoad` tier check → `throw redirect({ to: '/upgrade', search: { feature } })` when locked. Prevents deep-link bypass.
-7. **Dashboard**: Starter/Pro get 4 KPI tiles; Enterprise keeps the fuller layout. Starter/Pro also get an "Unlock Intelligence" upsell card below the KPIs.
-8. **Settings**: add a read-only "Plan" row showing current tier + "Manage plan" button (stub until billing lands).
-9. **Dev switch**: Settings → Workspace shows a tier picker for users with `super_admin` role so we can preview each experience without touching the DB.
+## 7. Verification
 
-## Out of scope
+- `bun run build` clean.
+- Playwright: sign in → open `/settings` → Billing tab → start PayFast checkout (asserts redirect URL contains `sandbox.payfast.co.za/eng/process` and a signed `signature=`) and PayPal order (asserts `approve_url` from PayPal sandbox).
+- Fire a synthetic PayFast ITN at the public webhook with a signed body, assert the purchase flips to `completed` and `retailers.tier` becomes `pro`.
+- Screenshot the restyled sidebar (chic grey + wordmark) and the de-duplicated auth page.
 
-- Billing integration (waits on payment provider choice).
-- No deletion of backend tables/functions/triggers — UI scoping only.
-- No pricing amounts on the upgrade screen yet — placeholders until pricing signed off.
+## Files touched
 
-Approve and I'll implement it in one build pass: migration + tier context first, then nav + guards, then dashboard trim + stock-UI removal.
+New: migration; `src/lib/billing/{payfast,paypal,grant,pricing}.server.ts`; `src/lib/billing.functions.ts`; `src/routes/api/public/webhooks/{payfast-itn,paypal}.ts`; `src/routes/api/public/billing/{return,cancel}.ts`; `src/components/settings/{billing-tab,plan-admin-tab,plan-cards}.tsx`; `src/lib/auth-errors.ts`.
+Edited: `src/components/app-sidebar.tsx`, `src/components/tag-logo.tsx`, `src/styles.css` (sidebar tokens), `src/routes/auth.tsx`, `src/routes/_authenticated/settings.tsx`, `src/routes/_authenticated/upgrade.tsx`.
+Deleted: `src/components/dashboard/low-stock-card.tsx`.
