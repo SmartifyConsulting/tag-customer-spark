@@ -1,0 +1,1 @@
+ALTER TABLE public.qr_tags ADD COLUMN IF NOT EXISTS label TEXT;

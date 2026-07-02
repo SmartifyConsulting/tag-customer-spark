@@ -1499,6 +1499,7 @@ export type Database = {
           created_by: string | null
           id: string
           is_active: boolean
+          label: string | null
           last_scanned_at: string | null
           product_id: string
           regenerated_from: string | null
@@ -1517,6 +1518,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean
+          label?: string | null
           last_scanned_at?: string | null
           product_id: string
           regenerated_from?: string | null
@@ -1535,6 +1537,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean
+          label?: string | null
           last_scanned_at?: string | null
           product_id?: string
           regenerated_from?: string | null
