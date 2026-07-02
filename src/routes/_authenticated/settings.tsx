@@ -29,7 +29,7 @@ function SettingsPage() {
   const settings = useQuery({ queryKey: ["settings"], queryFn: () => getWorkspaceSettings() });
   const audit = useQuery({ queryKey: ["audit"], queryFn: () => listAuditLog() });
   const { roles } = useAuth();
-  const isSuperAdmin = (roles ?? []).some((r: { role: string }) => r.role === "super_admin");
+  const isSuperAdmin = (roles ?? []).includes("super_admin");
   const r = settings.data?.retailer;
   const [form, setForm] = useState<any>(null);
   const current = form ?? r ?? { name: "", contact_email: "", logo_url: "" };
