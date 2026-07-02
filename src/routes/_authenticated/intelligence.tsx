@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { CalendarRange, FileText, RefreshCw } from "lucide-react";
+import { requireFeature } from "@/lib/tier-guard";
 
 export const Route = createFileRoute("/_authenticated/intelligence")({
   head: () => ({ meta: [{ title: "AI Intelligence — Tag" }] }),
+  beforeLoad: ({ context }) => requireFeature(context.queryClient, "intelligence"),
   component: IntelligencePage,
 });
 

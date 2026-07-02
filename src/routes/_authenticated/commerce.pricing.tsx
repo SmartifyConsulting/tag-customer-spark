@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Tag } from "lucide-react";
 import { PlaceholderPage } from "@/components/placeholder-page";
+import { requireFeature } from "@/lib/tier-guard";
 
 export const Route = createFileRoute("/_authenticated/commerce/pricing")({
   head: () => ({ meta: [{ title: "Pricing Sensitivity — Tag" }] }),
+  beforeLoad: ({ context }) => requireFeature(context.queryClient, "roi"),
   component: () => (
     <PlaceholderPage
       title="Pricing Sensitivity"

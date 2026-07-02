@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ScanShortCodeRouteImport } from './routes/scan.$shortCode'
 import { Route as NMessageIdRouteImport } from './routes/n.$messageId'
 import { Route as AuthenticatedWatchlistsRouteImport } from './routes/_authenticated/watchlists'
+import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
 import { Route as AuthenticatedStoresRouteImport } from './routes/_authenticated/stores'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -89,6 +90,11 @@ const NMessageIdRoute = NMessageIdRouteImport.update({
 const AuthenticatedWatchlistsRoute = AuthenticatedWatchlistsRouteImport.update({
   id: '/watchlists',
   path: '/watchlists',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
+  id: '/upgrade',
+  path: '/upgrade',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedStoresRoute = AuthenticatedStoresRouteImport.update({
@@ -301,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stores': typeof AuthenticatedStoresRoute
+  '/upgrade': typeof AuthenticatedUpgradeRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
@@ -342,6 +349,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stores': typeof AuthenticatedStoresRoute
+  '/upgrade': typeof AuthenticatedUpgradeRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
@@ -387,6 +395,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stores': typeof AuthenticatedStoresRoute
+  '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/_authenticated/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
@@ -432,6 +441,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/staff'
     | '/stores'
+    | '/upgrade'
     | '/watchlists'
     | '/n/$messageId'
     | '/scan/$shortCode'
@@ -473,6 +483,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/staff'
     | '/stores'
+    | '/upgrade'
     | '/watchlists'
     | '/n/$messageId'
     | '/scan/$shortCode'
@@ -517,6 +528,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/staff'
     | '/_authenticated/stores'
+    | '/_authenticated/upgrade'
     | '/_authenticated/watchlists'
     | '/n/$messageId'
     | '/scan/$shortCode'
@@ -612,6 +624,13 @@ declare module '@tanstack/react-router' {
       path: '/watchlists'
       fullPath: '/watchlists'
       preLoaderRoute: typeof AuthenticatedWatchlistsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/upgrade': {
+      id: '/_authenticated/upgrade'
+      path: '/upgrade'
+      fullPath: '/upgrade'
+      preLoaderRoute: typeof AuthenticatedUpgradeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/stores': {
@@ -944,6 +963,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStoresRoute: typeof AuthenticatedStoresRoute
+  AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedWatchlistsRoute: typeof AuthenticatedWatchlistsRoute
   AuthenticatedCommerceFunnelRoute: typeof AuthenticatedCommerceFunnelRoute
   AuthenticatedCommercePricingRoute: typeof AuthenticatedCommercePricingRoute
@@ -966,6 +986,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStoresRoute: AuthenticatedStoresRoute,
+  AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedWatchlistsRoute: AuthenticatedWatchlistsRoute,
   AuthenticatedCommerceFunnelRoute: AuthenticatedCommerceFunnelRoute,
   AuthenticatedCommercePricingRoute: AuthenticatedCommercePricingRoute,

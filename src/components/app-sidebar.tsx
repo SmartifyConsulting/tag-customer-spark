@@ -5,6 +5,7 @@ import {
   Sparkles,
   BarChart3,
   Settings,
+  Lock,
 } from "lucide-react";
 import {
   Sidebar,
@@ -19,19 +20,22 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { TagLogo } from "./tag-logo";
+import { useTier } from "@/hooks/use-tier";
+import type { TierFeatureKey } from "@/lib/tier";
 
 type NavItem = {
   title: string;
   url: string;
   icon: typeof LayoutDashboard;
   match: readonly string[];
+  feature?: TierFeatureKey;
 };
 
 const NAV: readonly NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, match: ["/dashboard", "/alerts", "/inbox", "/notifications"] },
   { title: "Engagement", url: "/customers", icon: Bell, match: ["/customers", "/products", "/qr-tags", "/watchlists"] },
-  { title: "Intelligence", url: "/intelligence", icon: Sparkles, match: ["/intelligence", "/intent"] },
-  { title: "Performance & ROI", url: "/roi", icon: BarChart3, match: ["/roi", "/commerce", "/analytics"] },
+  { title: "Intelligence", url: "/intelligence", icon: Sparkles, match: ["/intelligence", "/intent"], feature: "intelligence" },
+  { title: "Performance & ROI", url: "/roi", icon: BarChart3, match: ["/roi", "/commerce", "/analytics"], feature: "roi" },
   { title: "Management", url: "/stores", icon: Settings, match: ["/stores", "/staff", "/organisation", "/settings"] },
 ] as const;
 
@@ -39,6 +43,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { hasFeature } = useTier();
   const isActive = (item: NavItem) =>
     item.match.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
@@ -56,21 +61,29 @@ export function AppSidebar() {
             <SidebarMenu>
               {NAV.map((item) => {
                 const active = isActive(item);
+                const locked = item.feature ? !hasFeature(item.feature) : false;
+                const linkProps = locked
+                  ? { to: "/upgrade" as const, search: { feature: item.feature } }
+                  : { to: item.url };
                 return (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
                       asChild
-                      isActive={active}
-                      tooltip={item.title}
+                      isActive={active && !locked}
+                      tooltip={locked ? `${item.title} — upgrade required` : item.title}
                       className={
-                        active
+                        active && !locked
                           ? "relative bg-[color:var(--mint)]/15 text-[color:var(--mint)] font-semibold hover:bg-[color:var(--mint)]/20 hover:text-[color:var(--mint)] data-[active=true]:bg-[color:var(--mint)]/15 data-[active=true]:text-[color:var(--mint)] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r-full before:bg-[color:var(--mint)]"
-                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+                          : locked
+                            ? "text-sidebar-foreground/50 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/80"
+                            : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
                       }
                     >
-                      <Link to={item.url} className="flex items-center gap-2.5">
+                      
+                      <Link {...linkProps} className="flex items-center gap-2.5">
                         <item.icon className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{item.title}</span>
+                        <span className="truncate flex-1">{item.title}</span>
+                        {locked && <Lock className="h-3 w-3 shrink-0 opacity-70" />}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -92,3 +105,4 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+

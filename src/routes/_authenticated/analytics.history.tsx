@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { History } from "lucide-react";
 import { PlaceholderPage } from "@/components/placeholder-page";
+import { requireFeature } from "@/lib/tier-guard";
 
 export const Route = createFileRoute("/_authenticated/analytics/history")({
   head: () => ({ meta: [{ title: "Historical Trends — Tag" }] }),
+  beforeLoad: ({ context }) => requireFeature(context.queryClient, "roi"),
   component: () => (
     <PlaceholderPage
       title="Historical Trends"

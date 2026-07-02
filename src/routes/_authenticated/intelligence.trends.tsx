@@ -8,9 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listProducts } from "@/lib/products.functions";
 import { EmptyState } from "@/components/empty-state";
+import { requireFeature } from "@/lib/tier-guard";
 
 export const Route = createFileRoute("/_authenticated/intelligence/trends")({
   head: () => ({ meta: [{ title: "Trend Detection — Tag" }] }),
+  beforeLoad: ({ context }) => requireFeature(context.queryClient, "intelligence"),
   component: TrendsPage,
 });
 

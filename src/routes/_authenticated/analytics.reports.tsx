@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FileBarChart2 } from "lucide-react";
 import { PlaceholderPage } from "@/components/placeholder-page";
+import { requireFeature } from "@/lib/tier-guard";
 
 export const Route = createFileRoute("/_authenticated/analytics/reports")({
   head: () => ({ meta: [{ title: "Reports & Exports — Tag" }] }),
+  beforeLoad: ({ context }) => requireFeature(context.queryClient, "roi"),
   component: () => (
     <PlaceholderPage
       title="Reports & Exports"
