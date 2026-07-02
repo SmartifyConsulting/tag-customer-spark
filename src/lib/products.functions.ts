@@ -344,7 +344,9 @@ export const updateStock = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const patch: Record<string, number> = { stock_qty: data.stock_qty };
+    const patch: { stock_qty: number; low_stock_threshold?: number } = {
+      stock_qty: data.stock_qty,
+    };
     if (data.low_stock_threshold !== undefined)
       patch.low_stock_threshold = data.low_stock_threshold;
     const { error } = await context.supabase
