@@ -113,6 +113,8 @@ function StoreDialog({ editing, onClose }: { editing: any; onClose: () => void }
     city: editing?.city ?? "",
     country: editing?.country ?? "South Africa",
     timezone: editing?.timezone ?? "Africa/Johannesburg",
+    manager_name: editing?.manager_name ?? "",
+    contact_phone: editing?.contact_phone ?? "",
     status: (editing?.status as "active" | "closed" | "pending") ?? "active",
   });
   const save = useMutation({
@@ -130,6 +132,10 @@ function StoreDialog({ editing, onClose }: { editing: any; onClose: () => void }
         <div className="grid grid-cols-2 gap-3">
           <div><Label>City</Label><Input value={form.city ?? ""} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
           <div><Label>Country</Label><Input value={form.country ?? ""} onChange={(e) => setForm({ ...form, country: e.target.value })} /></div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Store Manager</Label><Input value={form.manager_name ?? ""} onChange={(e) => setForm({ ...form, manager_name: e.target.value })} placeholder="Full name" /></div>
+          <div><Label>Contact Number</Label><Input value={form.contact_phone ?? ""} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} placeholder="+27 …" /></div>
         </div>
         <div><Label>Timezone</Label><Input value={form.timezone ?? ""} onChange={(e) => setForm({ ...form, timezone: e.target.value })} /></div>
         <div>
