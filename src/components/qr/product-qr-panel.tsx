@@ -58,9 +58,15 @@ export function ProductQrPanel({
   const [template, setTemplate] = useState<string>(tag?.template ?? "classic");
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const scanBase = typeof window !== "undefined"
-    ? `${window.location.origin}/api/public/s`
-    : "/api/public/s";
+  const { data: baseData } = useQuery({
+    queryKey: ["public-scan-base"],
+    queryFn: () => getPublicScanBase(),
+    staleTime: Infinity,
+  });
+  const origin =
+    baseData?.base ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+  const scanBase = `${origin}/api/public/s`;
 
   const scanUrl = tag ? `${scanBase}/${tag.short_code}` : "";
 
