@@ -120,7 +120,7 @@ function ProductDetail() {
 
       <div className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[260px_1fr]">
         <div className="grid gap-2">
-          <div className="aspect-square overflow-hidden rounded-xl border border-border bg-muted">
+          <div className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
             {primary ? (
               <img src={primary} alt={p.name} className="h-full w-full object-cover" />
             ) : (
@@ -128,6 +128,14 @@ function ProductDetail() {
                 <Tag className="h-8 w-8" />
               </div>
             )}
+            <MiniProductQr
+              shortCode={(data.qr as any)?.short_code ?? null}
+              onClick={() => {
+                document
+                  .getElementById("product-qr")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            />
           </div>
           {images.length > 1 && (
             <div className="grid grid-cols-4 gap-2">
