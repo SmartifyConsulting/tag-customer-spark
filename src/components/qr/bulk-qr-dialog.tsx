@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { renderQrPdf } from "@/lib/qr-pdf.functions";
-import { bulkGenerateQrs } from "@/lib/qr.functions";
+import { bulkGenerateQrs, getPublicScanBase } from "@/lib/qr.functions";
 
 export function BulkQrDialog({
   open,
