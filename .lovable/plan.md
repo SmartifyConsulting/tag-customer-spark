@@ -1,14 +1,15 @@
-# Wire the Supabase Send-Email hook
+## Test the Send-Email hook
 
-Configure the Supabase Auth "Send Email" hook to call the deployed `send-auth-email` edge function, signed with the existing `SEND_EMAIL_HOOK_SECRET`.
+Verify the Supabase "Send Email" auth hook is wired to `send-auth-email` and delivering via Resend.
 
-## Steps
+### Steps
 
-1. Deploy `send-auth-email` to make sure it's live.
-2. Call the Supabase Management API to update auth config:
-   - `hook_send_email_enabled = true`
-   - `hook_send_email_uri = https://wgiktarhvepatqssryfg.supabase.co/functions/v1/send-auth-email`
-   - `hook_send_email_secrets = v1,whsec_<base64(SEND_EMAIL_HOOK_SECRET)>` (Supabase's required format; the edge function already normalizes this same shape when verifying)
-3. Trigger a test recovery email via `resetPasswordForEmail` for a test address and check edge-function logs to confirm delivery through Resend.
+1. Trigger a password reset for a test address by calling `supabase.auth.resetPasswordForEmail` against the deployed project (or via a quick curl to the auth REST endpoint).
+2. Tail `send-auth-email` edge function logs to confirm:
+   - The hook fired (request received)
+   - Signature verification passed
+   - Resend returned 200
+3. If logs show no invocation → the hook isn't enabled/URL wrong. If signature fails → secret mismatch. If Resend errors → surface the status/body.
+4. Report the outcome and what to fix, if anything.
 
-No frontend/UI changes.
+No code changes.
