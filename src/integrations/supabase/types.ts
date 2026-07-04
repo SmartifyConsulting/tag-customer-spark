@@ -1196,6 +1196,7 @@ export type Database = {
           promotion_start_date: string | null
           retailer_id: string
           sale_price_cents: number | null
+          search_blob: string | null
           size: string | null
           sku: string
           status: Database["public"]["Enums"]["product_status"]
@@ -1225,6 +1226,7 @@ export type Database = {
           promotion_start_date?: string | null
           retailer_id: string
           sale_price_cents?: number | null
+          search_blob?: string | null
           size?: string | null
           sku: string
           status?: Database["public"]["Enums"]["product_status"]
@@ -1254,6 +1256,7 @@ export type Database = {
           promotion_start_date?: string | null
           retailer_id?: string
           sale_price_cents?: number | null
+          search_blob?: string | null
           size?: string | null
           sku?: string
           status?: Database["public"]["Enums"]["product_status"]
@@ -2480,6 +2483,8 @@ export type Database = {
         Args: { _retailer_id?: string }
         Returns: number
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       ai_insight_kind:

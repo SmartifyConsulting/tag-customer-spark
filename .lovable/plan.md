@@ -1,44 +1,59 @@
-# Fix invalid QR codes
+# Two fixes: search detection + inline mini QR
 
-Two bugs make scanned QR codes fail:
+## 1. Products search misses "linendrawstring" / partial words
 
-## 1. QR encodes the current browser origin
-`src/components/qr/product-qr-panel.tsx` builds the QR value from `window.location.origin`. When you generate a QR inside the Lovable preview (`id-preview--…lovable.app`), the printed code points at that ephemeral preview host. Scanning it from a phone either 404s (preview host gone / different session) or hits the wrong environment.
-
-**Fix:** resolve the QR base URL server-side from a stable canonical host, in this order:
-1. `process.env.PUBLIC_SITE_URL` (e.g. `https://mypenguin.co.za`)
-2. Custom domain / published URL from request headers when generating
-3. Fallback to `window.location.origin`
-
-Expose the resolved base via a small server function (`getPublicScanBase`) that the product QR panel and bulk QR dialog call once, and encode `{base}/api/public/s/{shortCode}` into the QR image. This makes printed codes portable across preview, published, and custom-domain deployments.
-
-## 2. `throw redirect(...)` doesn't redirect from a server route handler
-In `src/routes/api/public/s.$shortCode.ts` the handler ends with:
+In `src/lib/products.functions.ts` (`listProducts`) the search sends the raw string as one `ilike` pattern across `name`, `sku`, `brand`:
 
 ```ts
-throw redirect({ href: `${url.origin}/scan/${shortCode}` });
+q = q.or(`name.ilike.%${s}%,sku.ilike.%${s}%,brand.ilike.%${s}%`);
 ```
 
-`redirect()` from `@tanstack/react-router` is a router-side navigation helper for loaders/components. Inside a raw server route handler it doesn't produce an HTTP 302 — the response the scanner gets is an error/empty body, so the phone browser shows "cannot open page". That is exactly the "not valid" behaviour.
+So typing `linen drawstring` misses a product named `Linen Drawstring Pants` unless the columns contain that exact substring in that exact order, and `linendrawstring` (no space) never matches at all.
 
-**Fix:** return a real HTTP redirect:
+**Fix — two layers:**
 
-```ts
-return new Response(null, {
-  status: 302,
-  headers: { Location: `${base}/scan/${shortCode}` },
-});
+a. **Tokenize on whitespace.** Split the query into words; require EVERY token to match `name` OR `sku` OR `brand` (AND of ORs). Chain `.or(...)` once per token. This makes `linen drawstring`, `drawstring linen`, and `Linen pants` all match.
+
+b. **Match against a space-stripped index for concatenated queries.** Add a Postgres generated column + trigram index so `linendrawstring` matches `Linen Drawstring Pants`:
+
+```sql
+alter table public.products
+  add column search_blob text
+  generated always as (
+    lower(regexp_replace(coalesce(name,'') || ' ' || coalesce(sku,'') || ' ' || coalesce(brand,''), '\s+', '', 'g'))
+  ) stored;
+
+create extension if not exists pg_trgm;
+create index if not exists products_search_blob_trgm
+  on public.products using gin (search_blob gin_trgm_ops);
 ```
 
-Use the same canonical base as (1) so redirects land on the published scan page, not the preview host embedded in `request.url`.
+In `listProducts`, when the query has no whitespace, also OR in `search_blob.ilike.%<stripped>%`. This preserves current behaviour and handles the joined-word case without exploding row counts.
 
-## 3. Scan-page sanity check
-Verify `/scan/$shortCode` renders without auth (it lives outside `_authenticated/`, so it should — just confirm the loader uses only public server functions).
+No RLS/policy changes; generated column is read-only.
+
+## 2. Mini QR in the product hero (no scrolling)
+
+Currently the QR lives only inside the `<Tabs>` block below the product hero. Add a small floating QR chip inside the top hero frame at `src/routes/_authenticated/products.$productId.tsx` (lines ~121–141).
+
+**Placement & sizing:**
+- Absolutely positioned inside the `aspect-square` product-image container, bottom-right, ~12px inset.
+- Fixed size ~76×76 px (~2 cm at 96 dpi). White background, 6px padding, `rounded-md`, subtle border, soft shadow so it reads on any photo.
+- Renders only when `data.qr?.short_code` exists; otherwise show a tiny "Generate QR" button that jumps to the QR tab.
+- Clicking the chip scrolls to the full QR panel (`document.getElementById('product-qr')?.scrollIntoView`) and switches to the QR tab.
+
+**Implementation:**
+- New tiny component `MiniProductQr` in `src/components/qr/mini-product-qr.tsx`: reuses the existing `QRCode.toDataURL` path from `qr-preview.tsx` and the canonical scan URL from `getPublicScanBase` + `/api/public/s/<short_code>` so it matches the printable QR exactly.
+- Wrap the image container in `relative`; render `<MiniProductQr />` as an overlay when a tag exists.
+- Add `id="product-qr"` to the `Tabs` block so the chip can scroll to it.
+
+No changes to the printable QR flow, PDF generation, or scan redirect — this is purely a UI addition on the detail page.
 
 ## Technical details
-- New server fn `getPublicScanBase` in `src/lib/qr.functions.ts` returning `PUBLIC_SITE_URL` or derived host.
-- Update `product-qr-panel.tsx` and `bulk-qr-dialog.tsx` to await that base instead of reading `window.location.origin`.
-- Replace `throw redirect(...)` in `s.$shortCode.ts` with a `Response` 302; log scan insert errors instead of swallowing.
-- No schema changes. No UI/style changes.
-
-After this, generating a QR in preview and scanning it on a phone will hit `mypenguin.co.za/api/public/s/<code>` → 302 → `/scan/<code>` with the customer opt-in form.
+- Files touched:
+  - `src/lib/products.functions.ts` — tokenized search + optional `search_blob` OR.
+  - `supabase/migrations/<ts>_products_search_blob.sql` — generated column + trigram index + `pg_trgm` extension.
+  - `src/routes/_authenticated/products.$productId.tsx` — wrap image in `relative`, mount overlay, add anchor id.
+  - `src/components/qr/mini-product-qr.tsx` — new 76px QR chip.
+- No schema privilege changes needed (existing SELECT policies already cover `products`).
+- No dependency additions; `qrcode` is already used by `qr-preview.tsx`.
