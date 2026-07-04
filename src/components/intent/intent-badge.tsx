@@ -10,10 +10,11 @@ export function intentColor(score: number) {
 }
 
 const COLOR_CLASS: Record<string, string> = {
-  emerald: "bg-success/10 text-success border-success/30 dark:bg-success/100/10 dark:text-emerald-300 dark:border-emerald-500/30",
+  success: "bg-success/10 text-success border-success/30",
   amber: "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/30",
   rose: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/30",
 };
+
 
 export function IntentBadge({
   score,
