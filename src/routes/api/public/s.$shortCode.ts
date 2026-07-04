@@ -55,9 +55,12 @@ export const Route = createFileRoute("/api/public/s/$shortCode")({
           .update({ scan_count: ((tag as any).scan_count ?? 0) + 1, last_scanned_at: new Date().toISOString() })
           .eq("id", tag.id);
 
-        const url = new URL(request.url);
-        throw redirect({
-          href: `${url.origin}/scan/${shortCode}`,
+        const publicBase =
+          process.env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+          new URL(request.url).origin;
+        return new Response(null, {
+          status: 302,
+          headers: { Location: `${publicBase}/scan/${shortCode}` },
         });
       },
     },
