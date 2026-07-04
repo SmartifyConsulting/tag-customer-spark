@@ -113,10 +113,10 @@ export function AppSidebar() {
                       tooltip={locked ? `${item.title} — upgrade required` : item.title}
                       className={
                         active && !locked
-                          ? "bg-[color:var(--mint)] text-white font-semibold hover:bg-[color:var(--mint)] hover:text-white data-[active=true]:bg-[color:var(--mint)] data-[active=true]:text-white [&_svg]:text-white"
+                          ? "bg-foreground text-background font-semibold hover:bg-foreground hover:text-background data-[active=true]:bg-foreground data-[active=true]:text-background [&_svg]:text-background"
                           : locked
-                            ? "text-sidebar-foreground/50 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/80"
-                            : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+                            ? "text-sidebar-foreground/50 hover:bg-foreground/5 hover:text-sidebar-foreground/80"
+                            : "text-sidebar-foreground/80 hover:bg-foreground/5 hover:text-sidebar-foreground"
                       }
                     >
                       <Link {...linkProps} className="flex items-center gap-2.5">
