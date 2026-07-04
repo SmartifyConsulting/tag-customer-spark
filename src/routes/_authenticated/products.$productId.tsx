@@ -204,7 +204,7 @@ function ProductDetail() {
 
       <ProductIntentPanel productId={productId} />
 
-      <Tabs defaultValue="qr">
+      <Tabs defaultValue="qr" id="product-qr">
         <TabsList>
           <TabsTrigger value="qr"><QrCode className="mr-2 h-4 w-4" /> QR code</TabsTrigger>
           <TabsTrigger value="scans"><Smartphone className="mr-2 h-4 w-4" /> Scans</TabsTrigger>
