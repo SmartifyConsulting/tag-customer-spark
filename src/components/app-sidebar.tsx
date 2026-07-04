@@ -6,6 +6,9 @@ import {
   BarChart3,
   Settings,
   Lock,
+  Tag,
+  Users,
+  TrendingUp,
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,11 +35,43 @@ type NavItem = {
 };
 
 const NAV: readonly NavItem[] = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, match: ["/dashboard", "/alerts", "/inbox", "/notifications"] },
-  { title: "Engagement", url: "/customers", icon: Bell, match: ["/customers", "/products", "/qr-tags", "/watchlists"] },
-  { title: "Intelligence", url: "/intelligence", icon: Sparkles, match: ["/intelligence", "/intent"], feature: "intelligence" },
-  { title: "Performance & ROI", url: "/roi", icon: BarChart3, match: ["/roi", "/commerce", "/analytics"], feature: "roi" },
-  { title: "Management", url: "/stores", icon: Settings, match: ["/stores", "/staff", "/organisation", "/settings"] },
+  { 
+    title: "Dashboard", 
+    url: "/dashboard", 
+    icon: LayoutDashboard, 
+    match: ["/dashboard", "/inbox"] 
+  },
+  { 
+    title: "Items & Tags", 
+    url: "/products", 
+    icon: Tag, 
+    match: ["/products", "/qr-tags", "/stock"] 
+  },
+  { 
+    title: "Alerts & Campaigns", 
+    url: "/notifications", 
+    icon: Bell, 
+    match: ["/notifications", "/alerts"] 
+  },
+  { 
+    title: "Customers & Leads", 
+    url: "/customers", 
+    icon: Users, 
+    match: ["/customers", "/watchlists", "/intent"] 
+  },
+  { 
+    title: "Analytics & Insights", 
+    url: "/analytics", 
+    icon: TrendingUp, 
+    match: ["/analytics", "/intelligence", "/roi", "/commerce"], 
+    feature: "roi" 
+  },
+  { 
+    title: "Settings", 
+    url: "/settings", 
+    icon: Settings, 
+    match: ["/stores", "/staff", "/organisation", "/settings", "/upgrade"] 
+  },
 ] as const;
 
 export function AppSidebar() {
@@ -110,4 +145,3 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
-
