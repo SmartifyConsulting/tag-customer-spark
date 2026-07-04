@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { QrPreview, useQrPngDownload } from "./qr-preview";
-import { regenerateProductQr } from "@/lib/qr.functions";
+import { getPublicScanBase, regenerateProductQr } from "@/lib/qr.functions";
 import { renderQrPdf } from "@/lib/qr-pdf.functions";
 
 export type QrTag = {
@@ -58,9 +58,15 @@ export function ProductQrPanel({
   const [template, setTemplate] = useState<string>(tag?.template ?? "classic");
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const scanBase = typeof window !== "undefined"
-    ? `${window.location.origin}/api/public/s`
-    : "/api/public/s";
+  const { data: baseData } = useQuery({
+    queryKey: ["public-scan-base"],
+    queryFn: () => getPublicScanBase(),
+    staleTime: Infinity,
+  });
+  const origin =
+    baseData?.base ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+  const scanBase = `${origin}/api/public/s`;
 
   const scanUrl = tag ? `${scanBase}/${tag.short_code}` : "";
 

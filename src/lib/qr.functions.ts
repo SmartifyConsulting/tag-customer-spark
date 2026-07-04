@@ -14,6 +14,24 @@ function makeShortCode() {
   return s;
 }
 
+export const getPublicScanBase = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const { getRequestHost, getRequestHeader } = await import(
+      "@tanstack/react-start/server"
+    );
+    const envBase = process.env.PUBLIC_SITE_URL?.replace(/\/$/, "");
+    if (envBase) return { base: envBase };
+    try {
+      const host = getRequestHost();
+      const proto = getRequestHeader("x-forwarded-proto") ?? "https";
+      if (host) return { base: `${proto}://${host}` };
+    } catch {
+      /* not in request context */
+    }
+    return { base: "" };
+  },
+);
+
 export const getProductQr = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ productId: z.string().uuid() }).parse(d))

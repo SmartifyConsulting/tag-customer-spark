@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, FileDown } from "lucide-react";
@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { renderQrPdf } from "@/lib/qr-pdf.functions";
-import { bulkGenerateQrs } from "@/lib/qr.functions";
+import { bulkGenerateQrs, getPublicScanBase } from "@/lib/qr.functions";
 
 export function BulkQrDialog({
   open,
@@ -41,9 +41,15 @@ export function BulkQrDialog({
   const renderPdf = useServerFn(renderQrPdf);
   const bulkGen = useServerFn(bulkGenerateQrs);
 
-  const scanBase = typeof window !== "undefined"
-    ? `${window.location.origin}/api/public/s`
-    : "/api/public/s";
+  const { data: baseData } = useQuery({
+    queryKey: ["public-scan-base"],
+    queryFn: () => getPublicScanBase(),
+    staleTime: Infinity,
+  });
+  const origin =
+    baseData?.base ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+  const scanBase = `${origin}/api/public/s`;
 
   const run = useMutation({
     mutationFn: async () => {
