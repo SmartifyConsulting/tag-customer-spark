@@ -84,6 +84,39 @@ async function sendEmail(to: string, subject: string, html: string) {
   return { ok: resp.ok, status: resp.status, data, error: resp.ok ? undefined : `Resend ${resp.status}` };
 }
 
+async function sendWhatsAppReset(to: string, resetUrl: string) {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
+  const FROM_WA = Deno.env.get("TWILIO_WHATSAPP_FROM");
+  if (!LOVABLE_API_KEY || !TWILIO_API_KEY || !FROM_WA) return { ok: false };
+  const toWa = to.startsWith("whatsapp:") ? to : `whatsapp:${to}`;
+  const fromWa = FROM_WA.startsWith("whatsapp:") ? FROM_WA : `whatsapp:${FROM_WA}`;
+  const body =
+    `Your MyPenguin password reset link: ${resetUrl}\n\n` +
+    `Expires in 1 hour. If you didn't request this, ignore this message.`;
+  const form = new URLSearchParams({ To: toWa, From: fromWa, Body: body });
+  try {
+    const resp = await fetch(`https://connector-gateway.lovable.dev/twilio/Messages.json`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "X-Connection-Api-Key": TWILIO_API_KEY,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: form.toString(),
+    });
+    if (!resp.ok) {
+      const t = await resp.text();
+      console.warn("[send-password-reset] whatsapp failed", resp.status, t.slice(0, 200));
+      return { ok: false };
+    }
+    return { ok: true };
+  } catch (e) {
+    console.warn("[send-password-reset] whatsapp error", (e as Error).message);
+    return { ok: false };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") {
