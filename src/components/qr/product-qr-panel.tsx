@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { QrPreview, useQrPngDownload } from "./qr-preview";
-import { regenerateProductQr } from "@/lib/qr.functions";
+import { getPublicScanBase, regenerateProductQr } from "@/lib/qr.functions";
 import { renderQrPdf } from "@/lib/qr-pdf.functions";
 
 export type QrTag = {
