@@ -40,7 +40,7 @@ function FunnelPage() {
     { label: "Sent", value: totals.sent, tone: "bg-primary" },
     { label: "Read", value: totals.read, tone: "bg-[color:var(--mint)]" },
     { label: "Clicked", value: totals.clicked, tone: "bg-[color:var(--warning)]" },
-    { label: "Redeemed", value: totals.redeemed, tone: "bg-emerald-600" },
+    { label: "Redeemed", value: totals.redeemed, tone: "bg-success" },
   ];
   const top = Math.max(1, totals.sent);
 

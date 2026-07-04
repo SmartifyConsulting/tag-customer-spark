@@ -100,7 +100,7 @@ export function OpportunityFeedCard() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-medium">{op.title}</span>
                             {value && (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-success">
                                 <TrendingUp className="h-3 w-3" />
                                 {value}
                               </span>

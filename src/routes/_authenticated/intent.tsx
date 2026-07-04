@@ -124,7 +124,7 @@ function IntentPage() {
 
               <div className="flex items-center justify-between rounded-md border p-3 text-sm">
                 <span>Weights total</span>
-                <span className={`tabular-nums font-semibold ${Math.abs(total - 1) > 0.05 ? "text-amber-600" : "text-emerald-600"}`}>
+                <span className={`tabular-nums font-semibold ${Math.abs(total - 1) > 0.05 ? "text-amber-600" : "text-success"}`}>
                   {total.toFixed(2)}
                 </span>
               </div>

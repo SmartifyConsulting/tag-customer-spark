@@ -160,7 +160,7 @@ function KpiTile({ icon: Icon, label, value, hint, tone }: any) {
   return (
     <Card className="rounded-2xl">
       <CardContent className="flex items-start gap-3 p-5">
-        <div className={"grid h-10 w-10 place-items-center rounded-xl " + (tone === "success" ? "bg-emerald-500/10 text-emerald-600" : "bg-primary/10 text-primary")}>
+        <div className={"grid h-10 w-10 place-items-center rounded-xl " + (tone === "success" ? "bg-success/10 text-success" : "bg-primary/10 text-primary")}>
           <Icon className="h-5 w-5" />
         </div>
         <div>
