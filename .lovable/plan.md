@@ -1,59 +1,34 @@
+# Forgot Password via Resend (mypenguin.co.za)
 
-## Goal
+You already have the Resend connector linked (`RESEND_API_KEY` present) and `mypenguin.co.za` as your custom domain. We'll wire a Supabase Auth email hook that sends the password-reset email through Resend from `noreply@mypenguin.co.za`, so branding and deliverability come from your own domain instead of the default Supabase sender.
 
-Bring the Products list and QR Tags registry visually in line with the two attached mockups, and make Forgot Password actually deliver a working reset email through a Supabase-backed flow.
+## What gets built
 
-## 1. Products page revamp (`image-3.png`)
+1. **Edge function `send-auth-email`** (`supabase/functions/send-auth-email/index.ts`)
+   - Public endpoint (verify_jwt = false), registered in `supabase/config.toml`.
+   - Verifies the `SEND_EMAIL_HOOK_SECRET` (standard Supabase webhook signature) so only Supabase Auth can call it.
+   - On `email_action_type === "recovery"`, renders a branded HTML email (Tag/Penguin colors, logo, CTA button) containing the Supabase-provided confirmation URL and sends it via the Resend connector gateway:
+     - `POST https://connector-gateway.lovable.dev/resend/emails`
+     - Headers: `Authorization: Bearer ${LOVABLE_API_KEY}`, `X-Connection-Api-Key: ${RESEND_API_KEY}`
+     - From: `MyPenguin <noreply@mypenguin.co.za>`
+   - Falls through for other action types (signup, magiclink, etc.) so existing flows aren't affected — same template, different subject/heading.
 
-Target: `src/routes/_authenticated/products.index.tsx` + `src/components/products/products-table.tsx` + `products-toolbar.tsx`.
+2. **Secret**
+   - Add `SEND_EMAIL_HOOK_SECRET` (generated) via the secrets tool. Instruct you to paste the same value into Cloud → Auth → Email hooks so Supabase signs its calls with it.
 
-Changes:
-- Header row: bold "Products" title, muted subtitle "Manage and track all your products.", right-side actions `+ Import` (outline) and `+ Add Product` (solid navy `#031C4D`).
-- Toolbar: single rounded search input with left magnifier + two compact selects ("All Categories", "All Stores") aligned right. Drop the current busy toolbar chips.
-- Table: white card, thin dividers, columns `Product | Category | Price | Interest Score | Status`.
-  - Product cell: 40px rounded thumbnail + product name (SKU removed from primary line).
-  - Interest Score rendered as a small circular progress ring (SVG) with the numeric value centered, in mint green.
-  - Status as pill: "Active" mint-tinted, "Inactive" muted.
-- Footer: "Showing 1 to 7 of 48 products" left, numbered pagination right (already have `products-pagination.tsx` — restyle to match).
+3. **Frontend**
+   - `src/routes/forgot-password.tsx` already calls `supabase.auth.resetPasswordForEmail(email, { redirectTo: '${origin}/reset-password' })` — no change needed.
+   - `src/routes/reset-password.tsx` remains unchanged.
 
-No schema changes; interest score already exists.
+## Prerequisites you handle once (one-time, in Cloud UI)
 
-## 2. QR Tags page revamp (`image-4.png`)
+- Verify `mypenguin.co.za` in Resend (add the SPF/DKIM DNS records Resend shows).
+- In Cloud → Auth → Hooks → "Send email hook": enable it, point it at the deployed `send-auth-email` function URL, paste the `SEND_EMAIL_HOOK_SECRET`.
 
-Target: `src/routes/_authenticated/qr-tags.tsx`.
-
-Changes:
-- Header: "QR Tags" + subtitle "Create, manage and download QR codes.", right side single solid `+ Generate QR` button (navy).
-- Stat tiles: 3 tiles across — "Total QR Codes", "Scans This Month", "Unique Products" — flat white cards, large tabular number, small uppercase label. Remove the current icon puck styling to match sample.
-- Registry list: convert current grid rows into a clean list card with rows of `thumb | name + #TAG-000xxx | scans | download icon | overflow`.
-- Filters: search + "All Stores" + "All Status" selects on one row above the list.
-- Bottom link "View all QR codes" centered.
-- Remove the mock phone preview from scope (sample shows it, but it's illustrative — skip unless requested).
-
-No schema changes.
-
-## 3. Forgot Password — functional reset
-
-Current `src/routes/forgot-password.tsx` already calls `supabase.auth.resetPasswordForEmail(email, { redirectTo: /reset-password })`. That's the correct built-in path; no edge function is required for Supabase's own recovery email.
-
-However, since the user wants branded delivery, use the project's existing Lovable auth email infrastructure:
-
-- Run `email_domain--check_email_domain_status`.
-- If no domain: surface the email-domain setup dialog first.
-- If domain exists: call `email_domain--scaffold_auth_email_templates` to generate branded recovery + other auth templates and the `/lovable/email/auth/webhook` route. Apply Tag brand colors (navy `#031C4D`, mint) to the scaffolded templates.
-- Keep the existing `forgot-password.tsx` and `reset-password.tsx` pages as-is — they already work; the scaffold just makes the delivered email branded and reliable.
-- Verify by triggering a reset from the UI and confirming the email arrives and `/reset-password` updates the password.
-
-No custom edge function will be authored — Lovable's managed auth-email route replaces that need and is the sanctioned path on this stack.
+I'll surface the exact function URL and hook-setup steps after deploying.
 
 ## Out of scope
 
-- No changes to sidebar, hero, stock, or store admin work from prior turns.
-- No new tables or RLS changes.
-- Phone mockup illustration on the QR Tags sample is not implemented.
-
-## Technical notes
-
-- Interest ring: inline SVG, `stroke-dasharray` based on `2 * π * r`, mint stroke on a muted track; keep in `products-table.tsx`.
-- Buttons: reuse existing `Button` with `variant="default"` for navy CTA; add a local `outline` variant only if the current one doesn't match.
-- All colors go through existing tokens in `src/styles.css` (no hardcoded hex in components beyond tokens already defined).
+- No changes to Products / QR Tags / stock / sidebar.
+- Not switching to Lovable Emails infra (you explicitly chose Resend).
+- Not touching the biolog / holarchealth domains.
