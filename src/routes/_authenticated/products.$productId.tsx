@@ -35,6 +35,7 @@ import {
 } from "@/lib/products.functions";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { ProductQrPanel } from "@/components/qr/product-qr-panel";
+import { MiniProductQr } from "@/components/qr/mini-product-qr";
 import { ProductIntentPanel } from "@/components/intent/product-intent-panel";
 import { ScansTable } from "@/components/qr/scans-table";
 import { formatMoney } from "@/lib/format";
@@ -120,7 +121,7 @@ function ProductDetail() {
 
       <div className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[260px_1fr]">
         <div className="grid gap-2">
-          <div className="aspect-square overflow-hidden rounded-xl border border-border bg-muted">
+          <div className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
             {primary ? (
               <img src={primary} alt={p.name} className="h-full w-full object-cover" />
             ) : (
@@ -128,6 +129,14 @@ function ProductDetail() {
                 <Tag className="h-8 w-8" />
               </div>
             )}
+            <MiniProductQr
+              shortCode={(data.qr as any)?.short_code ?? null}
+              onClick={() => {
+                document
+                  .getElementById("product-qr")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            />
           </div>
           {images.length > 1 && (
             <div className="grid grid-cols-4 gap-2">
@@ -195,7 +204,7 @@ function ProductDetail() {
 
       <ProductIntentPanel productId={productId} />
 
-      <Tabs defaultValue="qr">
+      <Tabs defaultValue="qr" id="product-qr">
         <TabsList>
           <TabsTrigger value="qr"><QrCode className="mr-2 h-4 w-4" /> QR code</TabsTrigger>
           <TabsTrigger value="scans"><Smartphone className="mr-2 h-4 w-4" /> Scans</TabsTrigger>

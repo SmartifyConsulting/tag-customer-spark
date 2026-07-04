@@ -164,7 +164,7 @@ export const renderQrPdf = createServerFn({ method: "POST" })
 
       // QR code drawn as rectangles using qrcode matrix
       const qrUrl = `${data.scanBaseUrl}/${activeTag.short_code}`;
-      const qr = QRCode.create(qrUrl, { errorCorrectionLevel: "M" });
+      const qr = QRCode.create(qrUrl, { errorCorrectionLevel: "Q" });
       const modules = qr.modules;
       const size = modules.size;
       const cell = qrSize / size;
