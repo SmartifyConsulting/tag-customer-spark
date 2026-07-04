@@ -14,10 +14,10 @@ export function QrPreview({
     queryFn: () =>
       QRCode.toString(value, {
         type: "svg",
-        margin: 1,
-        errorCorrectionLevel: "M",
+        margin: 4,
+        errorCorrectionLevel: "Q",
         width: size,
-        color: { dark: "#031C4D", light: "#ffffff" },
+        color: { dark: "#0A1F5C", light: "#ffffff" },
       }),
     staleTime: Infinity,
   });
@@ -34,10 +34,10 @@ export function useQrPngDownload(value: string, name: string) {
   return useMemo(
     () => async () => {
       const dataUrl = await QRCode.toDataURL(value, {
-        margin: 1,
-        errorCorrectionLevel: "M",
+        margin: 4,
+        errorCorrectionLevel: "Q",
         width: 800,
-        color: { dark: "#031C4D", light: "#ffffff" },
+        color: { dark: "#0A1F5C", light: "#ffffff" },
       });
       const a = document.createElement("a");
       a.href = dataUrl;
