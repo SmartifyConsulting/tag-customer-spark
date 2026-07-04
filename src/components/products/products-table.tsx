@@ -26,11 +26,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatMoney } from "@/lib/format";
-import { IntentBadge } from "@/components/intent/intent-badge";
 
 export type ProductRow = {
   id: string;
@@ -79,51 +77,53 @@ export function ProductsTable({
   }
   function toggleRow(id: string) {
     const next = new Set(selected);
-    next.has(id) ? next.delete(id) : next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     onSelectChange(next);
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
       <Table>
         <TableHeader>
-          <TableRow className="bg-muted/30">
-            <TableHead className="w-8">
+          <TableRow className="border-b border-border bg-transparent hover:bg-transparent">
+            <TableHead className="w-8 pl-6">
               <Checkbox checked={allChecked} onCheckedChange={toggleAll} aria-label="Select all" />
             </TableHead>
-            <TableHead>Product</TableHead>
-            <TableHead className="hidden md:table-cell">Brand</TableHead>
-            <TableHead className="hidden lg:table-cell">Category</TableHead>
-            <TableHead className="hidden lg:table-cell">Store</TableHead>
-            <TableHead className="text-right">Price</TableHead>
-            <TableHead className="text-right">Stock</TableHead>
-            <TableHead className="hidden xl:table-cell">Intent</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wide text-primary">
+              Product
+            </TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Category
+            </TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Price
+            </TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Interest Score
+            </TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Status
+            </TableHead>
             <TableHead className="w-10" />
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((r) => {
-            const thumb = (r.images?.[0]?.url) ?? r.image_url ?? null;
+            const thumb = r.images?.[0]?.url ?? r.image_url ?? null;
             const onSale = r.sale_price_cents != null && r.sale_price_cents < r.price_cents;
-            const stockTone =
-              r.stock_qty === 0
-                ? "destructive"
-                : r.stock_qty <= r.low_stock_threshold
-                  ? "warning"
-                  : "ok";
             return (
-              <TableRow key={r.id} className="group">
-                <TableCell>
+              <TableRow key={r.id} className="group border-b border-border/60 last:border-0">
+                <TableCell className="pl-6">
                   <Checkbox
                     checked={selected.has(r.id)}
                     onCheckedChange={() => toggleRow(r.id)}
                     aria-label={`Select ${r.name}`}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell className="py-4">
                   <div className="flex items-center gap-3">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md border border-border bg-muted">
+                    <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-muted">
                       {thumb ? (
                         <img src={thumb} alt="" className="h-full w-full object-cover" />
                       ) : (
@@ -138,52 +138,35 @@ export function ProductsTable({
                       >
                         {r.name}
                       </Link>
-                      <p className="truncate text-xs text-muted-foreground">{r.sku}</p>
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{r.brand ?? "—"}</TableCell>
-                <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">{r.category?.name ?? "—"}</TableCell>
-                <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">{r.store?.name ?? "—"}</TableCell>
-                <TableCell className="text-right text-sm">
+                <TableCell className="text-sm text-muted-foreground">
+                  {r.category?.name ?? "—"}
+                </TableCell>
+                <TableCell className="text-sm">
                   {onSale ? (
-                    <span className="flex items-baseline justify-end gap-2">
+                    <span className="flex items-baseline gap-2">
                       <span className="text-muted-foreground line-through">
                         {formatMoney(r.price_cents, r.currency)}
                       </span>
-                      <span className="font-semibold text-success">
+                      <span className="font-semibold text-foreground">
                         {formatMoney(r.sale_price_cents!, r.currency)}
                       </span>
                     </span>
                   ) : (
-                    <span className="font-medium">{formatMoney(r.price_cents, r.currency)}</span>
+                    <span className="font-medium text-foreground">
+                      {formatMoney(r.price_cents, r.currency)}
+                    </span>
                   )}
                 </TableCell>
-                <TableCell className="text-right text-sm">
-                  <span
-                    className={
-                      stockTone === "destructive"
-                        ? "text-destructive"
-                        : stockTone === "warning"
-                          ? "text-warning"
-                          : "text-foreground"
-                    }
-                  >
-                    {r.stock_qty}
-                  </span>
-                </TableCell>
-                <TableCell className="hidden xl:table-cell">
-                  <IntentBadge
-                    score={r.intent_score ?? 50}
-                    trend={(r.intent_score_trend as any) ?? "stable"}
-                    confidence={r.intent_score_confidence ?? 0}
-                    size="sm"
-                  />
+                <TableCell>
+                  <InterestRing score={r.intent_score ?? 0} />
                 </TableCell>
                 <TableCell>
                   <StatusBadge value={r.status} />
                 </TableCell>
-                <TableCell>
+                <TableCell className="pr-4">
                   {canManage && (
                     <RowActions row={r} onEdit={onEdit} onArchive={onArchive} onDelete={onDelete} />
                   )}
@@ -197,15 +180,49 @@ export function ProductsTable({
   );
 }
 
+function InterestRing({ score }: { score: number }) {
+  const clamped = Math.max(0, Math.min(100, Math.round(score)));
+  const r = 18;
+  const c = 2 * Math.PI * r;
+  const offset = c - (clamped / 100) * c;
+  return (
+    <div className="relative h-11 w-11">
+      <svg viewBox="0 0 44 44" className="h-11 w-11 -rotate-90">
+        <circle cx="22" cy="22" r={r} strokeWidth="3.5" className="fill-none stroke-muted" />
+        <circle
+          cx="22"
+          cy="22"
+          r={r}
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          className="fill-none stroke-[color:var(--mint)] transition-[stroke-dashoffset]"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <span className="absolute inset-0 grid place-items-center text-xs font-semibold tabular-nums text-[color:var(--mint)]">
+        {clamped}
+      </span>
+    </div>
+  );
+}
+
 function StatusBadge({ value }: { value: string }) {
   const map: Record<string, { label: string; className: string }> = {
-    active: { label: "Active", className: "bg-success/15 text-success border-success/20" },
-    draft: { label: "Draft", className: "bg-muted text-muted-foreground" },
-    archived: { label: "Archived", className: "bg-warning/15 text-warning border-warning/20" },
+    active: {
+      label: "Active",
+      className:
+        "bg-[color:var(--mint)]/15 text-[color:var(--mint)] border-[color:var(--mint)]/30",
+    },
+    draft: { label: "Draft", className: "bg-muted text-muted-foreground border-transparent" },
+    archived: {
+      label: "Archived",
+      className: "bg-warning/15 text-warning border-warning/20",
+    },
   };
   const v = map[value] ?? { label: value, className: "" };
   return (
-    <Badge variant="outline" className={v.className}>
+    <Badge variant="outline" className={`rounded-full px-3 py-0.5 font-medium ${v.className}`}>
       {v.label}
     </Badge>
   );
