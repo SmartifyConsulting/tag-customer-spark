@@ -88,11 +88,11 @@
   --destructive: oklch(0.45 0.14 40);            /* Crimson #9b4423 — third accent + destructive */
   --destructive-foreground: oklch(0.99 0 0);
 
-  --success: oklch(0.68 0.15 162);
-  --success-foreground: oklch(0.99 0 0);
+  --success: oklch(0.72 0.14 78);                /* Warm gold (positive, no green) */
+  --success-foreground: oklch(0.20 0.03 60);
 
-  --mint: oklch(0.68 0.15 162);
-  --mint-foreground: oklch(0.16 0.005 60);
+  --mint: oklch(0.72 0.14 78);                   /* Alias — warm gold, no green */
+  --mint-foreground: oklch(0.20 0.03 60);
 
   --warning: oklch(0.80 0.14 78);                /* Amber #e8b84a */
   --warning-foreground: oklch(0.20 0.03 60);
@@ -105,7 +105,8 @@
   --chart-2: oklch(0.65 0.14 55);                /* Orange */
   --chart-3: oklch(0.45 0.14 40);                /* Crimson */
   --chart-4: oklch(0.80 0.14 78);                /* Amber */
-  --chart-5: oklch(0.68 0.15 162);               /* Emerald */
+  --chart-5: oklch(0.72 0.14 78);                /* Gold (no emerald) */
+
 
   /* Sidebar — cream surface, black-on-cream active pill */
   --sidebar: oklch(0.955 0.012 82);              /* Cream */
@@ -142,11 +143,12 @@
   --destructive: oklch(0.55 0.16 40);
   --destructive-foreground: oklch(0.99 0 0);
 
-  --success: oklch(0.72 0.15 162);
-  --success-foreground: oklch(0.14 0.04 162);
+  --success: oklch(0.78 0.14 78);
+  --success-foreground: oklch(0.16 0.04 60);
 
-  --mint: oklch(0.72 0.15 162);
-  --mint-foreground: oklch(0.14 0.04 162);
+  --mint: oklch(0.78 0.14 78);
+  --mint-foreground: oklch(0.16 0.04 60);
+
 
   --warning: oklch(0.82 0.14 78);
   --warning-foreground: oklch(0.20 0.03 60);

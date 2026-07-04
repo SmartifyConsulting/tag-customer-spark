@@ -137,7 +137,7 @@ export function SectionTabs() {
                 key={t.to}
                 to="/upgrade"
                 search={{ feature: t.feature }}
-                className={`${base} text-background/60 hover:text-background`}
+                className={`${base} text-white/60 hover:text-white`}
                 title={`${t.label} is a paid feature`}
               >
                 <Lock className="h-3.5 w-3.5" />
@@ -153,8 +153,9 @@ export function SectionTabs() {
                 base,
                 isActive
                   ? "bg-background text-foreground shadow-sm"
-                  : "text-background/70 hover:text-background",
+                  : "text-white/80 hover:text-white",
               ].join(" ")}
+
             >
               {t.label}
             </Link>

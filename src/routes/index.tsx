@@ -37,7 +37,7 @@ function Landing() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Nav */}
       <header className="mx-auto flex max-w-7xl items-start justify-between px-6 py-5">
-        <img src={heroLogo.url} alt="Tag" className="h-[240px] w-auto object-contain mt-[57px]" />
+        <img src={heroLogo.url} alt="Tag" className="h-[144px] w-auto object-contain mt-[57px]" />
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex mt-3">
           <a href="#features" className="hover:text-foreground">Features</a>
           <a href="#how" className="hover:text-foreground">How it works</a>

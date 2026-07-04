@@ -4,16 +4,17 @@ import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 export type IntentTrend = "rising" | "falling" | "stable";
 
 export function intentColor(score: number) {
-  if (score >= 70) return "emerald";
+  if (score >= 70) return "success";
   if (score >= 40) return "amber";
   return "rose";
 }
 
 const COLOR_CLASS: Record<string, string> = {
-  emerald: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30",
+  success: "bg-success/10 text-success border-success/30",
   amber: "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/30",
   rose: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/30",
 };
+
 
 export function IntentBadge({
   score,

@@ -99,7 +99,7 @@ function SettingsPage() {
           <Card className="rounded-2xl">
             <CardHeader><CardTitle>Security</CardTitle><CardDescription>Row-level security is enforced across every table.</CardDescription></CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-3">
-              <Stat label="RLS enforced" value={<Badge className="bg-emerald-500/15 text-emerald-700">On</Badge>} />
+              <Stat label="RLS enforced" value={<Badge className="bg-success/15 text-success">On</Badge>} />
               <Stat label="Roles" value="4 levels" />
               <Stat label="Auth" value="Supabase" />
             </CardContent>
@@ -165,7 +165,7 @@ function EmailsTab({ defaultTo }: { defaultTo: string }) {
     <div className="space-y-6">
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">Resend <Badge className="bg-emerald-500/15 text-emerald-700"><CheckCircle2 className="mr-1 h-3 w-3" /> Connected</Badge></CardTitle>
+          <CardTitle className="flex items-center gap-2">Resend <Badge className="bg-success/15 text-success"><CheckCircle2 className="mr-1 h-3 w-3" /> Connected</Badge></CardTitle>
           <CardDescription>Sending from <span className="font-mono">noreply@mypenguin.co.za</span>. Verify <span className="font-mono">mypenguin.co.za</span> in your Resend dashboard for deliverability.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -204,7 +204,7 @@ function EmailsTab({ defaultTo }: { defaultTo: string }) {
       <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            Auth emails <Badge className="bg-emerald-500/15 text-emerald-700"><CheckCircle2 className="mr-1 h-3 w-3" /> Active</Badge>
+            Auth emails <Badge className="bg-success/15 text-success"><CheckCircle2 className="mr-1 h-3 w-3" /> Active</Badge>
           </CardTitle>
           <CardDescription>
             Password reset, email verification and magic links are delivered automatically by the platform's built-in email service. No configuration required.

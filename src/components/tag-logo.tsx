@@ -15,12 +15,12 @@ export function TagLogo({
   if (variant === "wordmark") {
     const h =
       size === "sm"
-        ? "h-10"
+        ? "h-12"
         : size === "lg"
-          ? "h-16"
+          ? "h-20"
           : size === "xl"
-            ? "h-48"
-            : "h-12";
+            ? "h-[230px]"
+            : "h-14";
     return (
       <div className={`flex items-center justify-center ${className ?? ""}`}>
         <img
@@ -32,7 +32,8 @@ export function TagLogo({
     );
   }
   const dim =
-    size === "sm" ? "h-[88px] w-[88px]" : size === "lg" ? "h-40 w-40" : "h-32 w-32";
+    size === "sm" ? "h-[106px] w-[106px]" : size === "lg" ? "h-48 w-48" : "h-40 w-40";
+
   return (
     <div className={`flex items-center justify-center ${className ?? ""}`}>
       <img

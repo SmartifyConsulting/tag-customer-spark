@@ -51,8 +51,8 @@ function IntelligencePage() {
             <div className="text-lg font-semibold">{(exec.data.payload as any).headline}</div>
             <p className="text-sm text-muted-foreground">{(exec.data.payload as any).summary}</p>
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-lg border bg-emerald-50/40 dark:bg-emerald-500/5 p-4">
-                <div className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-400 font-semibold mb-2">Highlights</div>
+              <div className="rounded-lg border bg-success/10 p-4">
+                <div className="text-xs uppercase tracking-wide text-success font-semibold mb-2">Highlights</div>
                 <ul className="text-sm space-y-1 list-disc pl-5">
                   {((exec.data.payload as any).highlights ?? []).map((h: string, i: number) => <li key={i}>{h}</li>)}
                 </ul>
