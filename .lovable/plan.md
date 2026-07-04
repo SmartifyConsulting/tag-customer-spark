@@ -1,59 +1,34 @@
-# Two fixes: search detection + inline mini QR
+# Mini QR in hero + fix scan reliability
 
-## 1. Products search misses "linendrawstring" / partial words
+## 1. Fix QR not being detected
 
-In `src/lib/products.functions.ts` (`listProducts`) the search sends the raw string as one `ilike` pattern across `name`, `sku`, `brand`:
+`src/components/qr/qr-preview.tsx` renders the QR with `margin: 1` and `errorCorrectionLevel: "M"`. The QR spec requires a 4-module quiet zone; margin 1 is why some phone cameras (especially the built-in iOS scanner from a distance) fail to lock on. The navy `#031C4D` on white also drops contrast versus pure black.
 
-```ts
-q = q.or(`name.ilike.%${s}%,sku.ilike.%${s}%,brand.ilike.%${s}%`);
-```
+**Changes in `qr-preview.tsx`:**
+- `margin: 4` (both `toString` and `toDataURL` paths).
+- `errorCorrectionLevel: "Q"` — better tolerance for print, camera glare, and small sizes.
+- Keep navy for brand, but bump to `#0A1F5C` (slightly darker) for stronger luminance contrast; leave `light: "#ffffff"`.
+- Same values used in the PDF render path so printed and on-screen QRs stay identical.
 
-So typing `linen drawstring` misses a product named `Linen Drawstring Pants` unless the columns contain that exact substring in that exact order, and `linendrawstring` (no space) never matches at all.
+Also mirror the same options in `src/lib/qr-pdf.functions.ts` if it re-encodes.
 
-**Fix — two layers:**
+## 2. Mini QR chip on the product hero
 
-a. **Tokenize on whitespace.** Split the query into words; require EVERY token to match `name` OR `sku` OR `brand` (AND of ORs). Chain `.or(...)` once per token. This makes `linen drawstring`, `drawstring linen`, and `Linen pants` all match.
+In `src/routes/_authenticated/products.$productId.tsx` (image block, lines ~121–141):
+- Wrap the `aspect-square` image container with `relative`.
+- Overlay a ~76×76 px (~2 cm @ 96 dpi) QR chip absolutely at bottom-right, inset 10 px. White background, 6 px padding, `rounded-md`, subtle border, soft shadow.
+- Renders only when `data.qr?.short_code` exists; otherwise a small "Generate QR" button that switches the tabs to the QR panel.
+- Clicking the chip scrolls to the full QR panel (`id="product-qr"` on the `<Tabs>` block) so users can still download/regenerate.
 
-b. **Match against a space-stripped index for concatenated queries.** Add a Postgres generated column + trigram index so `linendrawstring` matches `Linen Drawstring Pants`:
-
-```sql
-alter table public.products
-  add column search_blob text
-  generated always as (
-    lower(regexp_replace(coalesce(name,'') || ' ' || coalesce(sku,'') || ' ' || coalesce(brand,''), '\s+', '', 'g'))
-  ) stored;
-
-create extension if not exists pg_trgm;
-create index if not exists products_search_blob_trgm
-  on public.products using gin (search_blob gin_trgm_ops);
-```
-
-In `listProducts`, when the query has no whitespace, also OR in `search_blob.ilike.%<stripped>%`. This preserves current behaviour and handles the joined-word case without exploding row counts.
-
-No RLS/policy changes; generated column is read-only.
-
-## 2. Mini QR in the product hero (no scrolling)
-
-Currently the QR lives only inside the `<Tabs>` block below the product hero. Add a small floating QR chip inside the top hero frame at `src/routes/_authenticated/products.$productId.tsx` (lines ~121–141).
-
-**Placement & sizing:**
-- Absolutely positioned inside the `aspect-square` product-image container, bottom-right, ~12px inset.
-- Fixed size ~76×76 px (~2 cm at 96 dpi). White background, 6px padding, `rounded-md`, subtle border, soft shadow so it reads on any photo.
-- Renders only when `data.qr?.short_code` exists; otherwise show a tiny "Generate QR" button that jumps to the QR tab.
-- Clicking the chip scrolls to the full QR panel (`document.getElementById('product-qr')?.scrollIntoView`) and switches to the QR tab.
-
-**Implementation:**
-- New tiny component `MiniProductQr` in `src/components/qr/mini-product-qr.tsx`: reuses the existing `QRCode.toDataURL` path from `qr-preview.tsx` and the canonical scan URL from `getPublicScanBase` + `/api/public/s/<short_code>` so it matches the printable QR exactly.
-- Wrap the image container in `relative`; render `<MiniProductQr />` as an overlay when a tag exists.
-- Add `id="product-qr"` to the `Tabs` block so the chip can scroll to it.
-
-No changes to the printable QR flow, PDF generation, or scan redirect — this is purely a UI addition on the detail page.
+New component `src/components/qr/mini-product-qr.tsx`:
+- Fetches `getPublicScanBase` (already used by `ProductQrPanel`) and builds `${base}/api/public/s/${short_code}`, matching the printable QR exactly.
+- Uses the shared `QrPreview` at `size={64}` (so the whole chip lands near 76 px including padding).
 
 ## Technical details
 - Files touched:
-  - `src/lib/products.functions.ts` — tokenized search + optional `search_blob` OR.
-  - `supabase/migrations/<ts>_products_search_blob.sql` — generated column + trigram index + `pg_trgm` extension.
-  - `src/routes/_authenticated/products.$productId.tsx` — wrap image in `relative`, mount overlay, add anchor id.
-  - `src/components/qr/mini-product-qr.tsx` — new 76px QR chip.
-- No schema privilege changes needed (existing SELECT policies already cover `products`).
-- No dependency additions; `qrcode` is already used by `qr-preview.tsx`.
+  - `src/components/qr/qr-preview.tsx` — margin/EC/colour bump.
+  - `src/lib/qr-pdf.functions.ts` — mirror the same encoding options (if present).
+  - `src/components/qr/mini-product-qr.tsx` — new overlay chip.
+  - `src/routes/_authenticated/products.$productId.tsx` — wrap image `relative`, mount chip, add `id="product-qr"` on `<Tabs>`.
+- No schema, RLS, or dependency changes.
+- The new encoding options apply to freshly rendered QRs (both hero chip and panel); existing printed labels remain scannable — margin 4 + EC "Q" is strictly more robust.
