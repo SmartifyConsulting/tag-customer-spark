@@ -201,6 +201,25 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Additive: also send via WhatsApp if the user has a phone number on their profile.
+    try {
+      const userId = (linkData as any).user?.id ?? (linkData as any).properties?.user_id;
+      if (userId) {
+        const { data: profile } = await admin
+          .from("profiles")
+          .select("whatsapp_e164")
+          .eq("id", userId)
+          .maybeSingle();
+        const phone = (profile as any)?.whatsapp_e164;
+        if (phone) {
+          const waRes = await sendWhatsAppReset(phone, actionUrl);
+          console.log("[send-password-reset] whatsapp", { userId, ok: waRes.ok });
+        }
+      }
+    } catch (waErr) {
+      console.warn("[send-password-reset] whatsapp lookup/send failed", (waErr as Error).message);
+    }
+
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
