@@ -1,0 +1,2 @@
+ALTER TABLE public.notification_history ADD COLUMN IF NOT EXISTS provider_message_sid text;
+CREATE INDEX IF NOT EXISTS notification_history_provider_sid_idx ON public.notification_history (provider_message_sid) WHERE provider_message_sid IS NOT NULL;

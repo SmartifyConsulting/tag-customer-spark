@@ -49,6 +49,7 @@ import { Route as AuthenticatedCommercePricingRouteImport } from './routes/_auth
 import { Route as AuthenticatedCommerceFunnelRouteImport } from './routes/_authenticated/commerce.funnel'
 import { Route as AuthenticatedAnalyticsReportsRouteImport } from './routes/_authenticated/analytics.reports'
 import { Route as AuthenticatedAnalyticsHistoryRouteImport } from './routes/_authenticated/analytics.history'
+import { Route as ApiPublicWebhooksTwilioInboundRouteImport } from './routes/api/public/webhooks/twilio-inbound'
 import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public/webhooks/paypal'
 import { Route as ApiPublicWebhooksPayfastItnRouteImport } from './routes/api/public/webhooks/payfast-itn'
 import { Route as ApiPublicScanInterestRouteImport } from './routes/api/public/scan.interest'
@@ -273,6 +274,12 @@ const AuthenticatedAnalyticsHistoryRoute =
     path: '/history',
     getParentRoute: () => AuthenticatedAnalyticsRoute,
   } as any)
+const ApiPublicWebhooksTwilioInboundRoute =
+  ApiPublicWebhooksTwilioInboundRouteImport.update({
+    id: '/api/public/webhooks/twilio-inbound',
+    path: '/api/public/webhooks/twilio-inbound',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicWebhooksPaypalRoute = ApiPublicWebhooksPaypalRouteImport.update({
   id: '/api/public/webhooks/paypal',
   path: '/api/public/webhooks/paypal',
@@ -353,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
+  '/api/public/webhooks/twilio-inbound': typeof ApiPublicWebhooksTwilioInboundRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -398,6 +406,7 @@ export interface FileRoutesByTo {
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
+  '/api/public/webhooks/twilio-inbound': typeof ApiPublicWebhooksTwilioInboundRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -447,6 +456,7 @@ export interface FileRoutesById {
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
+  '/api/public/webhooks/twilio-inbound': typeof ApiPublicWebhooksTwilioInboundRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -496,6 +506,7 @@ export interface FileRouteTypes {
     | '/api/public/scan/interest'
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
+    | '/api/public/webhooks/twilio-inbound'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -541,6 +552,7 @@ export interface FileRouteTypes {
     | '/api/public/scan/interest'
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
+    | '/api/public/webhooks/twilio-inbound'
   id:
     | '__root__'
     | '/'
@@ -589,6 +601,7 @@ export interface FileRouteTypes {
     | '/api/public/scan/interest'
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
+    | '/api/public/webhooks/twilio-inbound'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -605,6 +618,7 @@ export interface RootRouteChildren {
   ApiPublicScanInterestRoute: typeof ApiPublicScanInterestRoute
   ApiPublicWebhooksPayfastItnRoute: typeof ApiPublicWebhooksPayfastItnRoute
   ApiPublicWebhooksPaypalRoute: typeof ApiPublicWebhooksPaypalRoute
+  ApiPublicWebhooksTwilioInboundRoute: typeof ApiPublicWebhooksTwilioInboundRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -889,6 +903,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsHistoryRouteImport
       parentRoute: typeof AuthenticatedAnalyticsRoute
     }
+    '/api/public/webhooks/twilio-inbound': {
+      id: '/api/public/webhooks/twilio-inbound'
+      path: '/api/public/webhooks/twilio-inbound'
+      fullPath: '/api/public/webhooks/twilio-inbound'
+      preLoaderRoute: typeof ApiPublicWebhooksTwilioInboundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/paypal': {
       id: '/api/public/webhooks/paypal'
       path: '/api/public/webhooks/paypal'
@@ -1073,7 +1094,18 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicScanInterestRoute: ApiPublicScanInterestRoute,
   ApiPublicWebhooksPayfastItnRoute: ApiPublicWebhooksPayfastItnRoute,
   ApiPublicWebhooksPaypalRoute: ApiPublicWebhooksPaypalRoute,
+  ApiPublicWebhooksTwilioInboundRoute: ApiPublicWebhooksTwilioInboundRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

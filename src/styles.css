@@ -57,35 +57,35 @@
   --font-sans: "Manrope Variable", "Manrope", system-ui, -apple-system, sans-serif;
   --font-display: "Sora Variable", "Sora", system-ui, sans-serif;
 
-  --shadow-card: 0 1px 2px rgb(31 59 45 / 0.05), 0 8px 24px -12px rgb(31 59 45 / 0.10);
-  --shadow-elevated: 0 1px 2px rgb(31 59 45 / 0.06), 0 16px 40px -16px rgb(31 59 45 / 0.20);
+  --shadow-card: 0 1px 2px rgb(13 13 13 / 0.05), 0 8px 24px -12px rgb(13 13 13 / 0.10);
+  --shadow-elevated: 0 1px 2px rgb(13 13 13 / 0.06), 0 16px 40px -16px rgb(13 13 13 / 0.18);
 }
 
 :root {
   --radius: 0.9rem;
 
-  /* MyPenguin — Deep forest green + cream, warm accents */
+  /* Tag — Cream + Ink base, orange & crimson as decorative accents */
   --background: oklch(0.955 0.012 82);           /* Cream #F5F1EA */
-  --foreground: oklch(0.16 0.005 60);            /* Ink #0E0E0E */
+  --foreground: oklch(0.16 0.005 60);            /* Ink #0d0d0d */
 
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.16 0.005 60);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.16 0.005 60);
 
-  --primary: oklch(0.30 0.045 155);              /* Deep forest #1F3B2D */
-  --primary-foreground: oklch(0.955 0.012 82);
+  --primary: oklch(0.16 0.005 60);               /* Ink black */
+  --primary-foreground: oklch(0.955 0.012 82);   /* Cream */
 
   --secondary: oklch(0.93 0.014 82);
-  --secondary-foreground: oklch(0.30 0.045 155);
+  --secondary-foreground: oklch(0.16 0.005 60);
 
   --muted: oklch(0.93 0.014 82);
-  --muted-foreground: oklch(0.48 0.018 150);     /* Muted sage */
+  --muted-foreground: oklch(0.44 0.02 60);
 
-  --accent: oklch(0.88 0.05 60);                 /* Peach #F4C9A8 */
-  --accent-foreground: oklch(0.30 0.045 155);
+  --accent: oklch(0.65 0.14 55);                 /* Orange #d4842a — decorative */
+  --accent-foreground: oklch(0.99 0 0);
 
-  --destructive: oklch(0.6 0.22 27);
+  --destructive: oklch(0.45 0.14 40);            /* Crimson #9b4423 — third accent + destructive */
   --destructive-foreground: oklch(0.99 0 0);
 
   --success: oklch(0.68 0.15 162);
@@ -94,52 +94,52 @@
   --mint: oklch(0.68 0.15 162);
   --mint-foreground: oklch(0.16 0.005 60);
 
-  --warning: oklch(0.78 0.14 65);
+  --warning: oklch(0.80 0.14 78);                /* Amber #e8b84a */
   --warning-foreground: oklch(0.20 0.03 60);
 
-  --border: oklch(0.87 0.014 80);
-  --input: oklch(0.87 0.014 80);
-  --ring: oklch(0.30 0.045 155);
+  --border: oklch(0.88 0.014 80);                /* Warm off-white #e8e4dd */
+  --input: oklch(0.88 0.014 80);
+  --ring: oklch(0.16 0.005 60);
 
-  --chart-1: oklch(0.30 0.045 155);
-  --chart-2: oklch(0.68 0.15 162);
-  --chart-3: oklch(0.88 0.05 60);
-  --chart-4: oklch(0.55 0.06 150);
-  --chart-5: oklch(0.72 0.10 90);
+  --chart-1: oklch(0.16 0.005 60);               /* Ink */
+  --chart-2: oklch(0.65 0.14 55);                /* Orange */
+  --chart-3: oklch(0.45 0.14 40);                /* Crimson */
+  --chart-4: oklch(0.80 0.14 78);                /* Amber */
+  --chart-5: oklch(0.68 0.15 162);               /* Emerald */
 
-  /* Sidebar — deep forest on cream */
-  --sidebar: oklch(0.30 0.045 155);
-  --sidebar-foreground: oklch(0.93 0.014 82);
-  --sidebar-primary: oklch(0.88 0.05 60);
-  --sidebar-primary-foreground: oklch(0.20 0.03 155);
-  --sidebar-accent: oklch(0.36 0.04 155);
+  /* Sidebar — cream surface, black-on-cream active pill */
+  --sidebar: oklch(0.955 0.012 82);              /* Cream */
+  --sidebar-foreground: oklch(0.16 0.005 60);    /* Ink */
+  --sidebar-primary: oklch(0.16 0.005 60);       /* Ink pill */
+  --sidebar-primary-foreground: oklch(0.955 0.012 82);
+  --sidebar-accent: oklch(0.16 0.005 60);        /* Ink selection */
   --sidebar-accent-foreground: oklch(0.955 0.012 82);
-  --sidebar-border: oklch(0.38 0.035 155);
-  --sidebar-ring: oklch(0.68 0.15 162);
+  --sidebar-border: oklch(0.88 0.014 80);
+  --sidebar-ring: oklch(0.16 0.005 60);
 }
 
 .dark {
-  --background: oklch(0.18 0.02 155);            /* Very deep forest */
+  --background: oklch(0.14 0.005 60);
   --foreground: oklch(0.955 0.012 82);
 
-  --card: oklch(0.22 0.03 155);
+  --card: oklch(0.18 0.005 60);
   --card-foreground: oklch(0.955 0.012 82);
-  --popover: oklch(0.22 0.03 155);
+  --popover: oklch(0.18 0.005 60);
   --popover-foreground: oklch(0.955 0.012 82);
 
   --primary: oklch(0.955 0.012 82);              /* Cream on dark */
-  --primary-foreground: oklch(0.20 0.03 155);
+  --primary-foreground: oklch(0.14 0.005 60);
 
-  --secondary: oklch(0.26 0.03 155);
+  --secondary: oklch(0.22 0.005 60);
   --secondary-foreground: oklch(0.955 0.012 82);
 
-  --muted: oklch(0.26 0.03 155);
-  --muted-foreground: oklch(0.70 0.02 150);
+  --muted: oklch(0.22 0.005 60);
+  --muted-foreground: oklch(0.70 0.02 60);
 
-  --accent: oklch(0.88 0.05 60);
-  --accent-foreground: oklch(0.20 0.03 155);
+  --accent: oklch(0.68 0.14 55);
+  --accent-foreground: oklch(0.14 0.005 60);
 
-  --destructive: oklch(0.65 0.2 27);
+  --destructive: oklch(0.55 0.16 40);
   --destructive-foreground: oklch(0.99 0 0);
 
   --success: oklch(0.72 0.15 162);
@@ -148,21 +148,21 @@
   --mint: oklch(0.72 0.15 162);
   --mint-foreground: oklch(0.14 0.04 162);
 
-  --warning: oklch(0.80 0.14 65);
+  --warning: oklch(0.82 0.14 78);
   --warning-foreground: oklch(0.20 0.03 60);
 
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.72 0.15 162);
+  --ring: oklch(0.955 0.012 82);
 
-  --sidebar: oklch(0.15 0.02 155);
-  --sidebar-foreground: oklch(0.92 0.014 82);
-  --sidebar-primary: oklch(0.88 0.05 60);
-  --sidebar-primary-foreground: oklch(0.20 0.03 155);
-  --sidebar-accent: oklch(0.24 0.03 155);
-  --sidebar-accent-foreground: oklch(0.955 0.012 82);
+  --sidebar: oklch(0.14 0.005 60);
+  --sidebar-foreground: oklch(0.955 0.012 82);
+  --sidebar-primary: oklch(0.955 0.012 82);
+  --sidebar-primary-foreground: oklch(0.14 0.005 60);
+  --sidebar-accent: oklch(0.955 0.012 82);
+  --sidebar-accent-foreground: oklch(0.14 0.005 60);
   --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.72 0.15 162);
+  --sidebar-ring: oklch(0.955 0.012 82);
 }
 
 @layer base {

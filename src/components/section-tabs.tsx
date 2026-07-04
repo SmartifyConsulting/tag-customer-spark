@@ -125,19 +125,19 @@ export function SectionTabs() {
 
   return (
     <div className="sticky top-16 z-[5] -mx-4 border-b border-border bg-background/85 px-4 py-3 backdrop-blur-md sm:-mx-8 sm:px-8">
-      <div className="mx-auto flex max-w-7xl items-center gap-1.5 overflow-x-auto rounded-full bg-slate-300/70 p-1.5 dark:bg-slate-700/60">
+      <div className="mx-auto flex w-fit items-center gap-0.5 overflow-x-auto rounded-full bg-foreground p-0.5">
         {section.tabs.map((t) => {
           const isActive = activeTab?.to === t.to;
           const locked = t.feature ? !hasFeature(tier, t.feature) : false;
           const base =
-            "whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold transition-colors inline-flex items-center gap-1.5";
+            "whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors inline-flex items-center gap-1.5";
           if (locked) {
             return (
               <Link
                 key={t.to}
                 to="/upgrade"
                 search={{ feature: t.feature }}
-                className={`${base} text-muted-foreground/70 hover:bg-[color:var(--mint)]/10 hover:text-foreground`}
+                className={`${base} text-background/60 hover:text-background`}
                 title={`${t.label} is a paid feature`}
               >
                 <Lock className="h-3.5 w-3.5" />
@@ -152,8 +152,8 @@ export function SectionTabs() {
               className={[
                 base,
                 isActive
-                  ? "bg-[color:var(--mint)] text-white shadow-sm hover:bg-[color:var(--mint)]"
-                  : "text-muted-foreground hover:bg-[color:var(--mint)]/10 hover:text-foreground",
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-background/70 hover:text-background",
               ].join(" ")}
             >
               {t.label}

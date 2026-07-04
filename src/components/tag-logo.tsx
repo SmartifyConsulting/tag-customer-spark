@@ -38,7 +38,7 @@ export function TagLogo({
       <img
         src={iconAsset.url}
         alt="Tag"
-        className={`${dim} object-contain drop-shadow-[0_4px_18px_rgba(0,176,116,0.25)]`}
+        className={`${dim} object-contain`}
       />
       {withWordmark && (
         <span className="ml-2 text-lg font-bold tracking-tight">Tag</span>

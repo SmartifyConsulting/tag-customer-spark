@@ -42,13 +42,16 @@ export const Route = createFileRoute("/api/public/scan/interest")({
 
         const { data: tag } = await supabaseAdmin
           .from("qr_tags")
-          .select("id, product_id, retailer_id, store_id, is_active")
+          .select("id, product_id, retailer_id, store_id, is_active, product:products(name), retailer:retailers(name)")
           .eq("short_code", parsed.shortCode)
           .maybeSingle();
 
         if (!tag || !tag.is_active) {
           return jsonRes({ ok: false, error: "Tag not found" }, 404);
         }
+
+        const productName = (tag as any).product?.name ?? "this product";
+        const retailerName = (tag as any).retailer?.name ?? "the store";
 
         const now = new Date().toISOString();
 
@@ -135,8 +138,24 @@ export const Route = createFileRoute("/api/public/scan/interest")({
           });
         }
 
+        // Fire-and-forget confirmation WhatsApp — never block opt-in on send failure.
+        try {
+          const { sendWhatsApp } = await import("@/lib/whatsapp.server");
+          const firstName = parsed.name.split(/\s+/)[0] || parsed.name;
+          const body =
+            `Hi ${firstName} 👋 You're subscribed to updates for ${productName} at ${retailerName}. ` +
+            `We'll ping you when it goes on sale, restocks, or has a promo. Reply STOP to unsubscribe.`;
+          const result = await sendWhatsApp({ to: e164, body });
+          if (!result.ok) {
+            console.warn("[scan.interest] whatsapp send failed", result.status, result.error);
+          }
+        } catch (e: any) {
+          console.warn("[scan.interest] whatsapp send error", e?.message ?? e);
+        }
+
         return jsonRes({ ok: true, customerId });
       },
     },
   },
 });
+
