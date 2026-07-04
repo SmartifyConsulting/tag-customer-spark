@@ -1,47 +1,59 @@
-## Scope
-Ten focused UI/data tweaks. No new business logic beyond what's needed for the two new store fields.
 
-## 1. Bring back Stock functionality
-- Add a **Stock** tab to the Engagement section in `src/components/section-tabs.tsx` (between Products and QR Tags), routing to `/stock`.
-- Create `src/routes/_authenticated/stock.tsx`:
-  - Uses the existing `products` table (already has `stock_qty` + `low_stock_threshold`).
-  - Three filter chips: **All**, **Low stock**, **Out of stock**.
-  - Table with product image, name, store, stock qty, threshold, status badge, and an inline "Update stock" popover that writes back via a new `updateStock` server fn (`src/lib/products.functions.ts`).
-- Keep the restored `LowStockCard` on the Dashboard as it is today.
-- No sidebar item change — Stock lives under Engagement tabs (matches the current 5-group IA).
+## Goal
 
-## 2. Sidebar logo — 300% larger
-- Add a new `xl` size to `TagLogo` wordmark variant = `h-48` (roughly 3× the current `h-16` `lg`).
-- Use `variant="wordmark" size="xl"` in `AppSidebar`.
-- Keep the collapsed icon variant unchanged.
+Bring the Products list and QR Tags registry visually in line with the two attached mockups, and make Forgot Password actually deliver a working reset email through a Supabase-backed flow.
 
-## 3. Active nav item — solid green with white text
-- In `src/components/app-sidebar.tsx`, replace the current tinted-mint active state (`bg-[color:var(--mint)]/15 text-[color:var(--mint)]`) with a solid `bg-[color:var(--mint)] text-white` pill and drop the left accent bar.
+## 1. Products page revamp (`image-3.png`)
 
-## 4. Align the two horizontal dividers
-- Adjust `SidebarHeader` so its bottom border sits at the same Y as the top navbar's bottom border (`h-16`), while the enlarged logo sits inside via negative bottom margin / absolute positioning so it extends below without pushing the divider down.
-- Net effect: the sidebar/header dividers become one continuous line across the app.
+Target: `src/routes/_authenticated/products.index.tsx` + `src/components/products/products-table.tsx` + `products-toolbar.tsx`.
 
-## 5. Section tab bar — darker grey
-- In `src/components/section-tabs.tsx`, change the pill container from `bg-muted/50` to a noticeably darker `bg-muted` (or `bg-slate-200 dark:bg-slate-800`) so the strip is clearly visible against the page background.
+Changes:
+- Header row: bold "Products" title, muted subtitle "Manage and track all your products.", right-side actions `+ Import` (outline) and `+ Add Product` (solid navy `#031C4D`).
+- Toolbar: single rounded search input with left magnifier + two compact selects ("All Categories", "All Stores") aligned right. Drop the current busy toolbar chips.
+- Table: white card, thin dividers, columns `Product | Category | Price | Interest Score | Status`.
+  - Product cell: 40px rounded thumbnail + product name (SKU removed from primary line).
+  - Interest Score rendered as a small circular progress ring (SVG) with the numeric value centered, in mint green.
+  - Status as pill: "Active" mint-tinted, "Inactive" muted.
+- Footer: "Showing 1 to 7 of 48 products" left, numbered pagination right (already have `products-pagination.tsx` — restyle to match).
 
-## 6. Store Admin cards — show Manager + Contact number
-- Migration: add `manager_name text` and `contact_phone text` to `public.stores`.
-- Extend `upsertStore` validator + `StoreDialog` form with the two new fields.
-- Store card in `src/routes/_authenticated/stores.tsx` shows:
-  - Manager name (with `UserRound` icon) — falls back to "No manager assigned".
-  - Contact number (with `Phone` icon) — clickable `tel:` link.
+No schema changes; interest score already exists.
 
-## 7. Hero page — logo 1.5 cm lower
-- In `src/routes/index.tsx` header, add `mt-[57px]` (≈1.5 cm at 96 dpi) to the hero logo `<img>` so only the hero logo shifts down; nav buttons stay where they are.
+## 2. QR Tags page revamp (`image-4.png`)
 
-## 8. WhatsApp logo in the chat bubble preview
-- In the hero's WhatsApp preview card, replace the generic Tag icon (`logoAsset`) in the header with the official WhatsApp glyph (inline SVG in green `#25D366`) plus "WhatsApp · Tag" label.
+Target: `src/routes/_authenticated/qr-tags.tsx`.
 
-## 9. "Recovered" tile — solid green with white text
-- In the same preview card, change the Recovered tile from `bg-success/10 text-success` to `bg-[color:var(--mint)] text-white` (both the label and the amount), matching the new active-nav style.
+Changes:
+- Header: "QR Tags" + subtitle "Create, manage and download QR codes.", right side single solid `+ Generate QR` button (navy).
+- Stat tiles: 3 tiles across — "Total QR Codes", "Scans This Month", "Unique Products" — flat white cards, large tabular number, small uppercase label. Remove the current icon puck styling to match sample.
+- Registry list: convert current grid rows into a clean list card with rows of `thumb | name + #TAG-000xxx | scans | download icon | overflow`.
+- Filters: search + "All Stores" + "All Status" selects on one row above the list.
+- Bottom link "View all QR codes" centered.
+- Remove the mock phone preview from scope (sample shows it, but it's illustrative — skip unless requested).
+
+No schema changes.
+
+## 3. Forgot Password — functional reset
+
+Current `src/routes/forgot-password.tsx` already calls `supabase.auth.resetPasswordForEmail(email, { redirectTo: /reset-password })`. That's the correct built-in path; no edge function is required for Supabase's own recovery email.
+
+However, since the user wants branded delivery, use the project's existing Lovable auth email infrastructure:
+
+- Run `email_domain--check_email_domain_status`.
+- If no domain: surface the email-domain setup dialog first.
+- If domain exists: call `email_domain--scaffold_auth_email_templates` to generate branded recovery + other auth templates and the `/lovable/email/auth/webhook` route. Apply Tag brand colors (navy `#031C4D`, mint) to the scaffolded templates.
+- Keep the existing `forgot-password.tsx` and `reset-password.tsx` pages as-is — they already work; the scaffold just makes the delivered email branded and reliable.
+- Verify by triggering a reset from the UI and confirming the email arrives and `/reset-password` updates the password.
+
+No custom edge function will be authored — Lovable's managed auth-email route replaces that need and is the sanctioned path on this stack.
+
+## Out of scope
+
+- No changes to sidebar, hero, stock, or store admin work from prior turns.
+- No new tables or RLS changes.
+- Phone mockup illustration on the QR Tags sample is not implemented.
 
 ## Technical notes
-- New `updateStock` server fn uses `requireSupabaseAuth`, updates `products.stock_qty` scoped by `retailer_id`, and invalidates dashboard + stock queries.
-- Migration will `GRANT` per project rules — but since it only `ALTER TABLE ADD COLUMN`, existing grants and RLS on `stores` remain in force.
-- No changes to Auth, billing, or tier gating.
+
+- Interest ring: inline SVG, `stroke-dasharray` based on `2 * π * r`, mint stroke on a muted track; keep in `products-table.tsx`.
+- Buttons: reuse existing `Button` with `variant="default"` for navy CTA; add a local `outline` variant only if the current one doesn't match.
+- All colors go through existing tokens in `src/styles.css` (no hardcoded hex in components beyond tokens already defined).
