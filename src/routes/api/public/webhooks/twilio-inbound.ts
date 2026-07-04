@@ -89,7 +89,7 @@ export const Route = createFileRoute("/api/public/webhooks/twilio-inbound")({
             .from("notification_history")
             .update({
               status: mapped,
-              error_message: params.ErrorMessage ?? null,
+              error: params.ErrorMessage ?? null,
             } as any)
             .eq("provider_message_sid", messageSid);
           return new Response("<Response/>", {

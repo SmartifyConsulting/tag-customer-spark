@@ -262,7 +262,7 @@ export const enqueueCampaign = createServerFn({ method: "POST" })
             if (!to || !subscribed) {
               await supabase
                 .from("notification_history")
-                .update({ status: "failed", error_message: "No opted-in WhatsApp number" } as any)
+                .update({ status: "failed", error: "No opted-in WhatsApp number" } as any)
                 .eq("id", row.id);
               return;
             }
@@ -276,7 +276,7 @@ export const enqueueCampaign = createServerFn({ method: "POST" })
               .update({
                 status: result.ok ? "sent" : "failed",
                 provider_message_sid: result.sid ?? null,
-                error_message: result.ok ? null : (result.error ?? "Send failed"),
+                error: result.ok ? null : (result.error ?? "Send failed"),
                 sent_at: result.ok ? new Date().toISOString() : null,
               } as any)
               .eq("id", row.id);
