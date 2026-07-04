@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { toast } from "sonner";
-import { FileDown, Loader2, Package, Plus } from "lucide-react";
+import { FileDown, Loader2, Package, Plus, Upload } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -122,7 +122,7 @@ function ProductsListPage() {
     <div className="grid gap-6">
       <PageHeader
         title="Products"
-        description="Add, organize, and tag the products your customers can opt in to."
+        description="Manage and track all your products."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {canManage && selectedIds.length > 0 && (
@@ -132,8 +132,13 @@ function ProductsListPage() {
               </Button>
             )}
             {canManage && (
+              <Button variant="outline">
+                <Upload className="mr-2 h-4 w-4" /> Import
+              </Button>
+            )}
+            {canManage && (
               <Button onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" /> Add product
+                <Plus className="mr-2 h-4 w-4" /> Add Product
               </Button>
             )}
           </div>
