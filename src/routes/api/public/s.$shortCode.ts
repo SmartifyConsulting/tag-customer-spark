@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { UAParser } from "ua-parser-js";
 
 async function sha256Hex(input: string) {
