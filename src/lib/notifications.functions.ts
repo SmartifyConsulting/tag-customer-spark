@@ -239,8 +239,54 @@ export const enqueueCampaign = createServerFn({ method: "POST" })
     if (data.sendNow) update.sent_at = new Date().toISOString();
     await supabase.from("notification_campaigns").update(update).eq("id", data.id);
 
-    // Fire-and-forget: also email customers who have an email address on file
+    // Real send path for sendNow: dispatch WhatsApp via Twilio, then email fallback.
     if (data.sendNow) {
+      try {
+        const { sendWhatsApp } = await import("./whatsapp.server");
+        const { data: queuedRows } = await supabase
+          .from("notification_history")
+          .select("id, customer_id, payload, customer:customers(whatsapp_e164, full_name, status)")
+          .eq("campaign_id", data.id)
+          .eq("status", "queued");
+
+        const bodyText =
+          (campaign.headline ? `*${campaign.headline}*\n\n` : "") +
+          (campaign.body ?? "") +
+          (campaign.cta_url ? `\n\n${campaign.cta_url}` : "") +
+          (campaign.redemption_code ? `\n\nCode: ${campaign.redemption_code}` : "");
+
+        await Promise.allSettled(
+          (queuedRows ?? []).map(async (row: any) => {
+            const to = row.customer?.whatsapp_e164;
+            const subscribed = row.customer?.status === "subscribed";
+            if (!to || !subscribed) {
+              await supabase
+                .from("notification_history")
+                .update({ status: "failed", error_message: "No opted-in WhatsApp number" })
+                .eq("id", row.id);
+              return;
+            }
+            const result = await sendWhatsApp({
+              to,
+              body: bodyText || campaign.title,
+              mediaUrl: campaign.image_url ?? undefined,
+            });
+            await supabase
+              .from("notification_history")
+              .update({
+                status: result.ok ? "sent" : "failed",
+                provider_message_sid: result.sid ?? null,
+                error_message: result.ok ? null : (result.error ?? "Send failed"),
+                sent_at: result.ok ? new Date().toISOString() : null,
+              })
+              .eq("id", row.id);
+          }),
+        );
+      } catch (e) {
+        console.error("[campaign] whatsapp fanout failed", e);
+      }
+
+      // Email fallback for customers who have an email address on file
       try {
         const filter = (campaign.audience_filter ?? {}) as any;
         let productIds: string[] = filter.product_ids ?? [];
