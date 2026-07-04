@@ -1,26 +1,44 @@
-## Polish pass: green remnants, images, logo, sizing, tab text
+# Fix invalid QR codes
 
-**1. Remove remaining green**
-- `src/components/ui/input.tsx` (search bar): audit focus ring / border tokens, swap any `ring-primary`/emerald leftovers to neutral black (`ring-foreground/20`, `border-input`).
-- Global "All" filter button (likely in `src/components/section-tabs.tsx` or product/watchlist filter bars): replace green active state with black bg + cream text to match tab language.
-- Grep `#00b074`, `emerald`, `green-` across `src/` and neutralize any stragglers on dashboard, product cards, badges (keep semantic success pills only where they mean "in stock").
+Two bugs make scanned QR codes fail:
 
-**2. Logo refresh**
-- Replace `src/assets/tag-logo-v2.png` (nav) and `src/assets/tag-logo-hero.png` (hero) with the newly attached logo via `lovable-assets create`, updating both `.asset.json` pointers.
-- Favicon (`public/favicon.png`) regenerated from same source.
+## 1. QR encodes the current browser origin
+`src/components/qr/product-qr-panel.tsx` builds the QR value from `window.location.origin`. When you generate a QR inside the Lovable preview (`id-preview--…lovable.app`), the printed code points at that ephemeral preview host. Scanning it from a phone either 404s (preview host gone / different session) or hits the wrong environment.
 
-**3. Logo sizing**
-- `src/components/tag-logo.tsx`:
-  - Hero variant: reduce by 40% (e.g. `h-32 w-32` → `h-[77px] w-[77px]`; `h-[88px]` sm → `h-[53px]`).
-  - Nav variant: increase by 20% (current nav size × 1.2, e.g. `h-10` → `h-12`, keeping aspect ratio).
-- No layout container changes — only the image dimensions.
+**Fix:** resolve the QR base URL server-side from a stable canonical host, in this order:
+1. `process.env.PUBLIC_SITE_URL` (e.g. `https://mypenguin.co.za`)
+2. Custom domain / published URL from request headers when generating
+3. Fallback to `window.location.origin`
 
-**4. Product images sanity pass**
-- Re-run targeted SQL UPDATEs on `public.products` so `image_url` matches each product's `name`/`description`/`category` (coffee gear → espresso/beans imagery, apparel → clothing shots, etc.) instead of the broad SKU-pattern backfill. Themed Unsplash 800px URLs, one per product.
+Expose the resolved base via a small server function (`getPublicScanBase`) that the product QR panel and bulk QR dialog call once, and encode `{base}/api/public/s/{shortCode}` into the QR image. This makes printed codes portable across preview, published, and custom-domain deployments.
 
-**5. Tab text color**
-- `src/components/ui/tabs.tsx` + `src/components/section-tabs.tsx`: inactive tab text changes from cream (`text-background`) to pure white (`text-white`); active state (cream bg + black text) unchanged.
+## 2. `throw redirect(...)` doesn't redirect from a server route handler
+In `src/routes/api/public/s.$shortCode.ts` the handler ends with:
 
-**Files touched:** `src/components/ui/input.tsx`, `src/components/section-tabs.tsx`, `src/components/ui/tabs.tsx`, `src/components/tag-logo.tsx`, `src/assets/tag-logo-v2.png.asset.json`, `src/assets/tag-logo-hero.png.asset.json`, `public/favicon.png`, plus a data-only product image SQL update.
+```ts
+throw redirect({ href: `${url.origin}/scan/${shortCode}` });
+```
 
-**Verification:** Playwright screenshots of `/dashboard` (search + All button + nav logo), `/products` (tabs + images), and a hero page (logo size). Grep confirms no `emerald`/`green-`/`#00b074` remain in components. `SELECT count(*) FROM products WHERE image_url IS NULL` returns 0.
+`redirect()` from `@tanstack/react-router` is a router-side navigation helper for loaders/components. Inside a raw server route handler it doesn't produce an HTTP 302 — the response the scanner gets is an error/empty body, so the phone browser shows "cannot open page". That is exactly the "not valid" behaviour.
+
+**Fix:** return a real HTTP redirect:
+
+```ts
+return new Response(null, {
+  status: 302,
+  headers: { Location: `${base}/scan/${shortCode}` },
+});
+```
+
+Use the same canonical base as (1) so redirects land on the published scan page, not the preview host embedded in `request.url`.
+
+## 3. Scan-page sanity check
+Verify `/scan/$shortCode` renders without auth (it lives outside `_authenticated/`, so it should — just confirm the loader uses only public server functions).
+
+## Technical details
+- New server fn `getPublicScanBase` in `src/lib/qr.functions.ts` returning `PUBLIC_SITE_URL` or derived host.
+- Update `product-qr-panel.tsx` and `bulk-qr-dialog.tsx` to await that base instead of reading `window.location.origin`.
+- Replace `throw redirect(...)` in `s.$shortCode.ts` with a `Response` 302; log scan insert errors instead of swallowing.
+- No schema changes. No UI/style changes.
+
+After this, generating a QR in preview and scanning it on a phone will hit `mypenguin.co.za/api/public/s/<code>` → 302 → `/scan/<code>` with the customer opt-in form.
