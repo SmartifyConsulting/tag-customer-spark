@@ -777,6 +777,7 @@ export type Database = {
           error: string | null
           id: string
           payload: Json
+          provider_message_sid: string | null
           queued_at: string
           read_at: string | null
           redeemed_at: string | null
@@ -796,6 +797,7 @@ export type Database = {
           error?: string | null
           id?: string
           payload?: Json
+          provider_message_sid?: string | null
           queued_at?: string
           read_at?: string | null
           redeemed_at?: string | null
@@ -815,6 +817,7 @@ export type Database = {
           error?: string | null
           id?: string
           payload?: Json
+          provider_message_sid?: string | null
           queued_at?: string
           read_at?: string | null
           redeemed_at?: string | null
