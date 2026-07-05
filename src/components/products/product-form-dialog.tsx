@@ -220,7 +220,18 @@ export function ProductFormDialog({
             </Field>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="SKU *" error={form.formState.errors.sku?.message}>
-                <Input {...form.register("sku")} />
+                <div className="flex gap-2">
+                  <Input {...form.register("sku")} className="flex-1" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setScannerOpen(true)}
+                    title="Scan barcode"
+                  >
+                    <ScanLine className="h-4 w-4" />
+                    <span className="sr-only sm:not-sr-only sm:ml-2">Scan</span>
+                  </Button>
+                </div>
               </Field>
               <Field label="Brand"><Input {...form.register("brand")} /></Field>
             </div>
