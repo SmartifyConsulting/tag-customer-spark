@@ -109,13 +109,10 @@ export function ProductsTable({
               Product
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Category
-            </TableHead>
-            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Price
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Stock
+              Status
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               QR
@@ -158,9 +155,6 @@ export function ProductsTable({
                       </Link>
                     </div>
                   </div>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {r.category?.name ?? "—"}
                 </TableCell>
                 <TableCell className="text-sm">
                   {onSale ? (
