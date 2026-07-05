@@ -120,9 +120,9 @@ function ProductDetail() {
         </Link>
       </div>
 
-      <div className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[260px_1fr]">
+      <div className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[220px_minmax(0,1fr)_210px]">
         <div className="grid gap-2">
-          <div className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
+          <div className="aspect-square overflow-hidden rounded-xl border border-border bg-muted">
             {primary ? (
               <img src={primary} alt={p.name} className="h-full w-full object-cover" />
             ) : (
@@ -130,14 +130,6 @@ function ProductDetail() {
                 <Tag className="h-8 w-8" />
               </div>
             )}
-            <MiniProductQr
-              shortCode={(data.qr as any)?.short_code ?? null}
-              onClick={() => {
-                document
-                  .getElementById("product-qr")
-                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-            />
           </div>
           {images.length > 1 && (
             <div className="grid grid-cols-4 gap-2">
@@ -170,7 +162,7 @@ function ProductDetail() {
               </span>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
             <Fact label="Category" value={p.category?.name ?? "—"} />
             <Fact label="Store" value={p.store?.name ?? "—"} />
             <Fact label="Stock" value={`${p.stock_qty}`} />
@@ -201,7 +193,9 @@ function ProductDetail() {
             </div>
           )}
         </div>
+        <HeroQrColumn productId={productId} shortCode={(data.qr as any)?.short_code ?? null} />
       </div>
+
 
       <ProductIntentPanel productId={productId} />
 
