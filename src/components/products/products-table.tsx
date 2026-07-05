@@ -123,9 +123,6 @@ export function ProductsTable({
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Interest
             </TableHead>
-            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Status
-            </TableHead>
             <TableHead className="w-10" />
           </TableRow>
         </TableHeader>
@@ -189,9 +186,6 @@ export function ProductsTable({
                 </TableCell>
                 <TableCell>
                   <InterestRing score={r.intent_score ?? 0} />
-                </TableCell>
-                <TableCell>
-                  <StatusBadge value={r.status} />
                 </TableCell>
                 <TableCell className="pr-4">
                   {canManage && (
@@ -284,26 +278,6 @@ function InterestRing({ score }: { score: number }) {
   );
 }
 
-function StatusBadge({ value }: { value: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    active: {
-      label: "Active",
-      className:
-        "bg-[color:var(--mint)]/15 text-[color:var(--mint)] border-[color:var(--mint)]/30",
-    },
-    draft: { label: "Draft", className: "bg-muted text-muted-foreground border-transparent" },
-    archived: {
-      label: "Archived",
-      className: "bg-warning/15 text-warning border-warning/20",
-    },
-  };
-  const v = map[value] ?? { label: value, className: "" };
-  return (
-    <Badge variant="outline" className={`rounded-full px-3 py-0.5 font-medium ${v.className}`}>
-      {v.label}
-    </Badge>
-  );
-}
 
 function RowActions({
   row,

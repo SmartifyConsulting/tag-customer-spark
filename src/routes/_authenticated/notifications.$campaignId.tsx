@@ -15,6 +15,17 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge, TypeBadge } from "@/components/notifications/status-badge";
 import { WhatsAppPreview } from "@/components/notifications/whatsapp-preview";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/notifications/$campaignId")({
   head: () => ({ meta: [{ title: "Campaign — Tag" }] }),
@@ -37,6 +48,7 @@ function CampaignDetail() {
   const cancelFn = useServerFn(cancelCampaign);
   const deleteFn = useServerFn(deleteCampaign);
   const dupFn = useServerFn(duplicateCampaign);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["campaign", campaignId],
     queryFn: () => getFn({ data: { id: campaignId } }),
@@ -78,7 +90,7 @@ function CampaignDetail() {
         actions={
           <div className="flex gap-2">
             <Button asChild variant="outline" size="sm"><Link to="/notifications"><ArrowLeft className="mr-1 h-4 w-4" />Back</Link></Button>
-            {c.status === "draft" && (
+            {(c.status === "draft" || c.status === "scheduled") && (
               <Button asChild variant="outline" size="sm">
                 <Link to="/notifications/$campaignId/edit" params={{ campaignId: c.id }}>
                   <Pencil className="mr-1 h-4 w-4" /> Edit
@@ -94,13 +106,7 @@ function CampaignDetail() {
               </Button>
             )}
             {canDelete && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => {
-                  if (confirm(`Delete campaign "${c.title}"? This cannot be undone.`)) remove.mutate();
-                }}
-              >
+              <Button variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}>
                 <Trash2 className="mr-1 h-4 w-4" /> Delete
               </Button>
             )}
@@ -161,6 +167,26 @@ function CampaignDetail() {
           />
         </div>
       </div>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this campaign?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{c.title}" will be permanently removed. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => remove.mutate()}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

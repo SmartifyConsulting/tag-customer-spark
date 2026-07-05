@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Loader2, Save, Send, CalendarClock } from "lucide-react";
@@ -26,6 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { WhatsAppPreview } from "@/components/notifications/whatsapp-preview";
 import { AiCampaignAssist } from "@/components/notifications/ai-campaign-assist";
+import { MessagePlaceholders } from "@/components/notifications/message-placeholders";
 
 const TYPES = [
   { value: "sale", label: "Sale", template: { headline: "Price drop!", body: "{product} just got cheaper — grab it while it lasts.", cta: "View deal" } },
@@ -88,6 +89,55 @@ export function CampaignComposer({
   const [scheduledAt, setScheduledAt] = useState<string>(toLocalInput(initial?.scheduled_at));
   const [audience, setAudience] = useState(0);
   const [saving, setSaving] = useState<"none" | "draft" | "send" | "schedule">("none");
+  const headlineRef = useRef<HTMLInputElement | null>(null);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
+  const activeFieldRef = useRef<"headline" | "body">("body");
+
+  function insertAt(
+    field: "headline" | "body",
+    token: string,
+    caret?: { start: number; end: number },
+  ) {
+    if (field === "headline") {
+      const el = headlineRef.current;
+      const start = caret?.start ?? el?.selectionStart ?? headline.length;
+      const end = caret?.end ?? el?.selectionEnd ?? headline.length;
+      const next = headline.slice(0, start) + token + headline.slice(end);
+      setHeadline(next.slice(0, 80));
+      requestAnimationFrame(() => {
+        el?.focus();
+        const pos = start + token.length;
+        el?.setSelectionRange(pos, pos);
+      });
+    } else {
+      const el = bodyRef.current;
+      const start = caret?.start ?? el?.selectionStart ?? body.length;
+      const end = caret?.end ?? el?.selectionEnd ?? body.length;
+      const next = body.slice(0, start) + token + body.slice(end);
+      setBody(next.slice(0, 800));
+      requestAnimationFrame(() => {
+        el?.focus();
+        const pos = start + token.length;
+        el?.setSelectionRange(pos, pos);
+      });
+    }
+  }
+
+  function handleDrop(field: "headline" | "body") {
+    return (e: React.DragEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      e.preventDefault();
+      const token = e.dataTransfer.getData("text/plain");
+      if (!token) return;
+      const el = e.currentTarget as HTMLInputElement | HTMLTextAreaElement;
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? el.value.length;
+      insertAt(field, token, { start, end });
+    };
+  }
+  const allowDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
 
   useEffect(() => {
     if (mode !== "new") return;
@@ -126,8 +176,13 @@ export function CampaignComposer({
     () =>
       body
         .replaceAll("{product}", product?.name ?? "this product")
-        .replaceAll("{code}", redemptionCode || "SAVE10"),
-    [body, product, redemptionCode],
+        .replaceAll("{code}", redemptionCode || "SAVE10")
+        .replaceAll("{customer_name}", "John")
+        .replaceAll("{store_name}", opts?.retailer?.name ?? "your store")
+        .replaceAll("{price}", "R599")
+        .replaceAll("{discount}", "30%")
+        .replaceAll("{expiry}", expiresAt ? new Date(expiresAt).toLocaleDateString() : "soon"),
+    [body, product, redemptionCode, opts, expiresAt],
   );
 
   async function persist(action: "draft" | "send" | "schedule") {
@@ -250,15 +305,34 @@ export function CampaignComposer({
               <Label htmlFor="headline">
                 Headline <span className="text-muted-foreground">({headline.length}/80)</span>
               </Label>
-              <Input id="headline" value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={80} />
+              <Input
+                id="headline"
+                ref={headlineRef}
+                value={headline}
+                onChange={(e) => setHeadline(e.target.value)}
+                onFocus={() => (activeFieldRef.current = "headline")}
+                onDrop={handleDrop("headline")}
+                onDragOver={allowDrop}
+                maxLength={80}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="body">
                 Body <span className="text-muted-foreground">({body.length}/800)</span>
               </Label>
-              <Textarea id="body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={800} rows={5} />
+              <Textarea
+                id="body"
+                ref={bodyRef}
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                onFocus={() => (activeFieldRef.current = "body")}
+                onDrop={handleDrop("body")}
+                onDragOver={allowDrop}
+                maxLength={800}
+                rows={5}
+              />
               <p className="text-[11px] text-muted-foreground">
-                Tokens: <code>{"{product}"}</code>, <code>{"{code}"}</code>
+                Drag placeholders from the right panel, or type tokens like <code>{"{product}"}</code>.
               </p>
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
@@ -347,18 +421,23 @@ export function CampaignComposer({
           </Card>
         </div>
 
-        <div className="lg:sticky lg:top-4 lg:self-start">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">WhatsApp preview</p>
-          <WhatsAppPreview
-            retailerName={opts?.retailer?.name ?? "Your store"}
-            logoUrl={opts?.retailer?.logo_url ?? undefined}
-            imageUrl={imageUrl}
-            headline={headline}
-            body={renderedBody}
-            ctaLabel={ctaLabel}
-            expiresAt={expiresAt ? new Date(expiresAt).toISOString() : null}
-            redemptionCode={redemptionCode}
+        <div className="lg:sticky lg:top-4 lg:self-start space-y-4">
+          <MessagePlaceholders
+            onInsert={(token) => insertAt(activeFieldRef.current, token)}
           />
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">WhatsApp preview</p>
+            <WhatsAppPreview
+              retailerName={opts?.retailer?.name ?? "Your store"}
+              logoUrl={opts?.retailer?.logo_url ?? undefined}
+              imageUrl={imageUrl}
+              headline={headline}
+              body={renderedBody}
+              ctaLabel={ctaLabel}
+              expiresAt={expiresAt ? new Date(expiresAt).toISOString() : null}
+              redemptionCode={redemptionCode}
+            />
+          </div>
         </div>
       </div>
     </div>

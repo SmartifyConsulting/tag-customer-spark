@@ -4,7 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ImagePlus, Loader2, Trash2, X } from "lucide-react";
+import { ImagePlus, Loader2, ScanLine, X } from "lucide-react";
+import { BarcodeScannerDialog } from "@/components/products/barcode-scanner-dialog";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ import {
   createProduct,
   createProductImageUploadUrl,
   getProductFormOptions,
+  lookupBarcode,
   setProductImages,
   updateProduct,
 } from "@/lib/products.functions";
@@ -55,6 +57,8 @@ export function ProductFormDialog({
   const setImages = useServerFn(setProductImages);
   const createUploadUrl = useServerFn(createProductImageUploadUrl);
   const optsFn = useServerFn(getProductFormOptions);
+  const lookupFn = useServerFn(lookupBarcode);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const { data: opts } = useQuery({
     queryKey: ["product-form-options"],
     queryFn: () => optsFn(),
@@ -154,6 +158,48 @@ export function ProductFormDialog({
     onError: (e: any) => toast.error(e.message ?? "Save failed"),
   });
 
+  async function handleBarcode(code: string) {
+    const current = form.getValues();
+    form.setValue("sku", code, { shouldDirty: true });
+    try {
+      const res = await lookupFn({ data: { code } });
+      if (!res.found || !res.product) {
+        toast.info(`SKU set to ${code}. No product match — fill fields manually.`);
+        return;
+      }
+      const p: any = res.product;
+      const setIfEmpty = (key: keyof ProductInput, val: any) => {
+        if (val == null || val === "") return;
+        const existing = (current as any)[key];
+        if (existing == null || existing === "" || existing === 0) {
+          form.setValue(key as any, val, { shouldDirty: true });
+        }
+      };
+      setIfEmpty("name", p.name);
+      setIfEmpty("brand", p.brand);
+      setIfEmpty("description", p.description);
+      setIfEmpty("size", p.size);
+      if (p.image_url && imgs.length === 0) {
+        setImgs([{ url: p.image_url, path: `external/${code}`, sort: 0 }]);
+      }
+      if (res.source === "local") {
+        setIfEmpty("price_cents", p.price_cents);
+        setIfEmpty("sale_price_cents", p.sale_price_cents);
+        setIfEmpty("currency", p.currency);
+        setIfEmpty("stock_qty", p.stock_qty);
+        setIfEmpty("low_stock_threshold", p.low_stock_threshold);
+        setIfEmpty("color", p.color);
+        setIfEmpty("category_id", p.category_id);
+        setIfEmpty("store_id", p.store_id);
+        toast.success("Matched an existing product — fields prefilled");
+      } else {
+        toast.success("Filled from Open Food Facts");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Barcode lookup failed");
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
@@ -174,7 +220,18 @@ export function ProductFormDialog({
             </Field>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="SKU *" error={form.formState.errors.sku?.message}>
-                <Input {...form.register("sku")} />
+                <div className="flex gap-2">
+                  <Input {...form.register("sku")} className="flex-1" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setScannerOpen(true)}
+                    title="Scan barcode"
+                  >
+                    <ScanLine className="h-4 w-4" />
+                    <span className="sr-only sm:not-sr-only sm:ml-2">Scan</span>
+                  </Button>
+                </div>
               </Field>
               <Field label="Brand"><Input {...form.register("brand")} /></Field>
             </div>
@@ -287,21 +344,6 @@ export function ProductFormDialog({
             </div>
           </Section>
 
-          <Section title="Status">
-            <Field label="Status">
-              <Select
-                value={form.watch("status")}
-                onValueChange={(v: any) => form.setValue("status", v)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-          </Section>
 
           <Section title="Images">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -345,6 +387,11 @@ export function ProductFormDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+      <BarcodeScannerDialog
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onDetect={handleBarcode}
+      />
     </Dialog>
   );
 }

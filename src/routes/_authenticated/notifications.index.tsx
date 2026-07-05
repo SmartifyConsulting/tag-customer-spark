@@ -23,6 +23,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/notifications/")({
   head: () => ({ meta: [{ title: "Notifications — Tag" }] }),
@@ -37,6 +47,7 @@ function NotificationsList() {
   const dupFn = useServerFn(duplicateCampaign);
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["campaigns", status],
     queryFn: () => list({ data: { status } }),
@@ -157,7 +168,7 @@ function NotificationsList() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      {c.status === "draft" && (
+                      {(c.status === "draft" || c.status === "scheduled") && (
                         <DropdownMenuItem asChild>
                           <Link to="/notifications/$campaignId/edit" params={{ campaignId: c.id }}>
                             <Pencil className="mr-2 h-4 w-4" /> Edit
@@ -175,11 +186,7 @@ function NotificationsList() {
                       {canDelete && (
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"
-                          onClick={() => {
-                            if (confirm(`Delete campaign "${c.title}"? This cannot be undone.`)) {
-                              remove.mutate(c.id);
-                            }
-                          }}
+                          onClick={() => setPendingDelete({ id: c.id, title: c.title })}
                         >
                           <Trash2 className="mr-2 h-4 w-4" /> Delete
                         </DropdownMenuItem>
@@ -192,6 +199,32 @@ function NotificationsList() {
           })}
         </div>
       )}
+
+      <AlertDialog
+        open={!!pendingDelete}
+        onOpenChange={(v) => !v && setPendingDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this campaign?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{pendingDelete?.title}" will be permanently removed. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (pendingDelete) remove.mutate(pendingDelete.id);
+                setPendingDelete(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
