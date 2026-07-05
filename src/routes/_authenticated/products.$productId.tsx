@@ -35,7 +35,8 @@ import {
 } from "@/lib/products.functions";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { ProductQrPanel } from "@/components/qr/product-qr-panel";
-import { MiniProductQr } from "@/components/qr/mini-product-qr";
+import { QrPreview } from "@/components/qr/qr-preview";
+import { getPublicScanBase, regenerateProductQr } from "@/lib/qr.functions";
 import { ProductIntentPanel } from "@/components/intent/product-intent-panel";
 import { ScansTable } from "@/components/qr/scans-table";
 import { formatMoney } from "@/lib/format";
