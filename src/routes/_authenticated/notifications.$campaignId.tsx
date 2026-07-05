@@ -90,7 +90,7 @@ function CampaignDetail() {
         actions={
           <div className="flex gap-2">
             <Button asChild variant="outline" size="sm"><Link to="/notifications"><ArrowLeft className="mr-1 h-4 w-4" />Back</Link></Button>
-            {c.status === "draft" && (
+            {(c.status === "draft" || c.status === "scheduled") && (
               <Button asChild variant="outline" size="sm">
                 <Link to="/notifications/$campaignId/edit" params={{ campaignId: c.id }}>
                   <Pencil className="mr-1 h-4 w-4" /> Edit
@@ -106,13 +106,7 @@ function CampaignDetail() {
               </Button>
             )}
             {canDelete && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => {
-                  if (confirm(`Delete campaign "${c.title}"? This cannot be undone.`)) remove.mutate();
-                }}
-              >
+              <Button variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}>
                 <Trash2 className="mr-1 h-4 w-4" /> Delete
               </Button>
             )}
