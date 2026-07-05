@@ -5,6 +5,7 @@ import {
   Tag,
   Users,
   TrendingUp,
+  Inbox,
 } from "lucide-react";
 import type { TierFeatureKey } from "@/lib/tier";
 
@@ -21,7 +22,7 @@ export const NAV: readonly NavItem[] = [
     title: "Dashboard",
     url: "/dashboard",
     icon: LayoutDashboard,
-    match: ["/dashboard", "/inbox"],
+    match: ["/dashboard"],
   },
   {
     title: "Items & Tags",
@@ -34,6 +35,12 @@ export const NAV: readonly NavItem[] = [
     url: "/notifications",
     icon: Bell,
     match: ["/notifications", "/alerts"],
+  },
+  {
+    title: "Inbox",
+    url: "/inbox",
+    icon: Inbox,
+    match: ["/inbox"],
   },
   {
     title: "Customers & Leads",

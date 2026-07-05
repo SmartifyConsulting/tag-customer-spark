@@ -13,6 +13,7 @@ import {
   createPaypalOrder,
   capturePaypalOrder,
   cancelMySubscription,
+  changePlan,
 } from "@/lib/billing.functions";
 import { PLANS, priceCents, formatZar, formatUsd, type PlanId, type Cycle } from "@/lib/billing/pricing";
 
@@ -85,6 +86,8 @@ export function BillingTab() {
             plan={plan.id}
             cycle={cycle}
             currentTier={currentTier}
+            hasActiveSub={!!subRow && subRow.status === "active"}
+            activeProvider={(subRow?.provider as "payfast" | "paypal" | undefined) ?? null}
           />
         ))}
       </div>
@@ -120,12 +123,25 @@ export function BillingTab() {
   );
 }
 
-function PlanCard({ plan, cycle, currentTier }: { plan: PlanId; cycle: Cycle; currentTier: PlanId }) {
+function PlanCard({
+  plan,
+  cycle,
+  currentTier,
+  hasActiveSub,
+  activeProvider,
+}: {
+  plan: PlanId;
+  cycle: Cycle;
+  currentTier: PlanId;
+  hasActiveSub: boolean;
+  activeProvider: "payfast" | "paypal" | null;
+}) {
+  const qc = useQueryClient();
   const p = PLANS[plan];
   const isCurrent = currentTier === plan;
   const zar = priceCents(plan, cycle, "ZAR");
   const usd = priceCents(plan, cycle, "USD");
-  const [busy, setBusy] = useState<null | "payfast" | "paypal">(null);
+  const [busy, setBusy] = useState<null | "payfast" | "paypal" | "switch" | "downgrade">(null);
 
   const startPayfast = async () => {
     setBusy("payfast");
@@ -133,7 +149,7 @@ function PlanCard({ plan, cycle, currentTier }: { plan: PlanId; cycle: Cycle; cu
       const origin = window.location.origin;
       const { redirect_url } = await createPayfastCheckout({
         data: {
-          plan,
+          plan: plan as "pro" | "enterprise",
           cycle,
           return_url: `${origin}/settings?tab=billing&paid=1`,
           cancel_url: `${origin}/settings?tab=billing&cancelled=1`,
@@ -153,7 +169,7 @@ function PlanCard({ plan, cycle, currentTier }: { plan: PlanId; cycle: Cycle; cu
       const origin = window.location.origin;
       const { order_id, approve_url } = await createPaypalOrder({
         data: {
-          plan,
+          plan: plan as "pro" | "enterprise",
           cycle,
           return_url: `${origin}/settings?tab=billing&paypal_order=${encodeURIComponent("")}`,
           cancel_url: `${origin}/settings?tab=billing&cancelled=1`,
@@ -161,7 +177,6 @@ function PlanCard({ plan, cycle, currentTier }: { plan: PlanId; cycle: Cycle; cu
       });
       if (!approve_url) throw new Error("PayPal did not return an approval URL");
       const popup = window.open(approve_url, "paypal", "width=520,height=720");
-      // Poll for popup close, then capture.
       const iv = setInterval(async () => {
         if (popup && popup.closed) {
           clearInterval(iv);
@@ -181,6 +196,39 @@ function PlanCard({ plan, cycle, currentTier }: { plan: PlanId; cycle: Cycle; cu
       setBusy(null);
     }
   };
+
+  const doDowngrade = async () => {
+    setBusy("downgrade");
+    try {
+      await changePlan({ data: { tier: "starter", cycle } });
+      toast.success("Downgrade scheduled");
+      qc.invalidateQueries({ queryKey: ["my-subscription"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const doSwitch = async () => {
+    setBusy("switch");
+    try {
+      const r = await changePlan({ data: { tier: plan, cycle } });
+      if (r.provider_redirect) {
+        toast.info("Start a subscription with PayFast or PayPal below.");
+      } else {
+        toast.success("Plan updated");
+        qc.invalidateQueries({ queryKey: ["my-subscription"] });
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const cycleLabel = cycle === "annual" ? "annual" : "monthly";
+  const isPaid = plan !== "starter";
 
   return (
     <Card className={`rounded-2xl ${isCurrent ? "border-mint" : ""}`}>
@@ -207,19 +255,36 @@ function PlanCard({ plan, cycle, currentTier }: { plan: PlanId; cycle: Cycle; cu
             </li>
           ))}
         </ul>
-        {plan === "starter" ? (
-          <Button variant="outline" className="w-full" disabled>Free tier</Button>
-        ) : isCurrent ? (
-          <Button variant="outline" className="w-full" disabled>Your current plan</Button>
+
+        {!isPaid ? (
+          <div className="grid gap-2">
+            {currentTier !== "starter" ? (
+              <Button variant="outline" onClick={doDowngrade} disabled={busy !== null}>
+                {busy === "downgrade" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Downgrade to Starter
+              </Button>
+            ) : (
+              <Button variant="outline" className="w-full" disabled>Free tier</Button>
+            )}
+          </div>
         ) : (
           <div className="grid gap-2">
+            {isCurrent && hasActiveSub && (
+              <p className="text-[11px] text-muted-foreground">You're on this plan. Switch cycle or provider below.</p>
+            )}
+            {!isCurrent && hasActiveSub && activeProvider && (
+              <Button variant="secondary" onClick={doSwitch} disabled={busy !== null}>
+                {busy === "switch" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Switch to {p.name} ({cycleLabel})
+              </Button>
+            )}
             <Button onClick={startPayfast} disabled={busy !== null}>
               {busy === "payfast" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Pay with PayFast (ZAR)
+              Pay with PayFast — {cycleLabel} (ZAR)
             </Button>
             <Button variant="outline" onClick={startPaypal} disabled={busy !== null}>
               {busy === "paypal" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
-              Pay with PayPal (USD)
+              Pay with PayPal — {cycleLabel} (USD)
             </Button>
           </div>
         )}
@@ -227,3 +292,4 @@ function PlanCard({ plan, cycle, currentTier }: { plan: PlanId; cycle: Cycle; cu
     </Card>
   );
 }
+

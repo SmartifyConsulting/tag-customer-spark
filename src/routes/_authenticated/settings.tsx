@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Settings as SettingsIcon, Building2, CreditCard, ShieldCheck, History, Mail, Send, CheckCircle2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Settings as SettingsIcon, Building2, CreditCard, ShieldCheck, History, Mail, Send, CheckCircle2, Upload, Copy, ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
-import { getWorkspaceSettings, updateRetailerProfile, listAuditLog } from "@/lib/settings.functions";
+import { getWorkspaceSettings, updateRetailerProfile, listAuditLog, uploadRetailerLogo } from "@/lib/settings.functions";
 import { sendTestEmail, sendDailyBriefingEmail, sendWeeklyRoiEmail } from "@/lib/email.functions";
 import { BillingTab } from "@/components/settings/billing-tab";
 import { PlanAdminTab } from "@/components/settings/plan-admin-tab";
@@ -61,10 +61,16 @@ function SettingsPage() {
               {settings.isLoading ? <Skeleton className="h-32 w-full" /> : (
                 <>
                   <div><Label>Workspace name</Label><Input value={current.name ?? ""} onChange={(e) => setForm({ ...current, name: e.target.value })} /></div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div><Label>Contact email</Label><Input value={current.contact_email ?? ""} onChange={(e) => setForm({ ...current, contact_email: e.target.value })} /></div>
-                    <div><Label>Logo URL</Label><Input value={current.logo_url ?? ""} onChange={(e) => setForm({ ...current, logo_url: e.target.value })} /></div>
-                  </div>
+                  <div><Label>Contact email</Label><Input value={current.contact_email ?? ""} onChange={(e) => setForm({ ...current, contact_email: e.target.value })} /></div>
+
+                  <LogoUploader
+                    logoUrl={current.logo_url ?? ""}
+                    onUploaded={(url) => {
+                      setForm({ ...current, logo_url: url });
+                      qc.invalidateQueries({ queryKey: ["settings"] });
+                    }}
+                  />
+
                   <div className="flex items-center justify-between rounded-xl border p-4">
                     <div>
                       <p className="text-sm font-medium">Appearance</p>
@@ -139,6 +145,110 @@ function Stat({ label, value }: any) {
     <div className="rounded-xl border p-4">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
       <div className="mt-1 text-xl font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function LogoUploader({ logoUrl, onUploaded }: { logoUrl: string; onUploaded: (url: string) => void }) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const upload = useMutation({
+    mutationFn: async (file: File) => {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      return uploadRetailerLogo({
+        data: { filename: file.name, contentType: file.type, base64 },
+      });
+    },
+    onSuccess: (r) => {
+      onUploaded(r.url);
+      toast.success("Logo uploaded");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Upload failed"),
+    onSettled: () => setUploading(false),
+  });
+
+  const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setUploading(true);
+    upload.mutate(f);
+    e.target.value = "";
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(logoUrl);
+      toast.success("URL copied — paste into Twilio Content Template {{media_url}}");
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+
+  return (
+    <div className="rounded-xl border p-4 space-y-3">
+      <div>
+        <p className="text-sm font-medium">Company logo</p>
+        <p className="text-xs text-muted-foreground">
+          Used on QR cards, opt-in pages, WhatsApp messages, and Twilio content templates.
+        </p>
+      </div>
+      <div className="flex items-center gap-4">
+        <div className="grid h-16 w-16 shrink-0 place-items-center rounded-lg border bg-muted/40 overflow-hidden">
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
+          ) : (
+            <Building2 className="h-6 w-6 text-muted-foreground" />
+          )}
+        </div>
+        <div className="flex-1">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            className="hidden"
+            onChange={onPick}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            {uploading ? "Uploading…" : logoUrl ? "Replace logo" : "Upload logo"}
+          </Button>
+          <p className="mt-1 text-[11px] text-muted-foreground">PNG, JPG, WEBP or SVG · max 2 MB</p>
+        </div>
+      </div>
+
+      {logoUrl ? (
+        <div className="space-y-1.5">
+          <Label className="text-xs">Twilio media URL</Label>
+          <div className="flex gap-2">
+            <Input readOnly value={logoUrl} className="font-mono text-xs" onFocus={(e) => e.currentTarget.select()} />
+            <Button type="button" variant="outline" size="sm" onClick={copy}>
+              <Copy className="mr-1 h-4 w-4" /> Copy URL
+            </Button>
+            <Button type="button" variant="outline" size="sm" asChild>
+              <a href={logoUrl} target="_blank" rel="noreferrer">
+                <ExternalLink className="mr-1 h-4 w-4" /> Open
+              </a>
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Paste this URL into Twilio Content Template Builder as the media URL, or into the <code>MediaUrl</code> param when sending via the API.
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">Upload a logo to get a shareable URL for Twilio.</p>
+      )}
     </div>
   );
 }

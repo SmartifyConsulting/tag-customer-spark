@@ -152,7 +152,12 @@ function WatchlistsPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">{TRIGGER_LABEL[w.trigger] ?? w.trigger}</Badge>
+                    <Badge
+                      variant="outline"
+                      className={w.trigger === "back_in_stock" ? "border-transparent bg-teal-500 text-white" : ""}
+                    >
+                      {TRIGGER_LABEL[w.trigger] ?? w.trigger}
+                    </Badge>
                     <Badge variant={STATUS_VARIANT[w.status] ?? "outline"}>{w.status}</Badge>
                     {w.target_price_cents && <span className="text-xs text-muted-foreground">Target {money(w.target_price_cents)}</span>}
                   </div>

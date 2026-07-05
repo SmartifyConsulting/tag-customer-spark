@@ -40,9 +40,12 @@ function money(c?: number | null) {
   return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR", maximumFractionDigits: 0 }).format((c ?? 0) / 100);
 }
 
+const LETTERS = ["all", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""), "#"] as const;
+
 function CustomersPage() {
   const [search, setSearch] = useState("");
   const [segment, setSegment] = useState<"all" | "subscribed" | "vip" | "dormant">("all");
+  const [letter, setLetter] = useState<(typeof LETTERS)[number]>("all");
   const [page, setPage] = useState(1);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -51,8 +54,8 @@ function CustomersPage() {
   const deleteFn = useServerFn(deleteCustomer);
 
   const list = useQuery({
-    queryKey: ["customers", "list", search, segment, page],
-    queryFn: () => listCustomers({ data: { search, segment, page, pageSize: 25 } }),
+    queryKey: ["customers", "list", search, segment, letter, page],
+    queryFn: () => listCustomers({ data: { search, segment, letter, page, pageSize: 25 } }),
   });
 
   const remove = useMutation({
@@ -75,6 +78,25 @@ function CustomersPage() {
           </Button>
         }
       />
+
+      <div className="flex flex-wrap gap-1.5">
+        {LETTERS.map((L) => (
+          <button
+            key={L}
+            type="button"
+            onClick={() => { setLetter(L); setPage(1); }}
+            aria-pressed={letter === L}
+            className={
+              "h-8 min-w-8 rounded-full px-2 text-xs font-medium uppercase transition-colors " +
+              (letter === L
+                ? "bg-mint text-mint-foreground border border-mint"
+                : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground")
+            }
+          >
+            {L === "all" ? "All" : L}
+          </button>
+        ))}
+      </div>
 
       <Card className="rounded-2xl">
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

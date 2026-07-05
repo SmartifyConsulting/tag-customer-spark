@@ -1,69 +1,62 @@
+## 1. Alphabetic A–Z filter bar on Customers
 
-## 1. Barcode scan when adding a product
+Add a horizontal row of alphabet chips (All, A–Z, #) above the Customers list, matching the "My Patients" pattern from Holarc Health.
 
-- Add a **"Scan barcode"** button next to the SKU field in `ProductFormDialog`.
-- New `BarcodeScannerDialog` (`src/components/products/barcode-scanner-dialog.tsx`):
-  - Uses native `BarcodeDetector` when available; falls back to `@zxing/browser` via dynamic `import()`.
-  - `getUserMedia({ video: { facingMode: "environment" } })` in a dialog with scan-frame overlay.
-  - On detect → close, callback `onDetect(code)`.
-- On detect in `ProductFormDialog`:
-  1. Set `sku` to scanned code.
-  2. Call new `lookupBarcode({ code })` server fn in `src/lib/products.functions.ts`:
-     - Local match first (`products.sku = code` in retailer) → prefill full product.
-     - Else Open Food Facts (`world.openfoodfacts.org/api/v2/product/<code>.json`) for name/brand/image.
-     - Returns `{ found, source, product? }`.
-  3. Auto-fill only empty fields; toast the source.
+- `src/routes/_authenticated/customers.tsx`: add `letter` state, render toggle-style chips (mint fill when active), reset `page` on change.
+- `src/lib/customers.functions.ts`: extend `listCustomers` with optional `letter`. `#` → `full_name ~* '^[^A-Za-z]'`; letter → `ilike full_name '<L>%'`; `all` → no-op.
+- Include `letter` in the query key.
 
-## 2. Drag-and-drop placeholders into Notifications composer
+## 2. Inbox as its own top-level nav item
 
-- Align token ids in `message-placeholders.tsx` with composer tokens (`product`, `code`, etc.) so drops emit `{product}`-style tokens the renderer already substitutes.
-- In `CampaignComposer`:
-  - Refs on `headline` (Input) and `body` (Textarea).
-  - `onDragOver` / `onDrop` insert `dataTransfer.getData("text/plain")` at caret (`selectionStart/End`) and update state.
-  - Render `<MessagePlaceholders onInsert={insertAtActive} />` above the WhatsApp preview column.
-  - Click path inserts into last-focused field.
+- `src/lib/nav.ts`: add a new top-level entry `{ title: "Inbox", url: "/inbox", icon: Inbox, match: ["/inbox"] }`, placed between "Alerts & Campaigns" and "Customers & Leads". Remove `/inbox` from the Dashboard `match` array so the active state doesn't leak.
+- No changes needed in `AppSidebar` or `MobileBottomNav` — both iterate `NAV` and pick it up automatically. Route `/inbox` already exists.
 
-## 3. Notifications CRUD polish
+## 3. Company logo upload → public URL for Twilio templates
 
-- Enable **Edit** for `draft` and `scheduled` in the list dropdown and detail header (currently drafts only).
-- Replace `confirm()` delete with shadcn `AlertDialog`.
-- Duplicate + Delete actions available on the detail page header.
+Replace the free-text "Logo URL" field with a real upload to the existing public `retailer-logos` bucket, then prominently display the resulting public URL so it can be copied into Twilio content templates.
 
-## 4. Items & Tags: accordion by category, collapsed by default
+- Server: new `uploadRetailerLogo` in `src/lib/settings.functions.ts`
+  - `requireSupabaseAuth`; input `{ filename, contentType, base64 }` (Zod-validated, max ~2 MB, `image/png|jpeg|webp|svg+xml`).
+  - Upload to `retailer-logos/{retailer_id}/logo-{timestamp}.{ext}`, `getPublicUrl`, update `retailers.logo_url`, return `{ url }`.
+- UI in `src/routes/_authenticated/settings.tsx` Workspace tab — replace the Logo URL input with a "Company logo" card:
+  - Thumbnail preview + "Upload logo" button (hidden file input, reads to base64, calls server fn).
+  - **Twilio media URL row** shown whenever `logo_url` exists:
+    - Read-only monospaced `<Input>` containing the absolute public URL, always visible.
+    - "Copy URL" button (`navigator.clipboard.writeText`), toast "URL copied — paste into Twilio Content Template `{{media_url}}`".
+    - "Open" link button to verify in a new tab.
+    - Hint text: "Paste this URL into Twilio Content Template Builder as the media URL, or into the `MediaUrl` param when sending via the API."
+  - Empty state: upload button + "Upload a logo to get a shareable URL for Twilio."
+- No DB migration (column and bucket exist).
 
-- Group rows in `products.index.tsx` by `category.name` (fallback "Uncategorised"), render with shadcn `Accordion type="multiple"` and **no default open value**.
-- Trigger shows: category name, item count badge, low-stock count badge.
-- Content renders the existing `ProductsTable` filtered to the category (all row actions preserved).
-- Multi-select still aggregates across categories for Bulk QR PDF.
+## 4. Billing Admin capability for System Admins
 
-## 5. Remove Status column; archived becomes a filter
+- `src/lib/billing.functions.ts`: `resolveActiveRetailer` and pay/change fns already accept `super_admin` — no new role.
+- `src/routes/_authenticated/settings.tsx`: render the Billing tab's "Change plan" section for super_admins even without an active retailer, with a notice "Acting as system admin — use Plan admin tab to change any workspace's tier."
+- `src/components/settings/plan-admin-tab.tsx`: rename card to "Billing administration".
 
-- Drop Status column and its `StatusBadge` from `ProductsTable`.
-- Toolbar: remove status Select; add **"Show archived"** switch (default off).
-- Route search schema: replace `status` with `showArchived: boolean`.
-- Client sends `status: "archived"` when the switch is on, else the query filters archived out.
-- `ProductFormDialog`: remove Status section; new products default `active`.
+## 5. PayFast + PayPal on every paid plan (not only Pro)
 
-## 6. Solid, consistent badges on Items & Tags
+- `src/components/settings/billing-tab.tsx` `PlanCard`: remove the `isCurrent → disabled` short-circuit for paid plans; render both provider buttons on every paid plan card regardless of current tier. Show a "Current" chip when `isCurrent`. Keep Starter free but add a "Downgrade to Starter" outline button when the current tier is Pro/Enterprise. Include the cycle in the button label.
 
-- Keep `StockPill` solid; use existing `Badge` variants (`default`, `warning`, `success`, `destructive`) for category count and low-stock chips in the accordion triggers — no ad-hoc classes.
+## 6. Easy plan change (upgrade / downgrade)
 
-## 7. Restore original sidebar nav labels
+- Server: new `changePlan` in `src/lib/billing.functions.ts`
+  - `requireSupabaseAuth` + `retail_admin`/`super_admin`.
+  - Input `{ tier: "starter"|"pro"|"enterprise", cycle: "monthly"|"annual" }`.
+  - Downgrade to starter: mark subscription `cancel_at_period_end = true`; if none active, set `retailers.tier = 'starter'` immediately.
+  - Same-provider tier switch with active subscription: `apply_paid_tier` with existing provider/cycle.
+  - New paid subscription still goes through PayFast/PayPal.
+  - Insert `audit_logs` row.
+- UI in `BillingTab`: "Change plan" summary strip above the plan grid + "Switch to <plan>" button on each paid card when an active paid subscription exists.
+- Safety: `changePlan` never grants paid tier without an active subscription.
 
-Update `src/lib/nav.ts` titles to match the original set (icons and routes unchanged):
+## 7. "Back in stock" badge → teal
 
-- Dashboard
-- Items & Tags
-- **Alerts & Campaigns** (was "Alerts")
-- **Customers & Leads** (was "Customers")
-- **Analytics & Insights** (was "Analytics")
-- Settings
+- `src/components/notifications/status-badge.tsx`: change `TYPE_COLORS.back_in_stock` from `bg-emerald-600` to `bg-teal-500 text-white`.
+- Apply same teal to other "back in stock" chips in `src/routes/_authenticated/watchlists.tsx` and `src/components/notifications/campaign-composer.tsx`.
+- Leave "Sent/Completed" badges emerald.
 
-Same change is picked up automatically by `AppSidebar` and `MobileBottomNav` since both read from `NAV`.
+## Out of scope
 
-## Technical notes
-
-- **New files**: `src/components/products/barcode-scanner-dialog.tsx`
-- **Edited**: `product-form-dialog.tsx`, `products-table.tsx`, `products-toolbar.tsx`, `routes/_authenticated/products.index.tsx`, `notifications/message-placeholders.tsx`, `notifications/campaign-composer.tsx`, `routes/_authenticated/notifications.index.tsx`, `routes/_authenticated/notifications.$campaignId.tsx`, `lib/products.functions.ts`, `lib/nav.ts`.
-- **Dep**: `bun add @zxing/browser` (dynamic-imported fallback only).
-- **No DB migrations.**
+- No DB migrations. No new roles.
+- No changes to Twilio message templates themselves — this plan only makes the logo URL easy to obtain, verify, and copy into Twilio.
