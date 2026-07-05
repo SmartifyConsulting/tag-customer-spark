@@ -499,6 +499,39 @@ export type Database = {
           },
         ]
       }
+      customer_phone_opt_ins: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          opted_in_at: string | null
+          opted_out_at: string | null
+          phone_number: string
+          source: string | null
+          store_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          opted_in_at?: string | null
+          opted_out_at?: string | null
+          phone_number: string
+          source?: string | null
+          store_id: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          opted_in_at?: string | null
+          opted_out_at?: string | null
+          phone_number?: string
+          source?: string | null
+          store_id?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           created_at: string
@@ -2393,6 +2426,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      whatsapp_messages: {
+        Row: {
+          campaign_id: string | null
+          created_at: string | null
+          customer_phone: string
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          message_content: string
+          read_at: string | null
+          sent_at: string | null
+          status: string | null
+          store_id: string
+          twilio_message_sid: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string | null
+          customer_phone: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_content: string
+          read_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          store_id: string
+          twilio_message_sid?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string | null
+          customer_phone?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_content?: string
+          read_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          store_id?: string
+          twilio_message_sid?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
