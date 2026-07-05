@@ -20,6 +20,7 @@ export const listCustomers = createServerFn({ method: "POST" })
       .object({
         search: z.string().trim().optional(),
         segment: z.enum(["all", "subscribed", "vip", "dormant"]).default("all"),
+        letter: z.string().trim().max(2).optional(),
         page: z.number().int().min(1).default(1),
         pageSize: z.number().int().min(10).max(100).default(25),
       })
@@ -43,6 +44,14 @@ export const listCustomers = createServerFn({ method: "POST" })
     if (data.segment === "subscribed") q = q.eq("status", "subscribed");
     if (data.segment === "dormant") q = q.lte("opted_in_at", new Date(Date.now() - 60 * 86400_000).toISOString());
     if (data.search) q = q.or(`full_name.ilike.%${data.search}%,whatsapp_e164.ilike.%${data.search}%`);
+    if (data.letter && data.letter !== "all") {
+      if (data.letter === "#") {
+        q = q.filter("full_name", "~*", "^[^A-Za-z]");
+      } else {
+        const L = data.letter.charAt(0);
+        q = q.ilike("full_name", `${L}%`);
+      }
+    }
 
     const { data: rows, count, error } = await q;
     if (error) throw new Error(error.message);

@@ -13,7 +13,7 @@ const STATUS_COLORS: Record<string, string> = {
 const TYPE_COLORS: Record<string, string> = {
   sale: "bg-fuchsia-600 text-white",
   low_stock: "bg-amber-500 text-white",
-  back_in_stock: "bg-emerald-600 text-white",
+  back_in_stock: "bg-teal-500 text-white",
   promotion: "bg-indigo-600 text-white",
   custom: "bg-slate-600 text-white",
 };
