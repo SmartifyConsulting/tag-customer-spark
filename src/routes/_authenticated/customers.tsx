@@ -28,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { listCustomers, getCustomerDetail, deleteCustomer } from "@/lib/customers.functions";
+import { listCustomers, getCustomerDetail, deleteCustomer, markCustomersViewed } from "@/lib/customers.functions";
 import { CustomerFormDialog } from "@/components/customers/customer-form-dialog";
 
 export const Route = createFileRoute("/_authenticated/customers")({
