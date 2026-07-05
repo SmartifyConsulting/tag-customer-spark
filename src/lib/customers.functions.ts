@@ -131,3 +131,82 @@ export const getCustomerDetail = createServerFn({ method: "POST" })
       watchlists: watchlists.data ?? [],
     };
   });
+
+const customerInputSchema = z.object({
+  full_name: z.string().trim().max(120).nullable().optional(),
+  whatsapp_e164: z
+    .string()
+    .trim()
+    .regex(/^\+?[1-9]\d{7,14}$/, "Enter a valid phone number in international format")
+    .transform((v) => (v.startsWith("+") ? v : `+${v}`)),
+  email: z.string().trim().email().max(200).nullable().optional().or(z.literal("")),
+  status: z.enum(["subscribed", "unsubscribed", "blocked"]).default("subscribed"),
+  marketing_consent: z.boolean().default(false),
+  notify_consent: z.boolean().default(true),
+});
+
+export const createCustomer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => customerInputSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) throw new Error("No retailer assigned");
+    const now = new Date().toISOString();
+    const row: any = {
+      retailer_id: retailerId,
+      full_name: data.full_name || null,
+      whatsapp_e164: data.whatsapp_e164,
+      email: data.email || null,
+      status: data.status,
+      opted_in_at: now,
+      marketing_consent_at: data.marketing_consent ? now : null,
+      notify_consent_at: data.notify_consent ? now : null,
+    };
+    const { data: ins, error } = await supabase
+      .from("customers")
+      .insert(row)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: ins!.id as string };
+  });
+
+export const updateCustomer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), patch: customerInputSchema.partial() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const p = data.patch as any;
+    const patch: any = {};
+    if (p.full_name !== undefined) patch.full_name = p.full_name || null;
+    if (p.whatsapp_e164 !== undefined) patch.whatsapp_e164 = p.whatsapp_e164;
+    if (p.email !== undefined) patch.email = p.email || null;
+    if (p.status !== undefined) patch.status = p.status;
+    if (p.marketing_consent !== undefined)
+      patch.marketing_consent_at = p.marketing_consent ? new Date().toISOString() : null;
+    if (p.notify_consent !== undefined)
+      patch.notify_consent_at = p.notify_consent ? new Date().toISOString() : null;
+    const { error } = await context.supabase.from("customers").update(patch).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteCustomer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    // Block hard delete if there are attributed revenue rows
+    const { count } = await supabase
+      .from("sales_recoveries")
+      .select("id", { count: "exact", head: true })
+      .eq("customer_id", data.id);
+    if ((count ?? 0) > 0) {
+      throw new Error("Customer has recovered sales; block instead of deleting.");
+    }
+    const { error } = await supabase.from("customers").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
