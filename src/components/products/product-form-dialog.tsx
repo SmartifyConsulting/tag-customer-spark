@@ -33,6 +33,7 @@ import {
   createProduct,
   createProductImageUploadUrl,
   getProductFormOptions,
+  lookupBarcode,
   setProductImages,
   updateProduct,
 } from "@/lib/products.functions";
