@@ -71,8 +71,9 @@ function AlertsPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Unread conversations" value={unread} icon={MessageSquare} tone="mint" />
         <StatCard label="Live campaigns" value={liveCampaigns} icon={Bell} tone="navy" />
-        <StatCard label="Open threads" value={(convs.data ?? []).length} icon={Sparkles} tone="amber" />
+        <StatCard label="Open threads" value={(convs.data ?? []).length} icon={Sparkles} tone="muted" />
       </div>
+
 
       <Tabs defaultValue="inbox" className="space-y-4">
         <TabsList>
@@ -192,13 +193,13 @@ function StatCard({
   label: string;
   value: number;
   icon: any;
-  tone: "mint" | "navy" | "amber";
+  tone: "mint" | "navy" | "muted";
 }) {
   const toneClass =
     tone === "mint"
       ? "bg-[color:var(--mint)]/10 text-[color:var(--mint)]"
-      : tone === "amber"
-        ? "bg-[color:var(--warning)]/15 text-[color:var(--warning)]"
+      : tone === "muted"
+        ? "bg-muted text-muted-foreground"
         : "bg-primary/10 text-primary";
   return (
     <Card className="rounded-xl shadow-[var(--shadow-card)]">

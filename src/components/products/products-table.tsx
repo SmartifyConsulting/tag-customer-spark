@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Image as ImageIcon, MoreHorizontal, Edit, Archive, Trash2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import {
+  ArchiveRestore,
+  Image as ImageIcon,
+  MoreHorizontal,
+  Edit,
+  Archive,
+  QrCode,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,6 +40,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatMoney } from "@/lib/format";
+import { regenerateProductQr } from "@/lib/qr.functions";
+import { updateProduct } from "@/lib/products.functions";
 
 export type ProductRow = {
   id: string;
@@ -240,6 +253,20 @@ function RowActions({
   onDelete: (r: ProductRow) => void;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const regenFn = useServerFn(regenerateProductQr);
+  const updateFn = useServerFn(updateProduct);
+
+  const generate = useMutation({
+    mutationFn: () => regenFn({ data: { productId: row.id, template: "classic" } }),
+    onSuccess: () => toast.success("QR code generated"),
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
+  });
+  const unarchive = useMutation({
+    mutationFn: () => updateFn({ data: { id: row.id, patch: { status: "active" } as any } }),
+    onSuccess: () => toast.success("Unarchived"),
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
+  });
+
   return (
     <>
       <DropdownMenu>
@@ -252,9 +279,16 @@ function RowActions({
           <DropdownMenuItem onClick={() => onEdit(row)}>
             <Edit className="mr-2 h-4 w-4" /> Edit
           </DropdownMenuItem>
-          {row.status !== "archived" && (
+          <DropdownMenuItem onClick={() => generate.mutate()}>
+            <QrCode className="mr-2 h-4 w-4" /> Generate QR
+          </DropdownMenuItem>
+          {row.status !== "archived" ? (
             <DropdownMenuItem onClick={() => onArchive(row)}>
               <Archive className="mr-2 h-4 w-4" /> Archive
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onClick={() => unarchive.mutate()}>
+              <ArchiveRestore className="mr-2 h-4 w-4" /> Unarchive
             </DropdownMenuItem>
           )}
           <DropdownMenuItem

@@ -1,8 +1,14 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Bell, CheckCheck, Eye, MousePointerClick, Send, Sparkles } from "lucide-react";
-import { getCampaign, cancelCampaign } from "@/lib/notifications.functions";
+import { toast } from "sonner";
+import { ArrowLeft, Bell, CheckCheck, Copy, Eye, MousePointerClick, Send, Sparkles, Trash2 } from "lucide-react";
+import {
+  getCampaign,
+  cancelCampaign,
+  deleteCampaign,
+  duplicateCampaign,
+} from "@/lib/notifications.functions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,12 +32,32 @@ const FUNNEL = [
 
 function CampaignDetail() {
   const { campaignId } = useParams({ from: "/_authenticated/notifications/$campaignId" });
+  const navigate = useNavigate();
   const getFn = useServerFn(getCampaign);
   const cancelFn = useServerFn(cancelCampaign);
+  const deleteFn = useServerFn(deleteCampaign);
+  const dupFn = useServerFn(duplicateCampaign);
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["campaign", campaignId],
     queryFn: () => getFn({ data: { id: campaignId } }),
     refetchInterval: 5000,
+  });
+
+  const duplicate = useMutation({
+    mutationFn: () => dupFn({ data: { id: campaignId } }),
+    onSuccess: (r) => {
+      toast.success("Duplicated");
+      navigate({ to: "/notifications/$campaignId", params: { campaignId: r.id } });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
+  });
+  const remove = useMutation({
+    mutationFn: () => deleteFn({ data: { id: campaignId } }),
+    onSuccess: () => {
+      toast.success("Campaign deleted");
+      navigate({ to: "/notifications" });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
   });
 
   if (isLoading || !data) {
@@ -41,6 +67,9 @@ function CampaignDetail() {
   const f = data.funnel;
   const total = data.total || 1;
 
+  const canDelete = c.status === "draft" || c.status === "cancelled";
+  const canCancel = c.status === "draft" || c.status === "scheduled" || c.status === "sending";
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -49,14 +78,29 @@ function CampaignDetail() {
         actions={
           <div className="flex gap-2">
             <Button asChild variant="outline" size="sm"><Link to="/notifications"><ArrowLeft className="mr-1 h-4 w-4" />Back</Link></Button>
-            {(c.status === "draft" || c.status === "scheduled") && (
+            <Button variant="outline" size="sm" onClick={() => duplicate.mutate()} disabled={duplicate.isPending}>
+              <Copy className="mr-1 h-4 w-4" /> Duplicate
+            </Button>
+            {canCancel && (
               <Button variant="destructive" size="sm" onClick={async () => { await cancelFn({ data: { id: c.id } }); refetch(); }}>
                 Cancel
+              </Button>
+            )}
+            {canDelete && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  if (confirm(`Delete campaign "${c.title}"? This cannot be undone.`)) remove.mutate();
+                }}
+              >
+                <Trash2 className="mr-1 h-4 w-4" /> Delete
               </Button>
             )}
           </div>
         }
       />
+
 
       <div className="flex flex-wrap gap-2 items-center">
         <Badge variant="secondary">{c.type}</Badge>

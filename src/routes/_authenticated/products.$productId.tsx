@@ -35,7 +35,8 @@ import {
 } from "@/lib/products.functions";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { ProductQrPanel } from "@/components/qr/product-qr-panel";
-import { MiniProductQr } from "@/components/qr/mini-product-qr";
+import { QrPreview } from "@/components/qr/qr-preview";
+import { getPublicScanBase, regenerateProductQr } from "@/lib/qr.functions";
 import { ProductIntentPanel } from "@/components/intent/product-intent-panel";
 import { ScansTable } from "@/components/qr/scans-table";
 import { formatMoney } from "@/lib/format";
@@ -119,9 +120,9 @@ function ProductDetail() {
         </Link>
       </div>
 
-      <div className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[260px_1fr]">
+      <div className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[220px_minmax(0,1fr)_210px]">
         <div className="grid gap-2">
-          <div className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
+          <div className="aspect-square overflow-hidden rounded-xl border border-border bg-muted">
             {primary ? (
               <img src={primary} alt={p.name} className="h-full w-full object-cover" />
             ) : (
@@ -129,14 +130,6 @@ function ProductDetail() {
                 <Tag className="h-8 w-8" />
               </div>
             )}
-            <MiniProductQr
-              shortCode={(data.qr as any)?.short_code ?? null}
-              onClick={() => {
-                document
-                  .getElementById("product-qr")
-                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-            />
           </div>
           {images.length > 1 && (
             <div className="grid grid-cols-4 gap-2">
@@ -169,7 +162,7 @@ function ProductDetail() {
               </span>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
             <Fact label="Category" value={p.category?.name ?? "—"} />
             <Fact label="Store" value={p.store?.name ?? "—"} />
             <Fact label="Stock" value={`${p.stock_qty}`} />
@@ -200,7 +193,9 @@ function ProductDetail() {
             </div>
           )}
         </div>
+        <HeroQrColumn productId={productId} shortCode={(data.qr as any)?.short_code ?? null} />
       </div>
+
 
       <ProductIntentPanel productId={productId} />
 
@@ -266,6 +261,81 @@ function Fact({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function HeroQrColumn({
+  productId,
+  shortCode,
+}: {
+  productId: string;
+  shortCode: string | null;
+}) {
+  const qc = useQueryClient();
+  const baseFn = useServerFn(getPublicScanBase);
+  const regenFn = useServerFn(regenerateProductQr);
+
+  const { data: baseData } = useQuery({
+    queryKey: ["public-scan-base"],
+    queryFn: () => baseFn(),
+    staleTime: Infinity,
+  });
+  const origin =
+    baseData?.base ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+  const scanUrl = shortCode ? `${origin}/api/public/s/${shortCode}` : "";
+
+  const generate = useMutation({
+    mutationFn: () => regenFn({ data: { productId, template: "classic" } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["product", productId] });
+      toast.success("QR code generated");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
+  });
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        Scan tag
+      </p>
+      {shortCode ? (
+        <>
+          <QrPreview value={scanUrl} size={168} />
+          <button
+            type="button"
+            onClick={() =>
+              document
+                .getElementById("product-qr")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            Open QR panel →
+          </button>
+        </>
+      ) : (
+        <div className="grid w-full place-items-center gap-3 rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center">
+          <QrCode className="h-8 w-8 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">
+            No QR yet for this product.
+          </p>
+          <Button
+            size="sm"
+            onClick={() => generate.mutate()}
+            disabled={generate.isPending}
+          >
+            {generate.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <QrCode className="mr-2 h-4 w-4" />
+            )}
+            Generate QR
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function AnalyticsTab({ analytics }: { analytics: any }) {
   const kpis = [
