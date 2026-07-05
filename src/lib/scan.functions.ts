@@ -1,23 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
-
-function serverPublicClient() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
-}
 
 export const getPublicScan = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) =>
     z.object({ shortCode: z.string().min(1).max(64) }).parse(d),
   )
   .handler(async ({ data }) => {
-    const supabase = serverPublicClient();
-    const { data: row, error } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin
       .from("public_scan_view")
       .select("*")
       .eq("short_code", data.shortCode)
