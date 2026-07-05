@@ -6,9 +6,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
 import { Separator } from "@/components/ui/separator";
 import { CommandPalette } from "@/components/command-palette";
-import { Button } from "@/components/ui/button";
 import { Command as CommandIcon } from "lucide-react";
-import { SectionTabs } from "@/components/section-tabs";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -27,8 +26,8 @@ function AuthenticatedLayout() {
         <AppSidebar />
         <SidebarInset className="flex flex-1 flex-col">
           <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md sm:px-6">
-            <SidebarTrigger className="rounded-lg hover:bg-accent" />
-            <Separator orientation="vertical" className="mx-1 h-5" />
+            <SidebarTrigger className="hidden rounded-lg hover:bg-accent md:inline-flex" />
+            <Separator orientation="vertical" className="mx-1 hidden h-5 md:block" />
             <button
               onClick={() => {
                 const ev = new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true });
@@ -47,13 +46,13 @@ function AuthenticatedLayout() {
             </div>
           </header>
           <CommandPalette />
-          <SectionTabs />
-          <main className="flex-1 px-4 py-8 sm:px-8 sm:py-10">
+          <main className="flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10 md:pb-10">
             <div className="mx-auto w-full max-w-7xl">
               <Outlet />
             </div>
           </main>
         </SidebarInset>
+        <MobileBottomNav />
       </div>
     </SidebarProvider>
   );

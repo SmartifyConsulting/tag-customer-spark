@@ -1,15 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  LayoutDashboard,
-  Bell,
-  Sparkles,
-  BarChart3,
-  Settings,
-  Lock,
-  Tag,
-  Users,
-  TrendingUp,
-} from "lucide-react";
+import { Lock } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -24,66 +14,17 @@ import {
 } from "@/components/ui/sidebar";
 import { TagLogo } from "./tag-logo";
 import { useTier } from "@/hooks/use-tier";
-import type { TierFeatureKey } from "@/lib/tier";
-
-type NavItem = {
-  title: string;
-  url: string;
-  icon: typeof LayoutDashboard;
-  match: readonly string[];
-  feature?: TierFeatureKey;
-};
-
-const NAV: readonly NavItem[] = [
-  { 
-    title: "Dashboard", 
-    url: "/dashboard", 
-    icon: LayoutDashboard, 
-    match: ["/dashboard", "/inbox"] 
-  },
-  { 
-    title: "Items & Tags", 
-    url: "/products", 
-    icon: Tag, 
-    match: ["/products", "/qr-tags", "/stock"] 
-  },
-  { 
-    title: "Alerts & Campaigns", 
-    url: "/notifications", 
-    icon: Bell, 
-    match: ["/notifications", "/alerts"] 
-  },
-  { 
-    title: "Customers & Leads", 
-    url: "/customers", 
-    icon: Users, 
-    match: ["/customers", "/watchlists", "/intent"] 
-  },
-  { 
-    title: "Analytics & Insights", 
-    url: "/analytics", 
-    icon: TrendingUp, 
-    match: ["/analytics", "/intelligence", "/roi", "/commerce"], 
-    feature: "roi" 
-  },
-  { 
-    title: "Settings", 
-    url: "/settings", 
-    icon: Settings, 
-    match: ["/stores", "/staff", "/organisation", "/settings", "/upgrade"] 
-  },
-] as const;
+import { NAV, isNavActive, type NavItem } from "@/lib/nav";
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { hasFeature } = useTier();
-  const isActive = (item: NavItem) =>
-    item.match.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  const isActive = (item: NavItem) => isNavActive(item, pathname);
 
   return (
-    <Sidebar collapsible="icon" className="border-r-0 overflow-visible">
+    <Sidebar collapsible="icon" className="hidden border-r-0 overflow-visible md:flex">
       <SidebarHeader className="relative h-16 flex-row items-center justify-center overflow-visible border-b border-sidebar-border/60 bg-sidebar p-0">
         {collapsed ? (
           <TagLogo variant="icon" size="sm" />
@@ -95,7 +36,6 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-1.5 pb-3 pt-[144px]">
-
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -132,7 +72,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
 
       <SidebarFooter className="border-t border-sidebar-border/60">
         {!collapsed && (

@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-r
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Bell, CheckCheck, Copy, Eye, MousePointerClick, Send, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Bell, CheckCheck, Copy, Eye, MousePointerClick, Pencil, Send, Sparkles, Trash2 } from "lucide-react";
 import {
   getCampaign,
   cancelCampaign,
@@ -12,8 +12,8 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge, TypeBadge } from "@/components/notifications/status-badge";
 import { WhatsAppPreview } from "@/components/notifications/whatsapp-preview";
 
 export const Route = createFileRoute("/_authenticated/notifications/$campaignId")({
@@ -78,6 +78,13 @@ function CampaignDetail() {
         actions={
           <div className="flex gap-2">
             <Button asChild variant="outline" size="sm"><Link to="/notifications"><ArrowLeft className="mr-1 h-4 w-4" />Back</Link></Button>
+            {c.status === "draft" && (
+              <Button asChild variant="outline" size="sm">
+                <Link to="/notifications/$campaignId/edit" params={{ campaignId: c.id }}>
+                  <Pencil className="mr-1 h-4 w-4" /> Edit
+                </Link>
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => duplicate.mutate()} disabled={duplicate.isPending}>
               <Copy className="mr-1 h-4 w-4" /> Duplicate
             </Button>
@@ -103,8 +110,8 @@ function CampaignDetail() {
 
 
       <div className="flex flex-wrap gap-2 items-center">
-        <Badge variant="secondary">{c.type}</Badge>
-        <Badge>{c.status}</Badge>
+        <TypeBadge type={c.type} />
+        <StatusBadge status={c.status} />
         {c.scheduled_at && <span className="text-xs text-muted-foreground">Scheduled {new Date(c.scheduled_at).toLocaleString()}</span>}
         {c.sent_at && <span className="text-xs text-muted-foreground">Sent {new Date(c.sent_at).toLocaleString()}</span>}
       </div>

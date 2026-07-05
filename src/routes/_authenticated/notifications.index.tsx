@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Bell, Copy, MoreHorizontal, Plus, Trash2, XCircle } from "lucide-react";
+import { Bell, Copy, MoreHorizontal, Pencil, Plus, Trash2, XCircle } from "lucide-react";
 import {
   listCampaigns,
   cancelCampaign,
@@ -12,34 +12,17 @@ import {
 } from "@/lib/notifications.functions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge, TypeBadge } from "@/components/notifications/status-badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-const TYPE_LABELS: Record<string, string> = {
-  sale: "Sale",
-  low_stock: "Low stock",
-  back_in_stock: "Back in stock",
-  promotion: "Promotion",
-  custom: "Custom",
-};
-
-const STATUS_TONE: Record<string, string> = {
-  draft: "bg-muted text-foreground",
-  scheduled: "bg-primary/10 text-primary",
-  sending: "bg-muted text-foreground",
-  sent: "bg-[color:var(--success)]/20 text-[color:var(--success-foreground)]",
-  completed: "bg-[color:var(--success)]/20 text-[color:var(--success-foreground)]",
-  cancelled: "bg-destructive/15 text-destructive",
-};
 
 export const Route = createFileRoute("/_authenticated/notifications/")({
   head: () => ({ meta: [{ title: "Notifications — Tag" }] }),
@@ -134,7 +117,7 @@ function NotificationsList() {
             const canCancel = c.status === "draft" || c.status === "scheduled" || c.status === "sending";
             const canDelete = c.status === "draft" || c.status === "cancelled";
             return (
-              <Card key={c.id} className="p-4 hover:bg-accent/40 transition-colors">
+              <Card key={c.id} className="p-4 border-border/70 hover:border-foreground/30 transition-colors">
                 <div className="flex items-start gap-4">
                   <Link
                     to="/notifications/$campaignId"
@@ -151,8 +134,8 @@ function NotificationsList() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium truncate">{c.title}</span>
-                        <Badge variant="secondary">{TYPE_LABELS[c.type] ?? c.type}</Badge>
-                        <Badge className={STATUS_TONE[c.status] ?? "bg-muted"}>{c.status}</Badge>
+                        <TypeBadge type={c.type} />
+                        <StatusBadge status={c.status} />
                       </div>
                       {c.headline && (
                         <p className="text-sm text-muted-foreground truncate mt-0.5">{c.headline}</p>
@@ -174,6 +157,13 @@ function NotificationsList() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      {c.status === "draft" && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/notifications/$campaignId/edit" params={{ campaignId: c.id }}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => duplicate.mutate(c.id)}>
                         <Copy className="mr-2 h-4 w-4" /> Duplicate
                       </DropdownMenuItem>

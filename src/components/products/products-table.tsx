@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import QRCode from "qrcode";
 import {
   ArchiveRestore,
   Image as ImageIcon,
@@ -11,6 +12,7 @@ import {
   Archive,
   QrCode,
   Trash2,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -113,7 +115,13 @@ export function ProductsTable({
               Price
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Interest Score
+              Stock
+            </TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              QR
+            </TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Interest
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Status
@@ -174,6 +182,12 @@ export function ProductsTable({
                   )}
                 </TableCell>
                 <TableCell>
+                  <StockPill qty={r.stock_qty} threshold={r.low_stock_threshold} />
+                </TableCell>
+                <TableCell>
+                  <QrDownloadButton productId={r.id} name={r.name} />
+                </TableCell>
+                <TableCell>
                   <InterestRing score={r.intent_score ?? 0} />
                 </TableCell>
                 <TableCell>
@@ -190,6 +204,56 @@ export function ProductsTable({
         </TableBody>
       </Table>
     </div>
+  );
+}
+
+function StockPill({ qty, threshold }: { qty: number; threshold: number }) {
+  const isOut = qty <= 0;
+  const isLow = !isOut && qty <= threshold;
+  const cls = isOut
+    ? "bg-rose-600 text-white"
+    : isLow
+      ? "bg-amber-500 text-white"
+      : "bg-emerald-600 text-white";
+  const label = isOut ? "Out" : isLow ? "Low" : "OK";
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-semibold tabular-nums">{qty}</span>
+      <Badge className={`border-transparent shadow-sm ${cls}`}>{label}</Badge>
+    </div>
+  );
+}
+
+async function downloadQr(productId: string, name: string) {
+  try {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const url = `${origin}/api/public/s/${productId}`;
+    const dataUrl = await QRCode.toDataURL(url, {
+      margin: 1,
+      errorCorrectionLevel: "M",
+      width: 800,
+      color: { dark: "#031C4D", light: "#ffffff" },
+    });
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `qr-${name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.png`;
+    a.click();
+  } catch (e: any) {
+    toast.error(e?.message ?? "Download failed");
+  }
+}
+
+function QrDownloadButton({ productId, name }: { productId: string; name: string }) {
+  return (
+    <Button
+      size="icon"
+      variant="ghost"
+      className="h-8 w-8"
+      onClick={() => downloadQr(productId, name)}
+      aria-label="Download QR"
+    >
+      <Download className="h-4 w-4" />
+    </Button>
   );
 }
 
