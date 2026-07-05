@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Bell, Copy, MoreHorizontal, Plus, Trash2, XCircle } from "lucide-react";
+import { Bell, Copy, MoreHorizontal, Pencil, Plus, Trash2, XCircle } from "lucide-react";
 import {
   listCampaigns,
   cancelCampaign,
@@ -12,34 +12,17 @@ import {
 } from "@/lib/notifications.functions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge, TypeBadge } from "@/components/notifications/status-badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-const TYPE_LABELS: Record<string, string> = {
-  sale: "Sale",
-  low_stock: "Low stock",
-  back_in_stock: "Back in stock",
-  promotion: "Promotion",
-  custom: "Custom",
-};
-
-const STATUS_TONE: Record<string, string> = {
-  draft: "bg-muted text-foreground",
-  scheduled: "bg-primary/10 text-primary",
-  sending: "bg-muted text-foreground",
-  sent: "bg-[color:var(--success)]/20 text-[color:var(--success-foreground)]",
-  completed: "bg-[color:var(--success)]/20 text-[color:var(--success-foreground)]",
-  cancelled: "bg-destructive/15 text-destructive",
-};
 
 export const Route = createFileRoute("/_authenticated/notifications/")({
   head: () => ({ meta: [{ title: "Notifications — Tag" }] }),
