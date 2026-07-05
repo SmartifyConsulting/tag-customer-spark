@@ -123,9 +123,6 @@ export function ProductsTable({
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Interest
             </TableHead>
-            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Status
-            </TableHead>
             <TableHead className="w-10" />
           </TableRow>
         </TableHeader>
