@@ -52,6 +52,7 @@ function CustomersPage() {
   const [editRow, setEditRow] = useState<any | null>(null);
   const qc = useQueryClient();
   const deleteFn = useServerFn(deleteCustomer);
+  const markViewedFn = useServerFn(markCustomersViewed);
 
   const list = useQuery({
     queryKey: ["customers", "list", search, segment, letter, page],
