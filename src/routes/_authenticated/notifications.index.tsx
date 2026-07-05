@@ -186,11 +186,7 @@ function NotificationsList() {
                       {canDelete && (
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"
-                          onClick={() => {
-                            if (confirm(`Delete campaign "${c.title}"? This cannot be undone.`)) {
-                              remove.mutate(c.id);
-                            }
-                          }}
+                          onClick={() => setPendingDelete({ id: c.id, title: c.title })}
                         >
                           <Trash2 className="mr-2 h-4 w-4" /> Delete
                         </DropdownMenuItem>
@@ -203,6 +199,32 @@ function NotificationsList() {
           })}
         </div>
       )}
+
+      <AlertDialog
+        open={!!pendingDelete}
+        onOpenChange={(v) => !v && setPendingDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this campaign?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{pendingDelete?.title}" will be permanently removed. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (pendingDelete) remove.mutate(pendingDelete.id);
+                setPendingDelete(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
