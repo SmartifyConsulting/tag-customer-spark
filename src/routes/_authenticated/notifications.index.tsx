@@ -1,9 +1,15 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Bell, Plus } from "lucide-react";
-import { listCampaigns } from "@/lib/notifications.functions";
+import { toast } from "sonner";
+import { Bell, Copy, MoreHorizontal, Plus, Trash2, XCircle } from "lucide-react";
+import {
+  listCampaigns,
+  cancelCampaign,
+  deleteCampaign,
+  duplicateCampaign,
+} from "@/lib/notifications.functions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +17,12 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const TYPE_LABELS: Record<string, string> = {
   sale: "Sale",
