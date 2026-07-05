@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { WhatsAppPreview } from "@/components/notifications/whatsapp-preview";
+import { MessagePlaceholders } from "@/components/notifications/message-placeholders";
 import { AiCampaignAssist } from "@/components/notifications/ai-campaign-assist";
 
 export const Route = createFileRoute("/_authenticated/notifications/new")({
