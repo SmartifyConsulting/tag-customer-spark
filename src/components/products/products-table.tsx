@@ -182,6 +182,12 @@ export function ProductsTable({
                   )}
                 </TableCell>
                 <TableCell>
+                  <StockPill qty={r.stock_qty} threshold={r.low_stock_threshold} />
+                </TableCell>
+                <TableCell>
+                  <QrDownloadButton productId={r.id} name={r.name} />
+                </TableCell>
+                <TableCell>
                   <InterestRing score={r.intent_score ?? 0} />
                 </TableCell>
                 <TableCell>
