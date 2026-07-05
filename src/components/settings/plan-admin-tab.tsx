@@ -37,8 +37,8 @@ export function PlanAdminTab() {
   return (
     <Card className="rounded-2xl">
       <CardHeader>
-        <CardTitle>Plan administration</CardTitle>
-        <CardDescription>Super-admin only. Force-set tier or view billing status across all retailers.</CardDescription>
+        <CardTitle>Billing administration</CardTitle>
+        <CardDescription>Super-admin only. Force-set tier, downgrade or upgrade any workspace.</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
         {list.isLoading ? (
