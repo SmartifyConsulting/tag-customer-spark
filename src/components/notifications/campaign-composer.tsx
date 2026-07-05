@@ -26,6 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { WhatsAppPreview } from "@/components/notifications/whatsapp-preview";
 import { AiCampaignAssist } from "@/components/notifications/ai-campaign-assist";
+import { MessagePlaceholders } from "@/components/notifications/message-placeholders";
 
 const TYPES = [
   { value: "sale", label: "Sale", template: { headline: "Price drop!", body: "{product} just got cheaper — grab it while it lasts.", cta: "View deal" } },
