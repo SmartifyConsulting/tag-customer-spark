@@ -233,6 +233,70 @@ export const cancelMySubscription = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- User: change plan (up/down) without provider round-trip ----------
+export const changePlan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((v) =>
+    z
+      .object({
+        tier: z.enum(["starter", "pro", "enterprise"]),
+        cycle: z.enum(["monthly", "annual"]).default("monthly"),
+      })
+      .parse(v),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId, supabase } = context;
+    const { retailerId } = await requireBillingContext(supabase as never, userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: sub } = await supabaseAdmin
+      .from("subscriptions")
+      .select("id, provider, billing_cycle, status")
+      .eq("retailer_id", retailerId)
+      .maybeSingle();
+
+    if (data.tier === "starter") {
+      // Downgrade: keep access until period end if paying; otherwise flip immediately.
+      if (sub && sub.status === "active") {
+        await supabaseAdmin
+          .from("subscriptions")
+          .update({ cancel_at_period_end: true, updated_by: userId })
+          .eq("retailer_id", retailerId);
+      } else {
+        await supabaseAdmin.from("retailers").update({ tier: "starter" }).eq("id", retailerId);
+      }
+      await supabaseAdmin.from("audit_logs").insert({
+        retailer_id: retailerId,
+        actor_id: userId,
+        action: "billing.change_plan",
+        entity_type: "subscription",
+        status: "success",
+        payload: { tier: "starter" } as never,
+      });
+      return { ok: true, provider_redirect: false };
+    }
+
+    // Upgrade/switch to paid plan.
+    if (sub && sub.status === "active" && sub.provider) {
+      // Same-provider tier switch (no re-checkout).
+      const { grantTier } = await import("./billing/grant.server");
+      await grantTier(retailerId, data.tier, data.cycle, sub.provider as "payfast" | "paypal", null);
+      await supabaseAdmin.from("audit_logs").insert({
+        retailer_id: retailerId,
+        actor_id: userId,
+        action: "billing.change_plan",
+        entity_type: "subscription",
+        status: "success",
+        payload: { tier: data.tier, cycle: data.cycle, provider: sub.provider } as never,
+      });
+      return { ok: true, provider_redirect: false };
+    }
+
+    // No active subscription — caller must go through PayFast/PayPal.
+    return { ok: false, provider_redirect: true };
+  });
+
+
 // ---------- Super-admin: plan admin dashboard ----------
 export const adminListSubscriptions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
