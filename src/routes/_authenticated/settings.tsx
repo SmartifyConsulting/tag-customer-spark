@@ -105,6 +105,18 @@ function SettingsPage() {
           </TabsContent>
         )}
 
+        {isSuperAdmin && (
+          <TabsContent value="category-admin">
+            <CategoryAdminTab />
+          </TabsContent>
+        )}
+
+        {isSuperAdmin && (
+          <TabsContent value="user-admin">
+            <UserAdminTab />
+          </TabsContent>
+        )}
+
         <TabsContent value="security">
           <Card className="rounded-2xl">
             <CardHeader><CardTitle>Security</CardTitle><CardDescription>Row-level security is enforced across every table.</CardDescription></CardHeader>
