@@ -4,7 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ImagePlus, Loader2, Trash2, X } from "lucide-react";
+import { ImagePlus, Loader2, ScanLine, X } from "lucide-react";
+import { BarcodeScannerDialog } from "@/components/products/barcode-scanner-dialog";
 import {
   Dialog,
   DialogContent,
