@@ -13,6 +13,7 @@ import {
   createPaypalOrder,
   capturePaypalOrder,
   cancelMySubscription,
+  changePlan,
 } from "@/lib/billing.functions";
 import { PLANS, priceCents, formatZar, formatUsd, type PlanId, type Cycle } from "@/lib/billing/pricing";
 
