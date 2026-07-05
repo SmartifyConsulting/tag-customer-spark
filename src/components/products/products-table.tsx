@@ -207,6 +207,56 @@ export function ProductsTable({
   );
 }
 
+function StockPill({ qty, threshold }: { qty: number; threshold: number }) {
+  const isOut = qty <= 0;
+  const isLow = !isOut && qty <= threshold;
+  const cls = isOut
+    ? "bg-rose-600 text-white"
+    : isLow
+      ? "bg-amber-500 text-white"
+      : "bg-emerald-600 text-white";
+  const label = isOut ? "Out" : isLow ? "Low" : "OK";
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-semibold tabular-nums">{qty}</span>
+      <Badge className={`border-transparent shadow-sm ${cls}`}>{label}</Badge>
+    </div>
+  );
+}
+
+async function downloadQr(productId: string, name: string) {
+  try {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const url = `${origin}/api/public/s/${productId}`;
+    const dataUrl = await QRCode.toDataURL(url, {
+      margin: 1,
+      errorCorrectionLevel: "M",
+      width: 800,
+      color: { dark: "#031C4D", light: "#ffffff" },
+    });
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `qr-${name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.png`;
+    a.click();
+  } catch (e: any) {
+    toast.error(e?.message ?? "Download failed");
+  }
+}
+
+function QrDownloadButton({ productId, name }: { productId: string; name: string }) {
+  return (
+    <Button
+      size="icon"
+      variant="ghost"
+      className="h-8 w-8"
+      onClick={() => downloadQr(productId, name)}
+      aria-label="Download QR"
+    >
+      <Download className="h-4 w-4" />
+    </Button>
+  );
+}
+
 function InterestRing({ score }: { score: number }) {
   const clamped = Math.max(0, Math.min(100, Math.round(score)));
   const r = 18;
