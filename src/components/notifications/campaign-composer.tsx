@@ -87,8 +87,56 @@ export function CampaignComposer({
   const [expiresAt, setExpiresAt] = useState<string>(toLocalInput(initial?.expires_at));
   const [redemptionCode, setRedemptionCode] = useState(initial?.redemption_code ?? "");
   const [scheduledAt, setScheduledAt] = useState<string>(toLocalInput(initial?.scheduled_at));
-  const [audience, setAudience] = useState(0);
   const [saving, setSaving] = useState<"none" | "draft" | "send" | "schedule">("none");
+  const headlineRef = useRef<HTMLInputElement | null>(null);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
+  const activeFieldRef = useRef<"headline" | "body">("body");
+
+  function insertAt(
+    field: "headline" | "body",
+    token: string,
+    caret?: { start: number; end: number },
+  ) {
+    if (field === "headline") {
+      const el = headlineRef.current;
+      const start = caret?.start ?? el?.selectionStart ?? headline.length;
+      const end = caret?.end ?? el?.selectionEnd ?? headline.length;
+      const next = headline.slice(0, start) + token + headline.slice(end);
+      setHeadline(next.slice(0, 80));
+      requestAnimationFrame(() => {
+        el?.focus();
+        const pos = start + token.length;
+        el?.setSelectionRange(pos, pos);
+      });
+    } else {
+      const el = bodyRef.current;
+      const start = caret?.start ?? el?.selectionStart ?? body.length;
+      const end = caret?.end ?? el?.selectionEnd ?? body.length;
+      const next = body.slice(0, start) + token + body.slice(end);
+      setBody(next.slice(0, 800));
+      requestAnimationFrame(() => {
+        el?.focus();
+        const pos = start + token.length;
+        el?.setSelectionRange(pos, pos);
+      });
+    }
+  }
+
+  function handleDrop(field: "headline" | "body") {
+    return (e: React.DragEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      e.preventDefault();
+      const token = e.dataTransfer.getData("text/plain");
+      if (!token) return;
+      const el = e.currentTarget as HTMLInputElement | HTMLTextAreaElement;
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? el.value.length;
+      insertAt(field, token, { start, end });
+    };
+  }
+  const allowDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
 
   useEffect(() => {
     if (mode !== "new") return;
