@@ -68,6 +68,21 @@ function CustomersPage() {
     onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
   });
 
+  // Mark newly-seen customers as viewed shortly after render so the "New" badge
+  // remains visible on this view but clears on the next fetch.
+  useEffect(() => {
+    const rows = (list.data?.rows ?? []) as any[];
+    const newIds = rows.filter((r) => r.is_new).map((r) => r.id);
+    if (newIds.length === 0) return;
+    const t = setTimeout(() => {
+      markViewedFn({ data: { ids: newIds } })
+        .then(() => qc.invalidateQueries({ queryKey: ["customers"] }))
+        .catch(() => {});
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [list.data, markViewedFn, qc]);
+
+
   return (
     <div className="space-y-8">
       <PageHeader
