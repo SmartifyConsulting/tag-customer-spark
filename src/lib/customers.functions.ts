@@ -78,6 +78,7 @@ export const listCustomers = createServerFn({ method: "POST" })
 
     let enriched = (rows ?? []).map((r: any) => ({
       ...r,
+      is_new: r.viewed_at == null,
       scans: scanCount.get(r.id) ?? 0,
       interests: interestCount.get(r.id) ?? 0,
       lifetime_revenue_cents: revenue.get(r.id) ?? 0,
