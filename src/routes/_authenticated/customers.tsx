@@ -79,6 +79,25 @@ function CustomersPage() {
         }
       />
 
+      <div className="flex flex-wrap gap-1.5">
+        {LETTERS.map((L) => (
+          <button
+            key={L}
+            type="button"
+            onClick={() => { setLetter(L); setPage(1); }}
+            aria-pressed={letter === L}
+            className={
+              "h-8 min-w-8 rounded-full px-2 text-xs font-medium uppercase transition-colors " +
+              (letter === L
+                ? "bg-mint text-mint-foreground border border-mint"
+                : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground")
+            }
+          >
+            {L === "all" ? "All" : L}
+          </button>
+        ))}
+      </div>
+
       <Card className="rounded-2xl">
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={segment} onValueChange={(v) => { setSegment(v as any); setPage(1); }}>
