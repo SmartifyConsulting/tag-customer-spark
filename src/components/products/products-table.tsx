@@ -253,6 +253,20 @@ function RowActions({
   onDelete: (r: ProductRow) => void;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const regenFn = useServerFn(regenerateProductQr);
+  const updateFn = useServerFn(updateProduct);
+
+  const generate = useMutation({
+    mutationFn: () => regenFn({ data: { productId: row.id, template: "classic" } }),
+    onSuccess: () => toast.success("QR code generated"),
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
+  });
+  const unarchive = useMutation({
+    mutationFn: () => updateFn({ data: { id: row.id, patch: { status: "active" } as any } }),
+    onSuccess: () => toast.success("Unarchived"),
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
+  });
+
   return (
     <>
       <DropdownMenu>
@@ -265,9 +279,16 @@ function RowActions({
           <DropdownMenuItem onClick={() => onEdit(row)}>
             <Edit className="mr-2 h-4 w-4" /> Edit
           </DropdownMenuItem>
-          {row.status !== "archived" && (
+          <DropdownMenuItem onClick={() => generate.mutate()}>
+            <QrCode className="mr-2 h-4 w-4" /> Generate QR
+          </DropdownMenuItem>
+          {row.status !== "archived" ? (
             <DropdownMenuItem onClick={() => onArchive(row)}>
               <Archive className="mr-2 h-4 w-4" /> Archive
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onClick={() => unarchive.mutate()}>
+              <ArchiveRestore className="mr-2 h-4 w-4" /> Unarchive
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
