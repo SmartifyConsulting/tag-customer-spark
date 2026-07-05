@@ -59,6 +59,7 @@ import { Route as ApiPublicScanInterestRouteImport } from './routes/api/public/s
 import { Route as ApiPublicSShortCodeRouteImport } from './routes/api/public/s.$shortCode'
 import { Route as ApiPublicHooksNotificationsTickRouteImport } from './routes/api/public/hooks.notifications-tick'
 import { Route as ApiPublicHooksIntentTickRouteImport } from './routes/api/public/hooks.intent-tick'
+import { Route as AuthenticatedNotificationsCampaignIdEditRouteImport } from './routes/_authenticated/notifications.$campaignId.edit'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -334,6 +335,12 @@ const ApiPublicHooksIntentTickRoute =
     path: '/api/public/hooks/intent-tick',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedNotificationsCampaignIdEditRoute =
+  AuthenticatedNotificationsCampaignIdEditRouteImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AuthenticatedNotificationsCampaignIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -370,7 +377,7 @@ export interface FileRoutesByFullPath {
   '/intelligence/insights': typeof AuthenticatedIntelligenceInsightsRoute
   '/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
   '/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
-  '/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRoute
+  '/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRouteWithChildren
   '/notifications/new': typeof AuthenticatedNotificationsNewRoute
   '/notifications/scheduled': typeof AuthenticatedNotificationsScheduledRoute
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
@@ -378,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
+  '/notifications/$campaignId/edit': typeof AuthenticatedNotificationsCampaignIdEditRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
@@ -419,7 +427,7 @@ export interface FileRoutesByTo {
   '/intelligence/insights': typeof AuthenticatedIntelligenceInsightsRoute
   '/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
   '/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
-  '/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRoute
+  '/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRouteWithChildren
   '/notifications/new': typeof AuthenticatedNotificationsNewRoute
   '/notifications/scheduled': typeof AuthenticatedNotificationsScheduledRoute
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
@@ -427,6 +435,7 @@ export interface FileRoutesByTo {
   '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/notifications': typeof AuthenticatedNotificationsIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
+  '/notifications/$campaignId/edit': typeof AuthenticatedNotificationsCampaignIdEditRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
@@ -472,7 +481,7 @@ export interface FileRoutesById {
   '/_authenticated/intelligence/insights': typeof AuthenticatedIntelligenceInsightsRoute
   '/_authenticated/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
   '/_authenticated/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
-  '/_authenticated/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRoute
+  '/_authenticated/notifications/$campaignId': typeof AuthenticatedNotificationsCampaignIdRouteWithChildren
   '/_authenticated/notifications/new': typeof AuthenticatedNotificationsNewRoute
   '/_authenticated/notifications/scheduled': typeof AuthenticatedNotificationsScheduledRoute
   '/_authenticated/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
@@ -480,6 +489,7 @@ export interface FileRoutesById {
   '/_authenticated/products/compare': typeof AuthenticatedProductsCompareRoute
   '/_authenticated/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
+  '/_authenticated/notifications/$campaignId/edit': typeof AuthenticatedNotificationsCampaignIdEditRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
@@ -533,6 +543,7 @@ export interface FileRouteTypes {
     | '/products/compare'
     | '/notifications/'
     | '/products/'
+    | '/notifications/$campaignId/edit'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
     | '/api/public/s/$shortCode'
@@ -582,6 +593,7 @@ export interface FileRouteTypes {
     | '/products/compare'
     | '/notifications'
     | '/products'
+    | '/notifications/$campaignId/edit'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
     | '/api/public/s/$shortCode'
@@ -634,6 +646,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products/compare'
     | '/_authenticated/notifications/'
     | '/_authenticated/products/'
+    | '/_authenticated/notifications/$campaignId/edit'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
     | '/api/public/s/$shortCode'
@@ -1012,6 +1025,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksIntentTickRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/notifications/$campaignId/edit': {
+      id: '/_authenticated/notifications/$campaignId/edit'
+      path: '/edit'
+      fullPath: '/notifications/$campaignId/edit'
+      preLoaderRoute: typeof AuthenticatedNotificationsCampaignIdEditRouteImport
+      parentRoute: typeof AuthenticatedNotificationsCampaignIdRoute
+    }
   }
 }
 
@@ -1070,8 +1090,23 @@ const AuthenticatedIntelligenceRouteWithChildren =
     AuthenticatedIntelligenceRouteChildren,
   )
 
+interface AuthenticatedNotificationsCampaignIdRouteChildren {
+  AuthenticatedNotificationsCampaignIdEditRoute: typeof AuthenticatedNotificationsCampaignIdEditRoute
+}
+
+const AuthenticatedNotificationsCampaignIdRouteChildren: AuthenticatedNotificationsCampaignIdRouteChildren =
+  {
+    AuthenticatedNotificationsCampaignIdEditRoute:
+      AuthenticatedNotificationsCampaignIdEditRoute,
+  }
+
+const AuthenticatedNotificationsCampaignIdRouteWithChildren =
+  AuthenticatedNotificationsCampaignIdRoute._addFileChildren(
+    AuthenticatedNotificationsCampaignIdRouteChildren,
+  )
+
 interface AuthenticatedNotificationsRouteChildren {
-  AuthenticatedNotificationsCampaignIdRoute: typeof AuthenticatedNotificationsCampaignIdRoute
+  AuthenticatedNotificationsCampaignIdRoute: typeof AuthenticatedNotificationsCampaignIdRouteWithChildren
   AuthenticatedNotificationsNewRoute: typeof AuthenticatedNotificationsNewRoute
   AuthenticatedNotificationsScheduledRoute: typeof AuthenticatedNotificationsScheduledRoute
   AuthenticatedNotificationsIndexRoute: typeof AuthenticatedNotificationsIndexRoute
@@ -1080,7 +1115,7 @@ interface AuthenticatedNotificationsRouteChildren {
 const AuthenticatedNotificationsRouteChildren: AuthenticatedNotificationsRouteChildren =
   {
     AuthenticatedNotificationsCampaignIdRoute:
-      AuthenticatedNotificationsCampaignIdRoute,
+      AuthenticatedNotificationsCampaignIdRouteWithChildren,
     AuthenticatedNotificationsNewRoute: AuthenticatedNotificationsNewRoute,
     AuthenticatedNotificationsScheduledRoute:
       AuthenticatedNotificationsScheduledRoute,
