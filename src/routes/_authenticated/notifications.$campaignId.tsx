@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-r
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Bell, CheckCheck, Copy, Eye, MousePointerClick, Send, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Bell, CheckCheck, Copy, Eye, MousePointerClick, Pencil, Send, Sparkles, Trash2 } from "lucide-react";
 import {
   getCampaign,
   cancelCampaign,
