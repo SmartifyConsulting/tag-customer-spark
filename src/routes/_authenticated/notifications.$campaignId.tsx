@@ -48,6 +48,7 @@ function CampaignDetail() {
   const cancelFn = useServerFn(cancelCampaign);
   const deleteFn = useServerFn(deleteCampaign);
   const dupFn = useServerFn(duplicateCampaign);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["campaign", campaignId],
     queryFn: () => getFn({ data: { id: campaignId } }),
