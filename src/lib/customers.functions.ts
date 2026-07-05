@@ -36,8 +36,9 @@ export const listCustomers = createServerFn({ method: "POST" })
 
     let q = supabase
       .from("customers")
-      .select("id, full_name, whatsapp_e164, status, opted_in_at, notify_consent_at, marketing_consent_at, created_at", { count: "exact" })
+      .select("id, full_name, whatsapp_e164, status, opted_in_at, notify_consent_at, marketing_consent_at, created_at, viewed_at", { count: "exact" })
       .eq("retailer_id", retailerId)
+      .order("viewed_at", { ascending: true, nullsFirst: true })
       .order("created_at", { ascending: false })
       .range(from, to);
 
