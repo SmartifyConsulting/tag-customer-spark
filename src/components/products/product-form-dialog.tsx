@@ -158,6 +158,48 @@ export function ProductFormDialog({
     onError: (e: any) => toast.error(e.message ?? "Save failed"),
   });
 
+  async function handleBarcode(code: string) {
+    const current = form.getValues();
+    form.setValue("sku", code, { shouldDirty: true });
+    try {
+      const res = await lookupFn({ data: { code } });
+      if (!res.found || !res.product) {
+        toast.info(`SKU set to ${code}. No product match — fill fields manually.`);
+        return;
+      }
+      const p: any = res.product;
+      const setIfEmpty = (key: keyof ProductInput, val: any) => {
+        if (val == null || val === "") return;
+        const existing = (current as any)[key];
+        if (existing == null || existing === "" || existing === 0) {
+          form.setValue(key as any, val, { shouldDirty: true });
+        }
+      };
+      setIfEmpty("name", p.name);
+      setIfEmpty("brand", p.brand);
+      setIfEmpty("description", p.description);
+      setIfEmpty("size", p.size);
+      if (p.image_url && imgs.length === 0) {
+        setImgs([{ url: p.image_url, path: `external/${code}`, sort: 0 }]);
+      }
+      if (res.source === "local") {
+        setIfEmpty("price_cents", p.price_cents);
+        setIfEmpty("sale_price_cents", p.sale_price_cents);
+        setIfEmpty("currency", p.currency);
+        setIfEmpty("stock_qty", p.stock_qty);
+        setIfEmpty("low_stock_threshold", p.low_stock_threshold);
+        setIfEmpty("color", p.color);
+        setIfEmpty("category_id", p.category_id);
+        setIfEmpty("store_id", p.store_id);
+        toast.success("Matched an existing product — fields prefilled");
+      } else {
+        toast.success("Filled from Open Food Facts");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Barcode lookup failed");
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
