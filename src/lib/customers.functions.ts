@@ -20,7 +20,7 @@ export const listCustomers = createServerFn({ method: "POST" })
       .object({
         search: z.string().trim().optional(),
         segment: z.enum(["all", "subscribed", "vip", "dormant"]).default("all"),
-        letter: z.string().trim().max(2).optional(),
+        letter: z.string().trim().max(3).optional(),
         page: z.number().int().min(1).default(1),
         pageSize: z.number().int().min(10).max(100).default(25),
       })
