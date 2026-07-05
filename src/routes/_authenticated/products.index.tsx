@@ -8,8 +8,15 @@ import { toast } from "sonner";
 import { FileDown, Loader2, Package, Plus, Upload } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/empty-state";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { ProductsToolbar } from "@/components/products/products-toolbar";
 import {
   ProductsTable,
@@ -28,7 +35,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 const searchSchema = z.object({
   search: fallback(z.string(), "").default(""),
-  status: fallback(z.enum(["all", "active", "draft", "archived"]), "all").default("all"),
+  showArchived: fallback(z.boolean(), false).default(false),
   category: fallback(z.string().nullable(), null).default(null),
   store: fallback(z.string().nullable(), null).default(null),
   promo: fallback(z.boolean(), false).default(false),
@@ -62,13 +69,12 @@ function ProductsListPage() {
     staleTime: 60_000,
   });
 
-  // local debounce of search term
   const [searchTerm, setSearchTerm] = useState(search.search);
   useEffect(() => setSearchTerm(search.search), [search.search]);
   useEffect(() => {
     const t = setTimeout(() => {
       if (searchTerm !== search.search) {
-        if (searchTerm !== search.search) navigate({ search: (p: any) => ({ ...p, search: searchTerm, page: 1 }) });
+        navigate({ search: (p: any) => ({ ...p, search: searchTerm, page: 1 }) });
       }
     }, 300);
     return () => clearTimeout(t);
@@ -77,14 +83,16 @@ function ProductsListPage() {
   const params = useMemo(
     () => ({
       search: search.search,
-      status: search.status,
+      status: (search.showArchived ? "archived" : "active") as
+        | "archived"
+        | "active",
       category_id: search.category,
       store_id: search.store,
       promotion: search.promo,
       low_stock: search.lowStock,
       sort: search.sort,
       page: search.page,
-      pageSize: 20,
+      pageSize: 100,
     }),
     [search],
   );
@@ -118,6 +126,27 @@ function ProductsListPage() {
   const rows = (data?.rows ?? []) as ProductRow[];
   const selectedIds = useMemo(() => Array.from(selected), [selected]);
 
+  const grouped = useMemo(() => {
+    const map = new Map<string, ProductRow[]>();
+    for (const r of rows) {
+      const key = r.category?.name ?? "Uncategorised";
+      const arr = map.get(key) ?? [];
+      arr.push(r);
+      map.set(key, arr);
+    }
+    return Array.from(map.entries()).sort((a, b) =>
+      a[0] === "Uncategorised" ? 1 : b[0] === "Uncategorised" ? -1 : a[0].localeCompare(b[0]),
+    );
+  }, [rows]);
+
+  const hasFilters =
+    !!search.search ||
+    search.showArchived ||
+    !!search.category ||
+    !!search.store ||
+    search.promo ||
+    search.lowStock;
+
   return (
     <div className="grid gap-6">
       <PageHeader
@@ -148,7 +177,7 @@ function ProductsListPage() {
       <ProductsToolbar
         value={{
           search: searchTerm,
-          status: search.status,
+          showArchived: search.showArchived,
           category_id: search.category,
           store_id: search.store,
           promotion: search.promo,
@@ -163,7 +192,8 @@ function ProductsListPage() {
           navigate({
             search: (p: any) => ({
               ...p,
-              status: next.status ?? p.status,
+              showArchived:
+                "showArchived" in next ? !!next.showArchived : p.showArchived,
               category: "category_id" in next ? next.category_id ?? null : p.category,
               store: "store_id" in next ? next.store_id ?? null : p.store,
               promo: "promotion" in next ? !!next.promotion : p.promo,
@@ -179,7 +209,7 @@ function ProductsListPage() {
 
       {isLoading ? (
         <div className="grid gap-2">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-14 w-full rounded-xl" />
           ))}
         </div>
@@ -187,13 +217,9 @@ function ProductsListPage() {
         <EmptyState
           size="lg"
           icon={Package}
-          title={
-            search.search || search.status !== "all" || search.category || search.store || search.promo || search.lowStock
-              ? "No products match your filters"
-              : "Your catalogue is empty"
-          }
+          title={hasFilters ? "No products match your filters" : "Your catalogue is empty"}
           description={
-            search.search || search.status !== "all" || search.category || search.store || search.promo || search.lowStock
+            hasFilters
               ? "Try clearing filters or refining your search — your full catalogue is one click away."
               : "Add your first product to start generating QR tags, tracking intent and recovering lost sales."
           }
@@ -208,14 +234,14 @@ function ProductsListPage() {
             ) : undefined
           }
           secondaryAction={
-            (search.search || search.status !== "all" || search.category || search.store || search.promo || search.lowStock) ? (
+            hasFilters ? (
               <Button
                 variant="outline"
                 onClick={() =>
                   navigate({
                     search: () => ({
                       search: "",
-                      status: "all" as const,
+                      showArchived: false,
                       category: null,
                       store: null,
                       promo: false,
@@ -232,20 +258,48 @@ function ProductsListPage() {
           }
         />
       ) : (
-        <ProductsTable
-          rows={rows}
-          selected={selected}
-          onSelectChange={setSelected}
-          onEdit={(r) => setEditing(r)}
-          onArchive={(r) => archive.mutate(r.id)}
-          onDelete={(r) => remove.mutate(r.id)}
-          canManage={canManage}
-        />
+        <Accordion type="multiple" className="grid gap-2">
+          {grouped.map(([category, items]) => {
+            const lowCount = items.filter(
+              (p) => (p.stock_qty ?? 0) <= (p.low_stock_threshold ?? 0),
+            ).length;
+            return (
+              <AccordionItem
+                key={category}
+                value={category}
+                className="rounded-2xl border border-border bg-card px-4"
+              >
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex flex-1 items-center gap-3 pr-3">
+                    <span className="text-base font-semibold text-foreground">
+                      {category}
+                    </span>
+                    <Badge variant="default">{items.length}</Badge>
+                    {lowCount > 0 && (
+                      <Badge variant="warning">{lowCount} low stock</Badge>
+                    )}
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2">
+                  <ProductsTable
+                    rows={items}
+                    selected={selected}
+                    onSelectChange={setSelected}
+                    onEdit={(r) => setEditing(r)}
+                    onArchive={(r) => archive.mutate(r.id)}
+                    onDelete={(r) => remove.mutate(r.id)}
+                    canManage={canManage}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
       )}
 
       <ProductsPagination
         page={search.page}
-        pageSize={20}
+        pageSize={100}
         total={data?.total ?? 0}
         onPage={(p) => navigate({ search: (s: any) => ({ ...s, page: p }) })}
       />
