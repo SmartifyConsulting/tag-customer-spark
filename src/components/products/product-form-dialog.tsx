@@ -344,21 +344,6 @@ export function ProductFormDialog({
             </div>
           </Section>
 
-          <Section title="Status">
-            <Field label="Status">
-              <Select
-                value={form.watch("status")}
-                onValueChange={(v: any) => form.setValue("status", v)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-          </Section>
 
           <Section title="Images">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
