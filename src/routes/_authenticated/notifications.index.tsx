@@ -131,10 +131,16 @@ function NotificationsList() {
         <div className="grid gap-3">
           {data.map((c: any) => {
             const funnel = c.funnel ?? {};
+            const canCancel = c.status === "draft" || c.status === "scheduled" || c.status === "sending";
+            const canDelete = c.status === "draft" || c.status === "cancelled";
             return (
-              <Link key={c.id} to="/notifications/$campaignId" params={{ campaignId: c.id }} className="block">
-                <Card className="p-4 hover:bg-accent/40 transition-colors">
-                  <div className="flex items-start gap-4">
+              <Card key={c.id} className="p-4 hover:bg-accent/40 transition-colors">
+                <div className="flex items-start gap-4">
+                  <Link
+                    to="/notifications/$campaignId"
+                    params={{ campaignId: c.id }}
+                    className="flex flex-1 items-start gap-4 min-w-0"
+                  >
                     {c.image_url ? (
                       <img src={c.image_url} alt="" className="h-14 w-14 rounded-xl object-cover" />
                     ) : (
@@ -159,10 +165,39 @@ function NotificationsList() {
                         {c.sent_at && <span>Sent: {new Date(c.sent_at).toLocaleString()}</span>}
                       </div>
                     </div>
-                    <FunnelMini funnel={funnel} />
-                  </div>
-                </Card>
-              </Link>
+                  </Link>
+                  <FunnelMini funnel={funnel} />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => duplicate.mutate(c.id)}>
+                        <Copy className="mr-2 h-4 w-4" /> Duplicate
+                      </DropdownMenuItem>
+                      {canCancel && (
+                        <DropdownMenuItem onClick={() => cancel.mutate(c.id)}>
+                          <XCircle className="mr-2 h-4 w-4" /> Cancel
+                        </DropdownMenuItem>
+                      )}
+                      {canDelete && (
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => {
+                            if (confirm(`Delete campaign "${c.title}"? This cannot be undone.`)) {
+                              remove.mutate(c.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </Card>
             );
           })}
         </div>
