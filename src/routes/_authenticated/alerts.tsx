@@ -71,8 +71,9 @@ function AlertsPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Unread conversations" value={unread} icon={MessageSquare} tone="mint" />
         <StatCard label="Live campaigns" value={liveCampaigns} icon={Bell} tone="navy" />
-        <StatCard label="Open threads" value={(convs.data ?? []).length} icon={Sparkles} tone="amber" />
+        <StatCard label="Open threads" value={(convs.data ?? []).length} icon={Sparkles} tone="muted" />
       </div>
+
 
       <Tabs defaultValue="inbox" className="space-y-4">
         <TabsList>
