@@ -1,8 +1,14 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Bell, CheckCheck, Eye, MousePointerClick, Send, Sparkles } from "lucide-react";
-import { getCampaign, cancelCampaign } from "@/lib/notifications.functions";
+import { toast } from "sonner";
+import { ArrowLeft, Bell, CheckCheck, Copy, Eye, MousePointerClick, Send, Sparkles, Trash2 } from "lucide-react";
+import {
+  getCampaign,
+  cancelCampaign,
+  deleteCampaign,
+  duplicateCampaign,
+} from "@/lib/notifications.functions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
