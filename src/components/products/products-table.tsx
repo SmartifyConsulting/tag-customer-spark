@@ -156,9 +156,6 @@ export function ProductsTable({
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {r.category?.name ?? "—"}
-                </TableCell>
                 <TableCell className="text-sm">
                   {onSale ? (
                     <span className="flex items-baseline gap-2">
