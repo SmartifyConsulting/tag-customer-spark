@@ -47,6 +47,7 @@ function NotificationsList() {
   const dupFn = useServerFn(duplicateCampaign);
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["campaigns", status],
     queryFn: () => list({ data: { status } }),
