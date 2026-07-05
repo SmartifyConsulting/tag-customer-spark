@@ -61,10 +61,16 @@ function SettingsPage() {
               {settings.isLoading ? <Skeleton className="h-32 w-full" /> : (
                 <>
                   <div><Label>Workspace name</Label><Input value={current.name ?? ""} onChange={(e) => setForm({ ...current, name: e.target.value })} /></div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div><Label>Contact email</Label><Input value={current.contact_email ?? ""} onChange={(e) => setForm({ ...current, contact_email: e.target.value })} /></div>
-                    <div><Label>Logo URL</Label><Input value={current.logo_url ?? ""} onChange={(e) => setForm({ ...current, logo_url: e.target.value })} /></div>
-                  </div>
+                  <div><Label>Contact email</Label><Input value={current.contact_email ?? ""} onChange={(e) => setForm({ ...current, contact_email: e.target.value })} /></div>
+
+                  <LogoUploader
+                    logoUrl={current.logo_url ?? ""}
+                    onUploaded={(url) => {
+                      setForm({ ...current, logo_url: url });
+                      qc.invalidateQueries({ queryKey: ["settings"] });
+                    }}
+                  />
+
                   <div className="flex items-center justify-between rounded-xl border p-4">
                     <div>
                       <p className="text-sm font-medium">Appearance</p>
