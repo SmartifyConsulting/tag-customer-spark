@@ -121,8 +121,8 @@ function ProductsListPage() {
   return (
     <div className="grid gap-6">
       <PageHeader
-        title="Products"
-        description="Manage and track all your products."
+        title="Items & Tags"
+        description="Manage products, stock levels, and QR tags in one place."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {canManage && selectedIds.length > 0 && (
