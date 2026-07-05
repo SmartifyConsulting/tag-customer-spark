@@ -117,7 +117,7 @@ function NotificationsList() {
             const canCancel = c.status === "draft" || c.status === "scheduled" || c.status === "sending";
             const canDelete = c.status === "draft" || c.status === "cancelled";
             return (
-              <Card key={c.id} className="p-4 hover:bg-accent/40 transition-colors">
+              <Card key={c.id} className="p-4 border-border/70 hover:border-foreground/30 transition-colors">
                 <div className="flex items-start gap-4">
                   <Link
                     to="/notifications/$campaignId"
@@ -134,8 +134,8 @@ function NotificationsList() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium truncate">{c.title}</span>
-                        <Badge variant="secondary">{TYPE_LABELS[c.type] ?? c.type}</Badge>
-                        <Badge className={STATUS_TONE[c.status] ?? "bg-muted"}>{c.status}</Badge>
+                        <TypeBadge type={c.type} />
+                        <StatusBadge status={c.status} />
                       </div>
                       {c.headline && (
                         <p className="text-sm text-muted-foreground truncate mt-0.5">{c.headline}</p>
@@ -157,6 +157,13 @@ function NotificationsList() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      {c.status === "draft" && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/notifications/$campaignId/edit" params={{ campaignId: c.id }}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => duplicate.mutate(c.id)}>
                         <Copy className="mr-2 h-4 w-4" /> Duplicate
                       </DropdownMenuItem>
