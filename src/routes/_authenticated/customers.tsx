@@ -1,9 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Users, Search, MessageSquare, Eye, ArrowUpRight } from "lucide-react";
+import { toast } from "sonner";
+import {
+  ArrowUpRight,
+  Edit,
+  MessageSquare,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +22,14 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { listCustomers, getCustomerDetail } from "@/lib/customers.functions";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { listCustomers, getCustomerDetail, deleteCustomer } from "@/lib/customers.functions";
+import { CustomerFormDialog } from "@/components/customers/customer-form-dialog";
 
 export const Route = createFileRoute("/_authenticated/customers")({
   head: () => ({ meta: [{ title: "Customers — Tag" }] }),
