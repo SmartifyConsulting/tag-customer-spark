@@ -87,6 +87,7 @@ export function CampaignComposer({
   const [expiresAt, setExpiresAt] = useState<string>(toLocalInput(initial?.expires_at));
   const [redemptionCode, setRedemptionCode] = useState(initial?.redemption_code ?? "");
   const [scheduledAt, setScheduledAt] = useState<string>(toLocalInput(initial?.scheduled_at));
+  const [audience, setAudience] = useState(0);
   const [saving, setSaving] = useState<"none" | "draft" | "send" | "schedule">("none");
   const headlineRef = useRef<HTMLInputElement | null>(null);
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
