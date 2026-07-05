@@ -38,7 +38,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_authenticated/products/")({
-  head: () => ({ meta: [{ title: "Products — Tag" }] }),
+  head: () => ({ meta: [{ title: "Items & Tags — Tag" }] }),
   validateSearch: zodValidator(searchSchema),
   component: ProductsListPage,
 });
