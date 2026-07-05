@@ -300,15 +300,34 @@ export function CampaignComposer({
               <Label htmlFor="headline">
                 Headline <span className="text-muted-foreground">({headline.length}/80)</span>
               </Label>
-              <Input id="headline" value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={80} />
+              <Input
+                id="headline"
+                ref={headlineRef}
+                value={headline}
+                onChange={(e) => setHeadline(e.target.value)}
+                onFocus={() => (activeFieldRef.current = "headline")}
+                onDrop={handleDrop("headline")}
+                onDragOver={allowDrop}
+                maxLength={80}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="body">
                 Body <span className="text-muted-foreground">({body.length}/800)</span>
               </Label>
-              <Textarea id="body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={800} rows={5} />
+              <Textarea
+                id="body"
+                ref={bodyRef}
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                onFocus={() => (activeFieldRef.current = "body")}
+                onDrop={handleDrop("body")}
+                onDragOver={allowDrop}
+                maxLength={800}
+                rows={5}
+              />
               <p className="text-[11px] text-muted-foreground">
-                Tokens: <code>{"{product}"}</code>, <code>{"{code}"}</code>
+                Drag placeholders from the right panel, or type tokens like <code>{"{product}"}</code>.
               </p>
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
