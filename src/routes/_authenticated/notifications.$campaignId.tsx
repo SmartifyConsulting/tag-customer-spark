@@ -15,6 +15,17 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge, TypeBadge } from "@/components/notifications/status-badge";
 import { WhatsAppPreview } from "@/components/notifications/whatsapp-preview";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/notifications/$campaignId")({
   head: () => ({ meta: [{ title: "Campaign — Tag" }] }),
