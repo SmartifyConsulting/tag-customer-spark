@@ -154,7 +154,7 @@ function WatchlistsPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge
                       variant="outline"
-                      className={w.trigger === "back_in_stock" ? "border-transparent bg-teal-500 text-white" : ""}
+                      className={w.trigger === "back_in_stock" ? "border-transparent bg-sky-200 text-sky-900" : ""}
                     >
                       {TRIGGER_LABEL[w.trigger] ?? w.trigger}
                     </Badge>
