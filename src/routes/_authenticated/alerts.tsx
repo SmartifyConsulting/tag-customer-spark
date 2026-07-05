@@ -193,13 +193,13 @@ function StatCard({
   label: string;
   value: number;
   icon: any;
-  tone: "mint" | "navy" | "amber";
+  tone: "mint" | "navy" | "muted";
 }) {
   const toneClass =
     tone === "mint"
       ? "bg-[color:var(--mint)]/10 text-[color:var(--mint)]"
-      : tone === "amber"
-        ? "bg-[color:var(--warning)]/15 text-[color:var(--warning)]"
+      : tone === "muted"
+        ? "bg-muted text-muted-foreground"
         : "bg-primary/10 text-primary";
   return (
     <Card className="rounded-xl shadow-[var(--shadow-card)]">
