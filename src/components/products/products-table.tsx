@@ -109,13 +109,10 @@ export function ProductsTable({
               Product
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Category
-            </TableHead>
-            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Price
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Stock
+              Status
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               QR
