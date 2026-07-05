@@ -86,6 +86,8 @@ export function BillingTab() {
             plan={plan.id}
             cycle={cycle}
             currentTier={currentTier}
+            hasActiveSub={!!subRow && subRow.status === "active"}
+            activeProvider={(subRow?.provider as "payfast" | "paypal" | undefined) ?? null}
           />
         ))}
       </div>
