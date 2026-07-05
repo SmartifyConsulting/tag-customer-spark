@@ -157,7 +157,7 @@ function NotificationsList() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      {c.status === "draft" && (
+                      {(c.status === "draft" || c.status === "scheduled") && (
                         <DropdownMenuItem asChild>
                           <Link to="/notifications/$campaignId/edit" params={{ campaignId: c.id }}>
                             <Pencil className="mr-2 h-4 w-4" /> Edit
