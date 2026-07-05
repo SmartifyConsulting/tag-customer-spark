@@ -4,7 +4,7 @@ import {
   CommandDialog, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty, CommandSeparator,
 } from "@/components/ui/command";
 import {
-  LayoutDashboard, Package, QrCode, Users, Bell, Inbox, BarChart3, Store, UserCog, Settings,
+  LayoutDashboard, Package, Users, Bell, Inbox, BarChart3, Store, UserCog, Settings,
   Sparkles, Gauge, Eye, DollarSign, Plus,
 } from "lucide-react";
 
