@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowUpRight,
@@ -28,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { listCustomers, getCustomerDetail, deleteCustomer } from "@/lib/customers.functions";
+import { listCustomers, getCustomerDetail, deleteCustomer, markCustomersViewed } from "@/lib/customers.functions";
 import { CustomerFormDialog } from "@/components/customers/customer-form-dialog";
 
 export const Route = createFileRoute("/_authenticated/customers")({
@@ -52,6 +52,7 @@ function CustomersPage() {
   const [editRow, setEditRow] = useState<any | null>(null);
   const qc = useQueryClient();
   const deleteFn = useServerFn(deleteCustomer);
+  const markViewedFn = useServerFn(markCustomersViewed);
 
   const list = useQuery({
     queryKey: ["customers", "list", search, segment, letter, page],
@@ -66,6 +67,21 @@ function CustomersPage() {
     },
     onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
   });
+
+  // Mark newly-seen customers as viewed shortly after render so the "New" badge
+  // remains visible on this view but clears on the next fetch.
+  useEffect(() => {
+    const rows = (list.data?.rows ?? []) as any[];
+    const newIds = rows.filter((r) => r.is_new).map((r) => r.id);
+    if (newIds.length === 0) return;
+    const t = setTimeout(() => {
+      markViewedFn({ data: { ids: newIds } })
+        .then(() => qc.invalidateQueries({ queryKey: ["customers"] }))
+        .catch(() => {});
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [list.data, markViewedFn, qc]);
+
 
   return (
     <div className="space-y-8">
@@ -116,7 +132,12 @@ function CustomersPage() {
         <CardContent className="p-0">
           <div className="divide-y">
             <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] gap-3 px-6 py-3 text-xs uppercase tracking-wide text-muted-foreground">
-              <span>Customer</span><span>Status</span><span>Scans</span><span>Interests</span><span>Revenue</span><span></span>
+              <span className="text-left">Customer</span>
+              <span className="text-left">Status</span>
+              <span className="text-left">Scans</span>
+              <span className="text-left">Interests</span>
+              <span className="text-left">Revenue</span>
+              <span />
             </div>
             {list.isLoading ? (
               <div className="space-y-3 p-6">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
@@ -125,7 +146,14 @@ function CustomersPage() {
             ) : (list.data!.rows as any[]).map((c) => (
               <div key={c.id} className="grid w-full grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] items-center gap-3 px-6 py-3 hover:bg-muted/40">
                 <button onClick={() => setActiveId(c.id)} className="min-w-0 text-left">
-                  <p className="truncate text-sm font-medium">{c.full_name || "Unnamed"}</p>
+                  <p className="flex items-center gap-2 truncate text-sm font-medium">
+                    <span className="truncate">{c.full_name || "Unnamed"}</span>
+                    {c.is_new && (
+                      <span className="rounded-full bg-mint px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-mint-foreground">
+                        New
+                      </span>
+                    )}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">{c.whatsapp_e164}</p>
                 </button>
                 <Badge variant={c.status === "subscribed" ? "success" : "outline"} className="w-fit capitalize">{c.status}</Badge>

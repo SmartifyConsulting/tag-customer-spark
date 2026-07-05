@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { Settings as SettingsIcon, Building2, CreditCard, ShieldCheck, History, Mail, Send, CheckCircle2, Upload, Copy, ExternalLink } from "lucide-react";
+import { Settings as SettingsIcon, Building2, CreditCard, ShieldCheck, History, Mail, Send, CheckCircle2, Upload, Copy, ExternalLink, FolderTree, UserCog } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -17,6 +17,8 @@ import { getWorkspaceSettings, updateRetailerProfile, listAuditLog, uploadRetail
 import { sendTestEmail, sendDailyBriefingEmail, sendWeeklyRoiEmail } from "@/lib/email.functions";
 import { BillingTab } from "@/components/settings/billing-tab";
 import { PlanAdminTab } from "@/components/settings/plan-admin-tab";
+import { CategoryAdminTab } from "@/components/settings/category-admin-tab";
+import { UserAdminTab } from "@/components/settings/user-admin-tab";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -49,7 +51,9 @@ function SettingsPage() {
           <TabsTrigger value="workspace"><Building2 className="mr-1 h-4 w-4" /> Workspace</TabsTrigger>
           <TabsTrigger value="emails"><Mail className="mr-1 h-4 w-4" /> Emails</TabsTrigger>
           <TabsTrigger value="billing"><CreditCard className="mr-1 h-4 w-4" /> Billing</TabsTrigger>
-          {isSuperAdmin && <TabsTrigger value="plan-admin"><ShieldCheck className="mr-1 h-4 w-4" /> Plan admin</TabsTrigger>}
+          {isSuperAdmin && <TabsTrigger value="plan-admin"><CreditCard className="mr-1 h-4 w-4" /> Subscription plan admin</TabsTrigger>}
+          {isSuperAdmin && <TabsTrigger value="category-admin"><FolderTree className="mr-1 h-4 w-4" /> Category admin</TabsTrigger>}
+          {isSuperAdmin && <TabsTrigger value="user-admin"><UserCog className="mr-1 h-4 w-4" /> User admin</TabsTrigger>}
           <TabsTrigger value="security"><ShieldCheck className="mr-1 h-4 w-4" /> Security</TabsTrigger>
           <TabsTrigger value="audit"><History className="mr-1 h-4 w-4" /> Audit log</TabsTrigger>
         </TabsList>
@@ -98,6 +102,18 @@ function SettingsPage() {
         {isSuperAdmin && (
           <TabsContent value="plan-admin">
             <PlanAdminTab />
+          </TabsContent>
+        )}
+
+        {isSuperAdmin && (
+          <TabsContent value="category-admin">
+            <CategoryAdminTab />
+          </TabsContent>
+        )}
+
+        {isSuperAdmin && (
+          <TabsContent value="user-admin">
+            <UserAdminTab />
           </TabsContent>
         )}
 

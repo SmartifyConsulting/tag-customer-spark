@@ -547,6 +547,7 @@ export type Database = {
           source: string | null
           status: Database["public"]["Enums"]["customer_status"]
           updated_at: string
+          viewed_at: string | null
           whatsapp_e164: string
         }
         Insert: {
@@ -563,6 +564,7 @@ export type Database = {
           source?: string | null
           status?: Database["public"]["Enums"]["customer_status"]
           updated_at?: string
+          viewed_at?: string | null
           whatsapp_e164: string
         }
         Update: {
@@ -579,6 +581,7 @@ export type Database = {
           source?: string | null
           status?: Database["public"]["Enums"]["customer_status"]
           updated_at?: string
+          viewed_at?: string | null
           whatsapp_e164?: string
         }
         Relationships: [

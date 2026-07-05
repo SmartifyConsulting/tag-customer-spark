@@ -1,62 +1,49 @@
-## 1. Alphabetic A–Z filter bar on Customers
+## Changes
 
-Add a horizontal row of alphabet chips (All, A–Z, #) above the Customers list, matching the "My Patients" pattern from Holarc Health.
+### 1. Customers table — align headings with values
+In `src/routes/_authenticated/customers.tsx`, the header row uses `<span>` cells so text left-aligns while numeric values sit left too, but per the reference the numeric columns (Scans, Interests, Revenue) read cleaner when headings sit above their values consistently. Update the header row grid cell classes so Scans/Interests/Revenue headings use the same left padding/alignment as the data cells (both left-aligned, same column start). No layout/grid template change — just apply matching text alignment classes to header spans so each heading sits directly above its value column.
 
-- `src/routes/_authenticated/customers.tsx`: add `letter` state, render toggle-style chips (mint fill when active), reset `page` on change.
-- `src/lib/customers.functions.ts`: extend `listCustomers` with optional `letter`. `#` → `full_name ~* '^[^A-Za-z]'`; letter → `ilike full_name '<L>%'`; `all` → no-op.
-- Include `letter` in the query key.
+### 2. Nav order + rename
+`src/lib/nav.ts`:
+- Reorder: Dashboard → **Inbox** → **Items & Tags** → **Campaigns** → **Customers & Leads** → Analytics → Settings.
+- Rename "Alerts & Campaigns" → **Campaigns**.
 
-## 2. Inbox as its own top-level nav item
+### 3. "Powder Blue" Back in Stock badge
+`src/components/notifications/status-badge.tsx` + `src/routes/_authenticated/watchlists.tsx`: change `back_in_stock` from `bg-teal-500` to a powder blue (`bg-sky-200 text-sky-900` — soft, readable).
 
-- `src/lib/nav.ts`: add a new top-level entry `{ title: "Inbox", url: "/inbox", icon: Inbox, match: ["/inbox"] }`, placed between "Alerts & Campaigns" and "Customers & Leads". Remove `/inbox` from the Dashboard `match` array so the active state doesn't leak.
-- No changes needed in `AppSidebar` or `MobileBottomNav` — both iterate `NAV` and pick it up automatically. Route `/inbox` already exists.
+### 4. "New" customer flag (first view only)
+- `src/lib/customers.functions.ts`:
+  - `listCustomers`: when `segment === "all"` and no letter/search filter, sort by `created_at DESC` (already does) and include `is_new` derived from `viewed_at IS NULL` (new column).
+  - New server fn `markCustomersViewed({ ids })` — sets `viewed_at = now()` for the retailer's customers.
+- DB migration: add `customers.viewed_at timestamptz` nullable.
+- `src/routes/_authenticated/customers.tsx`:
+  - Render a small "New" pill (mint) next to the name when `is_new` is true.
+  - On mount / when the "All" pill is selected, collect unseen ids from the current page and call `markCustomersViewed` after a short delay (e.g. 1.5s) so they clear on next view but remain visible & badged during this session.
+  - When segment = "All" and default (page 1), newest-first ordering is already the natural sort — keep it. New customers therefore appear at the top by default.
 
-## 3. Company logo upload → public URL for Twilio templates
+### 5. Admin tabs for System Admin
+`src/routes/_authenticated/settings.tsx` — add three new tabs, visible only to `super_admin`:
+- **Category Admin** — manage product categories with nested sub-categories (Men → Shirts, Women → Dresses, etc.).
+- **Subscription Plan Admin** — rename/repurpose the existing Plan Admin tab surface so the label is explicit.
+- **User Admin** — manage staff users across retailers (list, disable, reset).
 
-Replace the free-text "Logo URL" field with a real upload to the existing public `retailer-logos` bucket, then prominently display the resulting public URL so it can be copied into Twilio content templates.
+New files:
+- `src/lib/categories.functions.ts` — `listCategories`, `createCategory({ name, parent_id? })`, `renameCategory`, `deleteCategory`. All `super_admin`-gated.
+- `src/components/settings/category-admin-tab.tsx` — two-level tree UI (parents with expandable children, inline add sub-category button).
+- `src/components/settings/user-admin-tab.tsx` — table of staff across retailers with basic actions (reuses `staff.functions.ts` where possible; add `super_admin` list-all fn if needed).
 
-- Server: new `uploadRetailerLogo` in `src/lib/settings.functions.ts`
-  - `requireSupabaseAuth`; input `{ filename, contentType, base64 }` (Zod-validated, max ~2 MB, `image/png|jpeg|webp|svg+xml`).
-  - Upload to `retailer-logos/{retailer_id}/logo-{timestamp}.{ext}`, `getPublicUrl`, update `retailers.logo_url`, return `{ url }`.
-- UI in `src/routes/_authenticated/settings.tsx` Workspace tab — replace the Logo URL input with a "Company logo" card:
-  - Thumbnail preview + "Upload logo" button (hidden file input, reads to base64, calls server fn).
-  - **Twilio media URL row** shown whenever `logo_url` exists:
-    - Read-only monospaced `<Input>` containing the absolute public URL, always visible.
-    - "Copy URL" button (`navigator.clipboard.writeText`), toast "URL copied — paste into Twilio Content Template `{{media_url}}`".
-    - "Open" link button to verify in a new tab.
-    - Hint text: "Paste this URL into Twilio Content Template Builder as the media URL, or into the `MediaUrl` param when sending via the API."
-  - Empty state: upload button + "Upload a logo to get a shareable URL for Twilio."
-- No DB migration (column and bucket exist).
+DB migration:
+- New table `public.product_categories (id uuid pk, retailer_id uuid null, parent_id uuid null references product_categories(id) on delete cascade, name text not null, created_at timestamptz default now())` with GRANTs + RLS (super_admin full, retail_admin read own).
 
-## 4. Billing Admin capability for System Admins
+### Files touched
+- `src/lib/nav.ts`
+- `src/components/notifications/status-badge.tsx`
+- `src/routes/_authenticated/watchlists.tsx`
+- `src/routes/_authenticated/customers.tsx`
+- `src/lib/customers.functions.ts`
+- `src/routes/_authenticated/settings.tsx`
+- new: `src/lib/categories.functions.ts`, `src/components/settings/category-admin-tab.tsx`, `src/components/settings/user-admin-tab.tsx`
+- migration: `customers.viewed_at`, `product_categories` table
 
-- `src/lib/billing.functions.ts`: `resolveActiveRetailer` and pay/change fns already accept `super_admin` — no new role.
-- `src/routes/_authenticated/settings.tsx`: render the Billing tab's "Change plan" section for super_admins even without an active retailer, with a notice "Acting as system admin — use Plan admin tab to change any workspace's tier."
-- `src/components/settings/plan-admin-tab.tsx`: rename card to "Billing administration".
-
-## 5. PayFast + PayPal on every paid plan (not only Pro)
-
-- `src/components/settings/billing-tab.tsx` `PlanCard`: remove the `isCurrent → disabled` short-circuit for paid plans; render both provider buttons on every paid plan card regardless of current tier. Show a "Current" chip when `isCurrent`. Keep Starter free but add a "Downgrade to Starter" outline button when the current tier is Pro/Enterprise. Include the cycle in the button label.
-
-## 6. Easy plan change (upgrade / downgrade)
-
-- Server: new `changePlan` in `src/lib/billing.functions.ts`
-  - `requireSupabaseAuth` + `retail_admin`/`super_admin`.
-  - Input `{ tier: "starter"|"pro"|"enterprise", cycle: "monthly"|"annual" }`.
-  - Downgrade to starter: mark subscription `cancel_at_period_end = true`; if none active, set `retailers.tier = 'starter'` immediately.
-  - Same-provider tier switch with active subscription: `apply_paid_tier` with existing provider/cycle.
-  - New paid subscription still goes through PayFast/PayPal.
-  - Insert `audit_logs` row.
-- UI in `BillingTab`: "Change plan" summary strip above the plan grid + "Switch to <plan>" button on each paid card when an active paid subscription exists.
-- Safety: `changePlan` never grants paid tier without an active subscription.
-
-## 7. "Back in stock" badge → teal
-
-- `src/components/notifications/status-badge.tsx`: change `TYPE_COLORS.back_in_stock` from `bg-emerald-600` to `bg-teal-500 text-white`.
-- Apply same teal to other "back in stock" chips in `src/routes/_authenticated/watchlists.tsx` and `src/components/notifications/campaign-composer.tsx`.
-- Leave "Sent/Completed" badges emerald.
-
-## Out of scope
-
-- No DB migrations. No new roles.
-- No changes to Twilio message templates themselves — this plan only makes the logo URL easy to obtain, verify, and copy into Twilio.
+### Out of scope
+- No changes to Twilio templates, billing, or existing role model beyond adding admin views for `super_admin`.

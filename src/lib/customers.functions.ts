@@ -36,8 +36,9 @@ export const listCustomers = createServerFn({ method: "POST" })
 
     let q = supabase
       .from("customers")
-      .select("id, full_name, whatsapp_e164, status, opted_in_at, notify_consent_at, marketing_consent_at, created_at", { count: "exact" })
+      .select("id, full_name, whatsapp_e164, status, opted_in_at, notify_consent_at, marketing_consent_at, created_at, viewed_at", { count: "exact" })
       .eq("retailer_id", retailerId)
+      .order("viewed_at", { ascending: true, nullsFirst: true })
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -77,6 +78,7 @@ export const listCustomers = createServerFn({ method: "POST" })
 
     let enriched = (rows ?? []).map((r: any) => ({
       ...r,
+      is_new: r.viewed_at == null,
       scans: scanCount.get(r.id) ?? 0,
       interests: interestCount.get(r.id) ?? 0,
       lifetime_revenue_cents: revenue.get(r.id) ?? 0,
@@ -216,6 +218,26 @@ export const deleteCustomer = createServerFn({ method: "POST" })
       throw new Error("Customer has recovered sales; block instead of deleting.");
     }
     const { error } = await supabase.from("customers").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const markCustomersViewed = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ ids: z.array(z.string().uuid()).max(100) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    if (data.ids.length === 0) return { ok: true };
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) return { ok: true };
+    const { error } = await supabase
+      .from("customers")
+      .update({ viewed_at: new Date().toISOString() })
+      .in("id", data.ids)
+      .eq("retailer_id", retailerId)
+      .is("viewed_at", null);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
