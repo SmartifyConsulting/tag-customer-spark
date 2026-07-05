@@ -40,9 +40,12 @@ function money(c?: number | null) {
   return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR", maximumFractionDigits: 0 }).format((c ?? 0) / 100);
 }
 
+const LETTERS = ["all", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""), "#"] as const;
+
 function CustomersPage() {
   const [search, setSearch] = useState("");
   const [segment, setSegment] = useState<"all" | "subscribed" | "vip" | "dormant">("all");
+  const [letter, setLetter] = useState<(typeof LETTERS)[number]>("all");
   const [page, setPage] = useState(1);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -51,8 +54,8 @@ function CustomersPage() {
   const deleteFn = useServerFn(deleteCustomer);
 
   const list = useQuery({
-    queryKey: ["customers", "list", search, segment, page],
-    queryFn: () => listCustomers({ data: { search, segment, page, pageSize: 25 } }),
+    queryKey: ["customers", "list", search, segment, letter, page],
+    queryFn: () => listCustomers({ data: { search, segment, letter, page, pageSize: 25 } }),
   });
 
   const remove = useMutation({
