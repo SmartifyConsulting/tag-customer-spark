@@ -49,10 +49,42 @@ export const Route = createFileRoute("/_authenticated/notifications/")({
 function NotificationsList() {
   const [status, setStatus] = useState<"all" | "draft" | "scheduled" | "sending" | "completed" | "cancelled">("all");
   const list = useServerFn(listCampaigns);
+  const cancelFn = useServerFn(cancelCampaign);
+  const deleteFn = useServerFn(deleteCampaign);
+  const dupFn = useServerFn(duplicateCampaign);
+  const qc = useQueryClient();
+  const navigate = useNavigate();
   const { data, isLoading } = useQuery({
     queryKey: ["campaigns", status],
     queryFn: () => list({ data: { status } }),
   });
+
+  const cancel = useMutation({
+    mutationFn: (id: string) => cancelFn({ data: { id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["campaigns"] });
+      toast.success("Campaign cancelled");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["campaigns"] });
+      toast.success("Campaign deleted");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
+  });
+  const duplicate = useMutation({
+    mutationFn: (id: string) => dupFn({ data: { id } }),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ["campaigns"] });
+      toast.success("Campaign duplicated");
+      navigate({ to: "/notifications/$campaignId", params: { campaignId: r.id } });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
+  });
+
 
   return (
     <div className="space-y-5">
