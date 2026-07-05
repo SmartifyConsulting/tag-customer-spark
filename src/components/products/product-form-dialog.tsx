@@ -387,6 +387,11 @@ export function ProductFormDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+      <BarcodeScannerDialog
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onDetect={handleBarcode}
+      />
     </Dialog>
   );
 }
