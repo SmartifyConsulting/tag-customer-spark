@@ -132,7 +132,12 @@ function CustomersPage() {
         <CardContent className="p-0">
           <div className="divide-y">
             <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] gap-3 px-6 py-3 text-xs uppercase tracking-wide text-muted-foreground">
-              <span>Customer</span><span>Status</span><span>Scans</span><span>Interests</span><span>Revenue</span><span></span>
+              <span className="text-left">Customer</span>
+              <span className="text-left">Status</span>
+              <span className="text-left">Scans</span>
+              <span className="text-left">Interests</span>
+              <span className="text-left">Revenue</span>
+              <span />
             </div>
             {list.isLoading ? (
               <div className="space-y-3 p-6">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
