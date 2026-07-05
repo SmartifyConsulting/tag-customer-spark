@@ -22,10 +22,10 @@ const TYPE_LABELS: Record<string, string> = {
 
 const STATUS_TONE: Record<string, string> = {
   draft: "bg-muted text-foreground",
-  scheduled: "bg-blue-500/15 text-blue-600 dark:text-blue-300",
-  sending: "bg-[color:var(--warning)]/15 text-[color:var(--warning)]",
-  sent: "bg-[color:var(--success)]/15 text-[color:var(--success)]",
-  completed: "bg-[color:var(--success)]/15 text-[color:var(--success)]",
+  scheduled: "bg-primary/10 text-primary",
+  sending: "bg-muted text-foreground",
+  sent: "bg-[color:var(--success)]/20 text-[color:var(--success-foreground)]",
+  completed: "bg-[color:var(--success)]/20 text-[color:var(--success-foreground)]",
   cancelled: "bg-destructive/15 text-destructive",
 };
 
