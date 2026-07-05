@@ -335,3 +335,48 @@ export const cancelCampaign = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const deleteCampaign = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    // best-effort cleanup of related history rows so foreign keys don't block delete
+    await context.supabase.from("notification_history").delete().eq("campaign_id", data.id);
+    const { error } = await context.supabase
+      .from("notification_campaigns")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const duplicateCampaign = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: src, error } = await supabase
+      .from("notification_campaigns")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error || !src) throw new Error("Campaign not found");
+    const clone: any = { ...src };
+    delete clone.id;
+    delete clone.created_at;
+    delete clone.updated_at;
+    delete clone.sent_at;
+    clone.status = "draft";
+    clone.scheduled_at = null;
+    clone.title = `${src.title} (copy)`;
+    clone.funnel = {};
+    clone.created_by = userId;
+    const { data: ins, error: iErr } = await supabase
+      .from("notification_campaigns")
+      .insert(clone)
+      .select("id")
+      .single();
+    if (iErr) throw new Error(iErr.message);
+    return { id: ins!.id as string };
+  });
+
