@@ -229,7 +229,9 @@ function NewCampaign() {
               </p>
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+              <p className="text-[11px] text-muted-foreground">
+                Placeholders: <code>{{"{customer_name}"}}</code>, <code>{{"{product}"}}</code>, <code>{{"{discount}"}}</code>, <code>{{"{promo_code}"}}</code>, <code>{{"{price}"}}</code>, <code>{{"{expiry}"}}</code>
+              </p>
                 <Label htmlFor="cta">CTA label</Label>
                 <Input id="cta" value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} maxLength={40} />
               </div>
