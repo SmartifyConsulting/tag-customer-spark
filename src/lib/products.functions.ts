@@ -44,6 +44,55 @@ export const getProductFormOptions = createServerFn({ method: "GET" })
     return { categories: cats ?? [], stores: stores ?? [], retailerId };
   });
 
+export const lookupBarcode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ code: z.string().trim().min(3).max(64) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) return { found: false, source: "none" as const };
+
+    const { data: local } = await supabase
+      .from("products")
+      .select(
+        "id, name, sku, brand, description, price_cents, sale_price_cents, currency, stock_qty, low_stock_threshold, color, size, image_url, category_id, store_id",
+      )
+      .eq("retailer_id", retailerId)
+      .eq("sku", data.code)
+      .maybeSingle();
+    if (local) return { found: true, source: "local" as const, product: local };
+
+    try {
+      const res = await fetch(
+        `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(
+          data.code,
+        )}.json`,
+        { headers: { "user-agent": "tag-app/1.0" } },
+      );
+      if (res.ok) {
+        const json: any = await res.json();
+        if (json?.status === 1 && json.product) {
+          const p = json.product;
+          return {
+            found: true,
+            source: "off" as const,
+            product: {
+              name: p.product_name ?? p.generic_name ?? null,
+              brand: (p.brands ?? "").split(",")[0]?.trim() || null,
+              description: p.ingredients_text ?? null,
+              image_url: p.image_url ?? p.image_front_url ?? null,
+              size: p.quantity ?? null,
+            },
+          };
+        }
+      }
+    } catch {}
+
+    return { found: false, source: "none" as const };
+  });
+
 export const listProducts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => listProductsSchema.parse(d))
