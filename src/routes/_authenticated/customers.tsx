@@ -45,15 +45,36 @@ function CustomersPage() {
   const [segment, setSegment] = useState<"all" | "subscribed" | "vip" | "dormant">("all");
   const [page, setPage] = useState(1);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editRow, setEditRow] = useState<any | null>(null);
+  const qc = useQueryClient();
+  const deleteFn = useServerFn(deleteCustomer);
 
   const list = useQuery({
     queryKey: ["customers", "list", search, segment, page],
     queryFn: () => listCustomers({ data: { search, segment, page, pageSize: 25 } }),
   });
 
+  const remove = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["customers"] });
+      toast.success("Customer deleted");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
+  });
+
   return (
     <div className="space-y-8">
-      <PageHeader title="Customers" description="Shoppers who opted in to WhatsApp updates via your QR tags." />
+      <PageHeader
+        title="Customers"
+        description="Shoppers who opted in to WhatsApp updates via your QR tags."
+        actions={
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Add customer
+          </Button>
+        }
+      />
 
       <Card className="rounded-2xl">
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -80,17 +101,52 @@ function CustomersPage() {
             ) : (list.data?.rows ?? []).length === 0 ? (
               <div className="p-6"><EmptyState icon={Users} title="No customers yet" description="Customers appear here after their first QR scan and opt-in." /></div>
             ) : (list.data!.rows as any[]).map((c) => (
-              <button key={c.id} onClick={() => setActiveId(c.id)} className="grid w-full grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] items-center gap-3 px-6 py-3 text-left hover:bg-muted/40">
-                <div className="min-w-0">
+              <div key={c.id} className="grid w-full grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] items-center gap-3 px-6 py-3 hover:bg-muted/40">
+                <button onClick={() => setActiveId(c.id)} className="min-w-0 text-left">
                   <p className="truncate text-sm font-medium">{c.full_name || "Unnamed"}</p>
                   <p className="truncate text-xs text-muted-foreground">{c.whatsapp_e164}</p>
-                </div>
-                <Badge variant={c.status === "subscribed" ? "default" : "outline"} className="w-fit capitalize">{c.status}</Badge>
+                </button>
+                <Badge variant={c.status === "subscribed" ? "success" : "outline"} className="w-fit capitalize">{c.status}</Badge>
                 <span className="text-sm tabular-nums">{c.scans}</span>
                 <span className="text-sm tabular-nums">{c.interests}</span>
                 <span className="text-sm tabular-nums">{money(c.lifetime_revenue_cents)}</span>
-                <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
-              </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setActiveId(c.id)}
+                    className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-muted"
+                    aria-label="Open"
+                  >
+                    <ArrowUpRight className="h-4 w-4" />
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setEditRow(c)}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/inbox">
+                          <MessageSquare className="mr-2 h-4 w-4" /> Message
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => {
+                          if (confirm(`Delete ${c.full_name || c.whatsapp_e164}?`)) {
+                            remove.mutate(c.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
             ))}
           </div>
           {(list.data?.total ?? 0) > 25 && (
@@ -106,9 +162,18 @@ function CustomersPage() {
       </Card>
 
       <CustomerDrawer id={activeId} onClose={() => setActiveId(null)} />
+      <CustomerFormDialog open={createOpen} onOpenChange={setCreateOpen} />
+      {editRow && (
+        <CustomerFormDialog
+          open={!!editRow}
+          onOpenChange={(v) => !v && setEditRow(null)}
+          initial={editRow}
+        />
+      )}
     </div>
   );
 }
+
 
 function CustomerDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {
   const detail = useQuery({
