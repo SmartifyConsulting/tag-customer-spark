@@ -176,8 +176,13 @@ export function CampaignComposer({
     () =>
       body
         .replaceAll("{product}", product?.name ?? "this product")
-        .replaceAll("{code}", redemptionCode || "SAVE10"),
-    [body, product, redemptionCode],
+        .replaceAll("{code}", redemptionCode || "SAVE10")
+        .replaceAll("{customer_name}", "John")
+        .replaceAll("{store_name}", opts?.retailer?.name ?? "your store")
+        .replaceAll("{price}", "R599")
+        .replaceAll("{discount}", "30%")
+        .replaceAll("{expiry}", expiresAt ? new Date(expiresAt).toLocaleDateString() : "soon"),
+    [body, product, redemptionCode, opts, expiresAt],
   );
 
   async function persist(action: "draft" | "send" | "schedule") {
