@@ -416,18 +416,23 @@ export function CampaignComposer({
           </Card>
         </div>
 
-        <div className="lg:sticky lg:top-4 lg:self-start">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">WhatsApp preview</p>
-          <WhatsAppPreview
-            retailerName={opts?.retailer?.name ?? "Your store"}
-            logoUrl={opts?.retailer?.logo_url ?? undefined}
-            imageUrl={imageUrl}
-            headline={headline}
-            body={renderedBody}
-            ctaLabel={ctaLabel}
-            expiresAt={expiresAt ? new Date(expiresAt).toISOString() : null}
-            redemptionCode={redemptionCode}
+        <div className="lg:sticky lg:top-4 lg:self-start space-y-4">
+          <MessagePlaceholders
+            onInsert={(token) => insertAt(activeFieldRef.current, token)}
           />
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">WhatsApp preview</p>
+            <WhatsAppPreview
+              retailerName={opts?.retailer?.name ?? "Your store"}
+              logoUrl={opts?.retailer?.logo_url ?? undefined}
+              imageUrl={imageUrl}
+              headline={headline}
+              body={renderedBody}
+              ctaLabel={ctaLabel}
+              expiresAt={expiresAt ? new Date(expiresAt).toISOString() : null}
+              redemptionCode={redemptionCode}
+            />
+          </div>
         </div>
       </div>
     </div>
