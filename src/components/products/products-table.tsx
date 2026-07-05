@@ -187,9 +187,6 @@ export function ProductsTable({
                 <TableCell>
                   <InterestRing score={r.intent_score ?? 0} />
                 </TableCell>
-                <TableCell>
-                  <StatusBadge value={r.status} />
-                </TableCell>
                 <TableCell className="pr-4">
                   {canManage && (
                     <RowActions row={r} onEdit={onEdit} onArchive={onArchive} onDelete={onDelete} />
