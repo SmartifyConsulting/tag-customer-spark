@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Image as ImageIcon, MoreHorizontal, Edit, Archive, Trash2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import {
+  ArchiveRestore,
+  Image as ImageIcon,
+  MoreHorizontal,
+  Edit,
+  Archive,
+  QrCode,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,6 +40,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatMoney } from "@/lib/format";
+import { regenerateProductQr } from "@/lib/qr.functions";
+import { updateProduct } from "@/lib/products.functions";
 
 export type ProductRow = {
   id: string;
