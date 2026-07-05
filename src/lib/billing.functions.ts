@@ -283,11 +283,11 @@ export const changePlan = createServerFn({ method: "POST" })
       await grantTier(retailerId, data.tier, data.cycle, sub.provider as "payfast" | "paypal", null);
       await supabaseAdmin.from("audit_logs").insert({
         retailer_id: retailerId,
-        actor_id: userId,
+        actor_user_id: userId,
         action: "billing.change_plan",
         entity_type: "subscription",
         status: "success",
-        payload: { tier: data.tier, cycle: data.cycle, provider: sub.provider } as never,
+        metadata: { tier: data.tier, cycle: data.cycle, provider: sub.provider } as never,
       });
       return { ok: true, provider_redirect: false };
     }
