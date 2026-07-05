@@ -267,11 +267,11 @@ export const changePlan = createServerFn({ method: "POST" })
       }
       await supabaseAdmin.from("audit_logs").insert({
         retailer_id: retailerId,
-        actor_id: userId,
+        actor_user_id: userId,
         action: "billing.change_plan",
         entity_type: "subscription",
         status: "success",
-        payload: { tier: "starter" } as never,
+        metadata: { tier: "starter" } as never,
       });
       return { ok: true, provider_redirect: false };
     }
