@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import QRCode from "qrcode";
 import {
   ArchiveRestore,
   Image as ImageIcon,
@@ -11,6 +12,7 @@ import {
   Archive,
   QrCode,
   Trash2,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
