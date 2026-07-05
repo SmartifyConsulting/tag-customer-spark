@@ -57,6 +57,8 @@ export function ProductFormDialog({
   const setImages = useServerFn(setProductImages);
   const createUploadUrl = useServerFn(createProductImageUploadUrl);
   const optsFn = useServerFn(getProductFormOptions);
+  const lookupFn = useServerFn(lookupBarcode);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const { data: opts } = useQuery({
     queryKey: ["product-form-options"],
     queryFn: () => optsFn(),
