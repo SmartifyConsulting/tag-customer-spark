@@ -1,5 +1,7 @@
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -10,7 +12,7 @@ import {
 
 export type ProductsToolbarValue = {
   search: string;
-  status: "all" | "active" | "draft" | "archived";
+  showArchived: boolean;
   category_id: string | null;
   store_id: string | null;
   promotion: boolean;
@@ -74,6 +76,15 @@ export function ProductsToolbar({
           ))}
         </SelectContent>
       </Select>
+
+      <label className="flex h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-medium">
+        <Switch
+          checked={value.showArchived}
+          onCheckedChange={(v) => onChange({ showArchived: v })}
+          aria-label="Show archived"
+        />
+        <Label className="cursor-pointer">Show archived</Label>
+      </label>
     </div>
   );
 }
