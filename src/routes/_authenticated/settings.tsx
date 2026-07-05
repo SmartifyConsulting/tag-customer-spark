@@ -17,6 +17,8 @@ import { getWorkspaceSettings, updateRetailerProfile, listAuditLog, uploadRetail
 import { sendTestEmail, sendDailyBriefingEmail, sendWeeklyRoiEmail } from "@/lib/email.functions";
 import { BillingTab } from "@/components/settings/billing-tab";
 import { PlanAdminTab } from "@/components/settings/plan-admin-tab";
+import { CategoryAdminTab } from "@/components/settings/category-admin-tab";
+import { UserAdminTab } from "@/components/settings/user-admin-tab";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/settings")({
