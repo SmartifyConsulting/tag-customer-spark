@@ -221,3 +221,23 @@ export const deleteCustomer = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const markCustomersViewed = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ ids: z.array(z.string().uuid()).max(100) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    if (data.ids.length === 0) return { ok: true };
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) return { ok: true };
+    const { error } = await supabase
+      .from("customers")
+      .update({ viewed_at: new Date().toISOString() })
+      .in("id", data.ids)
+      .eq("retailer_id", retailerId)
+      .is("viewed_at", null);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
