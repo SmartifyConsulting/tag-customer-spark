@@ -15,7 +15,7 @@ const items = [
   { label: "Watchlists", to: "/watchlists", icon: Eye, group: "Go to" },
   { label: "ROI Engine", to: "/roi", icon: DollarSign, group: "Go to" },
   { label: "Products", to: "/products", icon: Package, group: "Go to" },
-  { label: "QR Tags", to: "/qr-tags", icon: QrCode, group: "Go to" },
+  
   { label: "Customers", to: "/customers", icon: Users, group: "Go to" },
   { label: "Inbox", to: "/inbox", icon: Inbox, group: "Go to" },
   { label: "Notifications", to: "/notifications", icon: Bell, group: "Go to" },
