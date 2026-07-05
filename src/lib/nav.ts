@@ -30,19 +30,19 @@ export const NAV: readonly NavItem[] = [
     match: ["/products"],
   },
   {
-    title: "Alerts",
+    title: "Alerts & Campaigns",
     url: "/notifications",
     icon: Bell,
     match: ["/notifications", "/alerts"],
   },
   {
-    title: "Customers",
+    title: "Customers & Leads",
     url: "/customers",
     icon: Users,
     match: ["/customers", "/watchlists", "/intent"],
   },
   {
-    title: "Analytics",
+    title: "Analytics & Insights",
     url: "/analytics",
     icon: TrendingUp,
     match: ["/analytics", "/intelligence", "/roi", "/commerce"],
