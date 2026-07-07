@@ -28,7 +28,7 @@ export function PlanAdminTab() {
   const qc = useQueryClient();
   const list = useQuery({ queryKey: ["admin-subs"], queryFn: () => adminListSubscriptions() });
   const setTier = useMutation({
-    mutationFn: (v: { retailer_id: string; tier: "starter" | "pro" | "enterprise" }) =>
+    mutationFn: (v: { retailer_id: string; tier: Row["tier"] }) =>
       adminSetTier({ data: { ...v, cycle: "monthly" } }),
     onSuccess: () => { toast.success("Tier updated"); qc.invalidateQueries({ queryKey: ["admin-subs"] }); },
     onError: (e: Error) => toast.error(e.message),
