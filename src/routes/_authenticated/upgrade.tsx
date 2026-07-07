@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTier } from "@/hooks/use-tier";
-import { FEATURE_META, TIER_LABEL, type TagTier, type TierFeatureKey } from "@/lib/tier";
+import { FEATURE_META, FEATURE_MIN_TIER, TIER_LABEL, type TagTier, type TierFeatureKey } from "@/lib/tier";
+import { PLANS, SELF_SERVE_PLANS, formatZar } from "@/lib/billing/pricing";
 
 const searchSchema = z.object({
   feature: z
@@ -30,24 +31,32 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
   component: UpgradePage,
 });
 
-type Row = { label: string; starter: string | boolean; pro: string | boolean; enterprise: string | boolean };
+const TIERS: TagTier[] = [...SELF_SERVE_PLANS, "enterprise"];
+
+type Row = { label: string; values: Partial<Record<TagTier, string | boolean>> };
 
 const MATRIX: Row[] = [
-  { label: "4-KPI recovery dashboard", starter: true, pro: true, enterprise: true },
-  { label: "Engagement (Customers, Products, QR Tags, Watchlists, Compare)", starter: true, pro: true, enterprise: true },
-  { label: "Alerts (Inbox, Composer, Campaign tracker)", starter: true, pro: true, enterprise: true },
-  { label: "Coupon redemption", starter: true, pro: true, enterprise: true },
-  { label: "Basic campaign performance", starter: true, pro: true, enterprise: true },
-  { label: "Stores", starter: "1", pro: "Unlimited", enterprise: "Unlimited" },
-  { label: "Bulk QR & PDF export", starter: false, pro: true, enterprise: true },
-  { label: "AI campaign assistant", starter: false, pro: true, enterprise: true },
-  { label: "Advanced campaign analytics", starter: false, pro: true, enterprise: true },
-  { label: "Exports", starter: false, pro: "CSV / XLSX", enterprise: "CSV / XLSX + scheduled" },
-  { label: "Intelligence suite", starter: false, pro: false, enterprise: true },
-  { label: "Performance & ROI", starter: false, pro: false, enterprise: true },
-  { label: "Weekly AI briefings + executive summary", starter: false, pro: false, enterprise: true },
-  { label: "Intent score engine + weight tuning", starter: false, pro: false, enterprise: true },
-  { label: "API access / SSO / audit log export", starter: false, pro: false, enterprise: true },
+  { label: "Included notifications / month", values: { go: "50", starter: "150", growth: "300", pro: "600", enterprise: "Negotiated" } },
+  { label: "Overage rate", values: { go: "R1.50", starter: "R1.40", growth: "R1.30", pro: "R1.20", enterprise: "Volume" } },
+  { label: "Alert types", values: { go: "3 core", starter: "All 6", growth: "All 6", pro: "All 6", enterprise: "All" } },
+  { label: "Inbox", values: { go: "Basic", starter: "Full", growth: "Full", pro: "Full", enterprise: "Full" } },
+  { label: "Coupon redemption", values: { go: false, starter: true, growth: true, pro: true, enterprise: true } },
+  { label: "Scheduled campaigns", values: { go: false, starter: false, growth: true, pro: true, enterprise: true } },
+  { label: "AI message assist", values: { go: false, starter: false, growth: true, pro: true, enterprise: true } },
+  { label: "Stores", values: { go: "1", starter: "1", growth: "1", pro: "3", enterprise: "Unlimited" } },
+  { label: "Products", values: { go: "10", starter: "20", growth: "50", pro: "Unlimited", enterprise: "Unlimited" } },
+  { label: "User logins", values: { go: "1", starter: "2", growth: "3", pro: "10", enterprise: "Unlimited" } },
+  { label: "Campaign analytics", values: { go: false, starter: "Basic", growth: "Full", pro: "Full", enterprise: "Full" } },
+  { label: "Intent score engine", values: { go: false, starter: false, growth: true, pro: true, enterprise: true } },
+  { label: "ROI engine", values: { go: false, starter: false, growth: false, pro: true, enterprise: true } },
+  { label: "AI daily briefing", values: { go: false, starter: false, growth: false, pro: true, enterprise: true } },
+  { label: "Weekly ROI email", values: { go: false, starter: false, growth: false, pro: true, enterprise: true } },
+  { label: "Pricing sensitivity + scan heatmap", values: { go: false, starter: false, growth: false, pro: true, enterprise: true } },
+  { label: "Forecasting", values: { go: false, starter: false, growth: false, pro: "7 + 14 day", enterprise: "Custom" } },
+  { label: "Cross-store intelligence", values: { go: false, starter: false, growth: false, pro: false, enterprise: true } },
+  { label: "Executive briefings + CFO ROI", values: { go: false, starter: false, growth: false, pro: false, enterprise: true } },
+  { label: "API access + SSO + custom exports", values: { go: false, starter: false, growth: false, pro: false, enterprise: true } },
+  { label: "Dedicated account manager + SLA", values: { go: false, starter: false, growth: false, pro: false, enterprise: true } },
 ];
 
 function UpgradePage() {
@@ -79,53 +88,39 @@ function UpgradePage() {
               </div>
             </div>
             <Badge className="self-start bg-[color:var(--mint)] text-white sm:self-center">
-              Included in {TIER_LABEL[minTierFor(feature as TierFeatureKey)]}
+              Included in {TIER_LABEL[FEATURE_MIN_TIER[feature as TierFeatureKey]]}
             </Badge>
           </CardContent>
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <PlanCard
-          name="Starter"
-          tagline="The recovery essentials"
-          price="Free during pilot"
-          current={tier === "starter"}
-          highlights={[
-            "QR tags, customer opt-in, WhatsApp notifications",
-            "Two-way inbox and coupon redemption",
-            "4-KPI recovery dashboard",
-            "1 store",
-          ]}
-        />
-        <PlanCard
-          name="Pro"
-          tagline="Scale your recovery loop"
-          price="Contact sales"
-          featured={tier !== "enterprise"}
-          current={tier === "pro"}
-          highlights={[
-            "Everything in Starter, plus",
-            "Multi-store management",
-            "Bulk QR & PDF export",
-            "AI campaign assistant",
-            "CSV / XLSX exports",
-          ]}
-        />
-        <PlanCard
-          name="Enterprise"
-          tagline="Retail intelligence at scale"
-          price="Custom pricing"
-          current={tier === "enterprise"}
-          highlights={[
-            "Everything in Pro, plus",
-            "Intelligence suite (insights, forecasting, trends)",
-            "Performance & ROI engine",
-            "Weekly AI briefings + executive summary",
-            "Intent score engine",
-            "API access, SSO, audit log export",
-          ]}
-        />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {TIERS.map((t) => {
+          const p = PLANS[t];
+          const price = t === "enterprise" ? "Custom/branch" : `${formatZar(p.monthly_zar_cents)}/mo`;
+          return (
+            <Card key={t} className={`flex flex-col rounded-2xl ${tier === t ? "border-[color:var(--mint)]" : ""} ${t === "enterprise" ? "bg-slate-950 text-slate-50" : ""}`}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className={t === "enterprise" ? "text-slate-50" : undefined}>{p.name}</CardTitle>
+                  {tier === t && <Badge variant="outline" className="border-[color:var(--mint)]/50 text-[color:var(--mint)]">Current</Badge>}
+                </div>
+                <p className={`text-sm ${t === "enterprise" ? "text-slate-300" : "text-muted-foreground"}`}>{p.tagline}</p>
+                <p className="pt-2 text-lg font-semibold">{price}</p>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm">
+                  {p.features.slice(0, 6).map((h) => (
+                    <li key={h} className="flex items-start gap-2">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--mint)]" />
+                      <span>{h}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Card className="rounded-2xl">
@@ -140,19 +135,17 @@ function UpgradePage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="px-6 py-3 font-medium">Feature</th>
-                  <th className="px-6 py-3 font-medium">Starter</th>
-                  <th className="px-6 py-3 font-medium">Pro</th>
-                  <th className="px-6 py-3 font-medium">Enterprise</th>
+                  <th className="px-4 py-3 font-medium">Feature</th>
+                  {TIERS.map((t) => (
+                    <th key={t} className="px-4 py-3 font-medium">{PLANS[t].name.replace("Tag ", "")}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {MATRIX.map((r) => (
                   <tr key={r.label} className="border-b last:border-0">
-                    <td className="px-6 py-3">{r.label}</td>
-                    <Cell v={r.starter} />
-                    <Cell v={r.pro} />
-                    <Cell v={r.enterprise} />
+                    <td className="px-4 py-3">{r.label}</td>
+                    {TIERS.map((t) => <Cell key={t} v={r.values[t] ?? false} />)}
                   </tr>
                 ))}
               </tbody>
@@ -163,14 +156,14 @@ function UpgradePage() {
 
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed p-8 text-center">
         <p className="text-sm text-muted-foreground">
-          Billing goes live once we finalise the payment provider. Talk to us about a pilot.
+          Manage or switch your plan in settings. Tag Enterprise is quoted per branch — talk to sales.
         </p>
         <div className="flex gap-2">
           <Button asChild variant="outline">
-            <Link to="/settings">Manage plan</Link>
+            <Link to="/settings" search={{ tab: "billing" }}>Manage plan</Link>
           </Button>
           <Button asChild className="bg-[color:var(--mint)] text-white hover:bg-[color:var(--mint)]/90">
-            <a href="mailto:hello@mypenguin.co.za?subject=Tag%20upgrade">Contact sales</a>
+            <a href="mailto:hello@mypenguin.co.za?subject=Tag%20Enterprise">Contact sales</a>
           </Button>
         </div>
       </div>
@@ -178,79 +171,14 @@ function UpgradePage() {
   );
 }
 
-function minTierFor(key: TierFeatureKey): TagTier {
-  const map: Record<TierFeatureKey, TagTier> = {
-    intelligence: "enterprise",
-    roi: "enterprise",
-    weeklyBriefings: "enterprise",
-    intentEngine: "enterprise",
-    apiAccess: "enterprise",
-    aiAssistant: "pro",
-    bulkQr: "pro",
-    advancedExports: "pro",
-    multiStore: "pro",
-  };
-  return map[key];
-}
-
 function Cell({ v }: { v: string | boolean }) {
   if (v === true)
     return (
-      <td className="px-6 py-3">
+      <td className="px-4 py-3">
         <Check className="h-4 w-4 text-[color:var(--mint)]" />
       </td>
     );
   if (v === false)
-    return <td className="px-6 py-3 text-muted-foreground">—</td>;
-  return <td className="px-6 py-3 text-muted-foreground">{v}</td>;
-}
-
-function PlanCard({
-  name,
-  tagline,
-  price,
-  highlights,
-  featured,
-  current,
-}: {
-  name: string;
-  tagline: string;
-  price: string;
-  highlights: string[];
-  featured?: boolean;
-  current?: boolean;
-}) {
-  return (
-    <Card
-      className={
-        "rounded-2xl " +
-        (featured
-          ? "border-[color:var(--mint)] shadow-[0_8px_30px_-12px_rgba(0,176,116,0.25)]"
-          : "")
-      }
-    >
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>{name}</CardTitle>
-          {current && (
-            <Badge variant="outline" className="border-[color:var(--mint)]/50 text-[color:var(--mint)]">
-              Current
-            </Badge>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground">{tagline}</p>
-        <p className="pt-2 text-lg font-semibold">{price}</p>
-      </CardHeader>
-      <CardContent>
-        <ul className="space-y-2 text-sm">
-          {highlights.map((h) => (
-            <li key={h} className="flex items-start gap-2">
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--mint)]" />
-              <span>{h}</span>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
-  );
+    return <td className="px-4 py-3 text-muted-foreground">—</td>;
+  return <td className="px-4 py-3 text-muted-foreground">{v}</td>;
 }
