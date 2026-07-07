@@ -5,6 +5,7 @@ import {
   Users,
   TrendingUp,
   Inbox,
+  ShieldCheck,
 } from "lucide-react";
 import type { TierFeatureKey } from "@/lib/tier";
 
@@ -24,35 +25,41 @@ export const NAV: readonly NavItem[] = [
     match: ["/dashboard"],
   },
   {
-    title: "Inbox",
-    url: "/inbox",
-    icon: Inbox,
-    match: ["/inbox"],
-  },
-  {
     title: "Inventory",
     url: "/products",
     icon: Tag,
     match: ["/products"],
   },
   {
-    title: "Customers & Leads",
+    title: "Customers",
     url: "/customers",
     icon: Users,
     match: ["/customers", "/watchlists", "/intent"],
   },
   {
-    title: "Analytics & Insights",
+    title: "Notifications",
+    url: "/inbox",
+    icon: Inbox,
+    match: ["/inbox"],
+  },
+  {
+    title: "Insights",
     url: "/analytics",
     icon: TrendingUp,
     match: ["/analytics", "/intelligence", "/roi", "/commerce"],
     feature: "roi",
   },
   {
+    title: "Admin",
+    url: "/staff",
+    icon: ShieldCheck,
+    match: ["/staff", "/stores", "/organisation"],
+  },
+  {
     title: "Settings",
     url: "/settings",
     icon: Settings,
-    match: ["/stores", "/staff", "/organisation", "/settings", "/upgrade"],
+    match: ["/settings", "/upgrade"],
   },
 ] as const;
 
