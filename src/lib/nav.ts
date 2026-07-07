@@ -1,6 +1,5 @@
 import {
   LayoutDashboard,
-  Bell,
   Settings,
   Tag,
   Users,
@@ -31,16 +30,10 @@ export const NAV: readonly NavItem[] = [
     match: ["/inbox"],
   },
   {
-    title: "Items & Tags",
+    title: "Inventory",
     url: "/products",
     icon: Tag,
     match: ["/products"],
-  },
-  {
-    title: "Campaigns",
-    url: "/notifications",
-    icon: Bell,
-    match: ["/notifications", "/alerts"],
   },
   {
     title: "Customers & Leads",

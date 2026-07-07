@@ -15,7 +15,7 @@ import {
   Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import {
   Table,
   TableBody,
@@ -56,6 +56,8 @@ export type ProductRow = {
   currency: string;
   stock_qty: number;
   low_stock_threshold: number;
+  size: string | null;
+  color: string | null;
   images: { url: string }[] | null;
   image_url: string | null;
   category: { name: string } | null;
@@ -112,7 +114,13 @@ export function ProductsTable({
               Price
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Status
+              Qty
+            </TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Size
+            </TableHead>
+            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Colour
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               QR
@@ -127,6 +135,14 @@ export function ProductsTable({
           {rows.map((r) => {
             const thumb = r.images?.[0]?.url ?? r.image_url ?? null;
             const onSale = r.sale_price_cents != null && r.sale_price_cents < r.price_cents;
+            const qty = r.stock_qty ?? 0;
+            const threshold = r.low_stock_threshold ?? 0;
+            const qtyClass =
+              qty <= 0
+                ? "text-rose-600"
+                : qty <= threshold
+                  ? "text-amber-600"
+                  : "text-foreground";
             return (
               <TableRow key={r.id} className="group border-b border-border/60 last:border-0">
                 <TableCell className="pl-6">
@@ -173,7 +189,15 @@ export function ProductsTable({
                   )}
                 </TableCell>
                 <TableCell>
-                  <StockPill qty={r.stock_qty} threshold={r.low_stock_threshold} />
+                  <span className={`text-sm font-semibold tabular-nums ${qtyClass}`}>
+                    {qty}
+                  </span>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {r.size ? <span className="text-foreground">{r.size}</span> : "—"}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {r.color ? <span className="text-foreground">{r.color}</span> : "—"}
                 </TableCell>
                 <TableCell>
                   <QrDownloadButton productId={r.id} name={r.name} />
@@ -195,22 +219,7 @@ export function ProductsTable({
   );
 }
 
-function StockPill({ qty, threshold }: { qty: number; threshold: number }) {
-  const isOut = qty <= 0;
-  const isLow = !isOut && qty <= threshold;
-  const cls = isOut
-    ? "bg-rose-600 text-white"
-    : isLow
-      ? "bg-amber-500 text-white"
-      : "bg-emerald-600 text-white";
-  const label = isOut ? "Out" : isLow ? "Low" : "OK";
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-sm font-semibold tabular-nums">{qty}</span>
-      <Badge className={`border-transparent shadow-sm ${cls}`}>{label}</Badge>
-    </div>
-  );
-}
+
 
 async function downloadQr(productId: string, name: string) {
   try {

@@ -27,6 +27,7 @@ import { RecentActivityCard } from "@/components/dashboard/recent-activity-card"
 import { OpportunityFeedCard } from "@/components/dashboard/opportunity-feed";
 import { IntentSectionsCard } from "@/components/dashboard/intent-sections-card";
 import { LowStockCard } from "@/components/dashboard/low-stock-card";
+import { SignalContributionsCard } from "@/components/dashboard/signal-contributions-card";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -195,6 +196,8 @@ function DashboardContent() {
 
       <OpportunityFeedCard />
 
+      <SignalContributionsCard />
+
       <IntentSectionsCard />
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -210,7 +213,7 @@ function DashboardContent() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <TopProductsCard products={data.topProducts} />
-        <NotificationPerformanceCard data={data.notificationPerf} />
+        <NotificationPerformanceCard />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

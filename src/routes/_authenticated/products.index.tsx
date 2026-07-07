@@ -25,6 +25,7 @@ import {
 import { ProductsPagination } from "@/components/products/products-pagination";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { BulkQrDialog } from "@/components/qr/bulk-qr-dialog";
+import { NotificationCountsStrip } from "@/components/products/notification-counts-strip";
 import {
   archiveProduct,
   deleteProduct,
@@ -45,7 +46,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_authenticated/products/")({
-  head: () => ({ meta: [{ title: "Items & Tags — Tag" }] }),
+  head: () => ({ meta: [{ title: "Inventory — Tag" }] }),
   validateSearch: zodValidator(searchSchema),
   component: ProductsListPage,
 });
@@ -150,7 +151,7 @@ function ProductsListPage() {
   return (
     <div className="grid gap-6">
       <PageHeader
-        title="Items & Tags"
+        title="Inventory"
         description="Manage products, stock levels, and QR tags in one place."
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -173,6 +174,9 @@ function ProductsListPage() {
           </div>
         }
       />
+
+      <NotificationCountsStrip />
+
 
       <ProductsToolbar
         value={{

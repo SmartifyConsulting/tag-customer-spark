@@ -21,6 +21,7 @@ const searchSchema = z.object({
       "advancedExports",
       "apiAccess",
       "multiStore",
+      "opportunityFeed",
     ])
     .optional(),
 });
