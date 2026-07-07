@@ -122,7 +122,7 @@ function DashboardContent() {
 
   const dailySpark = data.scansDaily.slice(-7).map((d) => ({ v: d.count }));
   const growthSpark = data.customerGrowth.slice(-7).map((d) => ({ v: d.total }));
-  const notifSpark = data.notificationPerf.slice(-7).map((d) => ({ v: d.sent }));
+  
   const readSpark = data.notificationPerf.slice(-7).map((d) => ({ v: d.read }));
 
   const hour = new Date().getHours();
