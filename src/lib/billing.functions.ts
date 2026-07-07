@@ -28,8 +28,10 @@ async function requireBillingContext(
   return { retailerId, superAdmin };
 }
 
+const SelfServePlan = z.enum(["go", "starter", "growth", "pro"]);
+
 const CheckoutInput = z.object({
-  plan: z.enum(["pro", "enterprise"]),
+  plan: SelfServePlan,
   cycle: z.enum(["monthly", "annual"]),
   return_url: z.string().url(),
   cancel_url: z.string().url(),
