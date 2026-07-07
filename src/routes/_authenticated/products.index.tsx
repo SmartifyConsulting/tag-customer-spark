@@ -32,6 +32,7 @@ import {
   getProductFormOptions,
   listProducts,
 } from "@/lib/products.functions";
+import { getInventoryNotificationCountsByProduct } from "@/lib/dashboard.functions";
 import { useAuth } from "@/hooks/use-auth";
 
 const searchSchema = z.object({
