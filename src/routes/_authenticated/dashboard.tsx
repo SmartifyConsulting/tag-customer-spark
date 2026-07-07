@@ -247,13 +247,6 @@ function DashboardContent() {
           tone="success"
         />
         <KpiCard
-          index={3}
-          label="WhatsApps sent (14d)"
-          value={k.notificationsSent}
-          icon={Send}
-          sparkline={notifSpark}
-        />
-        <KpiCard
           index={4}
           label="WhatsApp conversion"
           value={k.notificationConversionPct}
