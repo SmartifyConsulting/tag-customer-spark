@@ -5,7 +5,7 @@ import {
   QrCode,
   Users,
   Banknote,
-  Send,
+  
   MousePointerClick,
   Download,
   FileSpreadsheet,
@@ -35,7 +35,7 @@ import {
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { ScanTrendsCard } from "@/components/dashboard/scan-trends-card";
-import { CustomerGrowthCard } from "@/components/dashboard/customer-growth-card";
+
 import { TopProductsCard } from "@/components/dashboard/top-products-card";
 import { RecentActivityCard } from "@/components/dashboard/recent-activity-card";
 import { IntentSectionsCard } from "@/components/dashboard/intent-sections-card";
@@ -122,7 +122,7 @@ function DashboardContent() {
 
   const dailySpark = data.scansDaily.slice(-7).map((d) => ({ v: d.count }));
   const growthSpark = data.customerGrowth.slice(-7).map((d) => ({ v: d.total }));
-  const notifSpark = data.notificationPerf.slice(-7).map((d) => ({ v: d.sent }));
+  
   const readSpark = data.notificationPerf.slice(-7).map((d) => ({ v: d.read }));
 
   const hour = new Date().getHours();
@@ -247,13 +247,6 @@ function DashboardContent() {
           tone="success"
         />
         <KpiCard
-          index={3}
-          label="WhatsApps sent (14d)"
-          value={k.notificationsSent}
-          icon={Send}
-          sparkline={notifSpark}
-        />
-        <KpiCard
           index={4}
           label="WhatsApp conversion"
           value={k.notificationConversionPct}
@@ -297,16 +290,11 @@ function DashboardContent() {
 
       <IntentSectionsCard />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <ScanTrendsCard
-            daily={data.scansDaily}
-            weekly={data.scansWeekly}
-            monthly={data.scansMonthly}
-          />
-        </div>
-        <CustomerGrowthCard data={data.customerGrowth} />
-      </div>
+      <ScanTrendsCard
+        daily={data.scansDaily}
+        weekly={data.scansWeekly}
+        monthly={data.scansMonthly}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <TopProductsCard products={data.topProducts} />
