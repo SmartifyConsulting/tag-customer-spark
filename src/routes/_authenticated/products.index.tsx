@@ -301,6 +301,7 @@ function ProductsListPage() {
                     onArchive={(r) => archive.mutate(r.id)}
                     onDelete={(r) => remove.mutate(r.id)}
                     canManage={canManage}
+                    notifCounts={notifCounts}
                   />
                 </AccordionContent>
               </AccordionItem>
