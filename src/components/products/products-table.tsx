@@ -44,6 +44,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { formatMoney } from "@/lib/format";
 import { regenerateProductQr } from "@/lib/qr.functions";
 import { updateProduct } from "@/lib/products.functions";
+import { NotificationCountPills } from "@/components/products/notification-count-pills";
+import type { ProductNotificationCounts } from "@/lib/dashboard.functions";
 
 export type ProductRow = {
   id: string;
