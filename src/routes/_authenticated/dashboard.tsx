@@ -196,6 +196,8 @@ function DashboardContent() {
 
       <OpportunityFeedCard />
 
+      <SignalContributionsCard />
+
       <IntentSectionsCard />
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -211,7 +213,7 @@ function DashboardContent() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <TopProductsCard products={data.topProducts} />
-        <NotificationPerformanceCard data={data.notificationPerf} />
+        <NotificationPerformanceCard />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
