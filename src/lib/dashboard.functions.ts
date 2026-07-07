@@ -458,6 +458,33 @@ export const getInventoryNotificationCounts = createServerFn({ method: "GET" })
     return { queued, sent, read, clicked };
   });
 
+export type ProductNotificationCounts = {
+  queued: number;
+  sent: number;
+  read: number;
+  clicked: number;
+};
+
+export const getInventoryNotificationCountsByProduct = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<Record<string, ProductNotificationCounts>> => {
+    const { supabase } = context;
+    const { data } = await supabase
+      .from("notification_history")
+      .select("queued_at, sent_at, read_at, clicked_at, campaign:notification_campaigns(product_id)");
+    const acc: Record<string, ProductNotificationCounts> = {};
+    for (const row of (data ?? []) as any[]) {
+      const pid = row.campaign?.product_id as string | null | undefined;
+      if (!pid) continue;
+      const b = acc[pid] ?? (acc[pid] = { queued: 0, sent: 0, read: 0, clicked: 0 });
+      if (row.queued_at) b.queued += 1;
+      if (row.sent_at) b.sent += 1;
+      if (row.read_at) b.read += 1;
+      if (row.clicked_at) b.clicked += 1;
+    }
+    return acc;
+  });
+
 const SIGNAL_META: { key: SignalContribution["key"]; label: string; column: string }[] = [
   { key: "scans", label: "Scans", column: "scans_total" },
   { key: "repeat_scans", label: "Repeat scans", column: "repeat_scans" },
