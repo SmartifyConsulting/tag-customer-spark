@@ -17,7 +17,7 @@ export async function ensureUsageCounter(retailerId: string) {
     .eq("retailer_id", retailerId)
     .eq("period_start", start.toISOString())
     .maybeSingle();
-  if (existing) return existing as { id: string; included_count: number; sent_count: number; overage_cents_accrued: number; overage_rate_cents: number };
+  if (existing) return existing as UsageRow;
 
   const { data: inserted } = await supabaseAdmin
     .from("notification_usage_counters")
