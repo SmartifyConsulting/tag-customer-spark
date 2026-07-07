@@ -35,7 +35,7 @@ import {
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { ScanTrendsCard } from "@/components/dashboard/scan-trends-card";
-import { CustomerGrowthCard } from "@/components/dashboard/customer-growth-card";
+
 import { TopProductsCard } from "@/components/dashboard/top-products-card";
 import { RecentActivityCard } from "@/components/dashboard/recent-activity-card";
 import { IntentSectionsCard } from "@/components/dashboard/intent-sections-card";
