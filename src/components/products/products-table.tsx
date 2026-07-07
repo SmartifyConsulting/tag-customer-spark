@@ -56,6 +56,8 @@ export type ProductRow = {
   currency: string;
   stock_qty: number;
   low_stock_threshold: number;
+  size: string | null;
+  color: string | null;
   images: { url: string }[] | null;
   image_url: string | null;
   category: { name: string } | null;
