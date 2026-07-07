@@ -11,7 +11,8 @@ export type TierFeatureKey =
   | "bulkQr"
   | "advancedExports"
   | "apiAccess"
-  | "multiStore";
+  | "multiStore"
+  | "opportunityFeed";
 
 export const TIER_LABEL: Record<TagTier, string> = {
   go: "Tag Go",
@@ -30,6 +31,7 @@ export const FEATURE_MIN_TIER: Record<TierFeatureKey, TagTier> = {
   multiStore: "pro",
   roi: "pro",
   weeklyBriefings: "pro",
+  opportunityFeed: "pro",
   intelligence: "enterprise",
   apiAccess: "enterprise",
 };
