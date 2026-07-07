@@ -102,7 +102,7 @@ export const createPayfastCheckout = createServerFn({ method: "POST" })
 
 // ---------- PayPal: create order ----------
 const PaypalOrderInput = z.object({
-  plan: z.enum(["pro", "enterprise"]),
+  plan: SelfServePlan,
   cycle: z.enum(["monthly", "annual"]),
   return_url: z.string().url(),
   cancel_url: z.string().url(),
