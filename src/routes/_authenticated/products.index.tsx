@@ -25,6 +25,7 @@ import {
 import { ProductsPagination } from "@/components/products/products-pagination";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { BulkQrDialog } from "@/components/qr/bulk-qr-dialog";
+import { NotificationCountsStrip } from "@/components/products/notification-counts-strip";
 import {
   archiveProduct,
   deleteProduct,
