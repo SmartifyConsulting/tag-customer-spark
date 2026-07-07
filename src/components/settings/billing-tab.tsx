@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CreditCard, CheckCircle2, ExternalLink, Loader2, Lock, Building2 } from "lucide-react";
+import { CreditCard, CheckCircle2, ExternalLink, Loader2, Building2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,11 +34,75 @@ export function BillingTab() {
   const subRow = sub.data?.subscription as null | { current_period_end?: string; billing_cycle?: string; provider?: string; status?: string; cancel_at_period_end?: boolean };
   const purchases = sub.data?.purchases ?? [];
 
+  const initialSelected: PlanId =
+    currentTier === "enterprise" || currentTier === "go" ? "starter" : currentTier;
+  const [selectedPlan, setSelectedPlan] = useState<PlanId>(initialSelected);
+  const [payBusy, setPayBusy] = useState<null | "payfast" | "paypal">(null);
+
   const cancel = useMutation({
     mutationFn: () => cancelMySubscription(),
     onSuccess: () => { toast.success("Cancellation scheduled for period end"); qc.invalidateQueries({ queryKey: ["my-subscription"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const selectedPlanData = PLANS[selectedPlan];
+  const selectedZar = priceCents(selectedPlan, cycle, "ZAR");
+  const selectedUsd = priceCents(selectedPlan, cycle, "USD");
+  const cycleSuffix = cycle === "annual" ? "yr" : "mo";
+
+  const startPayfast = async () => {
+    setPayBusy("payfast");
+    try {
+      const origin = window.location.origin;
+      const { redirect_url } = await createPayfastCheckout({
+        data: {
+          plan: selectedPlan,
+          cycle,
+          return_url: `${origin}/settings?tab=billing&paid=1`,
+          cancel_url: `${origin}/settings?tab=billing&cancelled=1`,
+          notify_url: `${origin}/api/public/webhooks/payfast-itn`,
+        },
+      });
+      window.location.href = redirect_url;
+    } catch (e) {
+      toast.error((e as Error).message);
+      setPayBusy(null);
+    }
+  };
+
+  const startPaypal = async () => {
+    setPayBusy("paypal");
+    try {
+      const origin = window.location.origin;
+      const { order_id, approve_url } = await createPaypalOrder({
+        data: {
+          plan: selectedPlan,
+          cycle,
+          return_url: `${origin}/settings?tab=billing&paypal_order=${encodeURIComponent("")}`,
+          cancel_url: `${origin}/settings?tab=billing&cancelled=1`,
+        },
+      });
+      if (!approve_url) throw new Error("PayPal did not return an approval URL");
+      const popup = window.open(approve_url, "paypal", "width=520,height=720");
+      const iv = setInterval(async () => {
+        if (popup && popup.closed) {
+          clearInterval(iv);
+          try {
+            await capturePaypalOrder({ data: { order_id } });
+            toast.success("Payment captured — your plan is being upgraded.");
+            setTimeout(() => window.location.reload(), 500);
+          } catch (e) {
+            toast.error((e as Error).message);
+          } finally {
+            setPayBusy(null);
+          }
+        }
+      }, 700);
+    } catch (e) {
+      toast.error((e as Error).message);
+      setPayBusy(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -75,7 +139,7 @@ export function BillingTab() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Choose a plan</h3>
-          <p className="text-sm text-muted-foreground">Pay in Rand via PayFast, or in USD via PayPal.</p>
+          <p className="text-sm text-muted-foreground">Select a plan, then pay in Rand via PayFast or USD via PayPal.</p>
         </div>
         <div className="inline-flex rounded-lg border p-1 text-sm">
           <button
@@ -89,7 +153,7 @@ export function BillingTab() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {SELF_SERVE_PLANS.map((plan) => (
           <PlanCard
             key={plan}
@@ -98,10 +162,37 @@ export function BillingTab() {
             currentTier={currentTier}
             hasActiveSub={!!subRow && subRow.status === "active"}
             activeProvider={(subRow?.provider as "payfast" | "paypal" | undefined) ?? null}
+            selected={selectedPlan === plan}
+            onSelect={() => setSelectedPlan(plan)}
           />
         ))}
         <EnterpriseCard currentTier={currentTier} />
       </div>
+
+      <Card className="rounded-2xl border-mint/40">
+        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">Selected plan</p>
+            <p className="text-base font-semibold">
+              {selectedPlanData.name} · {cycle === "annual" ? "Annual" : "Monthly"}
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                {formatZar(selectedZar)}/{cycleSuffix}
+                {selectedUsd > 0 && <> · {formatUsd(selectedUsd)}/{cycleSuffix}</>}
+              </span>
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button onClick={startPayfast} disabled={payBusy !== null}>
+              {payBusy === "payfast" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Pay with PayFast · {formatZar(selectedZar)}/{cycleSuffix}
+            </Button>
+            <Button variant="outline" onClick={startPaypal} disabled={payBusy !== null}>
+              {payBusy === "paypal" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
+              Pay with PayPal · {formatUsd(selectedUsd)}/{cycleSuffix}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="rounded-2xl">
         <CardHeader>
@@ -167,80 +258,30 @@ function PlanCard({
   currentTier,
   hasActiveSub,
   activeProvider,
+  selected,
+  onSelect,
 }: {
   plan: PlanId;
   cycle: Cycle;
   currentTier: PlanId;
   hasActiveSub: boolean;
   activeProvider: "payfast" | "paypal" | null;
+  selected: boolean;
+  onSelect: () => void;
 }) {
   const qc = useQueryClient();
   const p = PLANS[plan];
   const isCurrent = currentTier === plan;
   const zar = priceCents(plan, cycle, "ZAR");
   const usd = priceCents(plan, cycle, "USD");
-  const [busy, setBusy] = useState<null | "payfast" | "paypal" | "switch">(null);
-
-  const startPayfast = async () => {
-    setBusy("payfast");
-    try {
-      const origin = window.location.origin;
-      const { redirect_url } = await createPayfastCheckout({
-        data: {
-          plan,
-          cycle,
-          return_url: `${origin}/settings?tab=billing&paid=1`,
-          cancel_url: `${origin}/settings?tab=billing&cancelled=1`,
-          notify_url: `${origin}/api/public/webhooks/payfast-itn`,
-        },
-      });
-      window.location.href = redirect_url;
-    } catch (e) {
-      toast.error((e as Error).message);
-      setBusy(null);
-    }
-  };
-
-  const startPaypal = async () => {
-    setBusy("paypal");
-    try {
-      const origin = window.location.origin;
-      const { order_id, approve_url } = await createPaypalOrder({
-        data: {
-          plan,
-          cycle,
-          return_url: `${origin}/settings?tab=billing&paypal_order=${encodeURIComponent("")}`,
-          cancel_url: `${origin}/settings?tab=billing&cancelled=1`,
-        },
-      });
-      if (!approve_url) throw new Error("PayPal did not return an approval URL");
-      const popup = window.open(approve_url, "paypal", "width=520,height=720");
-      const iv = setInterval(async () => {
-        if (popup && popup.closed) {
-          clearInterval(iv);
-          try {
-            await capturePaypalOrder({ data: { order_id } });
-            toast.success("Payment captured — your plan is being upgraded.");
-            setTimeout(() => window.location.reload(), 500);
-          } catch (e) {
-            toast.error((e as Error).message);
-          } finally {
-            setBusy(null);
-          }
-        }
-      }, 700);
-    } catch (e) {
-      toast.error((e as Error).message);
-      setBusy(null);
-    }
-  };
+  const [busy, setBusy] = useState(false);
 
   const doSwitch = async () => {
-    setBusy("switch");
+    setBusy(true);
     try {
       const r = await changePlan({ data: { tier: plan, cycle } });
       if (r.provider_redirect) {
-        toast.info("Start a subscription with PayFast or PayPal below.");
+        toast.info("Use the PayFast or PayPal button below to complete the change.");
       } else {
         toast.success("Plan updated");
         qc.invalidateQueries({ queryKey: ["my-subscription"] });
@@ -248,66 +289,56 @@ function PlanCard({
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
   const cycleLabel = cycle === "annual" ? "annual" : "monthly";
 
   return (
-    <Card className={`flex flex-col rounded-2xl ${isCurrent ? "border-mint" : ""}`}>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>{p.name}</span>
-          {isCurrent && <Badge variant="outline" className="border-mint text-mint">Current</Badge>}
-        </CardTitle>
-        <CardDescription>{p.tagline}</CardDescription>
-        <div className="mt-2">
-          <p className="text-3xl font-bold tracking-tight">
-            {formatZar(zar)}
-            <span className="ml-1 text-sm font-normal text-muted-foreground">/{cycle === "annual" ? "yr" : "mo"}</span>
-          </p>
-          {usd > 0 && <p className="text-xs text-muted-foreground">or {formatUsd(usd)}/{cycle === "annual" ? "yr" : "mo"} in USD</p>}
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col justify-between gap-4">
-        <ul className="space-y-1.5 text-sm">
-          {p.features.map((f) => (
-            <li key={f} className="flex gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-mint" />
-              <span>{f}</span>
-            </li>
-          ))}
-          {p.locked.map((f) => (
-            <li key={f} className="flex gap-2 text-muted-foreground/70">
-              <Lock className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{f}</span>
-            </li>
-          ))}
-        </ul>
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`text-left transition-all ${selected ? "ring-2 ring-mint" : "hover:ring-1 hover:ring-border"} rounded-2xl`}
+    >
+      <Card className={`flex h-full flex-col rounded-2xl ${isCurrent ? "border-mint" : ""}`}>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between text-base">
+            <span>{p.name}</span>
+            {isCurrent && <Badge variant="outline" className="border-mint text-mint">Current</Badge>}
+          </CardTitle>
+          <div className="mt-1">
+            <p className="text-2xl font-bold tracking-tight">
+              {formatZar(zar)}
+              <span className="ml-1 text-xs font-normal text-muted-foreground">/{cycle === "annual" ? "yr" : "mo"}</span>
+            </p>
+            {usd > 0 && <p className="text-[11px] text-muted-foreground">or {formatUsd(usd)}/{cycle === "annual" ? "yr" : "mo"} in USD</p>}
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-1 flex-col justify-between gap-3 pt-0">
+          <ul className="space-y-1 text-xs">
+            {p.features.slice(0, 5).map((f) => (
+              <li key={f} className="flex gap-2">
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-mint" />
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
 
-        <div className="grid gap-2">
-          {isCurrent && hasActiveSub && (
-            <p className="text-[11px] text-muted-foreground">You're on this plan. Switch cycle or provider below.</p>
-          )}
           {!isCurrent && hasActiveSub && activeProvider && (
-            <Button variant="secondary" onClick={doSwitch} disabled={busy !== null}>
-              {busy === "switch" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); doSwitch(); }}
+              disabled={busy}
+            >
+              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Switch to {p.name} ({cycleLabel})
             </Button>
           )}
-          <Button onClick={startPayfast} disabled={busy !== null}>
-            {busy === "payfast" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            PayFast — {cycleLabel} (ZAR)
-          </Button>
-          <Button variant="outline" onClick={startPaypal} disabled={busy !== null}>
-            {busy === "paypal" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
-            PayPal — {cycleLabel} (USD)
-          </Button>
-          <p className="text-center text-[11px] text-muted-foreground">Ideal: {p.ideal_candidate}</p>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </button>
   );
 }
 
@@ -345,54 +376,51 @@ function EnterpriseCard({ currentTier }: { currentTier: PlanId }) {
   };
 
   return (
-    <Card className="flex flex-col rounded-2xl bg-slate-950 text-slate-50 xl:col-span-1">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between text-slate-50">
+    <Card className="flex h-full flex-col rounded-2xl bg-slate-950 text-slate-50">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between text-base text-slate-50">
           <span>{p.name}</span>
           {isCurrent && <Badge variant="outline" className="border-mint text-mint">Current</Badge>}
         </CardTitle>
         <CardDescription className="text-slate-300">{p.tagline}</CardDescription>
-        <div className="mt-2">
-          <p className="text-3xl font-bold tracking-tight">Custom<span className="ml-1 text-sm font-normal text-slate-400">/branch</span></p>
+        <div className="mt-1">
+          <p className="text-2xl font-bold tracking-tight">Custom<span className="ml-1 text-xs font-normal text-slate-400">/branch</span></p>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-1 flex-col justify-between gap-4">
-        <ul className="space-y-1.5 text-sm">
-          {p.features.map((f) => (
+      <CardContent className="flex flex-1 flex-col justify-between gap-3 pt-0">
+        <ul className="space-y-1 text-xs">
+          {p.features.slice(0, 5).map((f) => (
             <li key={f} className="flex gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-mint" />
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-mint" />
               <span>{f}</span>
             </li>
           ))}
         </ul>
-        <div className="grid gap-2">
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-mint text-slate-950 hover:bg-mint/90">
-                <Building2 className="mr-2 h-4 w-4" />
-                Contact sales
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Tag Enterprise — Contact sales</DialogTitle>
-                <DialogDescription>Tell us about your chain and we'll design a per-branch quote.</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-3">
-                <div className="grid gap-1.5"><Label htmlFor="cs-name">Your name</Label><Input id="cs-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-                <div className="grid gap-1.5"><Label htmlFor="cs-email">Email</Label><Input id="cs-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-                <div className="grid gap-1.5"><Label htmlFor="cs-company">Company</Label><Input id="cs-company" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} /></div>
-                <div className="grid gap-1.5"><Label htmlFor="cs-branches">Number of branches</Label><Input id="cs-branches" type="number" min={1} value={form.branches} onChange={(e) => setForm({ ...form, branches: e.target.value })} /></div>
-                <div className="grid gap-1.5"><Label htmlFor="cs-message">What are you looking for?</Label><Textarea id="cs-message" rows={4} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /></div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
-                <Button onClick={submit} disabled={busy}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <p className="text-center text-[11px] text-slate-400">Ideal: {p.ideal_candidate}</p>
-        </div>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="bg-mint text-slate-950 hover:bg-mint/90">
+              <Building2 className="mr-2 h-4 w-4" />
+              Contact sales
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Tag Enterprise — Contact sales</DialogTitle>
+              <DialogDescription>Tell us about your chain and we'll design a per-branch quote.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-3">
+              <div className="grid gap-1.5"><Label htmlFor="cs-name">Your name</Label><Input id="cs-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+              <div className="grid gap-1.5"><Label htmlFor="cs-email">Email</Label><Input id="cs-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+              <div className="grid gap-1.5"><Label htmlFor="cs-company">Company</Label><Input id="cs-company" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} /></div>
+              <div className="grid gap-1.5"><Label htmlFor="cs-branches">Number of branches</Label><Input id="cs-branches" type="number" min={1} value={form.branches} onChange={(e) => setForm({ ...form, branches: e.target.value })} /></div>
+              <div className="grid gap-1.5"><Label htmlFor="cs-message">What are you looking for?</Label><Textarea id="cs-message" rows={4} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /></div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
+              <Button onClick={submit} disabled={busy}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

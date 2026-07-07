@@ -178,7 +178,7 @@ export const PLANS: Record<PlanId, Plan> = {
   },
 };
 
-export const SELF_SERVE_PLANS: PlanId[] = ["go", "starter", "growth", "pro"];
+export const SELF_SERVE_PLANS: PlanId[] = ["starter", "growth", "pro"];
 
 export function priceCents(plan: PlanId, cycle: Cycle, currency: "ZAR" | "USD"): number {
   const p = PLANS[plan];

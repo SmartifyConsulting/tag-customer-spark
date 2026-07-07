@@ -37,27 +37,27 @@ const TIERS: TagTier[] = [...SELF_SERVE_PLANS, "enterprise"];
 type Row = { label: string; values: Partial<Record<TagTier, string | boolean>> };
 
 const MATRIX: Row[] = [
-  { label: "Included notifications / month", values: { go: "50", starter: "150", growth: "300", pro: "600", enterprise: "Negotiated" } },
-  { label: "Overage rate", values: { go: "R1.50", starter: "R1.40", growth: "R1.30", pro: "R1.20", enterprise: "Volume" } },
-  { label: "Alert types", values: { go: "3 core", starter: "All 6", growth: "All 6", pro: "All 6", enterprise: "All" } },
-  { label: "Inbox", values: { go: "Basic", starter: "Full", growth: "Full", pro: "Full", enterprise: "Full" } },
-  { label: "Coupon redemption", values: { go: false, starter: true, growth: true, pro: true, enterprise: true } },
-  { label: "Scheduled campaigns", values: { go: false, starter: false, growth: true, pro: true, enterprise: true } },
-  { label: "AI message assist", values: { go: false, starter: false, growth: true, pro: true, enterprise: true } },
-  { label: "Stores", values: { go: "1", starter: "1", growth: "1", pro: "3", enterprise: "Unlimited" } },
-  { label: "Products", values: { go: "10", starter: "20", growth: "50", pro: "Unlimited", enterprise: "Unlimited" } },
-  { label: "User logins", values: { go: "1", starter: "2", growth: "3", pro: "10", enterprise: "Unlimited" } },
-  { label: "Campaign analytics", values: { go: false, starter: "Basic", growth: "Full", pro: "Full", enterprise: "Full" } },
-  { label: "Intent score engine", values: { go: false, starter: false, growth: true, pro: true, enterprise: true } },
-  { label: "ROI engine", values: { go: false, starter: false, growth: false, pro: true, enterprise: true } },
-  { label: "AI daily briefing", values: { go: false, starter: false, growth: false, pro: true, enterprise: true } },
-  { label: "Weekly ROI email", values: { go: false, starter: false, growth: false, pro: true, enterprise: true } },
-  { label: "Pricing sensitivity + scan heatmap", values: { go: false, starter: false, growth: false, pro: true, enterprise: true } },
-  { label: "Forecasting", values: { go: false, starter: false, growth: false, pro: "7 + 14 day", enterprise: "Custom" } },
-  { label: "Cross-store intelligence", values: { go: false, starter: false, growth: false, pro: false, enterprise: true } },
-  { label: "Executive briefings + CFO ROI", values: { go: false, starter: false, growth: false, pro: false, enterprise: true } },
-  { label: "API access + SSO + custom exports", values: { go: false, starter: false, growth: false, pro: false, enterprise: true } },
-  { label: "Dedicated account manager + SLA", values: { go: false, starter: false, growth: false, pro: false, enterprise: true } },
+  { label: "Included notifications / month", values: { starter: "150", growth: "300", pro: "600", enterprise: "Negotiated" } },
+  { label: "Overage rate", values: { starter: "R1.40", growth: "R1.30", pro: "R1.20", enterprise: "Volume" } },
+  { label: "Alert types", values: { starter: "All 6", growth: "All 6", pro: "All 6", enterprise: "All" } },
+  { label: "Inbox", values: { starter: "Full", growth: "Full", pro: "Full", enterprise: "Full" } },
+  { label: "Coupon redemption", values: { starter: true, growth: true, pro: true, enterprise: true } },
+  { label: "Scheduled campaigns", values: { starter: false, growth: true, pro: true, enterprise: true } },
+  { label: "AI message assist", values: { starter: false, growth: true, pro: true, enterprise: true } },
+  { label: "Stores", values: { starter: "1", growth: "1", pro: "3", enterprise: "Unlimited" } },
+  { label: "Products", values: { starter: "20", growth: "50", pro: "Unlimited", enterprise: "Unlimited" } },
+  { label: "User logins", values: { starter: "2", growth: "3", pro: "10", enterprise: "Unlimited" } },
+  { label: "Campaign analytics", values: { starter: "Basic", growth: "Full", pro: "Full", enterprise: "Full" } },
+  { label: "Intent score engine", values: { starter: false, growth: true, pro: true, enterprise: true } },
+  { label: "ROI engine", values: { starter: false, growth: false, pro: true, enterprise: true } },
+  { label: "AI daily briefing", values: { starter: false, growth: false, pro: true, enterprise: true } },
+  { label: "Weekly ROI email", values: { starter: false, growth: false, pro: true, enterprise: true } },
+  { label: "Pricing sensitivity + scan heatmap", values: { starter: false, growth: false, pro: true, enterprise: true } },
+  { label: "Forecasting", values: { starter: false, growth: false, pro: "7 + 14 day", enterprise: "Custom" } },
+  { label: "Cross-store intelligence", values: { starter: false, growth: false, pro: false, enterprise: true } },
+  { label: "Executive briefings + CFO ROI", values: { starter: false, growth: false, pro: false, enterprise: true } },
+  { label: "API access + SSO + custom exports", values: { starter: false, growth: false, pro: false, enterprise: true } },
+  { label: "Dedicated account manager + SLA", values: { starter: false, growth: false, pro: false, enterprise: true } },
 ];
 
 function UpgradePage() {
@@ -95,7 +95,7 @@ function UpgradePage() {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {TIERS.map((t) => {
           const p = PLANS[t];
           const price = t === "enterprise" ? "Custom/branch" : `${formatZar(p.monthly_zar_cents)}/mo`;

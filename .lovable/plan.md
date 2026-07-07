@@ -1,47 +1,41 @@
-## Nav, Dashboard, Insights refactor
+## Billing tab — plan grid cleanup
 
-### 1. Nav — rename Notifications → WhatsApps, move to slot 2
+Scope: `src/components/settings/billing-tab.tsx` and `src/lib/billing/pricing.ts`. Presentational changes plus a small pricing constant edit; no billing logic changes.
 
-Edit `src/lib/nav.ts` — reorder to: Dashboard, **WhatsApps** (`/inbox`, Inbox icon), Inventory, Customers, Insights, Admin, Settings.
+### 1. Remove the Tag Go plan
+- In `src/lib/billing/pricing.ts`, remove `"go"` from `SELF_SERVE_PLANS` so it no longer renders in the billing grid or `/upgrade` self-serve columns.
+- Leave the `go` entry in the `PLANS` map and the `PlanId` union so any existing subscription rows or historical references still resolve.
+- Grid becomes 4 self-serve plans (Starter, Growth, Pro) + Enterprise = 4 columns. Update `billing-tab.tsx` grid to `md:grid-cols-2 xl:grid-cols-4`. Update `/upgrade` (`src/routes/_authenticated/upgrade.tsx`) grid similarly and drop the `go` column from the comparison `MATRIX` rows.
 
-Propagate label:
-- `src/components/command-palette.tsx` — "Notifications" entry → "WhatsApps".
-- `src/routes/_authenticated/inbox.tsx` — `PageHeader` title and `<title>` meta → "WhatsApps".
+### 2. Remove per-card payment buttons
+In `PlanCard`, drop the PayFast and PayPal `<Button>`s. `startPayfast` / `startPaypal` handlers move to `BillingTab` (see step 4). Keep the "Switch to …" secondary button for users with an active sub on a different plan.
 
-### 2. Rename Analytics → Intelligence
+### 3. Remove "Ideal: …" lines
+- Remove the `<p>Ideal: {p.ideal_candidate}</p>` line from `PlanCard`.
+- Remove the same line from `EnterpriseCard`.
 
-- `src/routes/_authenticated/analytics.tsx` — `PageHeader` title "Analytics" → "Intelligence", meta title "Analytics — Tag" → "Intelligence — Tag".
+### 4. Compact each plan card
+- Tighten header: price `text-2xl` instead of `text-3xl`, keep tagline only on Enterprise, `CardHeader className="pb-3"` and `CardContent className="pt-0"`.
+- Feature list: `text-xs`, `space-y-1`, icons `h-3.5 w-3.5`.
+- Show first 5 `features`; hide `locked` items on the compact card (still visible on `/upgrade`).
 
-### 3. Move Analytics content onto Dashboard
+### 5. Single PayFast/PayPal action bar under the grid
+Below the plan grid, add one shared card:
 
-Migrate every analytics-page block into `src/routes/_authenticated/dashboard.tsx`, feeding off `getAdvancedAnalytics` in addition to the existing dashboard loader:
+```text
+Selected plan: <name> · <cycle>
+[ Pay with PayFast (ZAR R…/mo) ]  [ Pay with PayPal ($…/mo) ]
+Helper: "Choose a plan above, then pay in Rand via PayFast or USD via PayPal."
+```
 
-- Extra KPIs to append into the dashboard KPI grid (dedup with what's already there): **Unique customers**, **Returning customers**, **Avg recovery time**, **Notification CTR**, **Total customers**. Drop the analytics-page "Total scans", "Recovered revenue", "Active campaigns" tiles as duplicates of existing dashboard KPIs and of the removed Campaign section.
-- Move charts into new dashboard cards: **Scan trend**, **Customer growth**, **Popular products**, **Popular stores**, **Scan heatmap** (weekday × hour).
-- Add the 7d/30d/90d `Tabs` control + Export dropdown (XLSX / PDF) into the Dashboard `PageHeader.actions`, wired to `getAdvancedAnalytics({ days })`.
-- Fetch pattern: introduce `advancedAnalyticsQueryOptions(days)` alongside `dashboardOverviewQueryOptions` and read both via `useSuspenseQuery`.
+Implementation:
+- `const [selectedPlan, setSelectedPlan] = useState<PlanId>(currentTier === "enterprise" || currentTier === "go" ? "starter" : currentTier);`
+- Each `PlanCard` becomes selectable via `selected` + `onSelect` props; highlight with a ring in addition to the existing `isCurrent` `border-mint`.
+- Move `startPayfast` / `startPaypal` into `BillingTab`, driven by `selectedPlan` + `cycle`, with price labels from `priceCents(selectedPlan, cycle, …)` + `formatZar` / `formatUsd`.
+- Keep in-card "Switch to <plan>" secondary button unchanged for active-sub plan switches.
+- Enterprise card unchanged (still shows Contact sales); not selectable for PayFast/PayPal.
 
-### 4. Move AI Opportunity Feed → Insights (Intelligence) page
-
-- Remove `<OpportunityFeedCard />` from `dashboard.tsx`.
-- Render `<OpportunityFeedCard />` at the top of `analytics.tsx`. Feature gate remains (Tag Pro).
-
-### 5. Remove Campaign Performance
-
-- Delete the "Campaign performance" `<Card>` and its `<table>` in `analytics.tsx`.
-- Remove `<NotificationPerformanceCard />` from `dashboard.tsx` and delete `src/components/dashboard/notification-performance-card.tsx`.
-- Drop `exportCSV` (campaign-only) and drop the "Campaigns" sheet + "Top campaigns" PDF section from `exportXLSX` / `exportPDF`.
-
-### 6. Remove Dashboard cards & KPIs
-
-- Remove `<PromotionsCard />` (On Promotion) and `<LowStockCard />` from `dashboard.tsx`; delete `src/components/dashboard/promotions-card.tsx` and `low-stock-card.tsx` if unused elsewhere.
-- Remove the **Low stock products**, **On promotion**, and **Top product interest** KPI tiles from the dashboard KPI grid.
-- The remaining 3-column row collapses to a single `RecentActivityCard` full-width.
-
-### 7. Deletions and dedup
-
-Reuse `ScanTrendsCard`, `CustomerGrowthCard`, `TopProductsCard` for the migrated charts by mapping analytics data to their existing props. Final Insights (`/analytics`) page contains only: `PageHeader "Intelligence"` and `OpportunityFeedCard`.
-
-### Out of scope
-
-- No changes to `getAdvancedAnalytics` server function shape, no schema changes, no tier/permission changes beyond keeping the existing `roi` gate on the Insights route.
+### 6. Leave untouched
+- Current-plan card, Usage card, Invoices card.
+- Monthly/Annual cycle toggle.
+- All server functions and the underlying `PLANS` data (only `SELF_SERVE_PLANS` changes).
