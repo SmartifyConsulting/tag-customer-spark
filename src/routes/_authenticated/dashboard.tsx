@@ -290,16 +290,11 @@ function DashboardContent() {
 
       <IntentSectionsCard />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <ScanTrendsCard
-            daily={data.scansDaily}
-            weekly={data.scansWeekly}
-            monthly={data.scansMonthly}
-          />
-        </div>
-        <CustomerGrowthCard data={data.customerGrowth} />
-      </div>
+      <ScanTrendsCard
+        daily={data.scansDaily}
+        weekly={data.scansWeekly}
+        monthly={data.scansMonthly}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <TopProductsCard products={data.topProducts} />
