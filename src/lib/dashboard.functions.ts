@@ -1,6 +1,42 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+export type NotificationTypePerf = {
+  type: "sale" | "low_stock" | "back_in_stock" | "promotion" | "custom";
+  label: string;
+  sent: number;
+  delivered: number;
+  read: number;
+  clicked: number;
+  redeemed: number;
+  ctr: number;
+};
+
+export type SignalContribution = {
+  key:
+    | "scans"
+    | "repeat_scans"
+    | "time_on_page"
+    | "unique_viewers"
+    | "watchlist"
+    | "notif_engagement"
+    | "conversion_rate"
+    | "cart_rate"
+    | "price_impact";
+  label: string;
+  pct: number;
+};
+
+export type SignalProductBreakdown = {
+  product_id: string;
+  name: string;
+  image_url: string | null;
+  raw: number;
+  contribution_pct: number;
+};
+
+
+
 export type DashboardOverview = {
   kpis: {
     todaysScans: number;
