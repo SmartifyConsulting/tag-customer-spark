@@ -44,7 +44,7 @@ import { EmptyState } from "@/components/empty-state";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
-  head: () => ({ meta: [{ title: "Notifications — Tag" }] }),
+  head: () => ({ meta: [{ title: "WhatsApps — Tag" }] }),
   component: InboxPage,
 });
 
