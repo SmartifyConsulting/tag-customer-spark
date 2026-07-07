@@ -77,6 +77,7 @@ export function ProductsTable({
   onArchive,
   onDelete,
   canManage,
+  notifCounts,
 }: {
   rows: ProductRow[];
   selected: Set<string>;
@@ -85,6 +86,7 @@ export function ProductsTable({
   onArchive: (r: ProductRow) => void;
   onDelete: (r: ProductRow) => void;
   canManage: boolean;
+  notifCounts?: Record<string, ProductNotificationCounts>;
 }) {
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
 
