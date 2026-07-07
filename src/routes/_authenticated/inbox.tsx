@@ -44,7 +44,7 @@ import { EmptyState } from "@/components/empty-state";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
-  head: () => ({ meta: [{ title: "Notifications — Tag" }] }),
+  head: () => ({ meta: [{ title: "WhatsApps — Tag" }] }),
   component: InboxPage,
 });
 
@@ -95,7 +95,7 @@ function InboxPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Notifications" description="Every WhatsApp response, in one place." />
+      <PageHeader title="WhatsApps" description="Every WhatsApp response, in one place." />
 
       <div className="grid h-[calc(100vh-220px)] min-h-[520px] grid-cols-1 md:grid-cols-[320px_1fr] lg:grid-cols-[320px_1fr_320px] gap-0 overflow-hidden rounded-2xl border border-border bg-card">
         {/* List */}

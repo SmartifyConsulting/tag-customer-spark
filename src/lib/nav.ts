@@ -25,6 +25,12 @@ export const NAV: readonly NavItem[] = [
     match: ["/dashboard"],
   },
   {
+    title: "WhatsApps",
+    url: "/inbox",
+    icon: Inbox,
+    match: ["/inbox"],
+  },
+  {
     title: "Inventory",
     url: "/products",
     icon: Tag,
@@ -35,12 +41,6 @@ export const NAV: readonly NavItem[] = [
     url: "/customers",
     icon: Users,
     match: ["/customers", "/watchlists", "/intent"],
-  },
-  {
-    title: "Notifications",
-    url: "/inbox",
-    icon: Inbox,
-    match: ["/inbox"],
   },
   {
     title: "Insights",
