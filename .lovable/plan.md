@@ -1,108 +1,70 @@
-
-## Goal
-
-Replace the current 3-tier system with the 5-tier "base + overage" model. Full per-tier detail below.
-
-## Tier detail
-
-### Tag Go — R149/mo
-Mobile traders, flea market vendors, pop-up stalls.
-- **Notifications:** 50 included / month · R1.50 per msg above 50
-- **Alert types:** Sale, back-in-stock, new arrival (low-stock, promotion, custom **locked**)
-- **Inbox:** Basic — read & reply only
-- **Stores & products:** 1 stall or store · up to 10 products · store-level opt-in only · QR tag generation
-- **Analytics:** Scan counts & active subscriber total (intent scoring, ROI engine, AI intelligence **locked**)
-- **Management:** 1 user login (staff roles, multi-store **locked**)
-
-### Tag Starter — R399/mo
-Small independents finding their feet with Tag.
-- **Notifications:** 150 included / month · R1.40 per msg above 150 · all 6 alert types · full inbox (assign, note, resolve, tag) · coupon code redemption
-- **Stores & products:** 1 store · up to 20 products · item + store-level opt-in
-- **Analytics:** Scan counts, opt-in history & active subscribers · campaign performance · basic customer list (intent scoring, ROI engine, AI intelligence **locked**)
-- **Management:** 2 user logins · basic staff roles (multi-store **locked**)
-
-### Tag Growth — R699/mo
-Established independents scaling their customer base.
-- **Notifications:** 300 included / month · R1.30 per msg above 300 · all 6 alert types · full inbox · coupon code redemption · scheduled campaigns · AI message assist
-- **Stores & products:** 1 store · up to 50 products · item + store-level opt-in
-- **Analytics:** Full campaign analytics · intent score engine · customer revenue tracking · watchlist management (ROI engine, AI daily briefing, forecasting **locked**)
-- **Management:** 3 user logins · full staff roles (multi-store **locked**)
-
-### Tag Pro — R1,299/mo
-Serious independents and small multi-branch retailers.
-- **Notifications:** 600 included / month · R1.20 per msg above 600 · all 6 alert types · full inbox · coupon code redemption · scheduled campaigns · AI message assist
-- **Stores & products:** Up to 3 stores · unlimited products · item + store-level opt-in
-- **Analytics — full suite:** Full campaign analytics · intent score engine · ROI engine · AI daily briefing · weekly ROI email report · pricing sensitivity · scan heatmap · forecasting (7 + 14 day)
-- **Management:** 10 user logins · full staff roles · multi-store (up to 3) · quarterly card refresh
-
-### Tag Enterprise — Custom / branch
-Regional chains and national retailers — priced per branch.
-- **Notifications:** Negotiated rate per branch · volume-based overage · all alert types · full WhatsApp inbox · coupon redemption · scheduled campaigns · AI message assist
-- **Stores & products:** Unlimited stores/branches · unlimited products · item + store-level opt-in
-- **Analytics — full suite +:** Everything in Pro · cross-store intelligence · cross-store transfer alerts · executive briefing suite · CFO-level ROI reporting · custom data exports · API access
-- **Management & support:** Unlimited users · dedicated account manager · SLA uptime guarantee · staff training & onboarding · custom card printing · white-label option
-
-Ideal candidates: Go — flea market / pop-up / home-based. Starter — small boutique, gift shop, independent shoe store. Growth — active boutique, homeware, jewellery, lifestyle brand. Pro — high-volume independent, 2–3 branches. Enterprise — 5+ branches, national retailers, franchise groups, shopping-centre operators.
-
 ## Scope
 
-### 1. Tier model (`src/lib/tier.ts`, `src/lib/billing/pricing.ts`)
-- `TagTier` = `"go" | "starter" | "growth" | "pro" | "enterprise"`; ranks 0…4.
-- `PLANS` entries carry: `price_zar_monthly`, `price_usd_monthly`, `included_notifications`, `overage_cents_per_msg`, `max_products` (null = unlimited), `max_stores`, `staff_seats`, `alert_types: ("sale"|"back_in_stock"|"new_arrival"|"low_stock"|"promotion"|"custom")[]`, `inbox: "basic"|"full"`, `features: string[]`, `locked: string[]`, `ideal_candidate`, `custom?: true`.
-- `TIER_LABEL`: Tag Go / Starter / Growth / Pro / Enterprise.
-- `FEATURE_MIN_TIER`:
-  - `qrGeneration` → `go`
-  - `fullInbox`, `couponRedemption`, `advancedExports` → `starter`
-  - `aiAssistant`, `scheduledCampaigns`, `intentEngine`, `campaignAnalytics`, `customerRevenue`, `watchlists` → `growth`
-  - `roi`, `forecasting`, `weeklyBriefings`, `multiStore`, `pricingSensitivity`, `scanHeatmap`, `aiDailyBriefing` → `pro`
-  - `intelligence`, `crossStore`, `executiveBriefings`, `apiAccess`, `sso`, `customExports` → `enterprise`
+Frontend / presentation changes only, plus one feature-gate flag flip and removing the Campaigns route.
 
-### 2. Database migration (single new migration)
-- Widen `retailers.tier` and `subscriptions.plan` allowed values to the 5 tiers via `USING` cast; existing `starter/pro/enterprise` rows preserved (semantics of `enterprise` shift to "custom").
-- New `notification_usage_counters` (retailer_id, period_start, period_end, included, sent_count, overage_cents_accrued, updated_at) + GRANTs + RLS (retailer members SELECT own, service_role ALL).
-- New `notification_overage_invoices` (retailer_id, period_start, period_end, msg_over, amount_cents, currency, provider, provider_txn_id, status) + GRANTs + RLS.
-- New `sales_leads` (id, retailer_id, name, email, branches, message, status, created_at) + GRANTs + RLS.
+### 1. Nav rename — "Items & Tags" → "Inventory"
 
-### 3. Server functions (`src/lib/billing.functions.ts`)
-- `CheckoutInput` / `PaypalOrderInput` plan enum → `["go","starter","growth","pro"]`; enterprise rejected.
-- `changePlan` accepts all 5; enterprise returns `{ contact_sales: true }`.
-- `adminSetTier` accepts all 5.
-- New `getMyUsage` → current counter row + projected overage in ZAR.
-- New `contactSalesForEnterprise` → insert `sales_leads` + email via `email.server.ts`.
+- `src/lib/nav.ts`: change `title` on the products entry to `"Inventory"`.
+- `src/components/mobile-bottom-nav.tsx`, `src/components/command-palette.tsx`: update any hardcoded label to match.
+- `src/routes/_authenticated/products.index.tsx`: `PageHeader` title → `"Inventory"`, head meta title → `"Inventory — Tag"`.
 
-### 4. Overage accounting (`src/lib/billing/overage.server.ts`, new)
-- `incrementNotificationUsage(retailerId, count)` called after each successful send in `whatsapp.server.ts` and `hooks.notifications-tick.ts`.
-- Guard: Go/Starter block sends once counter exhausts included quota (no auto-overage); Growth/Pro accumulate overage; Enterprise metered but never blocked.
-- New `hooks.billing-rollover.ts` cron endpoint: on period end, close counter, insert `notification_overage_invoices` row, email PayFast/PayPal payment link via active provider.
+### 2. Inventory table — column changes
 
-### 5. UI
+`src/components/products/products-table.tsx`:
 
-**`src/components/settings/billing-tab.tsx`**
-- 5 plan cards in a responsive grid; enterprise card dark-styled like the mockup with "Contact sales" CTA → dialog (name, branches, message) → `contactSalesForEnterprise`.
-- Each card renders: price, notifications block, alert-types list, stores & products, analytics, management, ideal-candidate footer. Locked features rendered muted with a lock icon.
-- New "Usage this period" panel above invoices: sent vs included progress bar + projected overage in ZAR (`getMyUsage`).
+- Remove the **Status** column (drops the `StockPill` cell + header). Delete the now-unused `StockPill` component.
+- Rename the stock column header to **Qty** and render just the numeric `stock_qty` (tabular-nums). Low/out styling kept as text colour only (amber / rose).
+- Add **Size** and **Colour** columns sourced from `r.size` / `r.color` (already on the product row from `listProducts` — verify during build; if missing, extend the select in `src/lib/products.functions.ts` and the `ProductRow` type only).
+- Final column order: checkbox · Product · Price · Qty · Size · Colour · QR · Interest · actions.
 
-**`src/routes/_authenticated/upgrade.tsx`**
-- Rebuild comparison table with 5 columns matching the mockup rows (notifications, alert types, inbox, stores & products, analytics, management, ideal candidate).
+### 3. Add notification counts strip to Inventory
 
-**`src/components/settings/plan-admin-tab.tsx`**
-- Tier `<Select>` extended to 5 options.
+Above the accordion in `products.index.tsx`, render a compact row of 4 pills mirroring the uploaded reference — **Queued · Sent · Read · Clicked** — scoped to the current workspace / filtered set.
 
-### 6. Feature-gate sweep
-- Update every `hasFeature` / `meetsTier` call site across `src/routes/_authenticated/*` and `src/components/**` to the new min-tier map.
-- Notifications composer disables locked alert types with an inline "Upgrade to Starter" hint on Go.
+- New server fn `getInventoryNotificationCounts` in `src/lib/products.functions.ts` (or a new `inventory-stats.functions.ts`) aggregating `notification_history` rows by status columns (`queued_at`/`sent_at`/`read_at`/`clicked_at`).
+- Small new component `src/components/products/notification-counts-strip.tsx` — 4 chips with count + label, matching the reference style (grey/blue/amber/orange dots, count above label).
 
-### 7. Copy / labels
-- Notifications UI shows "X / Y sent this period · Z overage" using new counter.
+### 4. Lock AI Opportunity Feed to Tag Pro
 
-## Out of scope
-- Meta Business 250-user cap logic.
-- Per-branch enterprise pricing engine (sales handles offline).
-- Two-way conversation cost accounting.
-- Rewriting PayFast/PayPal ITN handlers — they keep working, just handle the wider plan enum.
+- `src/lib/tier.ts`: add/adjust `FEATURE_MIN_TIER.opportunityFeed = "pro"`.
+- `src/components/dashboard/opportunity-feed.tsx`: wrap in a `<FeatureGate feature="opportunityFeed">` (or existing `hasFeature` check via `useTier`) — render a locked-state card with "Upgrade to Tag Pro" CTA linking to `/upgrade?feature=opportunityFeed` for lower tiers.
+
+### 5. Remove Campaigns screen
+
+The app doesn't have campaigns — only stock/price change alerts.
+
+- Delete route files: `src/routes/_authenticated/notifications.tsx`, `notifications.index.tsx`, `notifications.new.tsx`, `notifications.scheduled.tsx`, `notifications.$campaignId.tsx`, `notifications.$campaignId.edit.tsx`, `_authenticated/alerts.tsx`.
+- Delete unused components under `src/components/notifications/` that were campaign-composer specific (`campaign-composer.tsx`, `ai-campaign-assist.tsx`, `message-placeholders.tsx`). Keep `status-badge.tsx` and `whatsapp-preview.tsx` if referenced elsewhere (verify with rg during build).
+- `src/lib/nav.ts`: remove the "Campaigns" nav entry. Mobile nav + command palette follow.
+- Any `<Link to="/notifications">` etc. references — remove or repoint to `/inbox`.
+- Backing data (`notification_campaigns` table, `notifications.functions.ts` server fns) stays for now — only the UI is removed.
+
+### 6. Update "Campaign Performance" frame → "Notification Performance"
+
+`src/components/dashboard/notification-performance-card.tsx`:
+
+- Retitle to **"Notification performance"** with copy: "Stock-back and price-drop alerts sent to customers who scanned these items."
+- Replace campaign-centric columns (campaign title, type) with per-alert-type rows: **Back in stock**, **Price drop**, **Low stock**, **New arrival**, **Promotion**, **Custom** — showing Sent · Delivered · Read · Clicked · Redeemed · CTR.
+- Feed from existing `campaignPerformance` in `getAdvancedAnalytics` regrouped by `type` instead of `id` (adjust the aggregation server-side in `src/lib/analytics.functions.ts`).
+- Also flows into the dashboard equivalent via `dashboard.functions.ts` — same regroup.
+
+### 7. Signal Contributions card on Dashboard
+
+New card `src/components/dashboard/signal-contributions-card.tsx`, added to `src/routes/_authenticated/dashboard.tsx` (below KPIs, above Opportunity Feed).
+
+- Nine signal bars matching the reference: **Scans · Repeat scans · Time on page · Unique viewers · Watchlist · Notif engagement · Conversion rate · Cart rate · Price impact**.
+- Layout: 3-column grid on desktop, each row = label · thin progress bar · % on the right. Amber accent matching screenshot.
+- Data: extend `dashboard.functions.ts` (or new `getSignalContributions` server fn) computing each signal's contribution weight to the workspace's overall intent score, plus a per-product breakdown array.
+- **Drill-in**: clicking a signal row opens a sheet/dialog `signal-detail-sheet.tsx` listing top products contributing to that signal (product name · thumb · that signal's value · contribution %) with a link through to `/products/$id`.
+
+### Out of scope
+
+- No pricing/tier changes beyond the Opportunity Feed flag.
+- Campaign backing tables and server functions remain — only the UI is removed so the data path for future re-use stays intact.
+- No schema migrations.
 
 ## Technical notes
-- PayFast = ZAR only; PayPal = USD only. Both accept the 4 self-serve tiers; enterprise never hits checkout functions.
-- Annual pricing: monthly × 10 (≈17% off).
-- All prices, caps, alert-type maps, and overage rates live in `src/lib/billing/pricing.ts` — single source of truth.
-- Every new `public.*` table gets `GRANT` + RLS per project rules.
+
+- Verify `ProductRow` already carries `size` and `color` in the `listProducts` select — the schema has them (`products.schemas.ts`), so most likely just add to the `.select(...)` in `src/lib/products.functions.ts` and to the `ProductRow` type.
+- `FeatureGate` pattern: reuse whatever pattern `NAV` items with `feature:` use in `app-sidebar.tsx` — surface the same `hasFeature(tier, "opportunityFeed")` check inside the card.
+- Signal Contributions computation lives server-side to avoid shipping raw scan data to the client; drill-in fetches on demand.
