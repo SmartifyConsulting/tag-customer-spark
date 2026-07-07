@@ -32,7 +32,6 @@ import {
   getProductFormOptions,
   listProducts,
 } from "@/lib/products.functions";
-import { getInventoryNotificationCountsByProduct } from "@/lib/dashboard.functions";
 import { useAuth } from "@/hooks/use-auth";
 
 const searchSchema = z.object({
@@ -68,13 +67,6 @@ function ProductsListPage() {
   const { data: opts } = useQuery({
     queryKey: ["product-form-options"],
     queryFn: () => optsFn(),
-    staleTime: 60_000,
-  });
-
-  const notifCountsFn = useServerFn(getInventoryNotificationCountsByProduct);
-  const { data: notifCounts } = useQuery({
-    queryKey: ["inventory", "notification-counts-by-product"],
-    queryFn: () => notifCountsFn(),
     staleTime: 60_000,
   });
 
@@ -301,7 +293,6 @@ function ProductsListPage() {
                     onArchive={(r) => archive.mutate(r.id)}
                     onDelete={(r) => remove.mutate(r.id)}
                     canManage={canManage}
-                    notifCounts={notifCounts}
                   />
                 </AccordionContent>
               </AccordionItem>

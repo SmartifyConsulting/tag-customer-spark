@@ -44,8 +44,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { formatMoney } from "@/lib/format";
 import { regenerateProductQr } from "@/lib/qr.functions";
 import { updateProduct } from "@/lib/products.functions";
-import { NotificationCountPills } from "@/components/products/notification-count-pills";
-import type { ProductNotificationCounts } from "@/lib/dashboard.functions";
 
 export type ProductRow = {
   id: string;
@@ -77,7 +75,6 @@ export function ProductsTable({
   onArchive,
   onDelete,
   canManage,
-  notifCounts,
 }: {
   rows: ProductRow[];
   selected: Set<string>;
@@ -86,7 +83,6 @@ export function ProductsTable({
   onArchive: (r: ProductRow) => void;
   onDelete: (r: ProductRow) => void;
   canManage: boolean;
-  notifCounts?: Record<string, ProductNotificationCounts>;
 }) {
   const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
 
@@ -131,9 +127,6 @@ export function ProductsTable({
             </TableHead>
             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Interest
-            </TableHead>
-            <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              WhatsApps
             </TableHead>
             <TableHead className="w-10" />
           </TableRow>
@@ -211,9 +204,6 @@ export function ProductsTable({
                 </TableCell>
                 <TableCell>
                   <InterestRing score={r.intent_score ?? 0} />
-                </TableCell>
-                <TableCell>
-                  <NotificationCountPills counts={notifCounts?.[r.id]} size="xs" />
                 </TableCell>
                 <TableCell className="pr-4">
                   {canManage && (
