@@ -5,7 +5,7 @@ import {
   QrCode,
   Users,
   Banknote,
-  Send,
+  
   MousePointerClick,
   Download,
   FileSpreadsheet,
