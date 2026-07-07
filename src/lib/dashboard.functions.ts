@@ -395,3 +395,127 @@ export const getDashboardOverview = createServerFn({ method: "GET" })
       hasRetailerContext,
     };
   });
+
+const TYPE_LABEL: Record<NotificationTypePerf["type"], string> = {
+  back_in_stock: "Back in stock",
+  sale: "Price drop",
+  low_stock: "Low stock",
+  promotion: "Promotion",
+  custom: "Custom",
+};
+
+export const getNotificationTypePerformance = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<NotificationTypePerf[]> => {
+    const { supabase } = context;
+    const { data: history } = await supabase
+      .from("notification_history")
+      .select("status, sent_at, delivered_at, read_at, clicked_at, redeemed_at, campaign:notification_campaigns(type)");
+
+    const acc = new Map<NotificationTypePerf["type"], NotificationTypePerf>();
+    (Object.keys(TYPE_LABEL) as NotificationTypePerf["type"][]).forEach((t) => {
+      acc.set(t, {
+        type: t,
+        label: TYPE_LABEL[t],
+        sent: 0,
+        delivered: 0,
+        read: 0,
+        clicked: 0,
+        redeemed: 0,
+        ctr: 0,
+      });
+    });
+    for (const row of history ?? []) {
+      const t = ((row as any).campaign?.type ?? "custom") as NotificationTypePerf["type"];
+      const bucket = acc.get(t) ?? acc.get("custom")!;
+      if (row.sent_at) bucket.sent += 1;
+      if (row.delivered_at) bucket.delivered += 1;
+      if (row.read_at) bucket.read += 1;
+      if (row.clicked_at) bucket.clicked += 1;
+      if (row.redeemed_at) bucket.redeemed += 1;
+    }
+    const rows = Array.from(acc.values());
+    for (const r of rows) {
+      r.ctr = r.delivered ? Math.round((r.clicked / r.delivered) * 1000) / 10 : 0;
+    }
+    return rows;
+  });
+
+export const getInventoryNotificationCounts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context;
+    const { data } = await supabase
+      .from("notification_history")
+      .select("queued_at, sent_at, read_at, clicked_at");
+    let queued = 0, sent = 0, read = 0, clicked = 0;
+    for (const row of data ?? []) {
+      if (row.queued_at) queued += 1;
+      if (row.sent_at) sent += 1;
+      if (row.read_at) read += 1;
+      if (row.clicked_at) clicked += 1;
+    }
+    return { queued, sent, read, clicked };
+  });
+
+const SIGNAL_META: { key: SignalContribution["key"]; label: string; column: string }[] = [
+  { key: "scans", label: "Scans", column: "scans_total" },
+  { key: "repeat_scans", label: "Repeat scans", column: "repeat_scans" },
+  { key: "time_on_page", label: "Time on page", column: "avg_time_on_page_seconds" },
+  { key: "unique_viewers", label: "Unique viewers", column: "viewers" },
+  { key: "watchlist", label: "Watchlist", column: "watchlist_adds" },
+  { key: "notif_engagement", label: "Notif engagement", column: "notif_engagement" },
+  { key: "conversion_rate", label: "Conversion rate", column: "conversion_rate" },
+  { key: "cart_rate", label: "Cart rate", column: "add_to_cart_rate" },
+  { key: "price_impact", label: "Price impact", column: "price_impact" },
+];
+
+export const getSignalContributions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context;
+    const { data: signals } = await supabase
+      .from("product_intent_signals")
+      .select(
+        "product_id, scans_total, repeat_scans, avg_time_on_page_seconds, viewers, watchlist_adds, notif_engagement, conversion_rate, add_to_cart_rate, price_impact, product:products(name, image_url)",
+      );
+    const rows = (signals ?? []) as any[];
+
+    // Total per signal column
+    const totals = new Map<SignalContribution["key"], number>();
+    for (const meta of SIGNAL_META) {
+      let sum = 0;
+      for (const r of rows) sum += Number(r[meta.column] ?? 0);
+      totals.set(meta.key, sum);
+    }
+    const grand = Array.from(totals.values()).reduce((a, b) => a + b, 0) || 1;
+
+    const contributions: SignalContribution[] = SIGNAL_META.map((meta) => ({
+      key: meta.key,
+      label: meta.label,
+      pct: Math.round(((totals.get(meta.key) ?? 0) / grand) * 1000) / 10,
+    }));
+
+    // Per-signal top products
+    const breakdown: Record<SignalContribution["key"], SignalProductBreakdown[]> = {} as any;
+    for (const meta of SIGNAL_META) {
+      const totalForSignal = totals.get(meta.key) ?? 0;
+      const list: SignalProductBreakdown[] = rows
+        .map((r) => ({
+          product_id: r.product_id as string,
+          name: (r.product?.name as string) ?? "Unknown",
+          image_url: (r.product?.image_url as string) ?? null,
+          raw: Number(r[meta.column] ?? 0),
+          contribution_pct: totalForSignal
+            ? Math.round((Number(r[meta.column] ?? 0) / totalForSignal) * 1000) / 10
+            : 0,
+        }))
+        .filter((p) => p.raw > 0)
+        .sort((a, b) => b.raw - a.raw)
+        .slice(0, 10);
+      breakdown[meta.key] = list;
+    }
+
+    return { contributions, breakdown };
+  });
+
