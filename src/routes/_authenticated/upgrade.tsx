@@ -95,7 +95,7 @@ function UpgradePage() {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {TIERS.map((t) => {
           const p = PLANS[t];
           const price = t === "enterprise" ? "Custom/branch" : `${formatZar(p.monthly_zar_cents)}/mo`;
