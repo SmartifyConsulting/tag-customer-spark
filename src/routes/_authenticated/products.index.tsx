@@ -71,6 +71,13 @@ function ProductsListPage() {
     staleTime: 60_000,
   });
 
+  const notifCountsFn = useServerFn(getInventoryNotificationCountsByProduct);
+  const { data: notifCounts } = useQuery({
+    queryKey: ["inventory", "notification-counts-by-product"],
+    queryFn: () => notifCountsFn(),
+    staleTime: 60_000,
+  });
+
   const [searchTerm, setSearchTerm] = useState(search.search);
   useEffect(() => setSearchTerm(search.search), [search.search]);
   useEffect(() => {
