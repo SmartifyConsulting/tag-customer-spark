@@ -1,6 +1,17 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { PLANS, periodEnd, type Cycle, type PlanId } from "./pricing";
 
+export type UsageRow = {
+  id: string;
+  included_count: number;
+  sent_count: number;
+  overage_cents_accrued: number;
+  overage_rate_cents: number;
+  period_start: string;
+  period_end: string;
+  currency: string;
+};
+
 /** Ensure a usage counter row exists for the retailer's current period. */
 export async function ensureUsageCounter(retailerId: string) {
   const { data: retailer } = await supabaseAdmin
