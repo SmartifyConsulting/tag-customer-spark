@@ -93,4 +93,9 @@ export const FEATURE_META: Record<
     title: "Multi-store management",
     description: "Run every branch from one Tag workspace.",
   },
+  opportunityFeed: {
+    title: "AI Opportunity Feed",
+    description:
+      "Daily AI-surfaced actions ranked by projected revenue — available on Tag Pro and above.",
+  },
 };
