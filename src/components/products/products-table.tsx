@@ -212,6 +212,9 @@ export function ProductsTable({
                 <TableCell>
                   <InterestRing score={r.intent_score ?? 0} />
                 </TableCell>
+                <TableCell>
+                  <NotificationCountPills counts={notifCounts?.[r.id]} size="xs" />
+                </TableCell>
                 <TableCell className="pr-4">
                   {canManage && (
                     <RowActions row={r} onEdit={onEdit} onArchive={onArchive} onDelete={onDelete} />
