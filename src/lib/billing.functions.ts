@@ -235,13 +235,15 @@ export const cancelMySubscription = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const AllTiers = z.enum(["go", "starter", "growth", "pro", "enterprise"]);
+
 // ---------- User: change plan (up/down) without provider round-trip ----------
 export const changePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((v) =>
     z
       .object({
-        tier: z.enum(["starter", "pro", "enterprise"]),
+        tier: AllTiers,
         cycle: z.enum(["monthly", "annual"]).default("monthly"),
       })
       .parse(v),
@@ -251,36 +253,18 @@ export const changePlan = createServerFn({ method: "POST" })
     const { retailerId } = await requireBillingContext(supabase as never, userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    if (data.tier === "enterprise") {
+      return { ok: false, provider_redirect: false, contact_sales: true };
+    }
+
     const { data: sub } = await supabaseAdmin
       .from("subscriptions")
       .select("id, provider, billing_cycle, status")
       .eq("retailer_id", retailerId)
       .maybeSingle();
 
-    if (data.tier === "starter") {
-      // Downgrade: keep access until period end if paying; otherwise flip immediately.
-      if (sub && sub.status === "active") {
-        await supabaseAdmin
-          .from("subscriptions")
-          .update({ cancel_at_period_end: true, updated_by: userId })
-          .eq("retailer_id", retailerId);
-      } else {
-        await supabaseAdmin.from("retailers").update({ tier: "starter" }).eq("id", retailerId);
-      }
-      await supabaseAdmin.from("audit_logs").insert({
-        retailer_id: retailerId,
-        actor_user_id: userId,
-        action: "billing.change_plan",
-        entity_type: "subscription",
-        status: "success",
-        metadata: { tier: "starter" } as never,
-      });
-      return { ok: true, provider_redirect: false };
-    }
-
-    // Upgrade/switch to paid plan.
+    // Same-provider tier switch (no re-checkout) if there's an active sub.
     if (sub && sub.status === "active" && sub.provider) {
-      // Same-provider tier switch (no re-checkout).
       const { grantTier } = await import("./billing/grant.server");
       await grantTier(retailerId, data.tier, data.cycle, sub.provider as "payfast" | "paypal", null);
       await supabaseAdmin.from("audit_logs").insert({
@@ -298,6 +282,50 @@ export const changePlan = createServerFn({ method: "POST" })
     return { ok: false, provider_redirect: true };
   });
 
+// ---------- User: current-period usage ----------
+export const getMyUsage = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: roles } = await supabase.from("user_roles").select("retailer_id").eq("user_id", userId);
+    const retailerId = (roles ?? []).find((r: { retailer_id: string | null }) => r.retailer_id)?.retailer_id as string | undefined;
+    if (!retailerId) return null;
+    const { ensureUsageCounter } = await import("./billing/overage.server");
+    const row = await ensureUsageCounter(retailerId);
+    return row;
+  });
+
+// ---------- User: Tag Enterprise "Contact sales" ----------
+export const contactSalesForEnterprise = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((v) =>
+    z.object({
+      name: z.string().min(1).max(120),
+      email: z.string().email(),
+      company: z.string().max(160).optional(),
+      branches: z.number().int().min(1).max(5000).optional(),
+      message: z.string().max(4000).optional(),
+    }).parse(v),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId, supabase } = context;
+    const { data: roles } = await supabase.from("user_roles").select("retailer_id").eq("user_id", userId);
+    const retailerId = (roles ?? []).find((r: { retailer_id: string | null }) => r.retailer_id)?.retailer_id as string | undefined ?? null;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("sales_leads").insert({
+      retailer_id: retailerId,
+      submitted_by: userId,
+      name: data.name,
+      email: data.email,
+      company: data.company ?? null,
+      branches: data.branches ?? null,
+      message: data.message ?? null,
+      source: "enterprise_contact",
+      status: "new",
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
 
 // ---------- Super-admin: plan admin dashboard ----------
 export const adminListSubscriptions = createServerFn({ method: "GET" })
@@ -319,7 +347,7 @@ export const adminSetTier = createServerFn({ method: "POST" })
   .inputValidator((v) =>
     z.object({
       retailer_id: z.string().uuid(),
-      tier: z.enum(["starter", "pro", "enterprise"]),
+      tier: AllTiers,
       cycle: z.enum(["monthly", "annual"]).default("monthly"),
     }).parse(v),
   )
@@ -328,12 +356,13 @@ export const adminSetTier = createServerFn({ method: "POST" })
     const { data: isSuper } = await supabase.rpc("has_role", { _user_id: userId, _role: "super_admin" });
     if (!isSuper) throw new Error("Forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    if (data.tier === "starter") {
-      await supabaseAdmin.from("retailers").update({ tier: "starter" }).eq("id", data.retailer_id);
-      await supabaseAdmin.from("subscriptions").update({ status: "cancelled", cancel_at_period_end: true }).eq("retailer_id", data.retailer_id);
+    if (data.tier === "enterprise") {
+      // Mark tier only; enterprise contracts are handled offline.
+      await supabaseAdmin.from("retailers").update({ tier: "enterprise" }).eq("id", data.retailer_id);
       return { ok: true };
     }
     const { grantTier } = await import("./billing/grant.server");
     await grantTier(data.retailer_id, data.tier, data.cycle, "payfast", `manual-${Date.now()}`);
     return { ok: true };
   });
+
