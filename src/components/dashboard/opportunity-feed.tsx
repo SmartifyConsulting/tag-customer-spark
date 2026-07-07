@@ -1,11 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, X, RefreshCw, TrendingUp } from "lucide-react";
+import { Sparkles, X, RefreshCw, TrendingUp, Lock } from "lucide-react";
 import { listOpportunityFeed, getExecutiveSummary, dismissInsight, generateNowDailyBrief } from "@/lib/ai.functions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useTier } from "@/hooks/use-tier";
 
 function formatZAR(cents?: number | null) {
   if (cents == null) return null;
@@ -13,6 +15,39 @@ function formatZAR(cents?: number | null) {
 }
 
 export function OpportunityFeedCard() {
+  const { hasFeature, tier } = useTier();
+  if (!hasFeature("opportunityFeed")) {
+    return (
+      <Card className="overflow-hidden border-dashed">
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-muted-foreground" />
+              AI Opportunity Feed
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <Lock className="h-3 w-3" /> Tag Pro
+              </span>
+            </CardTitle>
+            <CardDescription>
+              Daily revenue-generating actions, surfaced automatically. Upgrade to Tag Pro to unlock.
+            </CardDescription>
+          </div>
+          <Button asChild size="sm">
+            <Link to="/upgrade" search={{ feature: "opportunityFeed" }}>
+              Upgrade
+            </Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            You're on <span className="font-medium capitalize">Tag {tier}</span>. The AI Opportunity Feed is a Tag Pro feature.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+
   const qc = useQueryClient();
   const feed = useQuery({
     queryKey: ["ai", "opportunity-feed"],
