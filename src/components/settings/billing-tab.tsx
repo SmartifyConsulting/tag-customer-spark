@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CreditCard, CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
+import { CreditCard, CheckCircle2, ExternalLink, Loader2, Lock, Building2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/empty-state";
 import {
   getMySubscription,
@@ -14,12 +19,15 @@ import {
   capturePaypalOrder,
   cancelMySubscription,
   changePlan,
+  getMyUsage,
+  contactSalesForEnterprise,
 } from "@/lib/billing.functions";
-import { PLANS, priceCents, formatZar, formatUsd, type PlanId, type Cycle } from "@/lib/billing/pricing";
+import { PLANS, SELF_SERVE_PLANS, priceCents, formatZar, formatUsd, type PlanId, type Cycle } from "@/lib/billing/pricing";
 
 export function BillingTab() {
   const qc = useQueryClient();
   const sub = useQuery({ queryKey: ["my-subscription"], queryFn: () => getMySubscription() });
+  const usage = useQuery({ queryKey: ["my-usage"], queryFn: () => getMyUsage() });
   const [cycle, setCycle] = useState<Cycle>("monthly");
 
   const currentTier = (sub.data?.retailer?.tier ?? "starter") as PlanId;
@@ -40,14 +48,14 @@ export function BillingTab() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 Current plan
-                <Badge className="uppercase" variant={currentTier === "starter" ? "outline" : "default"}>
-                  {currentTier}
+                <Badge className="uppercase" variant={currentTier === "go" ? "outline" : "default"}>
+                  {PLANS[currentTier]?.name ?? currentTier}
                 </Badge>
               </CardTitle>
               <CardDescription>
                 {subRow?.current_period_end
                   ? `Renews ${new Date(subRow.current_period_end).toLocaleDateString()} · ${subRow.billing_cycle ?? "monthly"} · via ${subRow.provider ?? "n/a"}`
-                  : "You're on the free Starter tier."}
+                  : "No active subscription — pick a plan below to start."}
               </CardDescription>
             </div>
             {subRow && subRow.status === "active" && !subRow.cancel_at_period_end && (
@@ -62,9 +70,11 @@ export function BillingTab() {
         </CardHeader>
       </Card>
 
+      <UsageCard usage={usage.data} loading={usage.isLoading} />
+
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Change plan</h3>
+          <h3 className="text-lg font-semibold">Choose a plan</h3>
           <p className="text-sm text-muted-foreground">Pay in Rand via PayFast, or in USD via PayPal.</p>
         </div>
         <div className="inline-flex rounded-lg border p-1 text-sm">
@@ -79,17 +89,18 @@ export function BillingTab() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {(Object.values(PLANS)).map((plan) => (
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {SELF_SERVE_PLANS.map((plan) => (
           <PlanCard
-            key={plan.id}
-            plan={plan.id}
+            key={plan}
+            plan={plan}
             cycle={cycle}
             currentTier={currentTier}
             hasActiveSub={!!subRow && subRow.status === "active"}
             activeProvider={(subRow?.provider as "payfast" | "paypal" | undefined) ?? null}
           />
         ))}
+        <EnterpriseCard currentTier={currentTier} />
       </div>
 
       <Card className="rounded-2xl">
@@ -123,6 +134,33 @@ export function BillingTab() {
   );
 }
 
+function UsageCard({ usage, loading }: { usage: { included_count: number; sent_count: number; overage_cents_accrued: number; period_end: string } | null | undefined; loading: boolean }) {
+  if (loading) return <Skeleton className="h-24 w-full rounded-2xl" />;
+  if (!usage) return null;
+  const pct = usage.included_count > 0 ? Math.min(100, (usage.sent_count / usage.included_count) * 100) : 0;
+  const overCount = Math.max(0, usage.sent_count - usage.included_count);
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader>
+        <CardTitle className="text-base">Usage this period</CardTitle>
+        <CardDescription>
+          {usage.sent_count.toLocaleString()} / {usage.included_count.toLocaleString()} notifications sent
+          {overCount > 0 && <> · <span className="text-warning">{overCount.toLocaleString()} overage</span></>}
+          {usage.period_end && <> · resets {new Date(usage.period_end).toLocaleDateString()}</>}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Progress value={pct} />
+        {usage.overage_cents_accrued > 0 && (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Projected overage charge: <span className="font-medium text-foreground">{formatZar(usage.overage_cents_accrued)}</span>
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function PlanCard({
   plan,
   cycle,
@@ -141,7 +179,7 @@ function PlanCard({
   const isCurrent = currentTier === plan;
   const zar = priceCents(plan, cycle, "ZAR");
   const usd = priceCents(plan, cycle, "USD");
-  const [busy, setBusy] = useState<null | "payfast" | "paypal" | "switch" | "downgrade">(null);
+  const [busy, setBusy] = useState<null | "payfast" | "paypal" | "switch">(null);
 
   const startPayfast = async () => {
     setBusy("payfast");
@@ -149,7 +187,7 @@ function PlanCard({
       const origin = window.location.origin;
       const { redirect_url } = await createPayfastCheckout({
         data: {
-          plan: plan as "pro" | "enterprise",
+          plan,
           cycle,
           return_url: `${origin}/settings?tab=billing&paid=1`,
           cancel_url: `${origin}/settings?tab=billing&cancelled=1`,
@@ -169,7 +207,7 @@ function PlanCard({
       const origin = window.location.origin;
       const { order_id, approve_url } = await createPaypalOrder({
         data: {
-          plan: plan as "pro" | "enterprise",
+          plan,
           cycle,
           return_url: `${origin}/settings?tab=billing&paypal_order=${encodeURIComponent("")}`,
           cancel_url: `${origin}/settings?tab=billing&cancelled=1`,
@@ -197,19 +235,6 @@ function PlanCard({
     }
   };
 
-  const doDowngrade = async () => {
-    setBusy("downgrade");
-    try {
-      await changePlan({ data: { tier: "starter", cycle } });
-      toast.success("Downgrade scheduled");
-      qc.invalidateQueries({ queryKey: ["my-subscription"] });
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setBusy(null);
-    }
-  };
-
   const doSwitch = async () => {
     setBusy("switch");
     try {
@@ -228,10 +253,9 @@ function PlanCard({
   };
 
   const cycleLabel = cycle === "annual" ? "annual" : "monthly";
-  const isPaid = plan !== "starter";
 
   return (
-    <Card className={`rounded-2xl ${isCurrent ? "border-mint" : ""}`}>
+    <Card className={`flex flex-col rounded-2xl ${isCurrent ? "border-mint" : ""}`}>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>{p.name}</span>
@@ -240,13 +264,99 @@ function PlanCard({
         <CardDescription>{p.tagline}</CardDescription>
         <div className="mt-2">
           <p className="text-3xl font-bold tracking-tight">
-            {zar === 0 ? "Free" : formatZar(zar)}
-            {zar > 0 && <span className="ml-1 text-sm font-normal text-muted-foreground">/{cycle === "annual" ? "yr" : "mo"}</span>}
+            {formatZar(zar)}
+            <span className="ml-1 text-sm font-normal text-muted-foreground">/{cycle === "annual" ? "yr" : "mo"}</span>
           </p>
           {usd > 0 && <p className="text-xs text-muted-foreground">or {formatUsd(usd)}/{cycle === "annual" ? "yr" : "mo"} in USD</p>}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex flex-1 flex-col justify-between gap-4">
+        <ul className="space-y-1.5 text-sm">
+          {p.features.map((f) => (
+            <li key={f} className="flex gap-2">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-mint" />
+              <span>{f}</span>
+            </li>
+          ))}
+          {p.locked.map((f) => (
+            <li key={f} className="flex gap-2 text-muted-foreground/70">
+              <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{f}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="grid gap-2">
+          {isCurrent && hasActiveSub && (
+            <p className="text-[11px] text-muted-foreground">You're on this plan. Switch cycle or provider below.</p>
+          )}
+          {!isCurrent && hasActiveSub && activeProvider && (
+            <Button variant="secondary" onClick={doSwitch} disabled={busy !== null}>
+              {busy === "switch" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Switch to {p.name} ({cycleLabel})
+            </Button>
+          )}
+          <Button onClick={startPayfast} disabled={busy !== null}>
+            {busy === "payfast" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            PayFast — {cycleLabel} (ZAR)
+          </Button>
+          <Button variant="outline" onClick={startPaypal} disabled={busy !== null}>
+            {busy === "paypal" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
+            PayPal — {cycleLabel} (USD)
+          </Button>
+          <p className="text-center text-[11px] text-muted-foreground">Ideal: {p.ideal_candidate}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function EnterpriseCard({ currentTier }: { currentTier: PlanId }) {
+  const p = PLANS.enterprise;
+  const isCurrent = currentTier === "enterprise";
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", company: "", branches: "", message: "" });
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    if (!form.name || !form.email) {
+      toast.error("Name and email are required");
+      return;
+    }
+    setBusy(true);
+    try {
+      await contactSalesForEnterprise({
+        data: {
+          name: form.name,
+          email: form.email,
+          company: form.company || undefined,
+          branches: form.branches ? parseInt(form.branches, 10) : undefined,
+          message: form.message || undefined,
+        },
+      });
+      toast.success("Thanks — our team will be in touch within one business day.");
+      setOpen(false);
+      setForm({ name: "", email: "", company: "", branches: "", message: "" });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card className="flex flex-col rounded-2xl bg-slate-950 text-slate-50 xl:col-span-1">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between text-slate-50">
+          <span>{p.name}</span>
+          {isCurrent && <Badge variant="outline" className="border-mint text-mint">Current</Badge>}
+        </CardTitle>
+        <CardDescription className="text-slate-300">{p.tagline}</CardDescription>
+        <div className="mt-2">
+          <p className="text-3xl font-bold tracking-tight">Custom<span className="ml-1 text-sm font-normal text-slate-400">/branch</span></p>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-1 flex-col justify-between gap-4">
         <ul className="space-y-1.5 text-sm">
           {p.features.map((f) => (
             <li key={f} className="flex gap-2">
@@ -255,41 +365,35 @@ function PlanCard({
             </li>
           ))}
         </ul>
-
-        {!isPaid ? (
-          <div className="grid gap-2">
-            {currentTier !== "starter" ? (
-              <Button variant="outline" onClick={doDowngrade} disabled={busy !== null}>
-                {busy === "downgrade" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Downgrade to Starter
+        <div className="grid gap-2">
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-mint text-slate-950 hover:bg-mint/90">
+                <Building2 className="mr-2 h-4 w-4" />
+                Contact sales
               </Button>
-            ) : (
-              <Button variant="outline" className="w-full" disabled>Free tier</Button>
-            )}
-          </div>
-        ) : (
-          <div className="grid gap-2">
-            {isCurrent && hasActiveSub && (
-              <p className="text-[11px] text-muted-foreground">You're on this plan. Switch cycle or provider below.</p>
-            )}
-            {!isCurrent && hasActiveSub && activeProvider && (
-              <Button variant="secondary" onClick={doSwitch} disabled={busy !== null}>
-                {busy === "switch" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Switch to {p.name} ({cycleLabel})
-              </Button>
-            )}
-            <Button onClick={startPayfast} disabled={busy !== null}>
-              {busy === "payfast" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Pay with PayFast — {cycleLabel} (ZAR)
-            </Button>
-            <Button variant="outline" onClick={startPaypal} disabled={busy !== null}>
-              {busy === "paypal" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
-              Pay with PayPal — {cycleLabel} (USD)
-            </Button>
-          </div>
-        )}
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Tag Enterprise — Contact sales</DialogTitle>
+                <DialogDescription>Tell us about your chain and we'll design a per-branch quote.</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-3">
+                <div className="grid gap-1.5"><Label htmlFor="cs-name">Your name</Label><Input id="cs-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+                <div className="grid gap-1.5"><Label htmlFor="cs-email">Email</Label><Input id="cs-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+                <div className="grid gap-1.5"><Label htmlFor="cs-company">Company</Label><Input id="cs-company" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} /></div>
+                <div className="grid gap-1.5"><Label htmlFor="cs-branches">Number of branches</Label><Input id="cs-branches" type="number" min={1} value={form.branches} onChange={(e) => setForm({ ...form, branches: e.target.value })} /></div>
+                <div className="grid gap-1.5"><Label htmlFor="cs-message">What are you looking for?</Label><Textarea id="cs-message" rows={4} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /></div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
+                <Button onClick={submit} disabled={busy}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <p className="text-center text-[11px] text-slate-400">Ideal: {p.ideal_candidate}</p>
+        </div>
       </CardContent>
     </Card>
   );
 }
-

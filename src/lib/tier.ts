@@ -1,6 +1,6 @@
 // Shared tier definitions. Client-safe: no server-only imports.
 
-export type TagTier = "starter" | "pro" | "enterprise";
+export type TagTier = "go" | "starter" | "growth" | "pro" | "enterprise";
 
 export type TierFeatureKey =
   | "intelligence"
@@ -14,25 +14,27 @@ export type TierFeatureKey =
   | "multiStore";
 
 export const TIER_LABEL: Record<TagTier, string> = {
+  go: "Tag Go",
   starter: "Tag Starter",
+  growth: "Tag Growth",
   pro: "Tag Pro",
   enterprise: "Tag Enterprise",
 };
 
-// Which tier unlocks each feature (starter=all, pro=pro+enterprise, enterprise-only)
+// Which tier unlocks each feature under the new 5-tier model.
 export const FEATURE_MIN_TIER: Record<TierFeatureKey, TagTier> = {
-  bulkQr: "pro",
-  aiAssistant: "pro",
-  advancedExports: "pro",
+  bulkQr: "starter",
+  advancedExports: "starter",
+  aiAssistant: "growth",
+  intentEngine: "growth",
   multiStore: "pro",
+  roi: "pro",
+  weeklyBriefings: "pro",
   intelligence: "enterprise",
-  roi: "enterprise",
-  weeklyBriefings: "enterprise",
-  intentEngine: "enterprise",
   apiAccess: "enterprise",
 };
 
-const RANK: Record<TagTier, number> = { starter: 0, pro: 1, enterprise: 2 };
+const RANK: Record<TagTier, number> = { go: 0, starter: 1, growth: 2, pro: 3, enterprise: 4 };
 
 export function hasFeature(tier: TagTier | undefined, feature: TierFeatureKey): boolean {
   if (!tier) return false;
@@ -52,7 +54,7 @@ export const FEATURE_META: Record<
   intelligence: {
     title: "Intelligence suite",
     description:
-      "Opportunity feed, demand insights, forecasting and trend detection — surfaced automatically.",
+      "Cross-store intelligence, executive briefings, custom data exports — surfaced automatically.",
   },
   roi: {
     title: "Performance & ROI",
@@ -60,7 +62,7 @@ export const FEATURE_META: Record<
       "Attribute recovered revenue to campaigns, run pricing sensitivity and conversion funnels.",
   },
   weeklyBriefings: {
-    title: "Weekly AI briefings",
+    title: "Weekly ROI email report",
     description:
       "Every Monday, a written executive summary of wins, watch-outs and next-week actions.",
   },

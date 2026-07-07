@@ -11,7 +11,7 @@ import { useState } from "react";
 type Row = {
   id: string;
   name: string;
-  tier: "starter" | "pro" | "enterprise";
+  tier: "go" | "starter" | "growth" | "pro" | "enterprise";
   contact_email: string | null;
   billing_email: string | null;
   subscriptions: Array<{
@@ -28,7 +28,7 @@ export function PlanAdminTab() {
   const qc = useQueryClient();
   const list = useQuery({ queryKey: ["admin-subs"], queryFn: () => adminListSubscriptions() });
   const setTier = useMutation({
-    mutationFn: (v: { retailer_id: string; tier: "starter" | "pro" | "enterprise" }) =>
+    mutationFn: (v: { retailer_id: string; tier: Row["tier"] }) =>
       adminSetTier({ data: { ...v, cycle: "monthly" } }),
     onSuccess: () => { toast.success("Tier updated"); qc.invalidateQueries({ queryKey: ["admin-subs"] }); },
     onError: (e: Error) => toast.error(e.message),
@@ -65,9 +65,9 @@ function PlanAdminRow({
 }: {
   row: Row;
   sub: NonNullable<Row["subscriptions"]>[number] | null;
-  onSet: (tier: "starter" | "pro" | "enterprise") => void;
+  onSet: (tier: Row["tier"]) => void;
 }) {
-  const [tier, setTier] = useState<"starter" | "pro" | "enterprise">(row.tier);
+  const [tier, setTier] = useState<Row["tier"]>(row.tier);
   return (
     <div className="grid grid-cols-[1.6fr_1fr_1fr_auto] items-center gap-4 px-6 py-4 text-sm">
       <div>
@@ -75,7 +75,7 @@ function PlanAdminRow({
         <p className="text-xs text-muted-foreground">{row.billing_email ?? row.contact_email ?? "—"}</p>
       </div>
       <div className="flex flex-col gap-1">
-        <Badge className="w-fit uppercase" variant={row.tier === "starter" ? "outline" : "default"}>{row.tier}</Badge>
+        <Badge className="w-fit uppercase" variant={row.tier === "go" ? "outline" : "default"}>{row.tier}</Badge>
         <span className="text-xs text-muted-foreground">{sub?.provider ?? "no provider"} · {sub?.billing_cycle ?? "—"}</span>
       </div>
       <div className="text-xs text-muted-foreground">
@@ -83,12 +83,14 @@ function PlanAdminRow({
         {sub?.cancel_at_period_end && <span className="ml-2 text-warning">· cancelling</span>}
       </div>
       <div className="flex items-center gap-2">
-        <Select value={tier} onValueChange={(v) => setTier(v as "starter" | "pro" | "enterprise")}>
-          <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
+        <Select value={tier} onValueChange={(v) => setTier(v as Row["tier"])}>
+          <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="starter">Starter</SelectItem>
-            <SelectItem value="pro">Pro</SelectItem>
-            <SelectItem value="enterprise">Enterprise</SelectItem>
+            <SelectItem value="go">Tag Go</SelectItem>
+            <SelectItem value="starter">Tag Starter</SelectItem>
+            <SelectItem value="growth">Tag Growth</SelectItem>
+            <SelectItem value="pro">Tag Pro</SelectItem>
+            <SelectItem value="enterprise">Tag Enterprise</SelectItem>
           </SelectContent>
         </Select>
         <Button size="sm" variant="outline" onClick={() => onSet(tier)}>Set</Button>

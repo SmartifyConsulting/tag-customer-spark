@@ -31,7 +31,7 @@ export const getWorkspaceTier = createServerFn({ method: "POST" })
 export const setWorkspaceTier = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ tier: z.enum(["starter", "pro", "enterprise"]) }).parse(d),
+    z.object({ tier: z.enum(["go", "starter", "growth", "pro", "enterprise"]) }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;

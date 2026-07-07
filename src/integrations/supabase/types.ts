@@ -893,6 +893,126 @@ export type Database = {
           },
         ]
       }
+      notification_overage_invoices: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          msg_over: number
+          payment_link: string | null
+          period_end: string
+          period_start: string
+          provider: string | null
+          provider_txn_id: string | null
+          retailer_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          msg_over?: number
+          payment_link?: string | null
+          period_end: string
+          period_start: string
+          provider?: string | null
+          provider_txn_id?: string | null
+          retailer_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          msg_over?: number
+          payment_link?: string | null
+          period_end?: string
+          period_start?: string
+          provider?: string | null
+          provider_txn_id?: string | null
+          retailer_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_overage_invoices_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "notification_overage_invoices_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_usage_counters: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          included_count: number
+          overage_cents_accrued: number
+          overage_rate_cents: number
+          period_end: string
+          period_start: string
+          retailer_id: string
+          sent_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          included_count?: number
+          overage_cents_accrued?: number
+          overage_rate_cents?: number
+          period_end: string
+          period_start: string
+          retailer_id: string
+          sent_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          included_count?: number
+          overage_cents_accrued?: number
+          overage_rate_cents?: number
+          period_end?: string
+          period_start?: string
+          retailer_id?: string
+          sent_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_usage_counters_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "notification_usage_counters_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_purchases: {
         Row: {
           amount_cents: number
@@ -1967,6 +2087,66 @@ export type Database = {
           },
         ]
       }
+      sales_leads: {
+        Row: {
+          branches: number | null
+          company: string | null
+          created_at: string
+          email: string
+          id: string
+          message: string | null
+          name: string
+          retailer_id: string | null
+          source: string
+          status: string
+          submitted_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          branches?: number | null
+          company?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          message?: string | null
+          name: string
+          retailer_id?: string | null
+          source?: string
+          status?: string
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          branches?: number | null
+          company?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string | null
+          name?: string
+          retailer_id?: string | null
+          source?: string
+          status?: string
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_leads_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "sales_leads_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_recoveries: {
         Row: {
           amount_cents: number
@@ -2619,7 +2799,7 @@ export type Database = {
       staff_status: "active" | "invited" | "disabled"
       store_status: "active" | "closed" | "pending"
       subscription_status: "trialing" | "active" | "past_due" | "cancelled"
-      tag_tier: "starter" | "pro" | "enterprise"
+      tag_tier: "go" | "starter" | "growth" | "pro" | "enterprise"
       watchlist_status: "active" | "paused" | "fired" | "expired" | "cancelled"
       watchlist_trigger:
         | "on_sale"
@@ -2810,7 +2990,7 @@ export const Constants = {
       staff_status: ["active", "invited", "disabled"],
       store_status: ["active", "closed", "pending"],
       subscription_status: ["trialing", "active", "past_due", "cancelled"],
-      tag_tier: ["starter", "pro", "enterprise"],
+      tag_tier: ["go", "starter", "growth", "pro", "enterprise"],
       watchlist_status: ["active", "paused", "fired", "expired", "cancelled"],
       watchlist_trigger: [
         "on_sale",

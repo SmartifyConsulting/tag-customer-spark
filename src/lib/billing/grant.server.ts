@@ -8,7 +8,7 @@ export async function grantTier(
   provider: "payfast" | "paypal",
   providerSubId: string | null = null,
 ) {
-  if (plan === "starter") return;
+  if (plan === "enterprise") return; // enterprise handled offline by sales
   const pe = periodEnd(cycle).toISOString();
   const { error } = await supabaseAdmin.rpc("apply_paid_tier", {
     _retailer_id: retailerId,
