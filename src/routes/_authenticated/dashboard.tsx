@@ -27,6 +27,7 @@ import { RecentActivityCard } from "@/components/dashboard/recent-activity-card"
 import { OpportunityFeedCard } from "@/components/dashboard/opportunity-feed";
 import { IntentSectionsCard } from "@/components/dashboard/intent-sections-card";
 import { LowStockCard } from "@/components/dashboard/low-stock-card";
+import { SignalContributionsCard } from "@/components/dashboard/signal-contributions-card";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
