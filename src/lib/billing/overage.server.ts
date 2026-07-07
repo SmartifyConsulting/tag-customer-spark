@@ -42,7 +42,7 @@ export async function ensureUsageCounter(retailerId: string) {
     })
     .select()
     .single();
-  return inserted as { id: string; included_count: number; sent_count: number; overage_cents_accrued: number; overage_rate_cents: number };
+  return inserted as UsageRow;
 }
 
 /** Increment sent_count and accrue overage where applicable. */
