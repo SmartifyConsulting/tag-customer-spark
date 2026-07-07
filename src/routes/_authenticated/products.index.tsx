@@ -151,7 +151,7 @@ function ProductsListPage() {
   return (
     <div className="grid gap-6">
       <PageHeader
-        title="Items & Tags"
+        title="Inventory"
         description="Manage products, stock levels, and QR tags in one place."
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -174,6 +174,9 @@ function ProductsListPage() {
           </div>
         }
       />
+
+      <NotificationCountsStrip />
+
 
       <ProductsToolbar
         value={{
