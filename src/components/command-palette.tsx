@@ -5,19 +5,20 @@ import {
 } from "@/components/ui/command";
 import {
   LayoutDashboard, Package, Users, Inbox, BarChart3, Store, UserCog, Settings,
-  Sparkles, Gauge, Eye, DollarSign,
+  Sparkles, Gauge, Eye, DollarSign, ShieldCheck,
 } from "lucide-react";
 
 const items = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, group: "Go to" },
-  { label: "AI Intelligence", to: "/intelligence", icon: Sparkles, group: "Go to" },
-  { label: "Intent Engine", to: "/intent", icon: Gauge, group: "Go to" },
-  { label: "Watchlists", to: "/watchlists", icon: Eye, group: "Go to" },
-  { label: "ROI Engine", to: "/roi", icon: DollarSign, group: "Go to" },
   { label: "Inventory", to: "/products", icon: Package, group: "Go to" },
   { label: "Customers", to: "/customers", icon: Users, group: "Go to" },
-  { label: "Inbox", to: "/inbox", icon: Inbox, group: "Go to" },
-  { label: "Analytics", to: "/analytics", icon: BarChart3, group: "Go to" },
+  { label: "Watchlists", to: "/watchlists", icon: Eye, group: "Go to" },
+  { label: "Intent Engine", to: "/intent", icon: Gauge, group: "Go to" },
+  { label: "Notifications", to: "/inbox", icon: Inbox, group: "Go to" },
+  { label: "Insights", to: "/analytics", icon: BarChart3, group: "Go to" },
+  { label: "AI Intelligence", to: "/intelligence", icon: Sparkles, group: "Go to" },
+  { label: "ROI Engine", to: "/roi", icon: DollarSign, group: "Go to" },
+  { label: "Admin", to: "/staff", icon: ShieldCheck, group: "Go to" },
   { label: "Stores", to: "/stores", icon: Store, group: "Go to" },
   { label: "Staff", to: "/staff", icon: UserCog, group: "Go to" },
   { label: "Settings", to: "/settings", icon: Settings, group: "Go to" },
