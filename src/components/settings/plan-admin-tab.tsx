@@ -11,7 +11,7 @@ import { useState } from "react";
 type Row = {
   id: string;
   name: string;
-  tier: "starter" | "pro" | "enterprise";
+  tier: "go" | "starter" | "growth" | "pro" | "enterprise";
   contact_email: string | null;
   billing_email: string | null;
   subscriptions: Array<{
