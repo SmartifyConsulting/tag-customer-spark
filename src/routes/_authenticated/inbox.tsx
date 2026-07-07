@@ -161,7 +161,7 @@ function InboxPage() {
                           {c.subject ?? "New conversation"}
                         </span>
                         {c.unread_count > 0 && (
-                          <Badge className="h-4 min-w-4 px-1 text-[10px] bg-[color:var(--success)]">{c.unread_count}</Badge>
+                          <Badge className="h-4 min-w-4 px-1 text-[10px] bg-muted text-muted-foreground">{c.unread_count}</Badge>
                         )}
                       </div>
                       {c.tags?.length > 0 && (
