@@ -297,9 +297,10 @@ export function getPublicSiteBase(): string {
   );
 }
 
-// Canonical GS1 Digital Link for a GTIN — routed through our resolver so the
-// same QR resolves to the Digital Product Passport for humans but stays a
-// conformant GS1 Digital Link (AI 01) for POS scanners.
+// Canonical public product URL — this is what the QR encodes. It's a normal
+// public page (never an API endpoint) so scans open directly to the Digital
+// Product Passport with no redirect hop. POS scanners still parse the GTIN
+// out of the /products/{gtin} path segment identically to a linear scan.
 export function resolverUrlForGtin(gtin14: string): string {
-  return `${getPublicSiteBase()}/api/public/01/${gtin14}`;
+  return `${getPublicSiteBase()}/products/${gtin14}`;
 }
