@@ -37,8 +37,6 @@ import {
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { PassportTab } from "@/components/products/passport-tab";
 import { ProductQrPanel } from "@/components/qr/product-qr-panel";
-import { QrPreview } from "@/components/qr/qr-preview";
-import { getPublicScanBase, regenerateProductQr } from "@/lib/qr.functions";
 import { ProductIntentPanel } from "@/components/intent/product-intent-panel";
 import { ScansTable } from "@/components/qr/scans-table";
 import { formatMoney } from "@/lib/format";
