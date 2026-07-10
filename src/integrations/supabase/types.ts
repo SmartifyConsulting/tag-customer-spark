@@ -1480,6 +1480,7 @@ export type Database = {
       }
       product_passports: {
         Row: {
+          ai_confidence: number | null
           allergens: string[]
           brand: string | null
           category_path: string | null
@@ -1493,25 +1494,37 @@ export type Database = {
           enrichment_status: string
           field_confidence: Json
           gtin: string | null
+          hero_image: string | null
           id: string
+          image_gallery: Json
           images: Json
           ingredients: Json
+          keywords: string[]
           last_edited_by: string | null
           manufacturer: string | null
           marketing_description: string | null
           materials: Json
           nutrition: Json
+          preparation_instructions: string | null
           product_id: string
           product_summary: string | null
+          recycling: Json
           retailer_id: string
+          seo_meta: Json
           short_description: string | null
           sources: Json
+          status: string
+          storage_instructions: string | null
           sustainability: Json
+          thumbnail: string | null
+          translations: Json
           updated_at: string
           version: number
+          visibility: string
           warranty: Json
         }
         Insert: {
+          ai_confidence?: number | null
           allergens?: string[]
           brand?: string | null
           category_path?: string | null
@@ -1525,25 +1538,37 @@ export type Database = {
           enrichment_status?: string
           field_confidence?: Json
           gtin?: string | null
+          hero_image?: string | null
           id?: string
+          image_gallery?: Json
           images?: Json
           ingredients?: Json
+          keywords?: string[]
           last_edited_by?: string | null
           manufacturer?: string | null
           marketing_description?: string | null
           materials?: Json
           nutrition?: Json
+          preparation_instructions?: string | null
           product_id: string
           product_summary?: string | null
+          recycling?: Json
           retailer_id: string
+          seo_meta?: Json
           short_description?: string | null
           sources?: Json
+          status?: string
+          storage_instructions?: string | null
           sustainability?: Json
+          thumbnail?: string | null
+          translations?: Json
           updated_at?: string
           version?: number
+          visibility?: string
           warranty?: Json
         }
         Update: {
+          ai_confidence?: number | null
           allergens?: string[]
           brand?: string | null
           category_path?: string | null
@@ -1557,22 +1582,33 @@ export type Database = {
           enrichment_status?: string
           field_confidence?: Json
           gtin?: string | null
+          hero_image?: string | null
           id?: string
+          image_gallery?: Json
           images?: Json
           ingredients?: Json
+          keywords?: string[]
           last_edited_by?: string | null
           manufacturer?: string | null
           marketing_description?: string | null
           materials?: Json
           nutrition?: Json
+          preparation_instructions?: string | null
           product_id?: string
           product_summary?: string | null
+          recycling?: Json
           retailer_id?: string
+          seo_meta?: Json
           short_description?: string | null
           sources?: Json
+          status?: string
+          storage_instructions?: string | null
           sustainability?: Json
+          thumbnail?: string | null
+          translations?: Json
           updated_at?: string
           version?: number
+          visibility?: string
           warranty?: Json
         }
         Relationships: [
@@ -1702,7 +1738,12 @@ export type Database = {
           digital_link_url: string | null
           digital_product_passport_id: string
           gtin: string | null
+          hero_image: string | null
           id: string
+          image_gallery: Json
+          image_source: string | null
+          image_status: string
+          image_updated_at: string | null
           image_url: string | null
           images: Json
           intent_score: number
@@ -1725,6 +1766,7 @@ export type Database = {
           status: Database["public"]["Enums"]["product_status"]
           stock_qty: number
           store_id: string | null
+          thumbnail_url: string | null
           updated_at: string
         }
         Insert: {
@@ -1739,7 +1781,12 @@ export type Database = {
           digital_link_url?: string | null
           digital_product_passport_id?: string
           gtin?: string | null
+          hero_image?: string | null
           id?: string
+          image_gallery?: Json
+          image_source?: string | null
+          image_status?: string
+          image_updated_at?: string | null
           image_url?: string | null
           images?: Json
           intent_score?: number
@@ -1762,6 +1809,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["product_status"]
           stock_qty?: number
           store_id?: string | null
+          thumbnail_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -1776,7 +1824,12 @@ export type Database = {
           digital_link_url?: string | null
           digital_product_passport_id?: string
           gtin?: string | null
+          hero_image?: string | null
           id?: string
+          image_gallery?: Json
+          image_source?: string | null
+          image_status?: string
+          image_updated_at?: string | null
           image_url?: string | null
           images?: Json
           intent_score?: number
@@ -1799,6 +1852,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["product_status"]
           stock_qty?: number
           store_id?: string | null
+          thumbnail_url?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1932,52 +1986,82 @@ export type Database = {
       }
       qr_scans: {
         Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
           created_at: string
           customer_id: string | null
           device_type: string | null
           dwell_ms: number | null
           id: string
           ip_hash: string | null
+          os: string | null
           product_id: string
-          qr_tag_id: string
+          qr_tag_id: string | null
           qr_version: number | null
           referrer: string | null
+          region: string | null
           retailer_id: string
           scanned_at: string
+          session_id: string | null
           store_id: string | null
           user_agent: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          visitor_id: string | null
         }
         Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           customer_id?: string | null
           device_type?: string | null
           dwell_ms?: number | null
           id?: string
           ip_hash?: string | null
+          os?: string | null
           product_id: string
-          qr_tag_id: string
+          qr_tag_id?: string | null
           qr_version?: number | null
           referrer?: string | null
+          region?: string | null
           retailer_id: string
           scanned_at?: string
+          session_id?: string | null
           store_id?: string | null
           user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          visitor_id?: string | null
         }
         Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           customer_id?: string | null
           device_type?: string | null
           dwell_ms?: number | null
           id?: string
           ip_hash?: string | null
+          os?: string | null
           product_id?: string
-          qr_tag_id?: string
+          qr_tag_id?: string | null
           qr_version?: number | null
           referrer?: string | null
+          region?: string | null
           retailer_id?: string
           scanned_at?: string
+          session_id?: string | null
           store_id?: string | null
           user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          visitor_id?: string | null
         }
         Relationships: [
           {
