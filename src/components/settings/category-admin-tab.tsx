@@ -2,17 +2,19 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Plus, Trash2, Pencil, FolderTree } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Trash2, Pencil, FolderTree, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/empty-state";
 import {
-  listCategories,
+  listCategoriesWithCounts,
   createCategory,
   renameCategory,
   deleteCategory,
+  bulkAutoCategorise,
 } from "@/lib/categories.functions";
 
 type Row = { id: string; name: string; parent_id: string | null; status: string };
