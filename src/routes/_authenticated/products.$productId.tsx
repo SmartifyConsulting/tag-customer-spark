@@ -200,6 +200,15 @@ function ProductDetail() {
         </div>
       </div>
 
+      <div className="grid gap-4 md:grid-cols-2">
+        <ImageStatusCard product={p as any} />
+        <DigitalIdentityProgress
+          product={p as any}
+          qr={data.qr ? { active: (data.qr as any).status === "active" } : null}
+          passport={(data as any).passport ?? null}
+        />
+      </div>
+
       <div id="product-qr">
         <ProductQrPanel
           productId={productId}
