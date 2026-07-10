@@ -117,7 +117,7 @@ const getPublicProductByGtin = createServerFn({ method: "GET" })
 
 // ------- Route --------------------------------------------------------------
 
-export const Route = createFileRoute("/products/$gtin")({
+export const Route = createFileRoute("/passport/$gtin")({
   loader: async ({ params }) => {
     const data = await getPublicProductByGtin({ data: { gtin: params.gtin } });
     if (!data.found) throw notFound();
