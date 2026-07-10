@@ -1013,6 +1013,62 @@ export type Database = {
           },
         ]
       }
+      passport_enrichment_queue: {
+        Row: {
+          attempts: number
+          enqueued_at: string
+          last_attempt_at: string | null
+          last_error: string | null
+          product_id: string
+          retailer_id: string
+        }
+        Insert: {
+          attempts?: number
+          enqueued_at?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          product_id: string
+          retailer_id: string
+        }
+        Update: {
+          attempts?: number
+          enqueued_at?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          product_id?: string
+          retailer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passport_enrichment_queue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passport_enrichment_queue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "passport_enrichment_queue_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "passport_enrichment_queue_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_purchases: {
         Row: {
           amount_cents: number
@@ -1329,6 +1385,134 @@ export type Database = {
           },
         ]
       }
+      product_passports: {
+        Row: {
+          allergens: string[]
+          brand: string | null
+          category_path: string | null
+          consumer_faqs: Json
+          country_of_origin: string | null
+          created_at: string
+          dimensions: Json
+          dpp_id: string
+          enriched_at: string | null
+          enrichment_model: string | null
+          enrichment_status: string
+          field_confidence: Json
+          gtin: string | null
+          id: string
+          images: Json
+          ingredients: Json
+          last_edited_by: string | null
+          manufacturer: string | null
+          marketing_description: string | null
+          materials: Json
+          nutrition: Json
+          product_id: string
+          product_summary: string | null
+          retailer_id: string
+          short_description: string | null
+          sources: Json
+          sustainability: Json
+          updated_at: string
+          version: number
+          warranty: Json
+        }
+        Insert: {
+          allergens?: string[]
+          brand?: string | null
+          category_path?: string | null
+          consumer_faqs?: Json
+          country_of_origin?: string | null
+          created_at?: string
+          dimensions?: Json
+          dpp_id: string
+          enriched_at?: string | null
+          enrichment_model?: string | null
+          enrichment_status?: string
+          field_confidence?: Json
+          gtin?: string | null
+          id?: string
+          images?: Json
+          ingredients?: Json
+          last_edited_by?: string | null
+          manufacturer?: string | null
+          marketing_description?: string | null
+          materials?: Json
+          nutrition?: Json
+          product_id: string
+          product_summary?: string | null
+          retailer_id: string
+          short_description?: string | null
+          sources?: Json
+          sustainability?: Json
+          updated_at?: string
+          version?: number
+          warranty?: Json
+        }
+        Update: {
+          allergens?: string[]
+          brand?: string | null
+          category_path?: string | null
+          consumer_faqs?: Json
+          country_of_origin?: string | null
+          created_at?: string
+          dimensions?: Json
+          dpp_id?: string
+          enriched_at?: string | null
+          enrichment_model?: string | null
+          enrichment_status?: string
+          field_confidence?: Json
+          gtin?: string | null
+          id?: string
+          images?: Json
+          ingredients?: Json
+          last_edited_by?: string | null
+          manufacturer?: string | null
+          marketing_description?: string | null
+          materials?: Json
+          nutrition?: Json
+          product_id?: string
+          product_summary?: string | null
+          retailer_id?: string
+          short_description?: string | null
+          sources?: Json
+          sustainability?: Json
+          updated_at?: string
+          version?: number
+          warranty?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_passports_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_passports_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_passports_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "product_passports_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_qr_assets: {
         Row: {
           created_at: string
@@ -1339,6 +1523,7 @@ export type Database = {
           pdf_path: string | null
           png_path: string | null
           product_id: string
+          resolver_url: string | null
           retailer_id: string
           svg_path: string | null
         }
@@ -1351,6 +1536,7 @@ export type Database = {
           pdf_path?: string | null
           png_path?: string | null
           product_id: string
+          resolver_url?: string | null
           retailer_id: string
           svg_path?: string | null
         }
@@ -1363,6 +1549,7 @@ export type Database = {
           pdf_path?: string | null
           png_path?: string | null
           product_id?: string
+          resolver_url?: string | null
           retailer_id?: string
           svg_path?: string | null
         }
@@ -1408,6 +1595,7 @@ export type Database = {
           currency: string
           description: string | null
           digital_link_url: string | null
+          digital_product_passport_id: string
           gtin: string | null
           id: string
           image_url: string | null
@@ -1441,6 +1629,7 @@ export type Database = {
           currency?: string
           description?: string | null
           digital_link_url?: string | null
+          digital_product_passport_id?: string
           gtin?: string | null
           id?: string
           image_url?: string | null
@@ -1474,6 +1663,7 @@ export type Database = {
           currency?: string
           description?: string | null
           digital_link_url?: string | null
+          digital_product_passport_id?: string
           gtin?: string | null
           id?: string
           image_url?: string | null

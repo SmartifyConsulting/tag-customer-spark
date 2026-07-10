@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ScanShortCodeRouteImport } from './routes/scan.$shortCode'
+import { Route as PDppIdRouteImport } from './routes/p.$dppId'
 import { Route as NMessageIdRouteImport } from './routes/n.$messageId'
 import { Route as AuthenticatedWatchlistsRouteImport } from './routes/_authenticated/watchlists'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
@@ -49,8 +50,10 @@ import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public
 import { Route as ApiPublicWebhooksPayfastItnRouteImport } from './routes/api/public/webhooks/payfast-itn'
 import { Route as ApiPublicScanInterestRouteImport } from './routes/api/public/scan.interest'
 import { Route as ApiPublicSShortCodeRouteImport } from './routes/api/public/s.$shortCode'
+import { Route as ApiPublicHooksPassportTickRouteImport } from './routes/api/public/hooks.passport-tick'
 import { Route as ApiPublicHooksNotificationsTickRouteImport } from './routes/api/public/hooks.notifications-tick'
 import { Route as ApiPublicHooksIntentTickRouteImport } from './routes/api/public/hooks.intent-tick'
+import { Route as ApiPublic01GtinRouteImport } from './routes/api/public/01.$gtin'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -79,6 +82,11 @@ const IndexRoute = IndexRouteImport.update({
 const ScanShortCodeRoute = ScanShortCodeRouteImport.update({
   id: '/scan/$shortCode',
   path: '/scan/$shortCode',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PDppIdRoute = PDppIdRouteImport.update({
+  id: '/p/$dppId',
+  path: '/p/$dppId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NMessageIdRoute = NMessageIdRouteImport.update({
@@ -269,6 +277,12 @@ const ApiPublicSShortCodeRoute = ApiPublicSShortCodeRouteImport.update({
   path: '/api/public/s/$shortCode',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksPassportTickRoute =
+  ApiPublicHooksPassportTickRouteImport.update({
+    id: '/api/public/hooks/passport-tick',
+    path: '/api/public/hooks/passport-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksNotificationsTickRoute =
   ApiPublicHooksNotificationsTickRouteImport.update({
     id: '/api/public/hooks/notifications-tick',
@@ -281,6 +295,11 @@ const ApiPublicHooksIntentTickRoute =
     path: '/api/public/hooks/intent-tick',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublic01GtinRoute = ApiPublic01GtinRouteImport.update({
+  id: '/api/public/01/$gtin',
+  path: '/api/public/01/$gtin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -301,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
+  '/p/$dppId': typeof PDppIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -317,8 +337,10 @@ export interface FileRoutesByFullPath {
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
+  '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
+  '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
@@ -343,6 +365,7 @@ export interface FileRoutesByTo {
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
+  '/p/$dppId': typeof PDppIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -359,8 +382,10 @@ export interface FileRoutesByTo {
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/products': typeof AuthenticatedProductsIndexRoute
+  '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
+  '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
@@ -388,6 +413,7 @@ export interface FileRoutesById {
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/_authenticated/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
+  '/p/$dppId': typeof PDppIdRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/_authenticated/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/_authenticated/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -404,8 +430,10 @@ export interface FileRoutesById {
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/products/compare': typeof AuthenticatedProductsCompareRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
+  '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
+  '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
@@ -433,6 +461,7 @@ export interface FileRouteTypes {
     | '/upgrade'
     | '/watchlists'
     | '/n/$messageId'
+    | '/p/$dppId'
     | '/scan/$shortCode'
     | '/analytics/history'
     | '/analytics/reports'
@@ -449,8 +478,10 @@ export interface FileRouteTypes {
     | '/products/$productId'
     | '/products/compare'
     | '/products/'
+    | '/api/public/01/$gtin'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
+    | '/api/public/hooks/passport-tick'
     | '/api/public/s/$shortCode'
     | '/api/public/scan/interest'
     | '/api/public/webhooks/payfast-itn'
@@ -475,6 +506,7 @@ export interface FileRouteTypes {
     | '/upgrade'
     | '/watchlists'
     | '/n/$messageId'
+    | '/p/$dppId'
     | '/scan/$shortCode'
     | '/analytics/history'
     | '/analytics/reports'
@@ -491,8 +523,10 @@ export interface FileRouteTypes {
     | '/products/$productId'
     | '/products/compare'
     | '/products'
+    | '/api/public/01/$gtin'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
+    | '/api/public/hooks/passport-tick'
     | '/api/public/s/$shortCode'
     | '/api/public/scan/interest'
     | '/api/public/webhooks/payfast-itn'
@@ -519,6 +553,7 @@ export interface FileRouteTypes {
     | '/_authenticated/upgrade'
     | '/_authenticated/watchlists'
     | '/n/$messageId'
+    | '/p/$dppId'
     | '/scan/$shortCode'
     | '/_authenticated/analytics/history'
     | '/_authenticated/analytics/reports'
@@ -535,8 +570,10 @@ export interface FileRouteTypes {
     | '/_authenticated/products/$productId'
     | '/_authenticated/products/compare'
     | '/_authenticated/products/'
+    | '/api/public/01/$gtin'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
+    | '/api/public/hooks/passport-tick'
     | '/api/public/s/$shortCode'
     | '/api/public/scan/interest'
     | '/api/public/webhooks/payfast-itn'
@@ -551,9 +588,12 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   NMessageIdRoute: typeof NMessageIdRoute
+  PDppIdRoute: typeof PDppIdRoute
   ScanShortCodeRoute: typeof ScanShortCodeRoute
+  ApiPublic01GtinRoute: typeof ApiPublic01GtinRoute
   ApiPublicHooksIntentTickRoute: typeof ApiPublicHooksIntentTickRoute
   ApiPublicHooksNotificationsTickRoute: typeof ApiPublicHooksNotificationsTickRoute
+  ApiPublicHooksPassportTickRoute: typeof ApiPublicHooksPassportTickRoute
   ApiPublicSShortCodeRoute: typeof ApiPublicSShortCodeRoute
   ApiPublicScanInterestRoute: typeof ApiPublicScanInterestRoute
   ApiPublicWebhooksPayfastItnRoute: typeof ApiPublicWebhooksPayfastItnRoute
@@ -603,6 +643,13 @@ declare module '@tanstack/react-router' {
       path: '/scan/$shortCode'
       fullPath: '/scan/$shortCode'
       preLoaderRoute: typeof ScanShortCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/p/$dppId': {
+      id: '/p/$dppId'
+      path: '/p/$dppId'
+      fullPath: '/p/$dppId'
+      preLoaderRoute: typeof PDppIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/n/$messageId': {
@@ -843,6 +890,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSShortCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/passport-tick': {
+      id: '/api/public/hooks/passport-tick'
+      path: '/api/public/hooks/passport-tick'
+      fullPath: '/api/public/hooks/passport-tick'
+      preLoaderRoute: typeof ApiPublicHooksPassportTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/notifications-tick': {
       id: '/api/public/hooks/notifications-tick'
       path: '/api/public/hooks/notifications-tick'
@@ -855,6 +909,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hooks/intent-tick'
       fullPath: '/api/public/hooks/intent-tick'
       preLoaderRoute: typeof ApiPublicHooksIntentTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/01/$gtin': {
+      id: '/api/public/01/$gtin'
+      path: '/api/public/01/$gtin'
+      fullPath: '/api/public/01/$gtin'
+      preLoaderRoute: typeof ApiPublic01GtinRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -982,9 +1043,12 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   NMessageIdRoute: NMessageIdRoute,
+  PDppIdRoute: PDppIdRoute,
   ScanShortCodeRoute: ScanShortCodeRoute,
+  ApiPublic01GtinRoute: ApiPublic01GtinRoute,
   ApiPublicHooksIntentTickRoute: ApiPublicHooksIntentTickRoute,
   ApiPublicHooksNotificationsTickRoute: ApiPublicHooksNotificationsTickRoute,
+  ApiPublicHooksPassportTickRoute: ApiPublicHooksPassportTickRoute,
   ApiPublicSShortCodeRoute: ApiPublicSShortCodeRoute,
   ApiPublicScanInterestRoute: ApiPublicScanInterestRoute,
   ApiPublicWebhooksPayfastItnRoute: ApiPublicWebhooksPayfastItnRoute,
