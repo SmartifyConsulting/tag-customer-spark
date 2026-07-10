@@ -1,29 +1,36 @@
-## Why the tracker is stuck
+## Problem
+Right now the image resolver and passport enrichment only run when you open a single product's detail page (auto-heal on `getProduct`) or click "Enrich passport" per product. For a full catalogue this is painful.
 
-Looked at the actual product `c27beabc…` in the DB:
+## Plan: bulk "Complete digital identity" runner
 
-- `image_status = pending`, `image_url` empty → the image resolver never ran on this product (its QR was generated before the resolver existed, and nothing back-fills it now).
-- `passport_status = published`, `enrichment_status = pending` → the passport IS published, but the tracker still shows it unticked because **`getProduct` doesn't return the passport row** to the client — so the progress card gets `passport = null` and can't tick that step, and enrichment sits pending because nothing kicks off the background tick.
+Add a one-click bulk action on the Inventory screen that walks every product (or the current filtered set / selected rows) through all 5 steps in parallel batches, with a live progress toast.
 
-Result: 2/5 stuck, exactly as in the screenshot.
+### 1. New server function `bulkCompleteDigitalIdentity` (`src/lib/products.functions.ts`)
+- Input: `{ productIds?: string[]; scope?: "all" | "incomplete" }` (default: `incomplete` — any product missing image, QR, passport, or enrichment).
+- Auth: `requireSupabaseAuth`, scoped to caller's retailer via RLS.
+- For each product (processed in parallel batches of ~5 to respect rate limits):
+  1. If no active QR + valid GTIN → call `generateForProduct` (which already generates QR, publishes shell passport, resolves image, enqueues enrichment).
+  2. Else if `image_status` pending/null → call `resolveAndSyncProductImage`.
+  3. If passport `enrichment_status` != `complete` → call `enrichProductPassport` inline (don't just enqueue).
+- Return `{ processed, succeeded, failed, errors: [{productId, step, message}] }`.
+- Skips products without a valid GTIN (report as `skipped_no_gtin`).
 
-## Fix
+### 2. UI: "Complete all" button in Inventory toolbar (`src/components/products/products-toolbar.tsx` + `src/routes/_authenticated/products.index.tsx`)
+- Button "Complete digital identity" next to Import.
+- On click → confirm dialog showing count of incomplete products → runs `bulkCompleteDigitalIdentity`.
+- Streams progress via a simple loading toast ("Processing 12 / 47…") by chunking the call client-side into batches of 10 productIds and updating the toast between batches (avoids one giant long request timing out on the edge worker).
+- On finish → invalidate queries; toast summary with success/skip/fail counts.
 
-1. **Return the passport from `getProduct`** (`src/lib/products.functions.ts`) — add a `product_passports` select (status, enrichment_status, dpp_id) and expose it as `passport` on the response. This alone unticks "Digital passport published".
+### 3. Speed up the existing cron drain (optional, small)
+`src/routes/api/public/hooks.passport-tick.ts` currently limits to 20. Raise ceiling to 50 and process in `Promise.all` batches of 5 so an admin-triggered tick clears the queue faster.
 
-2. **Auto-heal the image on product open** (`src/lib/products.functions.ts` in `getProduct`, or a lightweight `ensureProductImage` server fn called from the detail route): when `image_status` is `pending` or null, fire-and-await `resolveAndSyncProductImage` before returning. First open of any pre-existing product resolves an image (official → placeholder fallback) and marks the step done.
+### 4. Keep the per-product "Enrich passport" button
+Still useful for one-offs / re-runs.
 
-3. **Broaden "image done" states** (`src/components/qr/digital-identity-progress.tsx`): include `retailer` and `official` in the done set — right now only `ready | ai_suggested | placeholder` count, so an officially-resolved image would still read as not done.
+## Files to change
+- `src/lib/products.functions.ts` — add `bulkCompleteDigitalIdentity`.
+- `src/components/products/products-toolbar.tsx` — add button.
+- `src/routes/_authenticated/products.index.tsx` — wire client-side batching + toast.
+- `src/routes/api/public/hooks.passport-tick.ts` — parallelize + raise limit.
 
-4. **Kick enrichment from the product page** — add an "Enrich now" action on `ImageStatusCard` (or the identity card) that calls a new `runPassportEnrichment` server fn wrapping the existing enrichment routine for this single product, and re-queues on open if `enrichment_status = pending` and older than N minutes. This turns the spinner into a check without waiting for the cron tick.
-
-5. **Invalidate queries after refresh/reset** already happens; after step 1 the passport data flows through the same `["product", productId]` key so the tracker updates instantly.
-
-### Files touched
-- `src/lib/products.functions.ts` — extend `getProduct` (passport join + auto image heal).
-- `src/lib/passport.functions.ts` — add `runPassportEnrichment({ productId })` server fn.
-- `src/components/qr/digital-identity-progress.tsx` — accept broader image_status done set.
-- `src/components/products/image-status-card.tsx` — add "Enrich passport" button wired to the new fn.
-- `src/routes/_authenticated/products.$productId.tsx` — pass `passport` through (already reads `data.passport`, no change needed after step 1).
-
-No schema changes, no new tables.
+No schema changes.

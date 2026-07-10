@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { toast } from "sonner";
-import { FileDown, Loader2, Package, Plus, Upload } from "lucide-react";
+import { FileDown, Loader2, Package, Plus, Sparkles, Upload } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,11 +29,14 @@ import { ImportProductsDialog } from "@/components/products/import-products-dial
 
 import {
   archiveProduct,
+  bulkCompleteDigitalIdentity,
   deleteProduct,
   getProductFormOptions,
+  listIncompleteDigitalIdentityIds,
   listProducts,
 } from "@/lib/products.functions";
 import { useAuth } from "@/hooks/use-auth";
+
 
 const searchSchema = z.object({
   search: fallback(z.string(), "").default(""),
@@ -63,7 +66,10 @@ function ProductsListPage() {
   const listFn = useServerFn(listProducts);
   const archiveFn = useServerFn(archiveProduct);
   const deleteFn = useServerFn(deleteProduct);
+  const bulkCompleteFn = useServerFn(bulkCompleteDigitalIdentity);
+  const listIncompleteFn = useServerFn(listIncompleteDigitalIdentityIds);
   const qc = useQueryClient();
+
 
   const { data: opts } = useQuery({
     queryKey: ["product-form-options"],
@@ -150,6 +156,45 @@ function ProductsListPage() {
     search.promo ||
     search.lowStock;
 
+  const [completing, setCompleting] = useState(false);
+  const handleCompleteIdentity = async () => {
+    if (completing) return;
+    setCompleting(true);
+    const toastId = toast.loading("Finding products that need attention…");
+    try {
+      const { ids } = await listIncompleteFn();
+      if (ids.length === 0) {
+        toast.success("All products already have a complete digital identity.", { id: toastId });
+        return;
+      }
+      const CHUNK = 10;
+      let done = 0;
+      let succeeded = 0;
+      let skipped = 0;
+      const allErrors: Array<{ productId: string; step: string; message: string }> = [];
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const chunk = ids.slice(i, i + CHUNK);
+        toast.loading(`Completing digital identity… ${done} / ${ids.length}`, { id: toastId });
+        const r = await bulkCompleteFn({ data: { productIds: chunk } });
+        succeeded += r.succeeded;
+        skipped += r.skipped;
+        allErrors.push(...r.errors);
+        done += chunk.length;
+      }
+      await qc.invalidateQueries();
+      const errText = allErrors.length ? ` (${allErrors.length} issues)` : "";
+      toast.success(
+        `Done — ${succeeded} completed${skipped ? `, ${skipped} skipped` : ""}${errText}.`,
+        { id: toastId },
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Bulk completion failed", { id: toastId });
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+
   return (
     <div className="grid gap-6">
       <PageHeader
@@ -164,10 +209,21 @@ function ProductsListPage() {
               </Button>
             )}
             {canManage && (
+              <Button variant="outline" onClick={handleCompleteIdentity} disabled={completing}>
+                {completing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                Complete digital identity
+              </Button>
+            )}
+            {canManage && (
               <Button variant="outline" onClick={() => setImportOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" /> Import
               </Button>
             )}
+
             {canManage && (
               <Button onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" /> Add Product
