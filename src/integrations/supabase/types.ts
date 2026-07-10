@@ -1729,6 +1729,7 @@ export type Database = {
         Row: {
           barcode_type: string | null
           brand: string | null
+          category_confidence: number | null
           category_id: string | null
           color: string | null
           created_at: string
@@ -1766,12 +1767,14 @@ export type Database = {
           status: Database["public"]["Enums"]["product_status"]
           stock_qty: number
           store_id: string | null
+          suggested_category_id: string | null
           thumbnail_url: string | null
           updated_at: string
         }
         Insert: {
           barcode_type?: string | null
           brand?: string | null
+          category_confidence?: number | null
           category_id?: string | null
           color?: string | null
           created_at?: string
@@ -1809,12 +1812,14 @@ export type Database = {
           status?: Database["public"]["Enums"]["product_status"]
           stock_qty?: number
           store_id?: string | null
+          suggested_category_id?: string | null
           thumbnail_url?: string | null
           updated_at?: string
         }
         Update: {
           barcode_type?: string | null
           brand?: string | null
+          category_confidence?: number | null
           category_id?: string | null
           color?: string | null
           created_at?: string
@@ -1852,6 +1857,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["product_status"]
           stock_qty?: number
           store_id?: string | null
+          suggested_category_id?: string | null
           thumbnail_url?: string | null
           updated_at?: string
         }
@@ -1882,6 +1888,13 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_suggested_category_id_fkey"
+            columns: ["suggested_category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
             referencedColumns: ["id"]
           },
         ]

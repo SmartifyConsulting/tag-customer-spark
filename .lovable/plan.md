@@ -1,36 +1,54 @@
-## Problem
-Right now the image resolver and passport enrichment only run when you open a single product's detail page (auto-heal on `getProduct`) or click "Enrich passport" per product. For a full catalogue this is painful.
+## Goal
 
-## Plan: bulk "Complete digital identity" runner
+Products should get a sensible category automatically, and every retailer (not just super admin) should have a proper Category Admin screen to review and correct them.
 
-Add a one-click bulk action on the Inventory screen that walks every product (or the current filtered set / selected rows) through all 5 steps in parallel batches, with a live progress toast.
+## What you'll see
 
-### 1. New server function `bulkCompleteDigitalIdentity` (`src/lib/products.functions.ts`)
-- Input: `{ productIds?: string[]; scope?: "all" | "incomplete" }` (default: `incomplete` — any product missing image, QR, passport, or enrichment).
-- Auth: `requireSupabaseAuth`, scoped to caller's retailer via RLS.
-- For each product (processed in parallel batches of ~5 to respect rate limits):
-  1. If no active QR + valid GTIN → call `generateForProduct` (which already generates QR, publishes shell passport, resolves image, enqueues enrichment).
-  2. Else if `image_status` pending/null → call `resolveAndSyncProductImage`.
-  3. If passport `enrichment_status` != `complete` → call `enrichProductPassport` inline (don't just enqueue).
-- Return `{ processed, succeeded, failed, errors: [{productId, step, message}] }`.
-- Skips products without a valid GTIN (report as `skipped_no_gtin`).
+1. **Automatic category on new products**
+   - When a product is imported, scanned, or manually added without a category, the system picks the best matching category (or sub-category) from the retailer's existing tree.
+   - If no existing category is a good fit, a new one is created (or an existing "Uncategorised" bucket is used, retailer's choice — default: create when confidence is high, otherwise place under "Uncategorised").
+   - The passport enrichment step also proposes a `category_path` (e.g. `Food › Biscuits`) that feeds back into this.
 
-### 2. UI: "Complete all" button in Inventory toolbar (`src/components/products/products-toolbar.tsx` + `src/routes/_authenticated/products.index.tsx`)
-- Button "Complete digital identity" next to Import.
-- On click → confirm dialog showing count of incomplete products → runs `bulkCompleteDigitalIdentity`.
-- Streams progress via a simple loading toast ("Processing 12 / 47…") by chunking the call client-side into batches of 10 productIds and updating the toast between batches (avoids one giant long request timing out on the edge worker).
-- On finish → invalidate queries; toast summary with success/skip/fail counts.
+2. **Category Admin as a first-class screen**
+   - New nav item under **Admin → Categories** (visible to retail admins and store managers, not just super admin).
+   - Existing Category Admin UI (tree with sub-categories, add/rename/delete) becomes the base of that page.
+   - Adds a "Products in this category" count next to each row.
+   - Adds a "Re-categorise all uncategorised" button that runs auto-categorisation across products missing a category.
+   - Adds an inline "Move to…" action on each product from the Inventory row menu so a retailer can quickly fix a wrong category.
 
-### 3. Speed up the existing cron drain (optional, small)
-`src/routes/api/public/hooks.passport-tick.ts` currently limits to 20. Raise ceiling to 50 and process in `Promise.all` batches of 5 so an admin-triggered tick clears the queue faster.
+3. **Retailer can always override**
+   - The existing product edit form already lets a retailer change category; we surface the AI-suggested category with a small "AI suggested" badge, and clearing/overriding it is one click.
 
-### 4. Keep the per-product "Enrich passport" button
-Still useful for one-offs / re-runs.
+## How it works (technical)
 
-## Files to change
-- `src/lib/products.functions.ts` — add `bulkCompleteDigitalIdentity`.
-- `src/components/products/products-toolbar.tsx` — add button.
-- `src/routes/_authenticated/products.index.tsx` — wire client-side batching + toast.
-- `src/routes/api/public/hooks.passport-tick.ts` — parallelize + raise limit.
+- New server helper `suggestCategoryForProduct` in `src/lib/categories.functions.ts`:
+  - Inputs: retailer id, product name, brand, description, GTIN, existing categories tree.
+  - Uses Lovable AI (`google/gemini-3-flash-preview`) with a strict JSON schema:
+    `{ existing_category_id?: uuid, new_category?: { name, parent_name? }, confidence: 0-1 }`.
+  - Falls back to a deterministic keyword mapper (biscuits, coffee, apparel, etc.) when AI is unavailable, and to "Uncategorised" otherwise.
+- Hook it into:
+  - `commitProductImport` in `src/lib/import.functions.ts` — when `category_id` is null after the current name-match step.
+  - Manual product create/update in `src/lib/products.functions.ts` — same fallback path.
+  - Passport enrichment — if `category_path` returned by AI is stronger than the current assignment, propose (do not overwrite) via a new `suggested_category_id` column.
+- New nullable column `products.suggested_category_id uuid` + `products.category_confidence numeric` (nullable). Migration adds them with a GRANT/RLS-safe change (no new table).
+- New server functions:
+  - `bulkAutoCategorise({ onlyUncategorised: boolean })` — batches through products and applies suggestions.
+  - `applySuggestedCategory({ productId })` and `dismissSuggestedCategory({ productId })`.
+- New route `src/routes/_authenticated/admin.categories.tsx` that hosts `CategoryAdminTab` with the added counts + bulk action; nav `Admin` gains a Categories sub-link.
+- Category Admin becomes visible to any user with `super_admin`, `retail_admin`, or `store_manager` role — same guard already used in Inventory.
+- Inventory table gets a small pill on rows whose `suggested_category_id` differs from `category_id`, with quick "Apply" / "Dismiss" buttons.
 
-No schema changes.
+## Files to add/change
+
+- Add `src/routes/_authenticated/admin.categories.tsx`.
+- Update `src/lib/nav.ts` (add Categories under Admin) and `src/routes/_authenticated/settings.tsx` (leave settings tab or remove — recommend keep for super admin, redirect retailers to new screen).
+- Extend `src/lib/categories.functions.ts` with `suggestCategoryForProduct`, `bulkAutoCategorise`, `applySuggestedCategory`, `dismissSuggestedCategory`, and `listCategoriesWithCounts`.
+- Extend `src/lib/import.functions.ts` and `src/lib/products.functions.ts` create/update paths to call the suggester.
+- Extend `src/lib/passport.server.ts` to write `suggested_category_id` from `category_path` when confidence is high.
+- One migration: add `suggested_category_id` and `category_confidence` to `products`.
+
+## Out of scope
+
+- Reorganising the existing category tree automatically.
+- Multi-category-per-product.
+- Re-training or fine-tuning; we rely on Lovable AI + deterministic fallback.
