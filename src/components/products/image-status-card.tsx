@@ -42,7 +42,9 @@ export function ImageStatusCard({ product }: Props) {
   const qc = useQueryClient();
   const refresh = useServerFn(refreshProductImage);
   const reset = useServerFn(resetProductImage);
-  const [busy, setBusy] = useState<"refresh" | "reset" | null>(null);
+  const enrich = useServerFn(enrichProductPassportFn);
+  const [busy, setBusy] = useState<"refresh" | "reset" | "enrich" | null>(null);
+
 
   const status = product.image_status ?? "pending";
   const source = product.image_source ?? null;
