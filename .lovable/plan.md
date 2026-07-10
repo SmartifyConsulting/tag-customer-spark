@@ -1,69 +1,89 @@
 
-## 1. Logo refresh
+## Goal
 
-- Upload the new `Tag` wordmark via `lovable-assets` and write `src/assets/tag-logo-2026b.png.asset.json`.
-- Point the three existing consumers at the new asset without changing rendered sizes:
-  - `src/components/auth-shell.tsx` (Sign in / Forgot / Reset pages) — keep `h-48`.
-  - `src/routes/index.tsx` hero — keep current `h-[144px]`.
-  - `src/components/tag-logo.tsx` (sidebar wordmark `h-[230px]` + collapsed icon `h-[106px]`) — swap both `wordmarkAsset` and `iconAsset` references.
-- Leave `public/favicon.png` untouched unless the user asks.
+After a product is imported and its GS1-compliant QR is generated, automatically enrich the product with AI, store the result in a **TAG Digital Product Passport (DPP)**, and make the QR resolve to a public DPP page while still exposing the original GTIN to POS scanners.
 
-## 2. Bulk product import with GS1-compliant QR generation
+## 1. GS1 Digital Link (POS + DPP dual-purpose)
 
-### New Inventory action
-- Wire the existing "Import" button on `src/routes/_authenticated/products.index.tsx` to open a new `ImportProductsDialog`.
-- Dialog accepts `.xlsx`, `.xls`, `.csv`, `.pdf` (single file, ≤10 MB).
+Keep the QR payload GS1-compliant so Sunrise 2027 POS scanners can extract AI (01) GTIN, but route human scans to our DPP.
 
-### File parsing (client → server)
-- Small files (<2 MB CSV/XLSX): parse client-side with `xlsx` (already usable via `bun add`) to get raw rows for a preview grid.
-- All files: upload to a private Supabase Storage bucket `product-imports/{retailer_id}/{uuid}.{ext}` (new bucket via migration).
-- PDFs and messy sheets: server function reads the file and calls Lovable AI (`google/gemini-3-flash-preview`) with a structured-output schema to extract rows regardless of column order/header naming (name, description, brand, category, price, sale price, currency, stock, low-stock threshold, colour, size, barcode, barcode type).
+- QR payload stays canonical GS1 Digital Link:
+  `https://id.tag.africa/01/{gtin14}`
+  (own the resolver domain so we control routing; `id.gs1.org` stays as a documented fallback format.)
+- Add a resolver route `src/routes/api/public/01.$gtin.ts`:
+  - Validates GTIN-14 + mod-10.
+  - Looks up `products.gtin` → DPP id.
+  - 302-redirects browsers to `/p/{dpp_id}` (public DPP page).
+  - Returns JSON (`{ gtin, dpp_url, product }`) for `Accept: application/json` / linkset requests, matching GS1 Resolver conformance.
+- Public DPP page `src/routes/p.$dppId.tsx` — SSR, no auth, rich OG tags, shows enriched content (below).
+- Re-generate PNG/SVG/PDF artifacts to embed the new resolver URL; old imports get a one-off backfill.
 
-### GTIN validation & preservation
-- New util `src/lib/gs1.ts`:
-  - Detect barcode type from digit length: EAN-8 (8), UPC-A (12), EAN-13 (13), ITF-14/GTIN-14 (14).
-  - Validate GS1 mod-10 check digit; normalise to 14-digit GTIN for storage (left-pad zeros) while keeping the original string as `original_barcode`.
-  - Reject invalid check digits with a row-level error surfaced in the preview.
+POS behaviour is unchanged: scanners read the GS1 Digital Link, parse AI (01), get the exact original GTIN.
 
-### GS1 Digital Link QR encoding
-- QR payload = `https://id.gs1.org/01/{gtin14}` (GS1 Digital Link canonical form; POS scanners with Digital Link support read the GTIN via AI 01).
-- Optionally append `/10/{lot}` etc. later — out of scope now.
-- Generate PNG (800px), SVG, and single-page PDF using the existing `qrcode` package + `pdf-lib` (server-side) and upload each to `qr-artifacts/{retailer_id}/{product_id}/qr.{png|svg|pdf}` (new public bucket, read-only anon SELECT).
+## 2. Digital Product Passport schema
 
-### DB migration
-- Extend `products` with: `original_barcode text`, `barcode_type text`, `gtin text` (unique per retailer where not null), `digital_product_passport_id uuid default gen_random_uuid()`.
-- New table `product_qr_assets(product_id pk, qr_url text, png_url, svg_url, pdf_url, gs1_payload text, generated_at)`.
-- Grants + RLS: retailer-scoped SELECT/INSERT/UPDATE for `authenticated`; storage bucket policies mirror pattern.
+New table `product_passports` (1:1 with `products`, keyed by `products.digital_product_passport_id`):
 
-### Import pipeline (server fn `importProductCatalog`)
-1. Download uploaded file from storage.
-2. Parse (xlsx/csv directly, PDF → AI extraction).
-3. Normalise columns via AI header-mapping (rows → canonical schema).
-4. Validate barcodes; collect per-row errors.
-5. Upsert products by `(retailer_id, gtin)` — update if exists, insert otherwise; never mutate a supplied GTIN.
-6. For each valid product, generate QR PNG/SVG/PDF, upload, insert `product_qr_assets`.
-7. Return summary `{ inserted, updated, skipped, errors[] }`.
+- Identity: `gtin`, `brand`, `manufacturer`, `country_of_origin`, `category_path`
+- Content: `short_description`, `marketing_description`, `product_summary`, `consumer_faqs jsonb`
+- Composition: `ingredients jsonb`, `nutrition jsonb`, `allergens text[]`
+- Physical: `dimensions jsonb` (l/w/h/weight/units), `materials jsonb`
+- Compliance / lifecycle: `warranty jsonb`, `sustainability jsonb` (recyclability, certifications, carbon)
+- Media: `images jsonb` (array of `{url, role, source, license}`)
+- Provenance: `sources jsonb` (URLs + confidence), `enriched_at`, `enrichment_status` (`pending|enriched|failed|manual`), `enrichment_model`, `version int`, `last_edited_by`
 
-### Import preview UI
-- Two-step dialog: (1) upload + AI parse spinner, (2) editable preview grid showing detected columns mapped to fields, per-row validation state, and an "Import N valid products" button.
-- Show per-row errors inline; allow user to fix header mapping before confirming.
+RLS:
+- Retailer-scoped write via existing `belongs_to_retailer`.
+- Public `TO anon SELECT` only on a `public.product_passport_public` view that projects safe columns (no cost, no internal notes).
 
-### Product detail integration
-- On `products.$productId.tsx`, replace the existing internal QR (short-code redirect) with the GS1 Digital Link QR when `product_qr_assets` exists; expose Download PNG/SVG/PDF and copy-URL buttons. Keep the internal scan-tracking QR available as a secondary "Marketing QR" tab so existing intent/scan telemetry keeps working.
+Grants + `updated_at` trigger per project rules.
 
-### Inventory list additions
-- New columns (hidden by default, toggleable): GTIN, Barcode type.
+## 3. Enrichment pipeline
+
+Server function `enrichProductPassport(product_id)` in `src/lib/passport.functions.ts` (+ `passport.server.ts` helpers):
+
+1. Load product + any parsed import row (brand, name, GTIN, category hints).
+2. **Lookup pass** (deterministic, cheap, cited): Open Food Facts by GTIN, GS1 GEPIR for brand/manufacturer, existing `lookupBarcode`. Store raw hits in `sources`.
+3. **AI pass** using Lovable AI `google/gemini-3-flash-preview` with `generateObject` + Zod schema mirroring the DPP columns. Prompt includes lookup results and instructs the model to:
+   - Prefer cited facts over invention.
+   - Return `null` + reason for fields it cannot ground.
+   - Emit per-field `confidence` (0–1).
+4. **Image pass**: reuse lookup images when licensed; otherwise mark `images` empty (do not generate fake product photos by default — flag for manual upload).
+5. Upsert into `product_passports`, bump `version`, set `enrichment_status`.
+6. Trigger points:
+   - End of `commitProductImport` for each new/updated product (fire-and-forget queue row).
+   - Manual "Re-enrich" button on product detail.
+   - Background sweep server route `api/public/hooks.enrichment-tick` for retries.
+
+Queue table `passport_enrichment_queue(product_id pk, enqueued_at, attempts, last_error)` so imports stay snappy and enrichment runs async.
+
+## 4. UI
+
+- **Product detail** (`products.$productId.tsx`): new "Digital Product Passport" tab
+  - Sections for each field group, inline edit (retail_admin+), "Re-enrich with AI" button, per-field confidence + source chips, version history dropdown.
+  - QR panel shows the Digital Link URL, DPP URL, and PNG/SVG/PDF downloads (already there — update URL).
+- **Import dialog**: after commit, show toast "Imported N products — enriching in background", plus a small progress area in Inventory ("3 of 12 passports ready").
+- **Public DPP page** `/p/{dppId}`: brand hero, gallery, description, nutrition/allergens (if food), dimensions, warranty, sustainability, FAQs, "Scanned via TAG" footer with GTIN.
+
+## 5. Migrations & storage
+
+Single migration:
+- `product_passports` table + view + grants + RLS + trigger.
+- `passport_enrichment_queue` table + grants.
+- Extend `product_qr_assets` with `resolver_url text` (new canonical URL).
+- Backfill: enqueue every existing product.
+
+No new bucket needed; enriched images (when licensed) go into existing `product-images`.
+
+## 6. Out of scope this pass
+
+- Batch/lot/serial AIs (10/21) in the Digital Link.
+- Verifiable Credentials / EU DPP regulation signing (design leaves room via `sources` + `version`).
+- Paid image generation for missing product photos.
+- Multi-language passports (schema allows `locale` later).
 
 ## Technical notes
 
-- Packages to add: `xlsx` (SheetJS community edition), `pdf-parse` for PDF text extraction fallback (before handing to AI), `pdf-lib` already present.
-- All AI + storage + QR generation runs in `createServerFn` handlers under `src/lib/imports.functions.ts` and `src/lib/gs1.server.ts` — never on the client.
-- Storage buckets created via migration with proper GRANTs and RLS.
-- Lovable AI structured output uses `Output.object({ schema })` so rows come back typed.
-- GS1 compliance reference: GS1 Digital Link URI syntax v1.4 (`/01/{gtin}`); the primary identifier is always AI (01) GTIN-14.
-
-## Out of scope for this pass
-
-- Batch/lot/serial (AI 10/21) encoding — can be added later.
-- Cross-retailer GTIN deduplication.
-- ITF-14 outer-case handling as a separate SKU.
+- All AI + lookups run server-side in `createServerFn` / server routes; `LOVABLE_API_KEY` stays on the server.
+- Enrichment is idempotent and versioned; manual edits set `enrichment_status='manual'` and are preserved across re-enrich (AI fills only nulls unless "Overwrite" chosen).
+- Resolver route conforms to the GS1 Digital Link Resolver spec (JSON linkset on `Accept: application/linkset+json`) so we can later register with GS1 as a conformant resolver — key for the Sunrise 2027 investor story.
