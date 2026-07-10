@@ -122,7 +122,7 @@ function ProductDetail() {
         </Link>
       </div>
 
-      <div className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[220px_minmax(0,1fr)_210px]">
+      <div className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[220px_minmax(0,1fr)]">
         <div className="grid gap-2">
           <div className="aspect-square overflow-hidden rounded-xl border border-border bg-muted">
             {primary ? (
