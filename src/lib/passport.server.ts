@@ -302,5 +302,5 @@ export function getPublicSiteBase(): string {
 // Product Passport with no redirect hop. POS scanners still parse the GTIN
 // out of the /products/{gtin} path segment identically to a linear scan.
 export function resolverUrlForGtin(gtin14: string): string {
-  return `${getPublicSiteBase()}/products/${gtin14}`;
+  return `${getPublicSiteBase()}/passport/${gtin14}`;
 }
