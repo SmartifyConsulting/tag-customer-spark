@@ -93,7 +93,7 @@ export const getProductQr = createServerFn({ method: "POST" })
 
 // ---------- Generate / regenerate ----------
 
-async function generateForProduct(
+export async function generateForProduct(
   supabase: any,
   userId: string,
   productId: string,
