@@ -215,6 +215,12 @@ export const getProduct = createServerFn({ method: "POST" })
         .eq("status", "active")
         .maybeSingle(),
       supabase
+        .from("product_passports")
+        .select("dpp_id, status, enrichment_status, visibility, updated_at")
+        .eq("product_id", data.id)
+        .maybeSingle(),
+
+      supabase
         .from("qr_scans")
         .select("id", { count: "exact", head: true })
         .eq("product_id", data.id)
