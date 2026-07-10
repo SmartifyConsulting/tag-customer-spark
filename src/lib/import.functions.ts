@@ -149,7 +149,7 @@ export const previewProductImport = createServerFn({ method: "POST" })
             currency: get("currency"),
           });
         })
-        .filter((r): r is ImportRow => r !== null);
+        .filter((r: ImportRow | null): r is ImportRow => r !== null);
     }
 
     return { rows: mapped, count: mapped.length, headers };
