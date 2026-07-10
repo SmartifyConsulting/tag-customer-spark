@@ -232,8 +232,10 @@ export function CategoryAdminTab() {
                               autoFocus
                             />
                           ) : (
-                            <span className="flex-1 text-sm">{c.name}</span>
-                            <span className="text-[11px] text-muted-foreground">{q.data?.counts?.[c.id] ?? 0}</span>
+                            <>
+                              <span className="flex-1 text-sm">{c.name}</span>
+                              <span className="text-[11px] text-muted-foreground">{q.data?.counts?.[c.id] ?? 0}</span>
+                            </>
                           )}
                           {editing?.id === c.id ? (
                             <Button size="sm" onClick={() => rename.mutate(editing)}>Save</Button>
