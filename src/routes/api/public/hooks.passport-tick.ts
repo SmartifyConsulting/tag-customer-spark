@@ -15,8 +15,8 @@ export const Route = createFileRoute("/api/public/hooks/passport-tick")({
           }
         }
         const limit = Math.min(
-          Number(new URL(request.url).searchParams.get("limit") ?? "5"),
-          20,
+          Number(new URL(request.url).searchParams.get("limit") ?? "20"),
+          50,
         );
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { enrichProductPassport } = await import("@/lib/passport.server");
@@ -27,16 +27,21 @@ export const Route = createFileRoute("/api/public/hooks/passport-tick")({
           .order("enqueued_at", { ascending: true })
           .limit(limit);
 
+        const list = jobs ?? [];
         const processed: Array<{ id: string; ok: boolean; error?: string }> = [];
-        for (const job of jobs ?? []) {
-          const r = await enrichProductPassport(supabaseAdmin, job.product_id);
-          processed.push({
-            id: job.product_id,
-            ok: r.ok,
-            error: r.ok ? undefined : r.error,
+        const BATCH = 5;
+        for (let i = 0; i < list.length; i += BATCH) {
+          const chunk = list.slice(i, i + BATCH);
+          const results = await Promise.all(
+            chunk.map((job) => enrichProductPassport(supabaseAdmin, job.product_id)),
+          );
+          chunk.forEach((job, idx) => {
+            const r = results[idx];
+            processed.push({ id: job.product_id, ok: r.ok, error: r.ok ? undefined : r.error });
           });
         }
         return Response.json({ processed: processed.length, results: processed });
+
       },
     },
   },
