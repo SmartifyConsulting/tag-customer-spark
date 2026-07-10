@@ -21,9 +21,14 @@ export function DigitalIdentityProgress({ product, qr, passport }: Props) {
     {
       key: "image",
       label: "Product image resolved",
-      done: !!product.image_status && ["ready", "ai_suggested", "placeholder"].includes(product.image_status),
-      pending: product.image_status === "pending",
+      done:
+        !!product.image_status &&
+        ["ready", "ai_suggested", "placeholder", "retailer", "official"].includes(
+          product.image_status,
+        ),
+      pending: !product.image_status || product.image_status === "pending",
     },
+
     { key: "qr", label: "GS1 QR code generated", done: !!qr?.active },
     {
       key: "passport",
