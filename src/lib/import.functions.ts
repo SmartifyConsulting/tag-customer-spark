@@ -258,7 +258,7 @@ export const commitProductImport = createServerFn({ method: "POST" })
           stock_qty: row.stock_qty,
           gtin: row.gtin,
           barcode_type: row.barcode_type,
-          digital_link_url: digitalLink,
+          digital_link_url: canonicalGs1,
           status: "active",
         };
 
