@@ -164,7 +164,7 @@ function ProductsListPage() {
               </Button>
             )}
             {canManage && (
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" /> Import
               </Button>
             )}
