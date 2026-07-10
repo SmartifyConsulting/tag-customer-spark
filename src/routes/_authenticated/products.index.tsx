@@ -108,6 +108,7 @@ function ProductsListPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const archive = useMutation({
     mutationFn: (id: string) => archiveFn({ data: { id } }),
