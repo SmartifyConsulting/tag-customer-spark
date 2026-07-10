@@ -21,10 +21,11 @@ type Row = { id: string; name: string; parent_id: string | null; status: string 
 
 export function CategoryAdminTab() {
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["categories"], queryFn: () => listCategories() });
+  const q = useQuery({ queryKey: ["categories", "with-counts"], queryFn: () => listCategoriesWithCounts() });
   const createFn = useServerFn(createCategory);
   const renameFn = useServerFn(renameCategory);
   const deleteFn = useServerFn(deleteCategory);
+  const bulkFn = useServerFn(bulkAutoCategorise);
 
   const [newParent, setNewParent] = useState("");
   const [subFor, setSubFor] = useState<string | null>(null);
