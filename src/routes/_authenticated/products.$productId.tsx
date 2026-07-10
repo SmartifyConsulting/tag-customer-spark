@@ -194,8 +194,7 @@ function ProductDetail() {
             </div>
           )}
         </div>
-        <HeroQrColumn productId={productId} shortCode={(data.qr as any)?.short_code ?? null} />
-        <div className="md:col-span-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
+        <div className="md:col-span-2 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
           <Fact label="Category" value={p.category?.name ?? "—"} />
           <Fact label="Store" value={p.store?.name ?? "—"} />
           <Fact label="Stock" value={`${p.stock_qty}`} />
