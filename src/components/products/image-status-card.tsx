@@ -75,6 +75,19 @@ export function ImageStatusCard({ product }: Props) {
       setBusy(null);
     }
   };
+  const handleEnrich = async () => {
+    setBusy("enrich");
+    try {
+      await enrich({ data: { product_id: product.id, overwrite: false } });
+      toast.success("Passport enrichment complete.");
+      await qc.invalidateQueries();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to enrich passport");
+    } finally {
+      setBusy(null);
+    }
+  };
+
 
   return (
     <div className="rounded-2xl border bg-card p-4">
