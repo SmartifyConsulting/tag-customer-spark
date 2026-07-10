@@ -33,7 +33,19 @@ export function CategoryAdminTab() {
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["categories"] });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["categories"] });
+    qc.invalidateQueries({ queryKey: ["products"] });
+  };
+
+  const bulk = useMutation({
+    mutationFn: () => bulkFn({ data: { onlyUncategorised: true, limit: 100 } }),
+    onSuccess: (r: any) => {
+      invalidate();
+      toast.success(`Auto-categorised ${r.assigned}/${r.total} products`);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+  });
 
   const create = useMutation({
     mutationFn: (v: { name: string; parent_id: string | null }) => createFn({ data: v }),
