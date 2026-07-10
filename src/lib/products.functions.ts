@@ -187,10 +187,10 @@ export const getProduct = createServerFn({ method: "POST" })
       { data: trend },
     ] = await Promise.all([
       supabase
-        .from("qr_tags")
-        .select("id, short_code, template, version, is_active, created_at")
+        .from("product_qr_assets")
+        .select("id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path")
         .eq("product_id", data.id)
-        .eq("is_active", true)
+        .eq("status", "active")
         .maybeSingle(),
       supabase
         .from("qr_scans")
