@@ -66,7 +66,10 @@ function ProductsListPage() {
   const listFn = useServerFn(listProducts);
   const archiveFn = useServerFn(archiveProduct);
   const deleteFn = useServerFn(deleteProduct);
+  const bulkCompleteFn = useServerFn(bulkCompleteDigitalIdentity);
+  const listIncompleteFn = useServerFn(listIncompleteDigitalIdentityIds);
   const qc = useQueryClient();
+
 
   const { data: opts } = useQuery({
     queryKey: ["product-form-options"],
