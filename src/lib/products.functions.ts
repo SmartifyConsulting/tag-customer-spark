@@ -478,3 +478,117 @@ export const listStockOverview = createServerFn({ method: "POST" })
     });
     return list;
   });
+
+// Bulk "Complete digital identity" — runs QR + image + passport enrichment
+// across many products in parallel. Skips products missing a GTIN.
+export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        productIds: z.array(z.string().uuid()).min(1).max(50),
+        force: z.boolean().optional().default(false),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { generateForProduct, isValidGtin } = await import("./qr.functions");
+    const { resolveAndSyncProductImage } = await import("./product-images.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { enrichProductPassport } = await import("./passport.server");
+
+    const results = {
+      succeeded: 0,
+      skipped: 0,
+      failed: 0,
+      errors: [] as Array<{ productId: string; step: string; message: string }>,
+    };
+
+    const runOne = async (pid: string) => {
+      try {
+        const { data: p } = await supabase
+          .from("products")
+          .select("id, gtin, image_status")
+          .eq("id", pid)
+          .maybeSingle();
+        if (!p) {
+          results.skipped++;
+          return;
+        }
+        const gtin = String(p.gtin ?? "").trim();
+        if (!gtin || !isValidGtin(gtin)) {
+          results.skipped++;
+          results.errors.push({ productId: pid, step: "gtin", message: "Missing or invalid GTIN" });
+          return;
+        }
+
+        // 1. QR + shell passport + image (generateForProduct handles all three)
+        try {
+          await generateForProduct(supabase, userId, pid, data.force);
+        } catch (e: any) {
+          results.errors.push({ productId: pid, step: "qr", message: e?.message ?? "QR failed" });
+        }
+
+        // 2. Image resolver (in case QR path skipped it)
+        try {
+          await resolveAndSyncProductImage({ supabase, productId: pid });
+        } catch (e: any) {
+          results.errors.push({ productId: pid, step: "image", message: e?.message ?? "Image failed" });
+        }
+
+        // 3. Passport enrichment
+        try {
+          const r = await enrichProductPassport(supabaseAdmin, pid, { overwrite: false });
+          if (!r.ok) {
+            results.errors.push({ productId: pid, step: "enrichment", message: r.error });
+          }
+        } catch (e: any) {
+          results.errors.push({ productId: pid, step: "enrichment", message: e?.message ?? "Enrichment failed" });
+        }
+
+        results.succeeded++;
+      } catch (e: any) {
+        results.failed++;
+        results.errors.push({ productId: pid, step: "unknown", message: e?.message ?? "Failed" });
+      }
+    };
+
+    // Parallel batches of 4
+    const BATCH = 4;
+    for (let i = 0; i < data.productIds.length; i += BATCH) {
+      const chunk = data.productIds.slice(i, i + BATCH);
+      await Promise.all(chunk.map(runOne));
+    }
+    return results;
+  });
+
+// Returns the caller's incomplete product IDs (missing QR, image, or enrichment).
+export const listIncompleteDigitalIdentityIds = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) return { ids: [] as string[] };
+    const { data: prods } = await supabase
+      .from("products")
+      .select("id, gtin, image_status, qr_status")
+      .eq("retailer_id", retailerId)
+      .eq("status", "active");
+    const { data: passports } = await supabase
+      .from("product_passports")
+      .select("product_id, enrichment_status")
+      .eq("retailer_id", retailerId);
+    const enrichMap = new Map<string, string>();
+    for (const p of passports ?? []) enrichMap.set(p.product_id, p.enrichment_status ?? "pending");
+    const ids: string[] = [];
+    for (const p of prods ?? []) {
+      const gtin = String(p.gtin ?? "").trim();
+      if (!gtin) continue; // can't complete without GTIN
+      const needsImg = !p.image_status || p.image_status === "pending";
+      const needsQr = p.qr_status !== "active";
+      const needsEnrich = (enrichMap.get(p.id) ?? "pending") !== "complete";
+      if (needsImg || needsQr || needsEnrich) ids.push(p.id);
+    }
+    return { ids };
+  });
