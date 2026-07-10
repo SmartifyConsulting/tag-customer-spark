@@ -29,7 +29,7 @@ export const Route = createFileRoute("/api/public/01/$gtin")({
         if (!gtin14) return new Response("Invalid GTIN", { status: 400 });
 
         const origin = new URL(request.url).origin;
-        const dppUrl = `${origin}/products/${gtin14}`;
+        const dppUrl = `${origin}/passport/${gtin14}`;
         const accept = request.headers.get("accept") ?? "";
         const wantsJson =
           accept.includes("application/json") || accept.includes("application/linkset+json");
