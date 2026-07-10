@@ -267,10 +267,16 @@ export type Database = {
           created_by: string
           cta_url: string | null
           failed_count: number
+          finished_at: string | null
+          heading: string | null
           id: string
+          image_url: string | null
+          product_id: string | null
           recipient_count: number
           retailer_id: string
           sent_count: number
+          started_at: string | null
+          status: string
         }
         Insert: {
           body: string
@@ -278,10 +284,16 @@ export type Database = {
           created_by: string
           cta_url?: string | null
           failed_count?: number
+          finished_at?: string | null
+          heading?: string | null
           id?: string
+          image_url?: string | null
+          product_id?: string | null
           recipient_count?: number
           retailer_id: string
           sent_count?: number
+          started_at?: string | null
+          status?: string
         }
         Update: {
           body?: string
@@ -289,12 +301,32 @@ export type Database = {
           created_by?: string
           cta_url?: string | null
           failed_count?: number
+          finished_at?: string | null
+          heading?: string | null
           id?: string
+          image_url?: string | null
+          product_id?: string | null
           recipient_count?: number
           retailer_id?: string
           sent_count?: number
+          started_at?: string | null
+          status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "broadcast_campaigns_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_campaigns_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "broadcast_campaigns_retailer_id_fkey"
             columns: ["retailer_id"]
@@ -854,6 +886,7 @@ export type Database = {
       }
       notification_history: {
         Row: {
+          broadcast_id: string | null
           campaign_id: string | null
           channel: string
           clicked_at: string | null
@@ -874,6 +907,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          broadcast_id?: string | null
           campaign_id?: string | null
           channel?: string
           clicked_at?: string | null
@@ -894,6 +928,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          broadcast_id?: string | null
           campaign_id?: string | null
           channel?: string
           clicked_at?: string | null
@@ -914,6 +949,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notification_history_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "broadcast_campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notification_history_campaign_id_fkey"
             columns: ["campaign_id"]
