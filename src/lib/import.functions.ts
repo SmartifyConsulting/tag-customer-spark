@@ -122,7 +122,7 @@ export const previewProductImport = createServerFn({ method: "POST" })
       const rows = Array.isArray(result?.rows) ? result.rows : [];
       mapped = rows
         .map((r: any) => normaliseRow(r))
-        .filter((r): r is ImportRow => r !== null);
+        .filter((r: ImportRow | null): r is ImportRow => r !== null);
     } else {
       // Ask AI to produce a header mapping
       const sample = rawRows.slice(0, 5);
