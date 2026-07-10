@@ -2,17 +2,25 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const TEMPLATES = ["classic", "minimal", "bold", "compact"] as const;
-export type QrTemplate = (typeof TEMPLATES)[number];
+// ---------- GS1 helpers ----------
 
-function makeShortCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let s = "";
-  const bytes = new Uint8Array(8);
-  crypto.getRandomValues(bytes);
-  for (let i = 0; i < 8; i++) s += chars[bytes[i] % chars.length];
-  return s;
+export function isValidGtin(input: string): boolean {
+  if (!/^\d{8}$|^\d{12}$|^\d{13}$|^\d{14}$/.test(input)) return false;
+  const padded = input.padStart(14, "0");
+  const digits = padded.split("").map(Number);
+  const check = digits[13];
+  const sum = digits
+    .slice(0, 13)
+    .reduce((s, d, i) => s + d * ((13 - i) % 2 === 0 ? 3 : 1), 0);
+  const expected = (10 - (sum % 10)) % 10;
+  return check === expected;
 }
+
+export function toGtin14(input: string): string {
+  return input.padStart(14, "0");
+}
+
+// ---------- Public helpers ----------
 
 export const getPublicScanBase = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -32,90 +40,226 @@ export const getPublicScanBase = createServerFn({ method: "GET" }).handler(
   },
 );
 
+function publicStorageUrl(path: string) {
+  const base = process.env.SUPABASE_URL?.replace(/\/$/, "") ?? "";
+  return `${base}/storage/v1/object/public/qr-artifacts/${path}`;
+}
+
+// ---------- Read active QR ----------
+
+export type ActiveQr = {
+  id: string;
+  product_id: string;
+  gtin: string;
+  status: string;
+  version: number;
+  generated_at: string;
+  resolver_url: string;
+  digital_link_url: string;
+  png_url: string;
+  svg_url: string;
+};
+
+async function readActiveQr(supabase: any, productId: string): Promise<ActiveQr | null> {
+  const { data } = await supabase
+    .from("product_qr_assets")
+    .select(
+      "id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path",
+    )
+    .eq("product_id", productId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    id: data.id,
+    product_id: data.product_id,
+    gtin: data.gtin,
+    status: data.status,
+    version: data.version,
+    generated_at: data.generated_at,
+    resolver_url: data.resolver_url,
+    digital_link_url: data.digital_link_url,
+    png_url: publicStorageUrl(data.png_path),
+    svg_url: publicStorageUrl(data.svg_path),
+  };
+}
+
 export const getProductQr = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ productId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: tag } = await context.supabase
-      .from("qr_tags")
-      .select("id, short_code, template, version, is_active, created_at, scan_count, last_scanned_at")
-      .eq("product_id", data.productId)
-      .eq("is_active", true)
-      .order("version", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    return { tag };
+    return { qr: await readActiveQr(context.supabase, data.productId) };
   });
 
-async function createTagFor(supabase: any, userId: string, productId: string, template: QrTemplate) {
+// ---------- Generate / regenerate ----------
+
+async function generateForProduct(
+  supabase: any,
+  userId: string,
+  productId: string,
+  force: boolean,
+): Promise<ActiveQr> {
   const { data: product, error: pErr } = await supabase
     .from("products")
-    .select("retailer_id, store_id")
+    .select("id, retailer_id, name, sku, gtin, barcode_type")
     .eq("id", productId)
     .maybeSingle();
-  if (pErr || !product) throw new Error("Product not found");
+  if (pErr) throw new Error(pErr.message);
+  if (!product) throw new Error("Product not found");
 
-  const { data: existing } = await supabase
-    .from("qr_tags")
-    .select("id, version")
-    .eq("product_id", productId)
-    .order("version", { ascending: false })
-    .limit(1)
+  // Validate barcode
+  const rawGtin = String(product.gtin ?? "").trim();
+  if (!rawGtin) {
+    throw new Error("This product has no barcode. Add a valid GTIN/EAN/UPC before generating a QR code.");
+  }
+  if (!isValidGtin(rawGtin)) {
+    throw new Error("The product barcode is invalid. Please correct the GTIN and try again.");
+  }
+  const gtin14 = toGtin14(rawGtin);
+
+  // Existing active QR for this product?
+  const existingOwn = await readActiveQr(supabase, productId);
+  if (existingOwn && !force) return existingOwn;
+
+  // GTIN uniqueness across the platform (partial unique index also protects us)
+  const { data: gtinClash } = await supabase
+    .from("product_qr_assets")
+    .select("id, product_id")
+    .eq("gtin", gtin14)
+    .eq("status", "active")
     .maybeSingle();
+  if (gtinClash && gtinClash.product_id !== productId) {
+    throw new Error("This GTIN already has an active QR code on another product.");
+  }
 
-  if (existing) {
+  // Retire existing active row if regenerating
+  let nextVersion = 1;
+  if (existingOwn) {
+    nextVersion = existingOwn.version + 1;
     await supabase
-      .from("qr_tags")
-      .update({ is_active: false, status: "retired" })
-      .eq("product_id", productId);
+      .from("product_qr_assets")
+      .update({ status: "retired" })
+      .eq("id", existingOwn.id);
   }
 
-  const nextVersion = (existing?.version ?? 0) + 1;
-  let shortCode = makeShortCode();
-  // collision check (extremely unlikely)
-  for (let i = 0; i < 3; i++) {
-    const { data: clash } = await supabase
-      .from("qr_tags")
-      .select("id")
-      .eq("short_code", shortCode)
-      .maybeSingle();
-    if (!clash) break;
-    shortCode = makeShortCode();
-  }
+  // Build GS1 Digital Link
+  const { resolverUrlForGtin } = await import("./passport.server");
+  const resolverUrl = resolverUrlForGtin(gtin14);
+  const canonicalGs1 = `https://id.gs1.org/01/${gtin14}`;
 
-  const { data: row, error } = await supabase
-    .from("qr_tags")
+  // Render PNG + SVG
+  const QRCode = (await import("qrcode")).default;
+  const png = await QRCode.toBuffer(resolverUrl, {
+    errorCorrectionLevel: "Q",
+    margin: 4,
+    width: 800,
+    color: { dark: "#0A1F5C", light: "#ffffff" },
+  });
+  const svg = await QRCode.toString(resolverUrl, {
+    type: "svg",
+    errorCorrectionLevel: "Q",
+    margin: 4,
+    width: 800,
+    color: { dark: "#0A1F5C", light: "#ffffff" },
+  });
+
+  // Upload artifacts (privileged; RLS on storage.objects varies by bucket policy)
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const base = `${product.retailer_id}/${productId}/${gtin14}-v${nextVersion}`;
+  const pngPath = `${base}.png`;
+  const svgPath = `${base}.svg`;
+  const up1 = await supabaseAdmin.storage
+    .from("qr-artifacts")
+    .upload(pngPath, png, { contentType: "image/png", upsert: true });
+  if (up1.error) throw new Error(up1.error.message);
+  const up2 = await supabaseAdmin.storage
+    .from("qr-artifacts")
+    .upload(svgPath, new Blob([svg], { type: "image/svg+xml" }), {
+      contentType: "image/svg+xml",
+      upsert: true,
+    });
+  if (up2.error) throw new Error(up2.error.message);
+
+  // Persist the asset row
+  const { data: inserted, error: insErr } = await supabase
+    .from("product_qr_assets")
     .insert({
       retailer_id: product.retailer_id,
-      store_id: product.store_id,
       product_id: productId,
-      code: shortCode,
-      short_code: shortCode,
-      template,
-      version: nextVersion,
-      is_active: true,
+      gtin: gtin14,
+      digital_link_url: canonicalGs1,
+      resolver_url: resolverUrl,
+      png_path: pngPath,
+      svg_path: svgPath,
       status: "active",
+      version: nextVersion,
+      generated_at: new Date().toISOString(),
+      generated_by: userId,
       created_by: userId,
-      regenerated_from: existing?.id ?? null,
     })
-    .select("id, short_code, template, version")
+    .select("id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path")
     .single();
-  if (error) throw new Error(error.message);
-  return row;
+  if (insErr) throw new Error(insErr.message);
+
+  // Mirror status on the product record
+  await supabase
+    .from("products")
+    .update({ qr_status: "active", digital_link_url: canonicalGs1 })
+    .eq("id", productId);
+
+  // Enqueue passport enrichment (idempotent upsert)
+  try {
+    await supabaseAdmin.from("passport_enrichment_queue").upsert({
+      product_id: productId,
+      retailer_id: product.retailer_id,
+    });
+  } catch {
+    /* enrichment queue best-effort */
+  }
+
+  return {
+    id: inserted.id,
+    product_id: inserted.product_id,
+    gtin: inserted.gtin,
+    status: inserted.status,
+    version: inserted.version,
+    generated_at: inserted.generated_at,
+    resolver_url: inserted.resolver_url,
+    digital_link_url: inserted.digital_link_url,
+    png_url: publicStorageUrl(inserted.png_path),
+    svg_url: publicStorageUrl(inserted.svg_path),
+  };
 }
 
+export const generateProductQr = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        productId: z.string().uuid(),
+        force: z.boolean().optional().default(false),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    return await generateForProduct(context.supabase, context.userId, data.productId, data.force);
+  });
+
+// Back-compat: existing callers (bulk dialog, imports, product row menu) keep
+// working. Template is accepted but ignored — GS1 Digital Link is canonical.
 export const regenerateProductQr = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
       .object({
         productId: z.string().uuid(),
-        template: z.enum(TEMPLATES).optional().default("classic"),
+        template: z.string().optional(),
+        force: z.boolean().optional().default(true),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    return await createTagFor(context.supabase, context.userId, data.productId, data.template);
+    return await generateForProduct(context.supabase, context.userId, data.productId, data.force);
   });
 
 export const bulkGenerateQrs = createServerFn({ method: "POST" })
@@ -124,27 +268,22 @@ export const bulkGenerateQrs = createServerFn({ method: "POST" })
     z
       .object({
         productIds: z.array(z.string().uuid()).min(1).max(500),
-        template: z.enum(TEMPLATES).optional().default("classic"),
         regenerate: z.boolean().optional().default(false),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const created: string[] = [];
+    let created = 0;
+    const errors: string[] = [];
     for (const pid of data.productIds) {
-      if (!data.regenerate) {
-        const { data: existing } = await context.supabase
-          .from("qr_tags")
-          .select("id")
-          .eq("product_id", pid)
-          .eq("is_active", true)
-          .maybeSingle();
-        if (existing) continue;
+      try {
+        await generateForProduct(context.supabase, context.userId, pid, data.regenerate);
+        created++;
+      } catch (e: any) {
+        errors.push(`${pid}: ${e.message ?? "failed"}`);
       }
-      const tag = await createTagFor(context.supabase, context.userId, pid, data.template);
-      created.push(tag.id);
     }
-    return { createdCount: created.length };
+    return { createdCount: created, errors };
   });
 
 export const listProductScans = createServerFn({ method: "POST" })
@@ -164,7 +303,7 @@ export const listProductScans = createServerFn({ method: "POST" })
     const { data: rows, count, error } = await context.supabase
       .from("qr_scans")
       .select(
-        "id, scanned_at, device_type, user_agent, referrer, qr_version, store:stores(id,name), qr_tag:qr_tags(id, short_code)",
+        "id, scanned_at, device_type, user_agent, referrer, qr_version, store:stores(id,name)",
         { count: "exact" },
       )
       .eq("product_id", data.productId)

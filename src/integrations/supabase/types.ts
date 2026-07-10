@@ -260,6 +260,57 @@ export type Database = {
           },
         ]
       }
+      broadcast_campaigns: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          cta_url: string | null
+          failed_count: number
+          id: string
+          recipient_count: number
+          retailer_id: string
+          sent_count: number
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by: string
+          cta_url?: string | null
+          failed_count?: number
+          id?: string
+          recipient_count?: number
+          retailer_id: string
+          sent_count?: number
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          cta_url?: string | null
+          failed_count?: number
+          id?: string
+          recipient_count?: number
+          retailer_id?: string
+          sent_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcast_campaigns_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "broadcast_campaigns_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_messages: {
         Row: {
           author_user_id: string | null
@@ -1518,6 +1569,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           digital_link_url: string
+          generated_at: string
+          generated_by: string | null
           gtin: string | null
           id: string
           pdf_path: string | null
@@ -1525,12 +1578,16 @@ export type Database = {
           product_id: string
           resolver_url: string | null
           retailer_id: string
+          status: string
           svg_path: string | null
+          version: number
         }
         Insert: {
           created_at?: string
           created_by?: string | null
           digital_link_url: string
+          generated_at?: string
+          generated_by?: string | null
           gtin?: string | null
           id?: string
           pdf_path?: string | null
@@ -1538,12 +1595,16 @@ export type Database = {
           product_id: string
           resolver_url?: string | null
           retailer_id: string
+          status?: string
           svg_path?: string | null
+          version?: number
         }
         Update: {
           created_at?: string
           created_by?: string | null
           digital_link_url?: string
+          generated_at?: string
+          generated_by?: string | null
           gtin?: string | null
           id?: string
           pdf_path?: string | null
@@ -1551,7 +1612,9 @@ export type Database = {
           product_id?: string
           resolver_url?: string | null
           retailer_id?: string
+          status?: string
           svg_path?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -1606,9 +1669,12 @@ export type Database = {
           intent_score_updated_at: string
           low_stock_threshold: number
           name: string
+          on_promotion: boolean
           price_cents: number
           promotion_end_date: string | null
+          promotion_label: string | null
           promotion_start_date: string | null
+          qr_status: string | null
           retailer_id: string
           sale_price_cents: number | null
           search_blob: string | null
@@ -1640,9 +1706,12 @@ export type Database = {
           intent_score_updated_at?: string
           low_stock_threshold?: number
           name: string
+          on_promotion?: boolean
           price_cents?: number
           promotion_end_date?: string | null
+          promotion_label?: string | null
           promotion_start_date?: string | null
+          qr_status?: string | null
           retailer_id: string
           sale_price_cents?: number | null
           search_blob?: string | null
@@ -1674,9 +1743,12 @@ export type Database = {
           intent_score_updated_at?: string
           low_stock_threshold?: number
           name?: string
+          on_promotion?: boolean
           price_cents?: number
           promotion_end_date?: string | null
+          promotion_label?: string | null
           promotion_start_date?: string | null
+          qr_status?: string | null
           retailer_id?: string
           sale_price_cents?: number | null
           search_blob?: string | null
