@@ -156,6 +156,45 @@ function ProductsListPage() {
     search.promo ||
     search.lowStock;
 
+  const [completing, setCompleting] = useState(false);
+  const handleCompleteIdentity = async () => {
+    if (completing) return;
+    setCompleting(true);
+    const toastId = toast.loading("Finding products that need attention…");
+    try {
+      const { ids } = await listIncompleteFn();
+      if (ids.length === 0) {
+        toast.success("All products already have a complete digital identity.", { id: toastId });
+        return;
+      }
+      const CHUNK = 10;
+      let done = 0;
+      let succeeded = 0;
+      let skipped = 0;
+      const allErrors: Array<{ productId: string; step: string; message: string }> = [];
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const chunk = ids.slice(i, i + CHUNK);
+        toast.loading(`Completing digital identity… ${done} / ${ids.length}`, { id: toastId });
+        const r = await bulkCompleteFn({ data: { productIds: chunk } });
+        succeeded += r.succeeded;
+        skipped += r.skipped;
+        allErrors.push(...r.errors);
+        done += chunk.length;
+      }
+      await qc.invalidateQueries();
+      const errText = allErrors.length ? ` (${allErrors.length} issues)` : "";
+      toast.success(
+        `Done — ${succeeded} completed${skipped ? `, ${skipped} skipped` : ""}${errText}.`,
+        { id: toastId },
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Bulk completion failed", { id: toastId });
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+
   return (
     <div className="grid gap-6">
       <PageHeader
