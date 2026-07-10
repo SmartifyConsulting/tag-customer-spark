@@ -30,9 +30,9 @@ async function resolveRetailerId(supabase: any, userId: string) {
   return data?.retailer_id as string | null;
 }
 
-function detectBarcodeType(code: string | null | undefined): string | null {
-  if (!code) return null;
-  const s = code.replace(/\D/g, "");
+function detectBarcodeType(code: unknown): string | null {
+  if (code === null || code === undefined) return null;
+  const s = String(code).replace(/\D/g, "");
   if (s.length === 8) return "EAN-8";
   if (s.length === 12) return "UPC-A";
   if (s.length === 13) return "EAN-13";
@@ -40,9 +40,9 @@ function detectBarcodeType(code: string | null | undefined): string | null {
   return null;
 }
 
-function toGtin14(code: string | null | undefined): string | null {
-  if (!code) return null;
-  const s = code.replace(/\D/g, "");
+function toGtin14(code: unknown): string | null {
+  if (code === null || code === undefined) return null;
+  const s = String(code).replace(/\D/g, "");
   if (s.length !== 8 && s.length !== 12 && s.length !== 13 && s.length !== 14) return null;
   return s.padStart(14, "0");
 }
