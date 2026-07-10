@@ -67,6 +67,7 @@ function InboxPage() {
   const [scope, setScope] = useState<"all" | "unread" | "mine" | "unassigned" | "resolved">("all");
   const [search, setSearch] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
   const qc = useQueryClient();
 
   const listFn = useServerFn(listConversations);
