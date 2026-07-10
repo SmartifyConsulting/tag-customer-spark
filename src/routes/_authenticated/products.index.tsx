@@ -209,10 +209,21 @@ function ProductsListPage() {
               </Button>
             )}
             {canManage && (
+              <Button variant="outline" onClick={handleCompleteIdentity} disabled={completing}>
+                {completing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                Complete digital identity
+              </Button>
+            )}
+            {canManage && (
               <Button variant="outline" onClick={() => setImportOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" /> Import
               </Button>
             )}
+
             {canManage && (
               <Button onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" /> Add Product
