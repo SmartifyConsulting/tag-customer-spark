@@ -175,6 +175,26 @@ export const getProduct = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!product) throw new Error("Product not found");
 
+    // Auto-heal image for legacy products whose resolver never ran.
+    if (!product.image_status || product.image_status === "pending") {
+      try {
+        const { resolveAndSyncProductImage } = await import("./product-images.server");
+        const healed = await resolveAndSyncProductImage({ supabase, productId: data.id });
+        if (healed) {
+          (product as any).image_url = healed.image_url;
+          (product as any).thumbnail_url = healed.thumbnail_url;
+          (product as any).hero_image = healed.hero_image;
+          (product as any).image_status = healed.image_status;
+          (product as any).image_source = healed.image_source;
+          (product as any).image_gallery = healed.image_gallery;
+        }
+      } catch {
+        /* best-effort heal */
+      }
+    }
+
+
+
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
     const [
