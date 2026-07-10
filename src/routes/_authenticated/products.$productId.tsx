@@ -123,13 +123,7 @@ function ProductDetail() {
       <div className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[220px_minmax(0,1fr)]">
         <div className="grid gap-2">
           <div className="aspect-square overflow-hidden rounded-xl border border-border bg-muted">
-            {primary ? (
-              <img src={primary} alt={p.name} className="h-full w-full object-cover" />
-            ) : (
-              <div className="grid h-full w-full place-items-center text-muted-foreground">
-                <Tag className="h-8 w-8" />
-              </div>
-            )}
+            <ProductImage product={p as any} variant="hero" alt={p.name} />
           </div>
           {images.length > 1 && (
             <div className="grid grid-cols-4 gap-2">
