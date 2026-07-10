@@ -330,13 +330,19 @@ export const commitProductImport = createServerFn({ method: "POST" })
             retailer_id: retailerId,
             product_id: productId,
             gtin: row.gtin,
-            digital_link_url: digitalLink,
+            digital_link_url: canonicalGs1,
+            resolver_url: digitalLink,
             png_path: pngPath,
             svg_path: svgPath,
             pdf_path: pdfPath,
             created_by: userId,
           });
         }
+
+        // Enqueue passport enrichment for background processing
+        await supabaseAdmin
+          .from("passport_enrichment_queue")
+          .upsert({ product_id: productId, retailer_id: retailerId });
       } catch (e: any) {
         failed++;
         errors.push(`${row.sku}: ${e.message ?? "unknown error"}`);
