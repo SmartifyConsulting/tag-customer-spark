@@ -190,7 +190,7 @@ export const commitProductImport = createServerFn({ method: "POST" })
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer assigned");
 
-    const { generateProductQr } = await import("./qr.functions");
+    const { generateForProduct } = await import("./qr.functions");
     const { resolveAndSyncProductImage } = await import("./product-images.server");
 
     // Preload categories
@@ -287,7 +287,7 @@ export const commitProductImport = createServerFn({ method: "POST" })
         // invalid; the product row is still saved so the retailer can fix it.
         if (row.gtin) {
           try {
-            await generateProductQr({ data: { productId, force: false } });
+            await generateForProduct(supabase, userId, productId, false);
           } catch (qrErr: any) {
             errors.push(`${row.sku}: ${qrErr?.message ?? "QR generation failed"}`);
           }
