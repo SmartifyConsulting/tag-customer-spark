@@ -13,7 +13,9 @@ import {
   Tag as TagIcon,
   UserPlus,
   Sparkles,
+  Megaphone,
 } from "lucide-react";
+import { BroadcastComposerDialog } from "@/components/notifications/broadcast-composer-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listConversations,
