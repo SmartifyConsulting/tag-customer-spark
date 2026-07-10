@@ -2,27 +2,30 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Plus, Trash2, Pencil, FolderTree } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Trash2, Pencil, FolderTree, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/empty-state";
 import {
-  listCategories,
+  listCategoriesWithCounts,
   createCategory,
   renameCategory,
   deleteCategory,
+  bulkAutoCategorise,
 } from "@/lib/categories.functions";
 
 type Row = { id: string; name: string; parent_id: string | null; status: string };
 
 export function CategoryAdminTab() {
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["categories"], queryFn: () => listCategories() });
+  const q = useQuery({ queryKey: ["categories", "with-counts"], queryFn: () => listCategoriesWithCounts() });
   const createFn = useServerFn(createCategory);
   const renameFn = useServerFn(renameCategory);
   const deleteFn = useServerFn(deleteCategory);
+  const bulkFn = useServerFn(bulkAutoCategorise);
 
   const [newParent, setNewParent] = useState("");
   const [subFor, setSubFor] = useState<string | null>(null);
@@ -30,7 +33,19 @@ export function CategoryAdminTab() {
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["categories"] });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["categories"] });
+    qc.invalidateQueries({ queryKey: ["products"] });
+  };
+
+  const bulk = useMutation({
+    mutationFn: () => bulkFn({ data: { onlyUncategorised: true, limit: 100 } }),
+    onSuccess: (r: any) => {
+      invalidate();
+      toast.success(`Auto-categorised ${r.assigned}/${r.total} products`);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+  });
 
   const create = useMutation({
     mutationFn: (v: { name: string; parent_id: string | null }) => createFn({ data: v }),
@@ -76,6 +91,32 @@ export function CategoryAdminTab() {
         <CardDescription>Manage product categories and their sub-categories (e.g. Men → Shirts, Women → Dresses).</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-muted/30 p-3">
+          <div className="text-sm">
+            <span className="font-medium">{q.data?.uncategorisedCount ?? 0}</span>{" "}
+            <span className="text-muted-foreground">uncategorised</span>
+            {q.data?.suggestedCount ? (
+              <>
+                <span className="mx-2 text-muted-foreground">·</span>
+                <Badge variant="secondary" className="gap-1">
+                  <Sparkles className="h-3 w-3" /> {q.data.suggestedCount} AI suggestions
+                </Badge>
+              </>
+            ) : null}
+          </div>
+          <div className="ml-auto">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => bulk.mutate()}
+              disabled={bulk.isPending || !(q.data?.uncategorisedCount ?? 0)}
+            >
+              <Sparkles className="mr-1 h-3.5 w-3.5" />
+              {bulk.isPending ? "Auto-categorising…" : "Auto-categorise uncategorised"}
+            </Button>
+          </div>
+        </div>
+
         <form
           className="flex flex-wrap gap-2"
           onSubmit={(e) => {
@@ -127,7 +168,9 @@ export function CategoryAdminTab() {
                     ) : (
                       <span className="flex-1 text-sm font-medium">{p.name}</span>
                     )}
-                    <span className="text-xs text-muted-foreground">{kids.length} sub</span>
+                    <span className="text-xs text-muted-foreground">
+                      {q.data?.counts?.[p.id] ?? 0} products · {kids.length} sub
+                    </span>
                     <Button size="sm" variant="ghost" onClick={() => setSubFor(subFor === p.id ? null : p.id)}>
                       <Plus className="mr-1 h-3.5 w-3.5" /> Sub
                     </Button>
@@ -189,7 +232,10 @@ export function CategoryAdminTab() {
                               autoFocus
                             />
                           ) : (
-                            <span className="flex-1 text-sm">{c.name}</span>
+                            <>
+                              <span className="flex-1 text-sm">{c.name}</span>
+                              <span className="text-[11px] text-muted-foreground">{q.data?.counts?.[c.id] ?? 0}</span>
+                            </>
                           )}
                           {editing?.id === c.id ? (
                             <Button size="sm" onClick={() => rename.mutate(editing)}>Save</Button>

@@ -101,7 +101,7 @@ export const listProducts = createServerFn({ method: "POST" })
     let q = supabase
       .from("products")
       .select(
-        "id, name, sku, brand, status, price_cents, sale_price_cents, currency, stock_qty, low_stock_threshold, images, image_url, promotion_start_date, promotion_end_date, color, size, updated_at, intent_score, intent_score_trend, intent_score_confidence, category:product_categories(id,name), store:stores(id,name)",
+        "id, name, sku, brand, status, price_cents, sale_price_cents, currency, stock_qty, low_stock_threshold, images, image_url, promotion_start_date, promotion_end_date, color, size, updated_at, intent_score, intent_score_trend, intent_score_confidence, category:product_categories!products_category_id_fkey(id,name), store:stores(id,name)",
         { count: "exact" },
       );
 
@@ -168,7 +168,7 @@ export const getProduct = createServerFn({ method: "POST" })
     const { data: product, error } = await supabase
       .from("products")
       .select(
-        "*, category:product_categories(id,name), store:stores(id,name), retailer:retailers(id,name,logo_url)",
+        "*, category:product_categories!products_category_id_fkey(id,name), store:stores(id,name), retailer:retailers(id,name,logo_url)",
       )
       .eq("id", data.id)
       .maybeSingle();
@@ -311,17 +311,39 @@ export const createProduct = createServerFn({ method: "POST" })
     if (!retailerId) throw new Error("No retailer assigned to your account");
     if (!(await canManage(supabase, userId, retailerId)))
       throw new Error("You don't have permission to add products");
+    const insertPayload: any = {
+      ...data,
+      retailer_id: retailerId,
+      created_by: userId,
+      image_url: data.images[0]?.url ?? null,
+    };
     const { data: row, error } = await supabase
       .from("products")
-      .insert({
-        ...data,
-        retailer_id: retailerId,
-        created_by: userId,
-        image_url: data.images[0]?.url ?? null,
-      })
+      .insert(insertPayload)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    if (!(data as any).category_id) {
+      try {
+        const { suggestCategoryForProduct } = await import("./categories.functions");
+        await suggestCategoryForProduct({
+          supabase,
+          retailerId,
+          userId,
+          product: {
+            id: row.id,
+            name: (data as any).name,
+            brand: (data as any).brand,
+            description: (data as any).description,
+            gtin: (data as any).gtin,
+            category_id: null,
+          },
+          apply: true,
+        });
+      } catch {
+        // non-fatal
+      }
+    }
     return { id: row.id as string };
   });
 

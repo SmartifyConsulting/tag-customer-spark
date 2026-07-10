@@ -52,7 +52,7 @@ function SettingsPage() {
           <TabsTrigger value="emails"><Mail className="mr-1 h-4 w-4" /> Emails</TabsTrigger>
           <TabsTrigger value="billing"><CreditCard className="mr-1 h-4 w-4" /> Billing</TabsTrigger>
           {isSuperAdmin && <TabsTrigger value="plan-admin"><CreditCard className="mr-1 h-4 w-4" /> Subscription plan admin</TabsTrigger>}
-          {isSuperAdmin && <TabsTrigger value="category-admin"><FolderTree className="mr-1 h-4 w-4" /> Category admin</TabsTrigger>}
+          <TabsTrigger value="category-admin"><FolderTree className="mr-1 h-4 w-4" /> Category admin</TabsTrigger>
           {isSuperAdmin && <TabsTrigger value="user-admin"><UserCog className="mr-1 h-4 w-4" /> User admin</TabsTrigger>}
           <TabsTrigger value="security"><ShieldCheck className="mr-1 h-4 w-4" /> Security</TabsTrigger>
           <TabsTrigger value="audit"><History className="mr-1 h-4 w-4" /> Audit log</TabsTrigger>
@@ -105,11 +105,9 @@ function SettingsPage() {
           </TabsContent>
         )}
 
-        {isSuperAdmin && (
-          <TabsContent value="category-admin">
-            <CategoryAdminTab />
-          </TabsContent>
-        )}
+        <TabsContent value="category-admin">
+          <CategoryAdminTab />
+        </TabsContent>
 
         {isSuperAdmin && (
           <TabsContent value="user-admin">

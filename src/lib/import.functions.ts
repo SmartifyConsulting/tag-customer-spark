@@ -206,9 +206,17 @@ export const commitProductImport = createServerFn({ method: "POST" })
     let failed = 0;
     const errors: string[] = [];
 
+    const { suggestCategoryForProduct } = await import("./categories.functions");
+    const { data: catRows } = await supabase
+      .from("product_categories")
+      .select("id, name, parent_id")
+      .eq("retailer_id", retailerId);
+    const catList = (catRows ?? []) as { id: string; name: string; parent_id: string | null }[];
+
     for (const row of data.rows) {
       try {
         let categoryId: string | null = null;
+        let categoryConfidence: number | null = null;
         if (row.category_name) {
           const key = row.category_name.toLowerCase();
           if (catByName.has(key)) categoryId = catByName.get(key)!;
@@ -221,6 +229,38 @@ export const commitProductImport = createServerFn({ method: "POST" })
             if (newCat) {
               categoryId = newCat.id;
               catByName.set(key, newCat.id);
+              catList.push({ id: newCat.id, name: row.category_name, parent_id: null });
+            }
+          }
+        }
+        if (!categoryId) {
+          // Auto-categorise via AI + fallback
+          const res = await suggestCategoryForProduct({
+            supabase,
+            retailerId,
+            userId,
+            product: {
+              name: row.name,
+              brand: row.brand,
+              description: row.description,
+              gtin: row.gtin,
+            },
+            categories: catList,
+          });
+          if (res.category_id) {
+            categoryId = res.category_id;
+            categoryConfidence = res.confidence;
+            if (res.created) {
+              // Refresh local cache so next rows can reuse it
+              const { data: fresh } = await supabase
+                .from("product_categories")
+                .select("id, name, parent_id")
+                .eq("id", res.category_id)
+                .maybeSingle();
+              if (fresh) {
+                catList.push(fresh as any);
+                catByName.set(fresh.name.toLowerCase(), fresh.id);
+              }
             }
           }
         }
@@ -243,6 +283,8 @@ export const commitProductImport = createServerFn({ method: "POST" })
           brand: row.brand,
           description: row.description,
           category_id: categoryId,
+          suggested_category_id: categoryId,
+          category_confidence: categoryConfidence,
           color: row.color,
           size: row.size,
           price_cents: row.price_cents,

@@ -46,6 +46,7 @@ import { Route as AuthenticatedCommercePricingRouteImport } from './routes/_auth
 import { Route as AuthenticatedCommerceFunnelRouteImport } from './routes/_authenticated/commerce.funnel'
 import { Route as AuthenticatedAnalyticsReportsRouteImport } from './routes/_authenticated/analytics.reports'
 import { Route as AuthenticatedAnalyticsHistoryRouteImport } from './routes/_authenticated/analytics.history'
+import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin.categories'
 import { Route as ApiPublicWebhooksTwilioInboundRouteImport } from './routes/api/public/webhooks/twilio-inbound'
 import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public/webhooks/paypal'
 import { Route as ApiPublicWebhooksPayfastItnRouteImport } from './routes/api/public/webhooks/payfast-itn'
@@ -256,6 +257,12 @@ const AuthenticatedAnalyticsHistoryRoute =
     path: '/history',
     getParentRoute: () => AuthenticatedAnalyticsRoute,
   } as any)
+const AuthenticatedAdminCategoriesRoute =
+  AuthenticatedAdminCategoriesRouteImport.update({
+    id: '/admin/categories',
+    path: '/admin/categories',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicWebhooksTwilioInboundRoute =
   ApiPublicWebhooksTwilioInboundRouteImport.update({
     id: '/api/public/webhooks/twilio-inbound',
@@ -329,6 +336,7 @@ export interface FileRoutesByFullPath {
   '/p/$dppId': typeof PDppIdRoute
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
   '/commerce/funnel': typeof AuthenticatedCommerceFunnelRoute
@@ -375,6 +383,7 @@ export interface FileRoutesByTo {
   '/p/$dppId': typeof PDppIdRoute
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
   '/commerce/funnel': typeof AuthenticatedCommerceFunnelRoute
@@ -424,6 +433,7 @@ export interface FileRoutesById {
   '/p/$dppId': typeof PDppIdRoute
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/_authenticated/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
   '/_authenticated/commerce/funnel': typeof AuthenticatedCommerceFunnelRoute
@@ -473,6 +483,7 @@ export interface FileRouteTypes {
     | '/p/$dppId'
     | '/passport/$gtin'
     | '/scan/$shortCode'
+    | '/admin/categories'
     | '/analytics/history'
     | '/analytics/reports'
     | '/commerce/funnel'
@@ -519,6 +530,7 @@ export interface FileRouteTypes {
     | '/p/$dppId'
     | '/passport/$gtin'
     | '/scan/$shortCode'
+    | '/admin/categories'
     | '/analytics/history'
     | '/analytics/reports'
     | '/commerce/funnel'
@@ -567,6 +579,7 @@ export interface FileRouteTypes {
     | '/p/$dppId'
     | '/passport/$gtin'
     | '/scan/$shortCode'
+    | '/_authenticated/admin/categories'
     | '/_authenticated/analytics/history'
     | '/_authenticated/analytics/reports'
     | '/_authenticated/commerce/funnel'
@@ -875,6 +888,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsHistoryRouteImport
       parentRoute: typeof AuthenticatedAnalyticsRoute
     }
+    '/_authenticated/admin/categories': {
+      id: '/_authenticated/admin/categories'
+      path: '/admin/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/webhooks/twilio-inbound': {
       id: '/api/public/webhooks/twilio-inbound'
       path: '/api/public/webhooks/twilio-inbound'
@@ -1027,6 +1047,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStoresRoute: typeof AuthenticatedStoresRoute
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedWatchlistsRoute: typeof AuthenticatedWatchlistsRoute
+  AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedCommerceFunnelRoute: typeof AuthenticatedCommerceFunnelRoute
   AuthenticatedCommercePricingRoute: typeof AuthenticatedCommercePricingRoute
   AuthenticatedCommerceRoiRoute: typeof AuthenticatedCommerceRoiRoute
@@ -1047,6 +1068,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStoresRoute: AuthenticatedStoresRoute,
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedWatchlistsRoute: AuthenticatedWatchlistsRoute,
+  AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedCommerceFunnelRoute: AuthenticatedCommerceFunnelRoute,
   AuthenticatedCommercePricingRoute: AuthenticatedCommercePricingRoute,
   AuthenticatedCommerceRoiRoute: AuthenticatedCommerceRoiRoute,

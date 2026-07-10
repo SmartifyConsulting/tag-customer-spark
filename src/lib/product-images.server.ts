@@ -304,7 +304,7 @@ export async function resolveAndSyncProductImage(input: {
   const { data: product } = await supabase
     .from("products")
     .select(
-      "id, retailer_id, gtin, name, brand, image_url, image_status, category:product_categories(name)",
+      "id, retailer_id, gtin, name, brand, image_url, image_status, category:product_categories!products_category_id_fkey(name)",
     )
     .eq("id", productId)
     .maybeSingle();
