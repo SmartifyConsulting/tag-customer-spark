@@ -136,6 +136,11 @@ export function ImageStatusCard({ product }: Props) {
               <Sparkles className="mr-1 h-3.5 w-3.5" />
               Reset & re-resolve
             </Button>
+            <Button size="sm" variant="ghost" onClick={handleEnrich} disabled={busy !== null}>
+              <Sparkles className={cn("mr-1 h-3.5 w-3.5", busy === "enrich" && "animate-spin")} />
+              Enrich passport
+            </Button>
+
           </div>
         </div>
       </div>
