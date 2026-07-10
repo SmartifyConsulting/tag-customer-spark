@@ -39,6 +39,9 @@ import { PassportTab } from "@/components/products/passport-tab";
 import { ProductQrPanel } from "@/components/qr/product-qr-panel";
 import { ProductIntentPanel } from "@/components/intent/product-intent-panel";
 import { ScansTable } from "@/components/qr/scans-table";
+import { ProductImage } from "@/components/products/product-image";
+import { ImageStatusCard } from "@/components/products/image-status-card";
+import { DigitalIdentityProgress } from "@/components/qr/digital-identity-progress";
 import { formatMoney } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
 import {
