@@ -168,7 +168,9 @@ export function CategoryAdminTab() {
                     ) : (
                       <span className="flex-1 text-sm font-medium">{p.name}</span>
                     )}
-                    <span className="text-xs text-muted-foreground">{kids.length} sub</span>
+                    <span className="text-xs text-muted-foreground">
+                      {q.data?.counts?.[p.id] ?? 0} products · {kids.length} sub
+                    </span>
                     <Button size="sm" variant="ghost" onClick={() => setSubFor(subFor === p.id ? null : p.id)}>
                       <Plus className="mr-1 h-3.5 w-3.5" /> Sub
                     </Button>
