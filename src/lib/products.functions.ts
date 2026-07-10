@@ -287,7 +287,9 @@ export const getProduct = createServerFn({ method: "POST" })
     return {
       product,
       qr: qrEnriched,
+      passport: passport ?? null,
       analytics: {
+
         scans30: scans30 ?? 0,
         scansTotal: scansTotal ?? 0,
         interestedCount: interestedCount ?? 0,
