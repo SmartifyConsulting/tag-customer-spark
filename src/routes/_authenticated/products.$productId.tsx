@@ -10,6 +10,7 @@ import {
   Loader2,
   QrCode,
   Smartphone,
+  Sparkles,
   Tag,
   Trash2,
   TrendingUp,
