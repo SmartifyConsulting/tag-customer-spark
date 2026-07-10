@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
-import heroLogo from "@/assets/tag-logo-hero.png.asset.json";
+import heroLogo from "@/assets/tag-logo-2026b.png.asset.json";
 
 export function AuthShell({ title, subtitle, children, footer }: { title: string; subtitle?: string; children: ReactNode; footer?: ReactNode }) {
   return (

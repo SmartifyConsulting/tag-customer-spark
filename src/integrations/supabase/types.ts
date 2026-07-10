@@ -1329,8 +1329,77 @@ export type Database = {
           },
         ]
       }
+      product_qr_assets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          digital_link_url: string
+          gtin: string | null
+          id: string
+          pdf_path: string | null
+          png_path: string | null
+          product_id: string
+          retailer_id: string
+          svg_path: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          digital_link_url: string
+          gtin?: string | null
+          id?: string
+          pdf_path?: string | null
+          png_path?: string | null
+          product_id: string
+          retailer_id: string
+          svg_path?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          digital_link_url?: string
+          gtin?: string | null
+          id?: string
+          pdf_path?: string | null
+          png_path?: string | null
+          product_id?: string
+          retailer_id?: string
+          svg_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_qr_assets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_qr_assets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_qr_assets_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "product_qr_assets_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
+          barcode_type: string | null
           brand: string | null
           category_id: string | null
           color: string | null
@@ -1338,6 +1407,8 @@ export type Database = {
           created_by: string | null
           currency: string
           description: string | null
+          digital_link_url: string | null
+          gtin: string | null
           id: string
           image_url: string | null
           images: Json
@@ -1361,6 +1432,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          barcode_type?: string | null
           brand?: string | null
           category_id?: string | null
           color?: string | null
@@ -1368,6 +1440,8 @@ export type Database = {
           created_by?: string | null
           currency?: string
           description?: string | null
+          digital_link_url?: string | null
+          gtin?: string | null
           id?: string
           image_url?: string | null
           images?: Json
@@ -1391,6 +1465,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          barcode_type?: string | null
           brand?: string | null
           category_id?: string | null
           color?: string | null
@@ -1398,6 +1473,8 @@ export type Database = {
           created_by?: string | null
           currency?: string
           description?: string | null
+          digital_link_url?: string | null
+          gtin?: string | null
           id?: string
           image_url?: string | null
           images?: Json

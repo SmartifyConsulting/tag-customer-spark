@@ -25,6 +25,7 @@ import {
 import { ProductsPagination } from "@/components/products/products-pagination";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { BulkQrDialog } from "@/components/qr/bulk-qr-dialog";
+import { ImportProductsDialog } from "@/components/products/import-products-dialog";
 
 import {
   archiveProduct,
@@ -107,6 +108,7 @@ function ProductsListPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const archive = useMutation({
     mutationFn: (id: string) => archiveFn({ data: { id } }),
@@ -162,7 +164,7 @@ function ProductsListPage() {
               </Button>
             )}
             {canManage && (
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" /> Import
               </Button>
             )}
@@ -329,6 +331,7 @@ function ProductsListPage() {
         onOpenChange={setBulkOpen}
         productIds={selectedIds}
       />
+      <ImportProductsDialog open={importOpen} onOpenChange={setImportOpen} />
 
       {archive.isPending || remove.isPending ? (
         <div className="fixed bottom-4 right-4 inline-flex items-center gap-2 rounded-full bg-card px-3 py-1.5 text-xs shadow-md">
