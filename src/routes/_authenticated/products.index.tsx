@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { toast } from "sonner";
-import { FileDown, Loader2, Package, Plus, Upload } from "lucide-react";
+import { FileDown, Loader2, Package, Plus, Sparkles, Upload } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
