@@ -226,7 +226,13 @@ export const commitProductImport = createServerFn({ method: "POST" })
           }
         }
 
-        const digitalLink = row.gtin ? `https://id.gs1.org/01/${row.gtin}` : null;
+        // Canonical GS1 Digital Link (AI 01) — POS scanners parse the
+        // /01/{gtin} segment identically to a linear-barcode scan.
+        const canonicalGs1 = row.gtin ? `https://id.gs1.org/01/${row.gtin}` : null;
+        // Our resolver URL: same GS1 structure, but points to TAG so
+        // consumer scans land on the Digital Product Passport.
+        const { resolverUrlForGtin } = await import("./passport.server");
+        const digitalLink = row.gtin ? resolverUrlForGtin(row.gtin) : null;
 
         // Upsert product by (retailer, sku)
         const { data: existing } = await supabase
