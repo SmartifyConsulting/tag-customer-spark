@@ -245,9 +245,20 @@ export const getProduct = createServerFn({ method: "POST" })
       deviceCounts[dev] = (deviceCounts[dev] ?? 0) + 1;
     });
 
+    const storageBase =
+      (process.env.SUPABASE_URL ?? "").replace(/\/$/, "") +
+      "/storage/v1/object/public/qr-artifacts/";
+    const qrEnriched = qr
+      ? {
+          ...qr,
+          png_url: storageBase + (qr as any).png_path,
+          svg_url: storageBase + (qr as any).svg_path,
+        }
+      : null;
+
     return {
       product,
-      qr,
+      qr: qrEnriched,
       analytics: {
         scans30: scans30 ?? 0,
         scansTotal: scansTotal ?? 0,
