@@ -29,11 +29,14 @@ import { ImportProductsDialog } from "@/components/products/import-products-dial
 
 import {
   archiveProduct,
+  bulkCompleteDigitalIdentity,
   deleteProduct,
   getProductFormOptions,
+  listIncompleteDigitalIdentityIds,
   listProducts,
 } from "@/lib/products.functions";
 import { useAuth } from "@/hooks/use-auth";
+
 
 const searchSchema = z.object({
   search: fallback(z.string(), "").default(""),
