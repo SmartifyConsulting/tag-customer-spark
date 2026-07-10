@@ -91,6 +91,32 @@ export function CategoryAdminTab() {
         <CardDescription>Manage product categories and their sub-categories (e.g. Men → Shirts, Women → Dresses).</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-muted/30 p-3">
+          <div className="text-sm">
+            <span className="font-medium">{q.data?.uncategorisedCount ?? 0}</span>{" "}
+            <span className="text-muted-foreground">uncategorised</span>
+            {q.data?.suggestedCount ? (
+              <>
+                <span className="mx-2 text-muted-foreground">·</span>
+                <Badge variant="secondary" className="gap-1">
+                  <Sparkles className="h-3 w-3" /> {q.data.suggestedCount} AI suggestions
+                </Badge>
+              </>
+            ) : null}
+          </div>
+          <div className="ml-auto">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => bulk.mutate()}
+              disabled={bulk.isPending || !(q.data?.uncategorisedCount ?? 0)}
+            >
+              <Sparkles className="mr-1 h-3.5 w-3.5" />
+              {bulk.isPending ? "Auto-categorising…" : "Auto-categorise uncategorised"}
+            </Button>
+          </div>
+        </div>
+
         <form
           className="flex flex-wrap gap-2"
           onSubmit={(e) => {
