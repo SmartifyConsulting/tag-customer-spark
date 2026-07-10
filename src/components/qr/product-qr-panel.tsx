@@ -1,22 +1,18 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
-  Copy,
+  Check,
   Download,
+  ExternalLink,
   Loader2,
+  Printer,
   QrCode as QrIcon,
   RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,194 +23,202 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { QrPreview, useQrPngDownload } from "./qr-preview";
-import { getPublicScanBase, regenerateProductQr } from "@/lib/qr.functions";
-import { renderQrPdf } from "@/lib/qr-pdf.functions";
+import { generateProductQr } from "@/lib/qr.functions";
 
-export type QrTag = {
+export type ActiveQrAsset = {
   id: string;
-  short_code: string;
-  template: string;
+  product_id: string;
+  gtin: string;
+  status: string;
   version: number;
-  is_active: boolean;
-  created_at: string;
-  scan_count?: number;
-  last_scanned_at?: string | null;
+  generated_at: string;
+  resolver_url: string;
+  digital_link_url: string;
+  png_url: string;
+  svg_url: string;
 };
 
 export function ProductQrPanel({
   productId,
   productName,
-  tag,
+  qr,
+  dppId,
 }: {
   productId: string;
   productName: string;
-  tag: QrTag | null;
+  qr: ActiveQrAsset | null;
+  dppId?: string | null;
 }) {
   const qc = useQueryClient();
-  const regen = useServerFn(regenerateProductQr);
-  const renderPdf = useServerFn(renderQrPdf);
+  const generateFn = useServerFn(generateProductQr);
+  const [confirmRegen, setConfirmRegen] = useState(false);
 
-  const [template, setTemplate] = useState<string>(tag?.template ?? "classic");
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
-  const { data: baseData } = useQuery({
-    queryKey: ["public-scan-base"],
-    queryFn: () => getPublicScanBase(),
-    staleTime: Infinity,
-  });
-  const origin =
-    baseData?.base ||
-    (typeof window !== "undefined" ? window.location.origin : "");
-  const scanBase = `${origin}/api/public/s`;
-
-  const scanUrl = tag ? `${scanBase}/${tag.short_code}` : "";
-
-  const download = useQrPngDownload(scanUrl, `qr-${tag?.short_code ?? productId}`);
-
-  const regenerate = useMutation({
-    mutationFn: () => regen({ data: { productId, template: template as any } }),
-    onSuccess: () => {
+  const generate = useMutation({
+    mutationFn: (force: boolean) => generateFn({ data: { productId, force } }),
+    onSuccess: (row: any) => {
+      qc.setQueryData(["product", productId], (prev: any) => {
+        if (!prev) return prev;
+        return { ...prev, qr: row };
+      });
       qc.invalidateQueries({ queryKey: ["product", productId] });
-      toast.success(tag ? "QR regenerated" : "QR generated");
+      toast.success("GS1 QR Code successfully generated.");
     },
-    onError: (e: any) => toast.error(e.message ?? "Failed"),
+    onError: (e: any) => toast.error(e.message ?? "QR generation failed"),
   });
 
-  const pdf = useMutation({
-    mutationFn: () =>
-      renderPdf({
-        data: {
-          productIds: [productId],
-          template: template as any,
-          perPage: 1,
-          scanBaseUrl: scanBase,
-        },
-      }),
-    onSuccess: (res) => {
-      const blob = base64ToBlob(res.base64, "application/pdf");
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = res.filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    },
-    onError: (e: any) => toast.error(e.message ?? "PDF failed"),
-  });
-
-  if (!tag) {
+  if (!qr) {
     return (
-      <div className="grid gap-4 rounded-xl border border-dashed border-border p-8 text-center">
-        <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-muted">
-          <QrIcon className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div>
-          <p className="font-medium">No QR code yet</p>
-          <p className="text-sm text-muted-foreground">
-            Generate a QR code so customers can scan this product in-store.
-          </p>
-        </div>
-        <div className="mx-auto flex items-center gap-2">
-          <TemplateSelect value={template} onChange={setTemplate} />
-          <Button onClick={() => regenerate.mutate()} disabled={regenerate.isPending}>
-            {regenerate.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Generate QR
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[auto_1fr]">
-      <QrPreview value={scanUrl} />
-      <div className="grid gap-4 self-start">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Scan URL</p>
-          <div className="mt-1 flex items-center gap-2">
-            <code className="truncate rounded-md bg-muted px-2 py-1 text-xs">{scanUrl}</code>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => {
-                navigator.clipboard.writeText(scanUrl);
-                toast.success("Copied");
-              }}
-            >
-              <Copy className="h-4 w-4" />
+      <section className="grid gap-4 rounded-xl border border-border bg-card p-6">
+        <header className="flex items-center gap-2">
+          <QrIcon className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            QR status
+          </h2>
+        </header>
+        <div className="grid gap-4 rounded-xl border border-dashed border-border p-8 text-center">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-muted">
+            <QrIcon className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div>
+            <p className="font-medium">No QR yet for this product.</p>
+            <p className="text-sm text-muted-foreground">
+              Generate a GS1 Digital Link QR that preserves the product's GTIN.
+            </p>
+          </div>
+          <div className="mx-auto">
+            <Button onClick={() => generate.mutate(false)} disabled={generate.isPending}>
+              {generate.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <QrIcon className="mr-2 h-4 w-4" />
+              )}
+              Generate QR
             </Button>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-3 text-sm">
-          <Stat label="Version" value={`v${tag.version}`} />
-          <Stat label="Scans" value={String(tag.scan_count ?? 0)} />
-          <Stat label="Template" value={tag.template} />
+      </section>
+    );
+  }
+
+  const generatedDate = new Date(qr.generated_at).toLocaleString();
+  const dppHref = dppId ? `/p/${dppId}` : qr.resolver_url;
+
+  return (
+    <section className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="flex flex-col items-center gap-3">
+        <div
+          className="grid place-items-center rounded-xl border border-border bg-white p-3"
+          style={{ width: 220, height: 220 }}
+        >
+          <img src={qr.svg_url} alt={`QR for ${productName}`} className="h-[196px] w-[196px]" />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <TemplateSelect value={template} onChange={setTemplate} />
-          <Button variant="outline" onClick={download}>
-            <Download className="mr-2 h-4 w-4" /> PNG
-          </Button>
-          <Button variant="outline" onClick={() => pdf.mutate()} disabled={pdf.isPending}>
-            {pdf.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-            Printable PDF
-          </Button>
-          <Button variant="outline" onClick={() => setConfirmOpen(true)}>
+        <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600">
+          <Check className="h-3 w-3" /> Active
+        </Badge>
+      </div>
+      <div className="grid content-start gap-4">
+        <header className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">GS1 Digital Link QR</h2>
+            <p className="text-sm text-muted-foreground">
+              This product already has an active QR Code.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setConfirmRegen(true)}>
             <RefreshCw className="mr-2 h-4 w-4" /> Regenerate
           </Button>
+        </header>
+        <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+          <Fact label="GTIN" value={qr.gtin} mono />
+          <Fact label="Version" value={`v${qr.version}`} />
+          <Fact label="Generated" value={generatedDate} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <Button variant="outline" onClick={() => download(qr.png_url, `qr-${qr.gtin}.png`)}>
+            <Download className="mr-2 h-4 w-4" /> Download PNG
+          </Button>
+          <Button variant="outline" onClick={() => download(qr.svg_url, `qr-${qr.gtin}.svg`)}>
+            <Download className="mr-2 h-4 w-4" /> Download SVG
+          </Button>
+          <Button variant="outline" onClick={() => printQr(qr.png_url, productName, qr.gtin)}>
+            <Printer className="mr-2 h-4 w-4" /> Print QR
+          </Button>
+          <a
+            href={dppHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+          >
+            <ExternalLink className="h-4 w-4" /> Open Digital Passport
+          </a>
         </div>
         <p className="text-xs text-muted-foreground">
-          Regenerating retires the current code. Any printed copies of v{tag.version} will stop tracking new scans.
+          Resolver URL:{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{qr.resolver_url}</code>
         </p>
       </div>
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialog open={confirmRegen} onOpenChange={setConfirmRegen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Regenerate this QR code?</AlertDialogTitle>
             <AlertDialogDescription>
-              A new short code will be issued. The current v{tag.version} code will be retired and stop redirecting after about a minute.
+              The current v{qr.version} QR is retired and replaced by v{qr.version + 1}. Printed
+              copies of the old artwork will still resolve to the same product because the GTIN
+              stays the same.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => regenerate.mutate()}>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmRegen(false);
+                generate.mutate(true);
+              }}
+            >
               Regenerate
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </section>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Fact({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="rounded-lg border border-border bg-muted/30 p-3">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-0.5 font-medium tabular-nums">{value}</p>
+      <p className={`mt-0.5 font-medium ${mono ? "font-mono text-sm" : ""}`}>{value}</p>
     </div>
   );
 }
 
-function TemplateSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-      <SelectContent>
-        <SelectItem value="classic">Classic</SelectItem>
-        <SelectItem value="minimal">Minimal</SelectItem>
-        <SelectItem value="bold">Bold promo</SelectItem>
-        <SelectItem value="compact">Compact</SelectItem>
-      </SelectContent>
-    </Select>
-  );
+function download(url: string, filename: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.target = "_blank";
+  a.rel = "noreferrer";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
-function base64ToBlob(b64: string, type: string) {
-  const bin = atob(b64);
-  const len = bin.length;
-  const arr = new Uint8Array(len);
-  for (let i = 0; i < len; i++) arr[i] = bin.charCodeAt(i);
-  return new Blob([arr], { type });
+function printQr(pngUrl: string, name: string, gtin: string) {
+  const w = window.open("", "_blank", "width=520,height=640");
+  if (!w) return;
+  w.document.write(`<!doctype html><html><head><title>QR — ${escapeHtml(name)}</title>
+  <style>body{font-family:system-ui,sans-serif;text-align:center;padding:32px}
+  img{width:340px;height:340px}h1{font-size:18px;margin:16px 0 4px}p{color:#555;margin:2px 0}
+  </style></head><body>
+  <img src="${pngUrl}" alt="QR" onload="setTimeout(()=>window.print(),200)"/>
+  <h1>${escapeHtml(name)}</h1><p>GTIN: ${escapeHtml(gtin)}</p>
+  </body></html>`);
+  w.document.close();
+}
+
+function escapeHtml(s: string) {
+  return s.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!),
+  );
 }
