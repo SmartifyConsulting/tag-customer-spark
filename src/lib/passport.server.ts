@@ -167,7 +167,7 @@ export async function enrichProductPassport(
   const { data: product, error: pErr } = await supabaseAdmin
     .from("products")
     .select(
-      "id, retailer_id, name, brand, description, gtin, digital_product_passport_id, category:product_categories(name)",
+      "id, retailer_id, name, brand, description, gtin, digital_product_passport_id, category:product_categories!products_category_id_fkey(name)",
     )
     .eq("id", productId)
     .maybeSingle();

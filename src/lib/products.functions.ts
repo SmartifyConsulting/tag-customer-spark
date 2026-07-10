@@ -101,7 +101,7 @@ export const listProducts = createServerFn({ method: "POST" })
     let q = supabase
       .from("products")
       .select(
-        "id, name, sku, brand, status, price_cents, sale_price_cents, currency, stock_qty, low_stock_threshold, images, image_url, promotion_start_date, promotion_end_date, color, size, updated_at, intent_score, intent_score_trend, intent_score_confidence, category:product_categories(id,name), store:stores(id,name)",
+        "id, name, sku, brand, status, price_cents, sale_price_cents, currency, stock_qty, low_stock_threshold, images, image_url, promotion_start_date, promotion_end_date, color, size, updated_at, intent_score, intent_score_trend, intent_score_confidence, category:product_categories!products_category_id_fkey(id,name), store:stores(id,name)",
         { count: "exact" },
       );
 
@@ -168,7 +168,7 @@ export const getProduct = createServerFn({ method: "POST" })
     const { data: product, error } = await supabase
       .from("products")
       .select(
-        "*, category:product_categories(id,name), store:stores(id,name), retailer:retailers(id,name,logo_url)",
+        "*, category:product_categories!products_category_id_fkey(id,name), store:stores(id,name), retailer:retailers(id,name,logo_url)",
       )
       .eq("id", data.id)
       .maybeSingle();
