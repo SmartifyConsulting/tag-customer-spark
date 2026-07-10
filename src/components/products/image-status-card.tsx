@@ -5,7 +5,9 @@ import { RefreshCw, Sparkles, ImageIcon, CheckCircle2, AlertCircle } from "lucid
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { refreshProductImage, resetProductImage } from "@/lib/product-images.functions";
+import { enrichProductPassportFn } from "@/lib/passport.functions";
 import { ProductImage } from "@/components/products/product-image";
+
 import { cn } from "@/lib/utils";
 
 type Props = {
