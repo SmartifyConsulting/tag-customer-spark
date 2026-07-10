@@ -39,6 +39,9 @@ import { PassportTab } from "@/components/products/passport-tab";
 import { ProductQrPanel } from "@/components/qr/product-qr-panel";
 import { ProductIntentPanel } from "@/components/intent/product-intent-panel";
 import { ScansTable } from "@/components/qr/scans-table";
+import { ProductImage } from "@/components/products/product-image";
+import { ImageStatusCard } from "@/components/products/image-status-card";
+import { DigitalIdentityProgress } from "@/components/qr/digital-identity-progress";
 import { formatMoney } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -123,13 +126,7 @@ function ProductDetail() {
       <div className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[220px_minmax(0,1fr)]">
         <div className="grid gap-2">
           <div className="aspect-square overflow-hidden rounded-xl border border-border bg-muted">
-            {primary ? (
-              <img src={primary} alt={p.name} className="h-full w-full object-cover" />
-            ) : (
-              <div className="grid h-full w-full place-items-center text-muted-foreground">
-                <Tag className="h-8 w-8" />
-              </div>
-            )}
+            <ProductImage product={p as any} variant="hero" alt={p.name} />
           </div>
           {images.length > 1 && (
             <div className="grid grid-cols-4 gap-2">
@@ -201,6 +198,15 @@ function ProductDetail() {
           {p.color && <Fact label="Colour" value={p.color} />}
           {p.size && <Fact label="Size" value={p.size} />}
         </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <ImageStatusCard product={p as any} />
+        <DigitalIdentityProgress
+          product={p as any}
+          qr={data.qr ? { active: (data.qr as any).status === "active" } : null}
+          passport={(data as any).passport ?? null}
+        />
       </div>
 
       <div id="product-qr">

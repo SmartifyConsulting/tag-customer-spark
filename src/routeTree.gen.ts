@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ScanShortCodeRouteImport } from './routes/scan.$shortCode'
+import { Route as PassportGtinRouteImport } from './routes/passport.$gtin'
 import { Route as PDppIdRouteImport } from './routes/p.$dppId'
 import { Route as NMessageIdRouteImport } from './routes/n.$messageId'
 import { Route as AuthenticatedWatchlistsRouteImport } from './routes/_authenticated/watchlists'
@@ -82,6 +83,11 @@ const IndexRoute = IndexRouteImport.update({
 const ScanShortCodeRoute = ScanShortCodeRouteImport.update({
   id: '/scan/$shortCode',
   path: '/scan/$shortCode',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PassportGtinRoute = PassportGtinRouteImport.update({
+  id: '/passport/$gtin',
+  path: '/passport/$gtin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PDppIdRoute = PDppIdRouteImport.update({
@@ -321,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
   '/p/$dppId': typeof PDppIdRoute
+  '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -366,6 +373,7 @@ export interface FileRoutesByTo {
   '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
   '/p/$dppId': typeof PDppIdRoute
+  '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -414,6 +422,7 @@ export interface FileRoutesById {
   '/_authenticated/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
   '/p/$dppId': typeof PDppIdRoute
+  '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/_authenticated/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/_authenticated/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -462,6 +471,7 @@ export interface FileRouteTypes {
     | '/watchlists'
     | '/n/$messageId'
     | '/p/$dppId'
+    | '/passport/$gtin'
     | '/scan/$shortCode'
     | '/analytics/history'
     | '/analytics/reports'
@@ -507,6 +517,7 @@ export interface FileRouteTypes {
     | '/watchlists'
     | '/n/$messageId'
     | '/p/$dppId'
+    | '/passport/$gtin'
     | '/scan/$shortCode'
     | '/analytics/history'
     | '/analytics/reports'
@@ -554,6 +565,7 @@ export interface FileRouteTypes {
     | '/_authenticated/watchlists'
     | '/n/$messageId'
     | '/p/$dppId'
+    | '/passport/$gtin'
     | '/scan/$shortCode'
     | '/_authenticated/analytics/history'
     | '/_authenticated/analytics/reports'
@@ -589,6 +601,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   NMessageIdRoute: typeof NMessageIdRoute
   PDppIdRoute: typeof PDppIdRoute
+  PassportGtinRoute: typeof PassportGtinRoute
   ScanShortCodeRoute: typeof ScanShortCodeRoute
   ApiPublic01GtinRoute: typeof ApiPublic01GtinRoute
   ApiPublicHooksIntentTickRoute: typeof ApiPublicHooksIntentTickRoute
@@ -643,6 +656,13 @@ declare module '@tanstack/react-router' {
       path: '/scan/$shortCode'
       fullPath: '/scan/$shortCode'
       preLoaderRoute: typeof ScanShortCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/passport/$gtin': {
+      id: '/passport/$gtin'
+      path: '/passport/$gtin'
+      fullPath: '/passport/$gtin'
+      preLoaderRoute: typeof PassportGtinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/p/$dppId': {
@@ -1044,6 +1064,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   NMessageIdRoute: NMessageIdRoute,
   PDppIdRoute: PDppIdRoute,
+  PassportGtinRoute: PassportGtinRoute,
   ScanShortCodeRoute: ScanShortCodeRoute,
   ApiPublic01GtinRoute: ApiPublic01GtinRoute,
   ApiPublicHooksIntentTickRoute: ApiPublicHooksIntentTickRoute,

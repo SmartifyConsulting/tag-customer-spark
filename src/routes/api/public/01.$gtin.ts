@@ -1,16 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-// GS1 Digital Link resolver for AI (01) GTIN.
-// - POS scanners parse the URL and extract the GTIN from /01/{gtin} exactly
-//   like a linear barcode scan.
-// - JSON/linkset requests receive resolver metadata (GS1 Resolver conformant).
-// - Everything else is redirected to the public Digital Product Passport.
+// GS1 Digital Link resolver for AI (01) GTIN. Kept for backwards compatibility
+// with QR codes generated before we moved the canonical URL to /products/{gtin}.
+// - JSON/linkset requests get GS1 Resolver-conformant metadata (dpp_url points
+//   to the canonical /products/{gtin} page).
+// - Browser scans are 301-redirected to /products/{gtin} so old printed QRs
+//   continue to work forever.
 
 function validGtin14(input: string): string | null {
   const digits = input.replace(/\D/g, "");
   if (![8, 12, 13, 14].includes(digits.length)) return null;
   const g = digits.padStart(14, "0");
-  // Mod-10 check digit
   let sum = 0;
   for (let i = 0; i < 13; i++) {
     const d = Number(g[i]);
@@ -26,44 +26,27 @@ export const Route = createFileRoute("/api/public/01/$gtin")({
     handlers: {
       GET: async ({ request, params }) => {
         const gtin14 = validGtin14(params.gtin);
-        if (!gtin14) {
-          return new Response("Invalid GTIN", { status: 400 });
-        }
+        if (!gtin14) return new Response("Invalid GTIN", { status: 400 });
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: product } = await supabaseAdmin
-          .from("products")
-          .select("id, retailer_id, digital_product_passport_id, name, brand")
-          .eq("gtin", gtin14)
-          .maybeSingle();
-
+        const origin = new URL(request.url).origin;
+        const dppUrl = `${origin}/passport/${gtin14}`;
         const accept = request.headers.get("accept") ?? "";
         const wantsJson =
           accept.includes("application/json") || accept.includes("application/linkset+json");
 
-        const origin = new URL(request.url).origin;
-
-        if (!product) {
-          if (wantsJson) {
-            return Response.json(
-              { gtin: gtin14, found: false, message: "No product registered for this GTIN." },
-              { status: 404 },
-            );
-          }
-          // Fallback: send scanner to a friendly not-found page
-          return new Response(null, {
-            status: 302,
-            headers: { Location: `${origin}/p/unknown?gtin=${gtin14}` },
-          });
-        }
-
-        const dppUrl = `${origin}/p/${product.digital_product_passport_id}`;
-
         if (wantsJson) {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: product } = await supabaseAdmin
+            .from("products")
+            .select("name, brand")
+            .eq("gtin", gtin14)
+            .maybeSingle();
           return Response.json({
             gtin: gtin14,
-            found: true,
-            product: { name: product.name, brand: product.brand ?? null },
+            found: !!product,
+            product: product
+              ? { name: (product as any).name, brand: (product as any).brand ?? null }
+              : null,
             linkset: [
               {
                 anchor: `${origin}/api/public/01/${gtin14}`,
@@ -75,7 +58,7 @@ export const Route = createFileRoute("/api/public/01/$gtin")({
         }
 
         return new Response(null, {
-          status: 302,
+          status: 301,
           headers: {
             Location: dppUrl,
             "Cache-Control": "public, max-age=300",

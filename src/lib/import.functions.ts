@@ -190,9 +190,8 @@ export const commitProductImport = createServerFn({ method: "POST" })
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer assigned");
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const QRCode = (await import("qrcode")).default;
-    const { PDFDocument, StandardFonts } = await import("pdf-lib");
+    const { generateForProduct } = await import("./qr.functions");
+    const { resolveAndSyncProductImage } = await import("./product-images.server");
 
     // Preload categories
     const { data: cats } = await supabase
@@ -226,13 +225,7 @@ export const commitProductImport = createServerFn({ method: "POST" })
           }
         }
 
-        // Canonical GS1 Digital Link (AI 01) — POS scanners parse the
-        // /01/{gtin} segment identically to a linear-barcode scan.
         const canonicalGs1 = row.gtin ? `https://id.gs1.org/01/${row.gtin}` : null;
-        // Our resolver URL: same GS1 structure, but points to TAG so
-        // consumer scans land on the Digital Product Passport.
-        const { resolverUrlForGtin } = await import("./passport.server");
-        const digitalLink = row.gtin ? resolverUrlForGtin(row.gtin) : null;
 
         // Upsert product by (retailer, sku)
         const { data: existing } = await supabase
@@ -282,67 +275,25 @@ export const commitProductImport = createServerFn({ method: "POST" })
           created++;
         }
 
-        // Generate QR artifacts if we have a digital link
-        if (digitalLink) {
-          const png = await QRCode.toBuffer(digitalLink, {
-            errorCorrectionLevel: "Q",
-            margin: 4,
-            width: 800,
-            color: { dark: "#0A1F5C", light: "#ffffff" },
-          });
-          const svg = await QRCode.toString(digitalLink, {
-            type: "svg",
-            errorCorrectionLevel: "Q",
-            margin: 4,
-            width: 800,
-            color: { dark: "#0A1F5C", light: "#ffffff" },
-          });
-          const pdf = await PDFDocument.create();
-          const page = pdf.addPage([420, 520]);
-          const font = await pdf.embedFont(StandardFonts.HelveticaBold);
-          const body = await pdf.embedFont(StandardFonts.Helvetica);
-          const pngImg = await pdf.embedPng(png);
-          page.drawImage(pngImg, { x: 60, y: 140, width: 300, height: 300 });
-          page.drawText(row.name.slice(0, 40), { x: 60, y: 100, size: 14, font });
-          page.drawText(`SKU: ${row.sku}`, { x: 60, y: 80, size: 10, font: body });
-          page.drawText(`GTIN: ${row.gtin ?? "—"}`, { x: 60, y: 65, size: 10, font: body });
-          page.drawText(digitalLink, { x: 60, y: 50, size: 8, font: body });
-          const pdfBytes = await pdf.save();
-
-          const base = `${retailerId}/${productId}/${row.gtin}`;
-          const pngPath = `${base}.png`;
-          const svgPath = `${base}.svg`;
-          const pdfPath = `${base}.pdf`;
-          await supabaseAdmin.storage.from("qr-artifacts").upload(pngPath, png, {
-            contentType: "image/png",
-            upsert: true,
-          });
-          await supabaseAdmin.storage.from("qr-artifacts").upload(svgPath, new Blob([svg], { type: "image/svg+xml" }), {
-            contentType: "image/svg+xml",
-            upsert: true,
-          });
-          await supabaseAdmin.storage.from("qr-artifacts").upload(pdfPath, pdfBytes, {
-            contentType: "application/pdf",
-            upsert: true,
-          });
-
-          await supabase.from("product_qr_assets").insert({
-            retailer_id: retailerId,
-            product_id: productId,
-            gtin: row.gtin,
-            digital_link_url: canonicalGs1!,
-            resolver_url: digitalLink!,
-            png_path: pngPath,
-            svg_path: svgPath,
-            pdf_path: pdfPath,
-            created_by: userId,
-          });
+        // Resolve product image first so the shell passport can seed hero_image.
+        try {
+          await resolveAndSyncProductImage({ supabase, productId });
+        } catch (imgErr: any) {
+          errors.push(`${row.sku}: image resolve failed — ${imgErr?.message ?? "unknown"}`);
         }
 
-        // Enqueue passport enrichment for background processing
-        await supabaseAdmin
-          .from("passport_enrichment_queue")
-          .upsert({ product_id: productId, retailer_id: retailerId });
+        // Generate GS1 QR — this also seeds a published shell passport and
+        // enqueues enrichment. Skip cleanly when the barcode is missing or
+        // invalid; the product row is still saved so the retailer can fix it.
+        if (row.gtin) {
+          try {
+            await generateForProduct(supabase, userId, productId, false);
+          } catch (qrErr: any) {
+            errors.push(`${row.sku}: ${qrErr?.message ?? "QR generation failed"}`);
+          }
+        } else {
+          errors.push(`${row.sku}: Invalid Barcode — no QR generated.`);
+        }
       } catch (e: any) {
         failed++;
         errors.push(`${row.sku}: ${e.message ?? "unknown error"}`);

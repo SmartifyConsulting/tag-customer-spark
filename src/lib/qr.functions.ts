@@ -93,7 +93,7 @@ export const getProductQr = createServerFn({ method: "POST" })
 
 // ---------- Generate / regenerate ----------
 
-async function generateForProduct(
+export async function generateForProduct(
   supabase: any,
   userId: string,
   productId: string,
@@ -206,6 +206,43 @@ async function generateForProduct(
     .from("products")
     .update({ qr_status: "active", digital_link_url: canonicalGs1 })
     .eq("id", productId);
+
+  // Ensure a published shell passport exists so the QR always resolves.
+  const dppId = crypto.randomUUID();
+  const { data: existingPassport } = await supabaseAdmin
+    .from("product_passports")
+    .select("dpp_id")
+    .eq("product_id", productId)
+    .maybeSingle();
+  const effectiveDppId = existingPassport?.dpp_id ?? dppId;
+
+  await supabaseAdmin
+    .from("product_passports")
+    .upsert(
+      {
+        product_id: productId,
+        retailer_id: product.retailer_id,
+        dpp_id: effectiveDppId,
+        gtin: gtin14,
+        status: "published",
+        visibility: "public",
+        enrichment_status: existingPassport ? undefined : "pending",
+      },
+      { onConflict: "product_id" },
+    );
+
+  await supabase
+    .from("products")
+    .update({ digital_product_passport_id: effectiveDppId })
+    .eq("id", productId);
+
+  // Resolve the product image (best-effort — never blocks QR generation)
+  try {
+    const { resolveAndSyncProductImage } = await import("./product-images.server");
+    await resolveAndSyncProductImage({ supabase, productId });
+  } catch {
+    /* image resolver is best-effort */
+  }
 
   // Enqueue passport enrichment (idempotent upsert)
   try {
