@@ -199,7 +199,9 @@ export const getProduct = createServerFn({ method: "POST" })
 
     const [
       { data: qr },
+      { data: passport },
       { count: scans30 },
+
       { count: scansTotal },
       { count: interestedCount },
       { count: notifSent },
