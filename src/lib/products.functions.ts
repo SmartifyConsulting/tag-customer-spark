@@ -311,17 +311,39 @@ export const createProduct = createServerFn({ method: "POST" })
     if (!retailerId) throw new Error("No retailer assigned to your account");
     if (!(await canManage(supabase, userId, retailerId)))
       throw new Error("You don't have permission to add products");
+    const insertPayload: any = {
+      ...data,
+      retailer_id: retailerId,
+      created_by: userId,
+      image_url: data.images[0]?.url ?? null,
+    };
     const { data: row, error } = await supabase
       .from("products")
-      .insert({
-        ...data,
-        retailer_id: retailerId,
-        created_by: userId,
-        image_url: data.images[0]?.url ?? null,
-      })
+      .insert(insertPayload)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    if (!(data as any).category_id) {
+      try {
+        const { suggestCategoryForProduct } = await import("./categories.functions");
+        await suggestCategoryForProduct({
+          supabase,
+          retailerId,
+          userId,
+          product: {
+            id: row.id,
+            name: (data as any).name,
+            brand: (data as any).brand,
+            description: (data as any).description,
+            gtin: (data as any).gtin,
+            category_id: null,
+          },
+          apply: true,
+        });
+      } catch {
+        // non-fatal
+      }
+    }
     return { id: row.id as string };
   });
 
