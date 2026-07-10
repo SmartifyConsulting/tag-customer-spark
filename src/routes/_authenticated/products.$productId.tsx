@@ -146,7 +146,15 @@ function ProductDetail() {
         <div className="grid content-start gap-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">{p.name}</h1>
+              <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+                {p.name}
+                {p.on_promotion && (
+                  <Star
+                    className="h-5 w-5 fill-red-600 text-red-600"
+                    aria-label={p.promotion_label ?? "On promotion"}
+                  />
+                )}
+              </h1>
               <p className="text-sm text-muted-foreground">
                 SKU {p.sku}
                 {p.brand ? ` · ${p.brand}` : ""}
