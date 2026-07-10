@@ -283,6 +283,8 @@ export const commitProductImport = createServerFn({ method: "POST" })
           brand: row.brand,
           description: row.description,
           category_id: categoryId,
+          suggested_category_id: categoryId,
+          category_confidence: categoryConfidence,
           color: row.color,
           size: row.size,
           price_cents: row.price_cents,
