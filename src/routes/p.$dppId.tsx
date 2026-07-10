@@ -20,9 +20,9 @@ export const Route = createFileRoute("/p/$dppId")({
     const { gtin } = await lookupGtin({ data: { dpp_id: params.dppId } });
     if (typeof window === "undefined") {
       const { redirect } = await import("@tanstack/react-router");
-      throw redirect({ to: gtin ? "/products/$gtin" : "/", params: { gtin: gtin ?? "" } });
+      throw redirect({ to: gtin ? "/passport/$gtin" : "/", params: { gtin: gtin ?? "" } });
     }
-    if (gtin) window.location.replace(`/products/${gtin}`);
+    if (gtin) window.location.replace(`/passport/${gtin}`);
     return { gtin };
   },
   component: () => (
