@@ -50,6 +50,7 @@ import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public
 import { Route as ApiPublicWebhooksPayfastItnRouteImport } from './routes/api/public/webhooks/payfast-itn'
 import { Route as ApiPublicScanInterestRouteImport } from './routes/api/public/scan.interest'
 import { Route as ApiPublicSShortCodeRouteImport } from './routes/api/public/s.$shortCode'
+import { Route as ApiPublicHooksPassportTickRouteImport } from './routes/api/public/hooks.passport-tick'
 import { Route as ApiPublicHooksNotificationsTickRouteImport } from './routes/api/public/hooks.notifications-tick'
 import { Route as ApiPublicHooksIntentTickRouteImport } from './routes/api/public/hooks.intent-tick'
 import { Route as ApiPublic01GtinRouteImport } from './routes/api/public/01.$gtin'
@@ -276,6 +277,12 @@ const ApiPublicSShortCodeRoute = ApiPublicSShortCodeRouteImport.update({
   path: '/api/public/s/$shortCode',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksPassportTickRoute =
+  ApiPublicHooksPassportTickRouteImport.update({
+    id: '/api/public/hooks/passport-tick',
+    path: '/api/public/hooks/passport-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksNotificationsTickRoute =
   ApiPublicHooksNotificationsTickRouteImport.update({
     id: '/api/public/hooks/notifications-tick',
@@ -333,6 +340,7 @@ export interface FileRoutesByFullPath {
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
+  '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
@@ -377,6 +385,7 @@ export interface FileRoutesByTo {
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
+  '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
@@ -424,6 +433,7 @@ export interface FileRoutesById {
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
+  '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
@@ -471,6 +481,7 @@ export interface FileRouteTypes {
     | '/api/public/01/$gtin'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
+    | '/api/public/hooks/passport-tick'
     | '/api/public/s/$shortCode'
     | '/api/public/scan/interest'
     | '/api/public/webhooks/payfast-itn'
@@ -515,6 +526,7 @@ export interface FileRouteTypes {
     | '/api/public/01/$gtin'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
+    | '/api/public/hooks/passport-tick'
     | '/api/public/s/$shortCode'
     | '/api/public/scan/interest'
     | '/api/public/webhooks/payfast-itn'
@@ -561,6 +573,7 @@ export interface FileRouteTypes {
     | '/api/public/01/$gtin'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
+    | '/api/public/hooks/passport-tick'
     | '/api/public/s/$shortCode'
     | '/api/public/scan/interest'
     | '/api/public/webhooks/payfast-itn'
@@ -580,6 +593,7 @@ export interface RootRouteChildren {
   ApiPublic01GtinRoute: typeof ApiPublic01GtinRoute
   ApiPublicHooksIntentTickRoute: typeof ApiPublicHooksIntentTickRoute
   ApiPublicHooksNotificationsTickRoute: typeof ApiPublicHooksNotificationsTickRoute
+  ApiPublicHooksPassportTickRoute: typeof ApiPublicHooksPassportTickRoute
   ApiPublicSShortCodeRoute: typeof ApiPublicSShortCodeRoute
   ApiPublicScanInterestRoute: typeof ApiPublicScanInterestRoute
   ApiPublicWebhooksPayfastItnRoute: typeof ApiPublicWebhooksPayfastItnRoute
@@ -876,6 +890,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSShortCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/passport-tick': {
+      id: '/api/public/hooks/passport-tick'
+      path: '/api/public/hooks/passport-tick'
+      fullPath: '/api/public/hooks/passport-tick'
+      preLoaderRoute: typeof ApiPublicHooksPassportTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/notifications-tick': {
       id: '/api/public/hooks/notifications-tick'
       path: '/api/public/hooks/notifications-tick'
@@ -1027,6 +1048,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublic01GtinRoute: ApiPublic01GtinRoute,
   ApiPublicHooksIntentTickRoute: ApiPublicHooksIntentTickRoute,
   ApiPublicHooksNotificationsTickRoute: ApiPublicHooksNotificationsTickRoute,
+  ApiPublicHooksPassportTickRoute: ApiPublicHooksPassportTickRoute,
   ApiPublicSShortCodeRoute: ApiPublicSShortCodeRoute,
   ApiPublicScanInterestRoute: ApiPublicScanInterestRoute,
   ApiPublicWebhooksPayfastItnRoute: ApiPublicWebhooksPayfastItnRoute,
