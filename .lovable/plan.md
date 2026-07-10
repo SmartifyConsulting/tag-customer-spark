@@ -1,89 +1,65 @@
+# Plan
 
-## Goal
+## 1. Rebuild QR generation (GS1, GTIN-anchored, single-source)
 
-After a product is imported and its GS1-compliant QR is generated, automatically enrich the product with AI, store the result in a **TAG Digital Product Passport (DPP)**, and make the QR resolve to a public DPP page while still exposing the original GTIN to POS scanners.
+Replace the current two-parallel-systems mess (`qr_tags` short codes vs `product_qr_assets`) with a single canonical **`product_qr_assets`** record per GTIN, driven by a rebuilt "Generate QR" action.
 
-## 1. GS1 Digital Link (POS + DPP dual-purpose)
+### Server: `generateProductQr` (in `src/lib/qr.functions.ts`, replaces `regenerateProductQr` semantics)
 
-Keep the QR payload GS1-compliant so Sunrise 2027 POS scanners can extract AI (01) GTIN, but route human scans to our DPP.
+Steps performed inside the handler:
 
-- QR payload stays canonical GS1 Digital Link:
-  `https://id.tag.africa/01/{gtin14}`
-  (own the resolver domain so we control routing; `id.gs1.org` stays as a documented fallback format.)
-- Add a resolver route `src/routes/api/public/01.$gtin.ts`:
-  - Validates GTIN-14 + mod-10.
-  - Looks up `products.gtin` → DPP id.
-  - 302-redirects browsers to `/p/{dpp_id}` (public DPP page).
-  - Returns JSON (`{ gtin, dpp_url, product }`) for `Accept: application/json` / linkset requests, matching GS1 Resolver conformance.
-- Public DPP page `src/routes/p.$dppId.tsx` — SSR, no auth, rich OG tags, shows enriched content (below).
-- Re-generate PNG/SVG/PDF artifacts to embed the new resolver URL; old imports get a one-off backfill.
+1. **Load product** (`id, name, sku, gtin, barcode_type, retailer_id`) via `requireSupabaseAuth` + role check.
+2. **Validate barcode**: `gtin` present, digits only, length ∈ {8,12,13,14}, valid GS1 check digit. On failure → throw a typed error the UI shows as toast; no QR row created.
+3. **Duplicate guard**: `select … from product_qr_assets where gtin = product.gtin and status = 'active'`. If one exists AND belongs to this product → return it (idempotent). If it exists on a different product → throw `"GTIN already has an active QR on another product"`.
+4. **Build GS1 Digital Link** using existing `resolverUrlForGtin(gtin)` → `https://<host>/01/<gtin14>`. Never mint random codes.
+5. **Render artifacts** with `qrcode`: PNG (800px, ECC Q, brand navy) and SVG. Upload to existing `qr-artifacts` bucket at `${retailer}/${productId}/${gtin}.{png,svg}` (upsert).
+6. **Persist** in `product_qr_assets` (add columns via migration below): `product_id, retailer_id, gtin, digital_link_url, resolver_url, png_path, svg_path, status='active', generated_at=now(), generated_by=userId, version` (increment on regenerate).
+7. **Link on product**: set `products.digital_link_url` and `products.qr_status='active'`.
+8. **Enqueue passport enrichment** (existing `passport_enrichment_queue`) — unchanged.
+9. Return the fresh QR row + public URLs for immediate UI hydration.
 
-POS behaviour is unchanged: scanners read the GS1 Digital Link, parse AI (01), get the exact original GTIN.
+**Regenerate** = same fn with `{ force: true }`: marks current active row `status='retired'`, bumps version, writes a new active row against the same GTIN (still one active per GTIN).
 
-## 2. Digital Product Passport schema
+### Migration
+- `product_qr_assets`: add `status text default 'active' check (status in ('active','retired'))`, `generated_at timestamptz default now()`, `generated_by uuid`, `version int default 1`. Partial unique index `(gtin) where status='active'` to enforce **one active QR per GTIN**.
+- `products`: add `qr_status text` (nullable; mirrors active asset), `on_promotion boolean not null default false`, `promotion_label text`.
+- Keep `qr_tags` table intact for existing scan history but stop writing to it from the generation flow. Update `products.functions.ts::getProduct` to return the active `product_qr_assets` row (not `qr_tags`) as `qr`.
 
-New table `product_passports` (1:1 with `products`, keyed by `products.digital_product_passport_id`):
+### UI: `ProductQrPanel` rebuild (`src/components/qr/product-qr-panel.tsx`)
 
-- Identity: `gtin`, `brand`, `manufacturer`, `country_of_origin`, `category_path`
-- Content: `short_description`, `marketing_description`, `product_summary`, `consumer_faqs jsonb`
-- Composition: `ingredients jsonb`, `nutrition jsonb`, `allergens text[]`
-- Physical: `dimensions jsonb` (l/w/h/weight/units), `materials jsonb`
-- Compliance / lifecycle: `warranty jsonb`, `sustainability jsonb` (recyclability, certifications, carbon)
-- Media: `images jsonb` (array of `{url, role, source, license}`)
-- Provenance: `sources jsonb` (URLs + confidence), `enriched_at`, `enrichment_status` (`pending|enriched|failed|manual`), `enrichment_model`, `version int`, `last_edited_by`
+Replace current panel with a permanent **QR Status card** on the product detail page (always visible, not tucked in a tab — hoist onto the detail page shell).
 
-RLS:
-- Retailer-scoped write via existing `belongs_to_retailer`.
-- Public `TO anon SELECT` only on a `public.product_passport_public` view that projects safe columns (no cost, no internal notes).
+Two states:
 
-Grants + `updated_at` trigger per project rules.
+**No active QR:**
+- Empty state with big "Generate QR" button. On click → mutation runs `generateProductQr`; on success `queryClient.setQueryData(["product", id], …)` for instant swap (no page refresh) + toast **"GS1 QR Code successfully generated."**. On validation error toast the message and stay empty.
 
-## 3. Enrichment pipeline
+**Active QR present:**
+- QR preview (rendered from stored SVG via public URL)
+- Status pill (green "Active"), generated date, version, GTIN
+- Buttons: **Download PNG**, **Download SVG**, **Print QR**, **Open Digital Passport** (→ `/p/{dppId}` in new tab), **Regenerate** (confirm dialog, calls `force:true`)
+- Info line: *"This product already has an active QR Code."*
 
-Server function `enrichProductPassport(product_id)` in `src/lib/passport.functions.ts` (+ `passport.server.ts` helpers):
+Also update `HeroQrColumn` on the product detail page to render the active QR from `product_qr_assets` instead of `qr_tags`, and remove the duplicate mini-generate UI in favour of a single scroll link to the QR Status card.
 
-1. Load product + any parsed import row (brand, name, GTIN, category hints).
-2. **Lookup pass** (deterministic, cheap, cited): Open Food Facts by GTIN, GS1 GEPIR for brand/manufacturer, existing `lookupBarcode`. Store raw hits in `sources`.
-3. **AI pass** using Lovable AI `google/gemini-3-flash-preview` with `generateObject` + Zod schema mirroring the DPP columns. Prompt includes lookup results and instructs the model to:
-   - Prefer cited facts over invention.
-   - Return `null` + reason for fields it cannot ground.
-   - Emit per-field `confidence` (0–1).
-4. **Image pass**: reuse lookup images when licensed; otherwise mark `images` empty (do not generate fake product photos by default — flag for manual upload).
-5. Upsert into `product_passports`, bump `version`, set `enrichment_status`.
-6. Trigger points:
-   - End of `commitProductImport` for each new/updated product (fire-and-forget queue row).
-   - Manual "Re-enrich" button on product detail.
-   - Background sweep server route `api/public/hooks.enrichment-tick` for retries.
+### Cleanup
+- Remove the "QR code" tab from the tabs list (card is now permanent above).
+- Remove `regenerateProductQr` old codepath; keep export name aliased for other callers (`bulk-qr-dialog`, PDF renderer) but point at the new fn.
+- Update `commitProductImport` (bulk import) to call the same `generateProductQr` per row so imports and single-click generation stay consistent.
 
-Queue table `passport_enrichment_queue(product_id pk, enqueued_at, attempts, last_error)` so imports stay snappy and enrichment runs async.
+## 2. "On promotion" flag in Inventory
 
-## 4. UI
+- Migration above adds `products.on_promotion` + `products.promotion_label`.
+- `products.schemas.ts` + `product-form-dialog.tsx`: add a checkbox "On promotion" and optional label input.
+- `products-table.tsx`: new column **Promo** rendering a crimson red star (`lucide-react` `Star` filled, `text-red-600 fill-red-600`) when `on_promotion=true`; tooltip shows `promotion_label`.
+- `products-toolbar.tsx`: existing "promo" filter already wired — point it at the new boolean column instead of `sale_price_cents`.
+- Product detail hero: small crimson star badge next to the product name when on promotion.
 
-- **Product detail** (`products.$productId.tsx`): new "Digital Product Passport" tab
-  - Sections for each field group, inline edit (retail_admin+), "Re-enrich with AI" button, per-field confidence + source chips, version history dropdown.
-  - QR panel shows the Digital Link URL, DPP URL, and PNG/SVG/PDF downloads (already there — update URL).
-- **Import dialog**: after commit, show toast "Imported N products — enriching in background", plus a small progress area in Inventory ("3 of 12 passports ready").
-- **Public DPP page** `/p/{dppId}`: brand hero, gallery, description, nutrition/allergens (if food), dimensions, warranty, sustainability, FAQs, "Scanned via TAG" footer with GTIN.
+## 3. Global WhatsApp broadcast (carried over from prior plan)
 
-## 5. Migrations & storage
+Unchanged from the previous plan: add "New broadcast" on `/whatsapps` that sends to customers with `marketing_consent_at IS NOT NULL` and a valid `whatsapp_e164`, using existing WhatsApp send pipeline, backed by a new `broadcast_campaigns` table and a `sendMarketingBroadcast` server fn with role + quota checks.
 
-Single migration:
-- `product_passports` table + view + grants + RLS + trigger.
-- `passport_enrichment_queue` table + grants.
-- Extend `product_qr_assets` with `resolver_url text` (new canonical URL).
-- Backfill: enqueue every existing product.
-
-No new bucket needed; enriched images (when licensed) go into existing `product-images`.
-
-## 6. Out of scope this pass
-
-- Batch/lot/serial AIs (10/21) in the Digital Link.
-- Verifiable Credentials / EU DPP regulation signing (design leaves room via `sources` + `version`).
-- Paid image generation for missing product photos.
-- Multi-language passports (schema allows `locale` later).
-
-## Technical notes
-
-- All AI + lookups run server-side in `createServerFn` / server routes; `LOVABLE_API_KEY` stays on the server.
-- Enrichment is idempotent and versioned; manual edits set `enrichment_status='manual'` and are preserved across re-enrich (AI fills only nulls unless "Overwrite" chosen).
-- Resolver route conforms to the GS1 Digital Link Resolver spec (JSON linkset on `Accept: application/linkset+json`) so we can later register with GS1 as a conformant resolver — key for the Sunrise 2027 investor story.
+## Notes
+- No new short-code system; the GS1 Digital Link resolver `/01/{gtin}` and DPP page `/p/{dppId}` remain the scan targets.
+- Idempotency is enforced at DB level (partial unique index), not just in code.
+- All UI updates happen via React Query cache mutation → no page refresh.
