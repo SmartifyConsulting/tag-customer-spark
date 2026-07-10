@@ -198,20 +198,23 @@ function ProductDetail() {
         </div>
       </div>
 
-
+      <div id="product-qr">
+        <ProductQrPanel
+          productId={productId}
+          productName={p.name}
+          qr={data.qr as any}
+          dppId={(p as any).digital_product_passport_id}
+        />
+      </div>
 
       <ProductIntentPanel productId={productId} />
 
-      <Tabs defaultValue="qr" id="product-qr">
+      <Tabs defaultValue="passport">
         <TabsList>
-          <TabsTrigger value="qr"><QrCode className="mr-2 h-4 w-4" /> QR code</TabsTrigger>
           <TabsTrigger value="passport"><Sparkles className="mr-2 h-4 w-4" /> Digital Passport</TabsTrigger>
           <TabsTrigger value="scans"><Smartphone className="mr-2 h-4 w-4" /> Scans</TabsTrigger>
           <TabsTrigger value="analytics"><TrendingUp className="mr-2 h-4 w-4" /> Analytics</TabsTrigger>
         </TabsList>
-        <TabsContent value="qr" className="pt-4">
-          <ProductQrPanel productId={productId} productName={p.name} tag={data.qr as any} />
-        </TabsContent>
         <TabsContent value="passport" className="pt-4">
           <PassportTab productId={productId} dppId={(p as any).digital_product_passport_id} />
         </TabsContent>
@@ -222,6 +225,7 @@ function ProductDetail() {
           <AnalyticsTab analytics={data.analytics} />
         </TabsContent>
       </Tabs>
+
 
       {canManage && editOpen && (
         <ProductFormDialog
