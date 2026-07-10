@@ -97,7 +97,16 @@ function InboxPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="WhatsApps" description="Every WhatsApp response, in one place." />
+      <PageHeader
+        title="WhatsApps"
+        description="Every WhatsApp response, in one place."
+        actions={
+          <Button size="sm" className="gap-2" onClick={() => setBroadcastOpen(true)}>
+            <Megaphone className="h-4 w-4" /> New broadcast
+          </Button>
+        }
+      />
+      <BroadcastComposerDialog open={broadcastOpen} onOpenChange={setBroadcastOpen} />
 
       <div className="grid h-[calc(100vh-220px)] min-h-[520px] grid-cols-1 md:grid-cols-[320px_1fr] lg:grid-cols-[320px_1fr_320px] gap-0 overflow-hidden rounded-2xl border border-border bg-card">
         {/* List */}
