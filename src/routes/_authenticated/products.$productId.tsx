@@ -280,79 +280,8 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
-function HeroQrColumn({
-  productId,
-  shortCode,
-}: {
-  productId: string;
-  shortCode: string | null;
-}) {
-  const qc = useQueryClient();
-  const baseFn = useServerFn(getPublicScanBase);
-  const regenFn = useServerFn(regenerateProductQr);
 
-  const { data: baseData } = useQuery({
-    queryKey: ["public-scan-base"],
-    queryFn: () => baseFn(),
-    staleTime: Infinity,
-  });
-  const origin =
-    baseData?.base ||
-    (typeof window !== "undefined" ? window.location.origin : "");
-  const scanUrl = shortCode ? `${origin}/api/public/s/${shortCode}` : "";
 
-  const generate = useMutation({
-    mutationFn: () => regenFn({ data: { productId, template: "classic" } }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["product", productId] });
-      toast.success("QR code generated");
-    },
-    onError: (e: any) => toast.error(e.message ?? "Failed"),
-  });
-
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-        Scan tag
-      </p>
-      {shortCode ? (
-        <>
-          <QrPreview value={scanUrl} size={168} />
-          <button
-            type="button"
-            onClick={() =>
-              document
-                .getElementById("product-qr")
-                ?.scrollIntoView({ behavior: "smooth", block: "start" })
-            }
-            className="text-xs font-medium text-primary hover:underline"
-          >
-            Open QR panel →
-          </button>
-        </>
-      ) : (
-        <div className="grid w-full place-items-center gap-3 rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center">
-          <QrCode className="h-8 w-8 text-muted-foreground" />
-          <p className="text-xs text-muted-foreground">
-            No QR yet for this product.
-          </p>
-          <Button
-            size="sm"
-            onClick={() => generate.mutate()}
-            disabled={generate.isPending}
-          >
-            {generate.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <QrCode className="mr-2 h-4 w-4" />
-            )}
-            Generate QR
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 
 function AnalyticsTab({ analytics }: { analytics: any }) {
