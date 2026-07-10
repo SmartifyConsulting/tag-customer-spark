@@ -5,7 +5,9 @@ import { RefreshCw, Sparkles, ImageIcon, CheckCircle2, AlertCircle } from "lucid
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { refreshProductImage, resetProductImage } from "@/lib/product-images.functions";
+import { enrichProductPassportFn } from "@/lib/passport.functions";
 import { ProductImage } from "@/components/products/product-image";
+
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -40,7 +42,9 @@ export function ImageStatusCard({ product }: Props) {
   const qc = useQueryClient();
   const refresh = useServerFn(refreshProductImage);
   const reset = useServerFn(resetProductImage);
-  const [busy, setBusy] = useState<"refresh" | "reset" | null>(null);
+  const enrich = useServerFn(enrichProductPassportFn);
+  const [busy, setBusy] = useState<"refresh" | "reset" | "enrich" | null>(null);
+
 
   const status = product.image_status ?? "pending";
   const source = product.image_source ?? null;
@@ -71,6 +75,19 @@ export function ImageStatusCard({ product }: Props) {
       setBusy(null);
     }
   };
+  const handleEnrich = async () => {
+    setBusy("enrich");
+    try {
+      await enrich({ data: { product_id: product.id, overwrite: false } });
+      toast.success("Passport enrichment complete.");
+      await qc.invalidateQueries();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to enrich passport");
+    } finally {
+      setBusy(null);
+    }
+  };
+
 
   return (
     <div className="rounded-2xl border bg-card p-4">
@@ -119,6 +136,11 @@ export function ImageStatusCard({ product }: Props) {
               <Sparkles className="mr-1 h-3.5 w-3.5" />
               Reset & re-resolve
             </Button>
+            <Button size="sm" variant="ghost" onClick={handleEnrich} disabled={busy !== null}>
+              <Sparkles className={cn("mr-1 h-3.5 w-3.5", busy === "enrich" && "animate-spin")} />
+              Enrich passport
+            </Button>
+
           </div>
         </div>
       </div>
