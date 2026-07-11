@@ -114,17 +114,14 @@ export function CategoryAdminTab() {
                 </Badge>
               </>
             ) : null}
-          </div>
-          <div className="ml-auto">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => bulk.mutate()}
-              disabled={bulk.isPending || !(q.data?.uncategorisedCount ?? 0)}
-            >
-              <Sparkles className="mr-1 h-3.5 w-3.5" />
-              {bulk.isPending ? "Auto-categorising…" : "Auto-categorise uncategorised"}
-            </Button>
+            {bulk.isPending && (
+              <>
+                <span className="mx-2 text-muted-foreground">·</span>
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3 animate-pulse" /> Auto-categorising…
+                </span>
+              </>
+            )}
           </div>
         </div>
 
