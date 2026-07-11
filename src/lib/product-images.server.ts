@@ -359,7 +359,7 @@ async function lookupOpenFoodFactsImage(
   return null;
 }
 
-
+// Helper for callers that need to sync the resolved image into products +
 // passport in one shot.
 export async function resolveAndSyncProductImage(input: {
   supabase: any;
