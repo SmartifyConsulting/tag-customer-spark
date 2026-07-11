@@ -77,7 +77,7 @@ export const mergeTaxonomyGroups = createServerFn({ method: "POST" })
     if (realSources.length > 0) {
       const { data: rows, error } = await supabase
         .from("products")
-        .update({ [col]: newValue })
+        .update({ [col]: newValue } as any)
         .eq("retailer_id", retailerId)
         .in(col, realSources)
         .select("id");
@@ -88,7 +88,7 @@ export const mergeTaxonomyGroups = createServerFn({ method: "POST" })
     if (nullSources.length > 0 && !targetIsNull) {
       const { data: rows, error } = await supabase
         .from("products")
-        .update({ [col]: newValue })
+        .update({ [col]: newValue } as any)
         .eq("retailer_id", retailerId)
         .is(col, null)
         .select("id");
