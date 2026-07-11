@@ -1,26 +1,41 @@
-# Fixes & Consolidation
+## 1. Dashboard row: Scan Heatmap + Scan Trends side-by-side
+- In `src/routes/_authenticated/dashboard.tsx`, place `ScanHeatmapCard` (left) and `ScanTrendsCard` (right) in a 2-col grid (`md:grid-cols-2`), each half width.
+- In `src/components/dashboard/scan-heatmap-card.tsx` add a clear caption under the title: "Scans by day of week × hour — darker cells = more shopper scans" plus a small legend strip (low → high) and axis labels ("Hour of day" / "Day of week").
 
-## 1. Signal analytics back on Insights
-`SignalContributionsCard` is imported into `/intelligence/insights` but users report it is not visible. Likely causes: `getSignalContributions` returning empty (no `contributions` array) so the card collapses silently, or the query erroring quietly.
-- Add explicit empty-state and error-state rendering to `signal-contributions-card.tsx` so the card is always visible above the AI Opportunity Feed.
-- Verify `getSignalContributions` in `src/lib/dashboard.functions.ts` returns the expected `{ contributions: [...] }` shape; if the payload key drifted, restore it and add a small fallback (compute from `intent_score_weights`) so the panel never renders blank.
+## 2. Fix Inventory accordion expand
+- In `src/components/products/products-table.tsx` (category accordion), the click handler on the category row isn't toggling. Restore `Accordion type="multiple"` with controlled `value`/`onValueChange`, ensure `AccordionTrigger` wraps the whole row (not just chevron), and remove any `e.stopPropagation()` on inner buttons that swallows the toggle click. Verify children render products when expanded; add empty-state row when a category has 0 visible products after filters.
 
-## 2. Hero logo 350% larger
-In `src/routes/index.tsx` the hero has no logo — only the header logo at `h-16 md:h-20`. Add the Tag logo as a prominent element inside the hero left column, sized ~350% of the current header logo (`h-56 md:h-72`), placed above the "Retail engagement, reimagined" pill.
+## 3. Configurable Product Taxonomy Engine (replaces fixed Brand→Category→Sub-cat tree)
 
-## 3. Merge Brand + Category + Sub-category into one Taxonomy admin
-- Create `src/components/settings/taxonomy-admin-tab.tsx`: a single tree view with three levels — **Brand → Category → Sub-category** — plus product counts per node. Inline create/rename/delete/merge at every level. A "Merge duplicates" action detects same-slug categories/brands and consolidates them (reassigns products, deletes the loser).
-- Update `src/routes/_authenticated/admin.categories.tsx` to render only the new `TaxonomyAdminTab` and drop the tab strip.
-- Delete `src/routes/_authenticated/admin.brands.tsx` and `src/components/settings/brand-admin-tab.tsx`; keep `category-admin-tab.tsx` only if still referenced elsewhere, otherwise delete.
-- Update `src/lib/nav.ts` label from "Categories" to "Taxonomy" (route stays `/admin/categories` to avoid breaking links; Users tab remains a sibling under `/admin/users`).
-- Add a `mergeCategories` and `mergeBrands` server function in `categories.functions.ts` / `brands.functions.ts` (SECURITY DEFINER-safe: `retailer_id` scoped, uses `can_manage_retailer`).
+### Data model (migration)
+- New table `taxonomy_profiles`: `id, retailer_id, name, is_default, is_published, created_by, created_at, updated_at`.
+- New table `taxonomy_levels`: `id, profile_id, position (int), attribute_key (text), label (text), created_at`. `attribute_key` ∈ allow-list: `department, category, subcategory, brand, supplier, range, collection, season, gender, product, variant, size, colour, price_band, status`.
+- RLS: retailer-scoped via `can_manage_retailer(retailer_id)`; GRANTs to `authenticated` + `service_role`. Trigger to keep only one `is_default` per retailer.
+- Seed a "Retail" default profile per retailer (levels: brand → category → subcategory → product).
 
-## 4. Auto-link products also auto-fetches brand logos (remove logo wizard)
-- Extend `linkProductsToBrands` in `src/lib/brands.functions.ts`: after creating/linking a brand, if `logo_url` is null, run `tryClearbit(website)` then AI fallback inline. Any brand still missing a logo after link is left blank — no manual wizard button.
-- Remove the per-row "Logo" (Sparkles) button and the `resolveBrandLogo` mutation UI from the taxonomy tree (the server function stays available but is no longer surfaced).
-- The single Taxonomy toolbar keeps an "Auto-link & fetch logos" button that calls the enhanced `linkProductsToBrands`.
+### Server functions (`src/lib/taxonomy.functions.ts`, new)
+- `listProfiles()`, `getProfile(id)`, `upsertProfile({id?, name, levels[]})`, `deleteProfile({id})`, `setDefaultProfile({id})`, `publishProfile({id})`.
+- `getAttributeCatalog()` returns the allow-list with display labels + which are available given current data (e.g. hides `supplier` if no products carry it).
+- `browseTaxonomy({profileId, path: string[]})` — the dynamic driver used by the frontend. Given the ordered levels and a path of chosen values, groups remaining products by the next level's `attribute_key` and returns `[{ value, label, count, hasChildren }]`. Leaf level returns products.
+
+### Admin UI (`src/components/settings/taxonomy-admin-tab.tsx`, replaces current tab content)
+- Profile switcher (dropdown) + New / Rename / Duplicate / Set default / Delete.
+- Two-column layout:
+  - **Left**: Level builder. Vertical drag-and-drop list of levels (using `@dnd-kit/sortable`, already common in shadcn stacks — add if missing). Each row shows level label, source attribute (Select), delete. "Add level" adds a new row from the attribute catalog; drag to reorder.
+  - **Right**: **Live preview** — renders the same dynamic browser the frontend will use, driven by the in-memory (unsaved) level config via `browseTaxonomy` (call with `dryLevels` param so unsaved edits preview without persisting).
+- Footer: `Save draft` and `Publish` (Publish flips `is_published` and marks this profile as the active navigation source).
+
+### Frontend browser (`src/components/inventory/dynamic-taxonomy-browser.tsx`, new; wired into `src/routes/_authenticated/products.index.tsx`)
+- Reads the retailer's published (or default) profile.
+- Renders nested accordions generated from `profile.levels`; each expanded node calls `browseTaxonomy` with its path to fetch the next level's groups or the leaf product list.
+- Breadcrumbs at top ("All › Nike › Footwear › Running"). User-switchable profile picker (Retail / Buying / Warehouse / Marketing) persisted per-user in `localStorage`.
+
+### Migration & cleanup
+- Keep existing `brands` / `categories` tables (they supply the `brand` and `category` attribute values). No data loss.
+- Existing `/admin/categories` route becomes "Taxonomy" and hosts the new admin. Old `BrandAdminTab` and `CategoryAdminTab` are removed from that route (brands/categories are still manageable via a compact "Attribute values" side-panel inside Taxonomy admin for renaming/merging).
 
 ## Technical notes
-- Signal card: wrap render in `data?.contributions?.length ? <grid/> : <EmptyState/>` and surface `q.error` via toast + inline message.
-- Taxonomy tree data source: reuse `listCategoriesWithCounts` and `listBrands`, combine client-side into a single tree keyed by brand → category (parents) → sub-category (children); product count comes from existing counts maps.
-- Merge server fns: `UPDATE products SET category_id = winner WHERE category_id = loser`, then `DELETE FROM categories WHERE id = loser` (and same for brands with `brand_id`). All within retailer scope.
+- Attribute → product-column mapping lives in a single `ATTRIBUTE_MAP` in `taxonomy.functions.ts` so `browseTaxonomy` can build the right `select` + `group by` without dynamic SQL.
+- `browseTaxonomy` returns counts by counting distinct product IDs after applying all ancestor filters — so counts stay accurate under any hierarchy order.
+- Preview uses the same component as production browser to guarantee WYSIWYG.
+- Heatmap legend is CSS-only (linear-gradient strip), no new deps.
