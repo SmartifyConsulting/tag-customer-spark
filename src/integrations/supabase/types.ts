@@ -3009,6 +3009,74 @@ export type Database = {
           },
         ]
       }
+      taxonomy_levels: {
+        Row: {
+          attribute_key: string
+          created_at: string
+          id: string
+          label: string
+          position: number
+          profile_id: string
+        }
+        Insert: {
+          attribute_key: string
+          created_at?: string
+          id?: string
+          label: string
+          position: number
+          profile_id: string
+        }
+        Update: {
+          attribute_key?: string
+          created_at?: string
+          id?: string
+          label?: string
+          position?: number
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taxonomy_levels_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "taxonomy_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      taxonomy_profiles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_default: boolean
+          is_published: boolean
+          name: string
+          retailer_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default?: boolean
+          is_published?: boolean
+          name: string
+          retailer_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default?: boolean
+          is_published?: boolean
+          name?: string
+          retailer_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
