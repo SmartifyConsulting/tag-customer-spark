@@ -123,9 +123,6 @@ export function BrandAdminTab() {
                   )}
                 </div>
                 <span className="text-xs text-muted-foreground">{counts[b.id] ?? 0} products</span>
-                <Button size="sm" variant="ghost" onClick={() => fetchLogo.mutate(b.id)} disabled={fetchLogo.isPending}>
-                  <Sparkles className="mr-1 h-3.5 w-3.5" /> Logo
-                </Button>
                 {editing?.id === b.id ? (
                   <Button size="sm" onClick={() => save.mutate(editing)}>Save</Button>
                 ) : (
