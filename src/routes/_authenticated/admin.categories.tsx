@@ -2,6 +2,7 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { CategoryAdminTab } from "@/components/settings/category-admin-tab";
 import { BrandAdminTab } from "@/components/settings/brand-admin-tab";
+import { TaxonomyEngineTab } from "@/components/settings/taxonomy-engine-tab";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
@@ -18,8 +19,9 @@ function TaxonomyAdminPage() {
     <div className="space-y-6">
       <PageHeader
         title="Taxonomy"
-        description="One place to manage brands, categories and sub-categories. AI auto-classifies new products; you always have the final say."
+        description="Configure how products are grouped. The Taxonomy Engine defines the dynamic browser hierarchy; Brands and Categories are the source attributes."
       />
+      <TaxonomyEngineTab />
       <BrandAdminTab />
       <CategoryAdminTab />
     </div>
