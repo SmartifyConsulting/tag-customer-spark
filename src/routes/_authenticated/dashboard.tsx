@@ -39,7 +39,7 @@ import { ScanTrendsCard } from "@/components/dashboard/scan-trends-card";
 import { TopProductsCard } from "@/components/dashboard/top-products-card";
 import { RecentActivityCard } from "@/components/dashboard/recent-activity-card";
 import { IntentSectionsCard } from "@/components/dashboard/intent-sections-card";
-import { SignalContributionsCard } from "@/components/dashboard/signal-contributions-card";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
