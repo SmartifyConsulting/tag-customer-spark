@@ -260,6 +260,60 @@ export type Database = {
           },
         ]
       }
+      brands: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          logo_path: string | null
+          logo_url: string | null
+          name: string
+          retailer_id: string | null
+          slug: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_path?: string | null
+          logo_url?: string | null
+          name: string
+          retailer_id?: string | null
+          slug: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_path?: string | null
+          logo_url?: string | null
+          name?: string
+          retailer_id?: string | null
+          slug?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brands_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "brands_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       broadcast_campaigns: {
         Row: {
           body: string
@@ -1230,6 +1284,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          image_path: string | null
+          image_url: string | null
           name: string
           parent_id: string | null
           retailer_id: string
@@ -1240,6 +1296,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          image_path?: string | null
+          image_url?: string | null
           name: string
           parent_id?: string | null
           retailer_id: string
@@ -1250,6 +1308,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          image_path?: string | null
+          image_url?: string | null
           name?: string
           parent_id?: string | null
           retailer_id?: string
@@ -1729,6 +1789,7 @@ export type Database = {
         Row: {
           barcode_type: string | null
           brand: string | null
+          brand_id: string | null
           category_confidence: number | null
           category_id: string | null
           color: string | null
@@ -1738,6 +1799,7 @@ export type Database = {
           description: string | null
           digital_link_url: string | null
           digital_product_passport_id: string
+          display_name: string | null
           gtin: string | null
           hero_image: string | null
           id: string
@@ -1753,7 +1815,11 @@ export type Database = {
           intent_score_updated_at: string
           low_stock_threshold: number
           name: string
+          normalisation_payload: Json | null
+          normalised_at: string | null
+          normalised_brand: string | null
           on_promotion: boolean
+          pack_count: number | null
           price_cents: number
           promotion_end_date: string | null
           promotion_label: string | null
@@ -1763,6 +1829,8 @@ export type Database = {
           sale_price_cents: number | null
           search_blob: string | null
           size: string | null
+          size_unit: string | null
+          size_value: number | null
           sku: string
           status: Database["public"]["Enums"]["product_status"]
           stock_qty: number
@@ -1770,10 +1838,12 @@ export type Database = {
           suggested_category_id: string | null
           thumbnail_url: string | null
           updated_at: string
+          variant: string | null
         }
         Insert: {
           barcode_type?: string | null
           brand?: string | null
+          brand_id?: string | null
           category_confidence?: number | null
           category_id?: string | null
           color?: string | null
@@ -1783,6 +1853,7 @@ export type Database = {
           description?: string | null
           digital_link_url?: string | null
           digital_product_passport_id?: string
+          display_name?: string | null
           gtin?: string | null
           hero_image?: string | null
           id?: string
@@ -1798,7 +1869,11 @@ export type Database = {
           intent_score_updated_at?: string
           low_stock_threshold?: number
           name: string
+          normalisation_payload?: Json | null
+          normalised_at?: string | null
+          normalised_brand?: string | null
           on_promotion?: boolean
+          pack_count?: number | null
           price_cents?: number
           promotion_end_date?: string | null
           promotion_label?: string | null
@@ -1808,6 +1883,8 @@ export type Database = {
           sale_price_cents?: number | null
           search_blob?: string | null
           size?: string | null
+          size_unit?: string | null
+          size_value?: number | null
           sku: string
           status?: Database["public"]["Enums"]["product_status"]
           stock_qty?: number
@@ -1815,10 +1892,12 @@ export type Database = {
           suggested_category_id?: string | null
           thumbnail_url?: string | null
           updated_at?: string
+          variant?: string | null
         }
         Update: {
           barcode_type?: string | null
           brand?: string | null
+          brand_id?: string | null
           category_confidence?: number | null
           category_id?: string | null
           color?: string | null
@@ -1828,6 +1907,7 @@ export type Database = {
           description?: string | null
           digital_link_url?: string | null
           digital_product_passport_id?: string
+          display_name?: string | null
           gtin?: string | null
           hero_image?: string | null
           id?: string
@@ -1843,7 +1923,11 @@ export type Database = {
           intent_score_updated_at?: string
           low_stock_threshold?: number
           name?: string
+          normalisation_payload?: Json | null
+          normalised_at?: string | null
+          normalised_brand?: string | null
           on_promotion?: boolean
+          pack_count?: number | null
           price_cents?: number
           promotion_end_date?: string | null
           promotion_label?: string | null
@@ -1853,6 +1937,8 @@ export type Database = {
           sale_price_cents?: number | null
           search_blob?: string | null
           size?: string | null
+          size_unit?: string | null
+          size_value?: number | null
           sku?: string
           status?: Database["public"]["Enums"]["product_status"]
           stock_qty?: number
@@ -1860,8 +1946,16 @@ export type Database = {
           suggested_category_id?: string | null
           thumbnail_url?: string | null
           updated_at?: string
+          variant?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "products_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]
