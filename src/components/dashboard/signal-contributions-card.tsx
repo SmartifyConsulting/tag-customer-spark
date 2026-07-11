@@ -15,11 +15,13 @@ import { ChevronRight, Image as ImageIcon } from "lucide-react";
 
 export function SignalContributionsCard() {
   const [active, setActive] = useState<SignalContribution | null>(null);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["dashboard", "signal-contributions"],
     queryFn: () => getSignalContributions(),
     staleTime: 60_000,
   });
+  const contributions = data?.contributions ?? [];
+  const hasSignal = contributions.some((c) => (c.pct ?? 0) > 0);
 
   return (
     <>
