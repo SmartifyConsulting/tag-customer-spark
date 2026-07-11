@@ -14,6 +14,7 @@ export function AdminTabs() {
   const { hasRole } = useAuth();
   const tabs = [
     { to: "/admin/categories", label: "Categories", show: true },
+    { to: "/admin/brands", label: "Brands", show: true },
     { to: "/admin/users", label: "Users", show: hasRole("super_admin") },
   ].filter((t) => t.show);
   return (

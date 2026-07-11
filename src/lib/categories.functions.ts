@@ -335,7 +335,7 @@ export const bulkAutoCategorise = createServerFn({ method: "POST" })
     if (!retailerId) throw new Error("No retailer");
     let q = supabase
       .from("products")
-      .select("id, name, brand, description, gtin, category_id")
+      .select("id, name, display_name, brand, normalised_brand, description, gtin, category_id, normalised_at, normalisation_payload")
       .eq("retailer_id", retailerId)
       .neq("status", "archived")
       .limit(data.limit);
@@ -346,14 +346,33 @@ export const bulkAutoCategorise = createServerFn({ method: "POST" })
       .from("product_categories")
       .select("id, name, parent_id")
       .eq("retailer_id", retailerId);
+
+    const { normaliseAndPersist } = await import("./normalisation.functions");
+
     let processed = 0;
     let assigned = 0;
     for (const p of prods ?? []) {
+      // Normalise first if missing — cleaner input yields better categorisation
+      let payload: any = p.normalisation_payload;
+      if (!p.normalised_at) {
+        payload = await normaliseAndPersist({ supabase, productId: p.id });
+      }
+      const enrichedName =
+        p.display_name ??
+        payload?.display_name ??
+        p.name;
+      const hintedDescription = [p.description, payload?.category_hint, ...(payload?.keywords ?? [])]
+        .filter(Boolean).join(" · ");
       const res = await suggestCategoryForProduct({
         supabase,
         retailerId,
         userId,
-        product: p,
+        product: {
+          ...p,
+          name: enrichedName,
+          brand: p.normalised_brand ?? p.brand,
+          description: hintedDescription,
+        },
         categories: cats ?? [],
         apply: true,
       });
@@ -361,6 +380,56 @@ export const bulkAutoCategorise = createServerFn({ method: "POST" })
       if (res.category_id) assigned++;
     }
     return { processed, assigned, total: prods?.length ?? 0 };
+  });
+
+// ---------- Category imagery ----------
+
+async function aiGenerateCategoryImage(name: string): Promise<Uint8Array | null> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) return null;
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+      method: "POST",
+      headers: { "content-type": "application/json", "Lovable-API-Key": key },
+      body: JSON.stringify({
+        model: "google/gemini-3.1-flash-image",
+        prompt: `Editorial stock photograph representing the retail category "${name}". Bright natural light, clean neutral background, tightly cropped, no text, no logos, no people. Product-first composition.`,
+        size: "768x512",
+      }),
+    });
+    if (!res.ok) return null;
+    const j = await res.json();
+    const b64 = j?.data?.[0]?.b64_json;
+    if (!b64) return null;
+    return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  } catch {
+    return null;
+  }
+}
+
+export const resolveCategoryImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: cat } = await context.supabase
+      .from("product_categories")
+      .select("id, name")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!cat) throw new Error("Category not found");
+    const bytes = await aiGenerateCategoryImage(cat.name);
+    if (!bytes) throw new Error("Could not generate image");
+    const path = `${cat.id}/hero-${Date.now()}.png`;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: upErr } = await supabaseAdmin.storage.from("category-images").upload(path, bytes, {
+      contentType: "image/png", upsert: true,
+    });
+    if (upErr) throw new Error(upErr.message);
+    const { data: pub } = supabaseAdmin.storage.from("category-images").getPublicUrl(path);
+    await context.supabase.from("product_categories").update({
+      image_path: path, image_url: pub.publicUrl,
+    }).eq("id", cat.id);
+    return { ok: true, url: pub.publicUrl };
   });
 
 export const applySuggestedCategory = createServerFn({ method: "POST" })
