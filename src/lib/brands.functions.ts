@@ -33,7 +33,7 @@ export const listBrands = createServerFn({ method: "POST" })
       supabase.from("products").select("brand_id").eq("retailer_id", retailerId).not("brand_id", "is", null),
     ]);
     const counts: Record<string, number> = {};
-    for (const p of prods ?? []) counts[p.brand_id] = (counts[p.brand_id] ?? 0) + 1;
+    for (const p of prods ?? []) if (p.brand_id) counts[p.brand_id] = (counts[p.brand_id] ?? 0) + 1;
     return { rows: rows ?? [], counts };
   });
 
