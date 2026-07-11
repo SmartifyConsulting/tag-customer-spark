@@ -295,13 +295,24 @@ export const browseTaxonomy = createServerFn({ method: "POST" })
       .eq("retailer_id", retailerId);
     const catById = new Map<string, CatRow>((catRows ?? []).map((c: CatRow) => [c.id, c]));
 
+    // Only request the newer attribute columns when a level actually uses
+    // them, so profiles that don't touch Supplier/Range/Collection/Season
+    // keep working even before that migration has been deployed.
+    const usedKeys = new Set(levels.map((l) => l.attribute_key));
+    const extraCols = [
+      usedKeys.has("supplier") && "supplier",
+      usedKeys.has("range") && "range_name",
+      usedKeys.has("collection") && "collection",
+      usedKeys.has("season") && "season",
+    ].filter(Boolean) as string[];
+
     // Build query with ancestor filters
     let query = supabase
       .from("products")
       .select(
         `id, display_name, name, sku, price_cents, sale_price_cents, stock_qty, low_stock_threshold, currency, status,
          image_url, thumbnail_url, images, size, color, variant, on_promotion,
-         supplier, range_name, collection, season,
+         ${extraCols.length ? extraCols.join(", ") + "," : ""}
          brand_id, category_id, store_id,
          brands:brand_id ( id, name, logo_url ),
          product_categories:category_id ( id, name, parent_id ),

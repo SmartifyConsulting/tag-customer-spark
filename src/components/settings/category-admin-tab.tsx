@@ -36,13 +36,11 @@ import {
   renameCategory,
   deleteCategory,
   bulkAutoCategorise,
-  findSimilarCategoryClusters,
   mergeCategories,
 } from "@/lib/categories.functions";
 import { listProducts, findDuplicateProducts, mergeProducts } from "@/lib/products.functions";
 
 type Row = { id: string; name: string; parent_id: string | null; status: string };
-type ClusterMember = { id: string; name: string; parentName: string | null; count: number };
 
 export function CategoryAdminTab() {
   const qc = useQueryClient();
@@ -142,7 +140,7 @@ export function CategoryAdminTab() {
           </div>
           <div className="ml-auto">
             <Button size="sm" variant="outline" onClick={() => setMergeDialogOpen(true)}>
-              <GitMerge className="mr-1 h-3.5 w-3.5" /> Merge categories
+              <GitMerge className="mr-1 h-3.5 w-3.5" /> Merge
             </Button>
           </div>
         </div>
@@ -397,51 +395,65 @@ function MergeCategoriesDialog({
   onOpenChange: (v: boolean) => void;
   onMerged: () => void;
 }) {
-  const clustersFn = useServerFn(findSimilarCategoryClusters);
+  const listFn = useServerFn(listCategoriesWithCounts);
   const mergeFn = useServerFn(mergeCategories);
   const qc = useQueryClient();
 
-  const clustersQ = useQuery({
-    queryKey: ["similar-category-clusters"],
-    queryFn: () => clustersFn(),
+  const listQ = useQuery({
+    queryKey: ["categories-flat-for-merge"],
+    queryFn: () => listFn(),
     enabled: open,
   });
 
-  const [selections, setSelections] = useState<Record<number, { checked: Set<string>; target: string | null }>>({});
+  const [search, setSearch] = useState("");
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [target, setTarget] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!clustersQ.data?.clusters) return;
-    const init: Record<number, { checked: Set<string>; target: string | null }> = {};
-    clustersQ.data.clusters.forEach((cluster: ClusterMember[], idx: number) => {
-      init[idx] = { checked: new Set(cluster.map((m) => m.id)), target: cluster[0]?.id ?? null };
-    });
-    setSelections(init);
-  }, [clustersQ.data]);
+    if (!open) {
+      setSearch("");
+      setChecked(new Set());
+      setTarget(null);
+    }
+  }, [open]);
 
   const merge = useMutation({
     mutationFn: (args: { targetId: string; sourceIds: string[] }) => mergeFn({ data: args }),
     onSuccess: (r: any) => {
       toast.success(`Merged ${r.merged} categor${r.merged === 1 ? "y" : "ies"}`);
-      qc.invalidateQueries({ queryKey: ["similar-category-clusters"] });
+      qc.invalidateQueries({ queryKey: ["categories-flat-for-merge"] });
+      setChecked(new Set());
+      setTarget(null);
       onMerged();
     },
     onError: (e: any) => toast.error(e?.message ?? "Merge failed"),
   });
 
-  const toggleMember = (idx: number, id: string) => {
-    setSelections((cur) => {
-      const sel = cur[idx];
-      if (!sel) return cur;
-      const checked = new Set(sel.checked);
-      if (checked.has(id)) checked.delete(id);
-      else checked.add(id);
-      let target = sel.target;
-      if (!checked.has(target ?? "")) target = checked.values().next().value ?? null;
-      return { ...cur, [idx]: { checked, target } };
+  const rows = (listQ.data?.rows ?? []) as Row[];
+  const counts = listQ.data?.counts ?? {};
+  const nameById = new Map(rows.map((r) => [r.id, r.name]));
+
+  const items = rows
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      parentName: r.parent_id ? nameById.get(r.parent_id) ?? null : null,
+      count: counts[r.id] ?? 0,
+    }))
+    .filter((r) => !search.trim() || r.name.toLowerCase().includes(search.trim().toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const toggle = (id: string) => {
+    setChecked((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      if (!next.has(target ?? "")) setTarget(next.values().next().value ?? null);
+      return next;
     });
   };
 
-  const clusters = (clustersQ.data?.clusters ?? []) as ClusterMember[][];
+  const checkedCount = checked.size;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -449,66 +461,54 @@ function MergeCategoriesDialog({
         <DialogHeader>
           <DialogTitle>Merge categories</DialogTitle>
           <DialogDescription>
-            Categories that look like spelling variants of each other are grouped below. Tick which ones to merge,
-            choose which one survives, then confirm — nothing merges automatically.
+            Select any categories to merge and choose which one survives — nothing merges automatically.
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[50vh] pr-3">
-          {clustersQ.isLoading ? (
-            <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
-          ) : clusters.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No similar categories found.</p>
+        <Input
+          placeholder="Search categories…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <ScrollArea className="max-h-[45vh] pr-3">
+          {listQ.isLoading ? (
+            <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
+          ) : items.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">No categories match.</p>
           ) : (
-            <div className="space-y-4">
-              {clusters.map((cluster, idx) => {
-                const sel = selections[idx];
-                if (!sel) return null;
-                const checkedCount = sel.checked.size;
-                return (
-                  <div key={idx} className="rounded-xl border p-3">
-                    <RadioGroup
-                      value={sel.target ?? undefined}
-                      onValueChange={(v) => setSelections((cur) => ({ ...cur, [idx]: { ...cur[idx], target: v } }))}
-                    >
-                      <ul className="space-y-1.5">
-                        {cluster.map((m) => (
-                          <li key={m.id} className="flex items-center gap-2 text-sm">
-                            <Checkbox
-                              checked={sel.checked.has(m.id)}
-                              onCheckedChange={() => toggleMember(idx, m.id)}
-                            />
-                            <RadioGroupItem value={m.id} disabled={!sel.checked.has(m.id)} />
-                            <span className="min-w-0 flex-1 truncate">
-                              {m.name}
-                              {m.parentName && <span className="text-muted-foreground"> · in {m.parentName}</span>}
-                            </span>
-                            <Badge variant="secondary" className="text-[10px]">{m.count} products</Badge>
-                          </li>
-                        ))}
-                      </ul>
-                    </RadioGroup>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-[11px] text-muted-foreground">☐ select, ◯ pick survivor</span>
-                      <Button
-                        size="sm"
-                        disabled={checkedCount < 2 || !sel.target || merge.isPending}
-                        onClick={() =>
-                          merge.mutate({
-                            targetId: sel.target!,
-                            sourceIds: Array.from(sel.checked).filter((id) => id !== sel.target),
-                          })
-                        }
-                      >
-                        <GitMerge className="mr-1 h-3.5 w-3.5" /> Merge {checkedCount} into selected
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <RadioGroup value={target ?? undefined} onValueChange={setTarget}>
+              <ul className="space-y-1">
+                {items.map((m) => (
+                  <li key={m.id} className="flex items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-muted/40">
+                    <Checkbox checked={checked.has(m.id)} onCheckedChange={() => toggle(m.id)} />
+                    <RadioGroupItem value={m.id} disabled={!checked.has(m.id)} />
+                    <span className="min-w-0 flex-1 truncate">
+                      {m.name}
+                      {m.parentName && <span className="text-muted-foreground"> · in {m.parentName}</span>}
+                    </span>
+                    <Badge variant="secondary" className="text-[10px]">{m.count} products</Badge>
+                  </li>
+                ))}
+              </ul>
+            </RadioGroup>
           )}
         </ScrollArea>
+
+        <DialogFooter className="items-center sm:justify-between">
+          <span className="text-[11px] text-muted-foreground">☐ select, ◯ pick survivor</span>
+          <Button
+            disabled={checkedCount < 2 || !target || merge.isPending}
+            onClick={() =>
+              merge.mutate({
+                targetId: target!,
+                sourceIds: Array.from(checked).filter((id) => id !== target),
+              })
+            }
+          >
+            <GitMerge className="mr-1 h-3.5 w-3.5" /> Merge {checkedCount || ""} into selected
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

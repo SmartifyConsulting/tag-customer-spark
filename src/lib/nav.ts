@@ -9,12 +9,19 @@ import {
 } from "lucide-react";
 import type { TierFeatureKey } from "@/lib/tier";
 
+export type NavSubItem = {
+  title: string;
+  url: string;
+  match: readonly string[];
+};
+
 export type NavItem = {
   title: string;
   url: string;
   icon: typeof LayoutDashboard;
   match: readonly string[];
   feature?: TierFeatureKey;
+  items?: readonly NavSubItem[];
 };
 
 export const NAV: readonly NavItem[] = [
@@ -54,6 +61,10 @@ export const NAV: readonly NavItem[] = [
     url: "/admin/categories",
     icon: ShieldCheck,
     match: ["/staff", "/stores", "/organisation", "/admin"],
+    items: [
+      { title: "Taxonomy", url: "/admin/categories", match: ["/admin/categories"] },
+      { title: "Users", url: "/admin/users", match: ["/admin/users"] },
+    ],
   },
   {
     title: "Settings",

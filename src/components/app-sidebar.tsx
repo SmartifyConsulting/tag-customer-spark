@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Lock } from "lucide-react";
+import { ChevronRight, Lock } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -10,8 +10,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { TagLogo } from "./tag-logo";
 import { useTier } from "@/hooks/use-tier";
 import { NAV, isNavActive, type NavItem } from "@/lib/nav";
@@ -45,19 +49,50 @@ export function AppSidebar() {
                 const linkProps = locked
                   ? { to: "/upgrade" as const, search: { feature: item.feature } }
                   : { to: item.url };
+                const activeClass =
+                  active && !locked
+                    ? "bg-foreground text-background font-semibold hover:bg-foreground hover:text-background data-[active=true]:bg-foreground data-[active=true]:text-background [&_svg]:text-background"
+                    : locked
+                      ? "text-sidebar-foreground/50 hover:bg-foreground/5 hover:text-sidebar-foreground/80"
+                      : "text-sidebar-foreground/80 hover:bg-foreground/5 hover:text-sidebar-foreground";
+
+                if (item.items && item.items.length > 0 && !locked) {
+                  return (
+                    <Collapsible key={item.url} defaultOpen={active} className="group/collapsible">
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton isActive={active} tooltip={item.title} className={activeClass}>
+                            <item.icon className="h-4 w-4 shrink-0" />
+                            <span className="truncate flex-1">{item.title}</span>
+                            <ChevronRight className="h-3.5 w-3.5 shrink-0 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {item.items.map((sub) => {
+                              const subActive = pathname === sub.url || pathname.startsWith(sub.url + "/");
+                              return (
+                                <SidebarMenuSubItem key={sub.url}>
+                                  <SidebarMenuSubButton asChild isActive={subActive}>
+                                    <Link to={sub.url}>{sub.title}</Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              );
+                            })}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  );
+                }
+
                 return (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
                       asChild
                       isActive={active && !locked}
                       tooltip={locked ? `${item.title} — upgrade required` : item.title}
-                      className={
-                        active && !locked
-                          ? "bg-foreground text-background font-semibold hover:bg-foreground hover:text-background data-[active=true]:bg-foreground data-[active=true]:text-background [&_svg]:text-background"
-                          : locked
-                            ? "text-sidebar-foreground/50 hover:bg-foreground/5 hover:text-sidebar-foreground/80"
-                            : "text-sidebar-foreground/80 hover:bg-foreground/5 hover:text-sidebar-foreground"
-                      }
+                      className={activeClass}
                     >
                       <Link {...linkProps} className="flex items-center gap-2.5">
                         <item.icon className="h-4 w-4 shrink-0" />

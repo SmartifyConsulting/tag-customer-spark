@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { CategoryAdminTab } from "@/components/settings/category-admin-tab";
 import { BrandAdminTab } from "@/components/settings/brand-admin-tab";
 import { TaxonomyEngineTab } from "@/components/settings/taxonomy-engine-tab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
@@ -22,8 +23,18 @@ function TaxonomyAdminPage() {
         description="Configure how products are grouped. The Taxonomy Engine defines the dynamic browser hierarchy; Brands and Categories are the source attributes."
       />
       <TaxonomyEngineTab />
-      <BrandAdminTab />
-      <CategoryAdminTab />
+      <Tabs defaultValue="brand">
+        <TabsList>
+          <TabsTrigger value="brand">Brand</TabsTrigger>
+          <TabsTrigger value="category">Category</TabsTrigger>
+        </TabsList>
+        <TabsContent value="brand">
+          <BrandAdminTab />
+        </TabsContent>
+        <TabsContent value="category">
+          <CategoryAdminTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

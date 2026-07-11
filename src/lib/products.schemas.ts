@@ -28,6 +28,7 @@ export const listProductsSchema = z.object({
   search: z.string().optional().default(""),
   status: z.enum(["all", "active", "draft", "archived"]).optional().default("all"),
   category_id: z.string().uuid().optional().nullable(),
+  brand_id: z.string().uuid().optional().nullable(),
   store_id: z.string().uuid().optional().nullable(),
   promotion: z.boolean().optional().default(false),
   low_stock: z.boolean().optional().default(false),

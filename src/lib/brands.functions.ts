@@ -221,34 +221,37 @@ export const linkProductsToBrands = createServerFn({ method: "POST" })
     return { linked, created, logos };
   });
 
-// ---------- Merge duplicate brands (same slug) ----------
-export const mergeDuplicateBrands = createServerFn({ method: "POST" })
+// ---------- Merge brands (admin picks target + sources manually) ----------
+export const mergeBrands = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        targetId: z.string().uuid(),
+        sourceIds: z.array(z.string().uuid()).min(1),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer");
-    const { data: rows } = await supabase.from("brands")
-      .select("id, name, slug, logo_url, created_at")
-      .eq("retailer_id", retailerId)
-      .order("created_at", { ascending: true });
-    const groups = new Map<string, any[]>();
-    for (const r of rows ?? []) {
-      const key = (r.slug || slugify(r.name)).toLowerCase();
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(r);
-    }
-    let merged = 0;
-    for (const list of groups.values()) {
-      if (list.length < 2) continue;
-      // Winner: first with a logo, else the oldest.
-      list.sort((a, b) => (b.logo_url ? 1 : 0) - (a.logo_url ? 1 : 0));
-      const winner = list[0];
-      const losers = list.slice(1).map((l) => l.id);
-      await supabase.from("products").update({ brand_id: winner.id })
-        .in("brand_id", losers).eq("retailer_id", retailerId);
-      await supabase.from("brands").delete().in("id", losers).eq("retailer_id", retailerId);
-      merged += losers.length;
-    }
-    return { merged };
+    const sourceIds = data.sourceIds.filter((id) => id !== data.targetId);
+    if (sourceIds.length === 0) return { merged: 0 };
+
+    const { error: prodErr } = await supabase
+      .from("products")
+      .update({ brand_id: data.targetId })
+      .in("brand_id", sourceIds)
+      .eq("retailer_id", retailerId);
+    if (prodErr) throw new Error(prodErr.message);
+
+    const { error: delErr } = await supabase
+      .from("brands")
+      .delete()
+      .in("id", sourceIds)
+      .eq("retailer_id", retailerId);
+    if (delErr) throw new Error(delErr.message);
+
+    return { merged: sourceIds.length };
   });

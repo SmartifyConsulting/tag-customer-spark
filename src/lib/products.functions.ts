@@ -111,6 +111,7 @@ export const listProducts = createServerFn({ method: "POST" })
     }
     if (data.status !== "all") q = q.eq("status", data.status);
     if (data.category_id) q = q.eq("category_id", data.category_id);
+    if (data.brand_id) q = q.eq("brand_id", data.brand_id);
     if (data.store_id) q = q.eq("store_id", data.store_id);
     if (data.promotion) {
       const now = new Date().toISOString();
