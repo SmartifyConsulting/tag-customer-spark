@@ -130,6 +130,11 @@ export function CategoryAdminTab() {
               </>
             )}
           </div>
+          <div className="ml-auto">
+            <Button size="sm" variant="outline" onClick={() => merge.mutate()} disabled={merge.isPending}>
+              <Combine className="mr-1 h-3.5 w-3.5" /> Merge duplicates
+            </Button>
+          </div>
         </div>
 
         <form
