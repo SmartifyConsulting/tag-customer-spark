@@ -266,7 +266,7 @@ export function OpportunityFeedCard() {
                         <div className="inline-flex items-center gap-1">
                           {op.related_entity_type === "product" && op.related_entity_id ? (
                             <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs">
-                              <Link to="/inventory/$productId" params={{ productId: op.related_entity_id }}>
+                              <Link to="/products/$productId" params={{ productId: op.related_entity_id }}>
                                 View
                               </Link>
                             </Button>

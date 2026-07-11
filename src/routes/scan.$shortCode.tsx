@@ -61,19 +61,19 @@ function ScanLanding() {
   const data = Route.useLoaderData();
   const [open, setOpen] = useState(false);
 
+  const price = data.price_cents;
   const onSale =
-    data.sale_price_cents != null && data.sale_price_cents < data.price_cents;
+    data.sale_price_cents != null && price != null && data.sale_price_cents < price;
   const currency = data.currency ?? "ZAR";
   const heroImage =
     data.image_url ??
     (Array.isArray(data.images) && (data.images as any[])[0]?.url) ??
     null;
 
-  const discountPct = onSale
-    ? Math.round(
-        ((data.price_cents - (data.sale_price_cents ?? 0)) / data.price_cents) * 100,
-      )
-    : 0;
+  const discountPct =
+    onSale && price != null
+      ? Math.round(((price - (data.sale_price_cents ?? 0)) / price) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-muted/50 via-background to-background pb-32">
