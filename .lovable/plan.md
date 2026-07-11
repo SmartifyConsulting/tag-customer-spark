@@ -1,26 +1,36 @@
-## Changes
+## Redesign AI Opportunity Feed as a scannable table
 
-### 1. Auto-categorise uncategorised products (no button)
-- In `src/routes/_authenticated/admin.categories.tsx` (or the CategoryAdminTab it renders), remove the manual "Auto-categorise uncategorised" bulk button.
-- Trigger auto-categorisation automatically: on mount of the Categories admin screen, if uncategorised products exist, kick off `suggestCategoryForProduct` in background batches with a subtle progress indicator (toast/inline). Also fire the same background sweep once from the Dashboard loader path (guarded so it only runs when count > 0 and not more than once per session) so it self-heals without visiting Admin.
-- Keep the per-product override UI intact.
+Replace the current stacked-list layout in `src/components/dashboard/opportunity-feed.tsx` with a compact table that matches the requested columns:
 
-### 2. Remove grey divider line on sidebar/nav
-- In `src/components/app-sidebar.tsx`, remove `border-b border-sidebar-border/60` from `SidebarHeader` and `border-t border-sidebar-border/60` from `SidebarFooter` so no horizontal line crosses the logo.
-- Verify no wrapper in `__root.tsx` or auth layout adds a top border across the header.
+| Product | AI Action | Store Flow | Signal | Revenue | Confidence | Actions |
 
-### 3. New logo on hero / landing page
-- In `src/routes/index.tsx` (hero/landing), render `TagLogo` variant `wordmark` at a reasonably large but restrained size (e.g. `h-16 md:h-20`, not full-width). Ensure it uses the new `tag-logo-clear.png` asset already wired into `TagLogo`.
+### Column mapping (from existing `ai_insights` rows)
 
-### 4. Dashboard layout: 3-up row
-- In `src/routes/_authenticated/dashboard.tsx`, restructure so **Top products by interest**, **Popular stores**, and **Scan heatmap** sit in a single responsive row (`grid gap-4 lg:grid-cols-3`), replacing the current 2-column split + full-width heatmap block.
-- The heatmap card will be compacted to fit its column (horizontal scroll preserved inside).
+- **Product** — `op.payload.product_name` → fallback to `op.title`. Prefix with an emoji derived from `payload.category` (👕 apparel, 👖 denim, 👢 footwear, 📦 default).
+- **AI Action** — badge from `payload.action` (`transfer` ⇄, `markdown` 🏷, `restock` 📦, `promote` ✨). Fallback derived from `op.kind` (`opportunity` → Promote, `merchandising` → Markdown).
+- **Store Flow** — `payload.from_store → payload.to_store`; single store if only one; em‑dash when absent.
+- **Signal** — `payload.signal` chip (📦 stock delta, 📉 slow sales, ⚠ low stock, 📈 high demand). Falls back to a truncated `op.body`.
+- **Revenue** — existing `formatZAR(payload.projected_value_cents)`, right‑aligned, success color.
+- **Confidence** — `op.score` (0–100). Colored dot: 🟢 ≥ 90, 🟡 70–89, 🔴 < 70. Text `xx%`.
+- **Actions** — `View` (links to related product if `related_entity_type === 'product'`, else no‑op ghost) + a contextual primary button per action (`Create` transfer, `Apply` markdown, `Order` restock, `Promote` default). Both are `size="sm"`. Dismiss (X) moves into a row‑hover icon button at the far right.
 
-### 5. Move Signal Contributions to Insights (top)
-- Remove `<SignalContributionsCard />` from `src/routes/_authenticated/dashboard.tsx`.
-- Add it to the top of `src/routes/_authenticated/intelligence.insights.tsx` (Insights screen), above existing content.
+### Layout & styling
 
-## Technical notes
-- No schema changes.
-- Auto-categorisation reuses existing `suggestCategoryForProduct`; background trigger uses a `useEffect` + in-flight ref to avoid double runs.
-- Heatmap in a narrower column: keep min cell width (`minmax(14px,1fr)`) with overflow-x-auto wrapper already present.
+- Wrap the list in `<Table>` from `@/components/ui/table` inside the existing `CardContent`.
+- Keep the executive-briefing panel above the table unchanged.
+- Sticky, uppercase, tracking‑wide header row; zebra rows via `hover:bg-muted/40`.
+- Responsive: on `< md`, hide **Store Flow** and **Signal** columns; keep Product / Action / Revenue / Confidence / Actions.
+- Preserve loading skeletons (swap to 3 skeleton rows shaped like the table) and empty state.
+- No changes to server functions, data model, or the locked/Tag‑Pro gate.
+
+### Small helpers (inline in the same file)
+
+- `actionMeta(action)` → `{ icon, label, verb }` map.
+- `signalMeta(signal)` → `{ icon, label }` map.
+- `confidenceMeta(score)` → `{ dot, tone }`.
+
+### Files touched
+
+- `src/components/dashboard/opportunity-feed.tsx` — full rewrite of the render block; imports add `Table*` primitives and `ArrowLeftRight`, `Tag`, `PackagePlus`, `AlertTriangle` icons from `lucide-react`.
+
+No migrations, no other components affected.
