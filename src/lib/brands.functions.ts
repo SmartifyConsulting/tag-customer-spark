@@ -135,7 +135,7 @@ export const resolveBrandLogo = createServerFn({ method: "POST" })
       const bytes = await aiGenerateLogo(brand.name);
       if (bytes) payload = { bytes, contentType: "image/png" };
     }
-    if (!payload) throw new Error("Could not resolve a logo");
+    if (!payload) throw new Error(brand.website ? "Could not resolve a logo from the website or AI." : "Add a website for this brand, then retry — AI logo generation was unavailable.");
 
     const ext = payload.contentType.includes("png") ? "png" : payload.contentType.includes("svg") ? "svg" : "png";
     const path = `${brand.id}/logo-${Date.now()}.${ext}`;
