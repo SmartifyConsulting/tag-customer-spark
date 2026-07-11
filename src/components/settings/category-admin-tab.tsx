@@ -27,6 +27,7 @@ export function CategoryAdminTab() {
   const renameFn = useServerFn(renameCategory);
   const deleteFn = useServerFn(deleteCategory);
   const bulkFn = useServerFn(bulkAutoCategorise);
+  const mergeFn = useServerFn(mergeDuplicateCategories);
 
   const [newParent, setNewParent] = useState("");
   const [subFor, setSubFor] = useState<string | null>(null);
