@@ -162,24 +162,61 @@ export const linkProductsToBrands = createServerFn({ method: "POST" })
       .select("id, brand, normalised_brand, brand_id")
       .eq("retailer_id", retailerId)
       .is("brand_id", null);
-    const { data: brands } = await supabase.from("brands").select("id, name, slug").eq("retailer_id", retailerId);
-    const bySlug = new Map<string, string>((brands ?? []).map((b: any) => [b.slug, b.id]));
+    const { data: brands } = await supabase.from("brands").select("id, name, slug, website, logo_url").eq("retailer_id", retailerId);
+    const bySlug = new Map<string, { id: string; website: string | null; logo_url: string | null }>(
+      (brands ?? []).map((b: any) => [b.slug, { id: b.id, website: b.website, logo_url: b.logo_url }]),
+    );
     let linked = 0, created = 0;
+    const newlyCreated: { id: string; name: string; website: string | null }[] = [];
     for (const p of prods ?? []) {
       const raw = (p.normalised_brand ?? p.brand ?? "").toString().trim();
       if (!raw) continue;
       const slug = slugify(raw);
-      let id = bySlug.get(slug);
-      if (!id) {
+      let entry = bySlug.get(slug);
+      if (!entry) {
         const { data: ins } = await supabase.from("brands").insert({
           retailer_id: retailerId, name: raw, slug,
         }).select("id").single();
-        if (ins) { id = ins.id; bySlug.set(slug, ins.id); created++; }
+        if (ins) {
+          entry = { id: ins.id, website: null, logo_url: null };
+          bySlug.set(slug, entry);
+          created++;
+          newlyCreated.push({ id: ins.id, name: raw, website: null });
+        }
       }
-      if (id) {
-        await supabase.from("products").update({ brand_id: id }).eq("id", p.id);
+      if (entry) {
+        await supabase.from("products").update({ brand_id: entry.id }).eq("id", p.id);
         linked++;
       }
     }
-    return { linked, created };
+
+    // Auto-fetch logos for any brand missing one (existing + newly created).
+    const missingLogo = [
+      ...newlyCreated,
+      ...Array.from(bySlug.values())
+        .filter((b) => !b.logo_url)
+        .map((b) => {
+          const row = (brands ?? []).find((x: any) => x.id === b.id);
+          return row ? { id: row.id, name: row.name, website: row.website } : null;
+        })
+        .filter(Boolean) as { id: string; name: string; website: string | null }[],
+    ];
+    const seen = new Set<string>();
+    let logos = 0;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    for (const b of missingLogo) {
+      if (seen.has(b.id)) continue;
+      seen.add(b.id);
+      const payload = await tryClearbit(b.website);
+      if (!payload) continue;
+      const path = `${b.id}/logo-${Date.now()}.png`;
+      const { error: upErr } = await supabaseAdmin.storage.from("brand-logos").upload(path, payload.bytes, {
+        contentType: payload.contentType, upsert: true,
+      });
+      if (upErr) continue;
+      const { data: pub } = supabaseAdmin.storage.from("brand-logos").getPublicUrl(path);
+      await supabase.from("brands").update({ logo_path: path, logo_url: pub.publicUrl }).eq("id", b.id);
+      logos++;
+    }
+    return { linked, created, logos };
   });
