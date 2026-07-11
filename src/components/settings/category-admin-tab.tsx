@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -42,10 +42,21 @@ export function CategoryAdminTab() {
     mutationFn: () => bulkFn({ data: { onlyUncategorised: true, limit: 100 } }),
     onSuccess: (r: any) => {
       invalidate();
-      toast.success(`Auto-categorised ${r.assigned}/${r.total} products`);
+      if (r?.assigned) toast.success(`Auto-categorised ${r.assigned}/${r.total} products`);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+    onError: (e: any) => toast.error(e?.message ?? "Auto-categorise failed"),
   });
+
+  // Auto-run once per session when uncategorised products exist.
+  const autoRan = useRef(false);
+  const uncategorised = q.data?.uncategorisedCount ?? 0;
+  useEffect(() => {
+    if (autoRan.current) return;
+    if (uncategorised > 0 && !bulk.isPending) {
+      autoRan.current = true;
+      bulk.mutate();
+    }
+  }, [uncategorised, bulk]);
 
   const create = useMutation({
     mutationFn: (v: { name: string; parent_id: string | null }) => createFn({ data: v }),
@@ -103,17 +114,14 @@ export function CategoryAdminTab() {
                 </Badge>
               </>
             ) : null}
-          </div>
-          <div className="ml-auto">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => bulk.mutate()}
-              disabled={bulk.isPending || !(q.data?.uncategorisedCount ?? 0)}
-            >
-              <Sparkles className="mr-1 h-3.5 w-3.5" />
-              {bulk.isPending ? "Auto-categorising…" : "Auto-categorise uncategorised"}
-            </Button>
+            {bulk.isPending && (
+              <>
+                <span className="mx-2 text-muted-foreground">·</span>
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3 animate-pulse" /> Auto-categorising…
+                </span>
+              </>
+            )}
           </div>
         </div>
 

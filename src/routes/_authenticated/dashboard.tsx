@@ -39,7 +39,7 @@ import { ScanTrendsCard } from "@/components/dashboard/scan-trends-card";
 import { TopProductsCard } from "@/components/dashboard/top-products-card";
 import { RecentActivityCard } from "@/components/dashboard/recent-activity-card";
 import { IntentSectionsCard } from "@/components/dashboard/intent-sections-card";
-import { SignalContributionsCard } from "@/components/dashboard/signal-contributions-card";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -286,8 +286,6 @@ function DashboardContent() {
         )}
       </div>
 
-      <SignalContributionsCard />
-
       <IntentSectionsCard />
 
       <ScanTrendsCard
@@ -296,21 +294,22 @@ function DashboardContent() {
         monthly={data.scansMonthly}
       />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-3">
         <TopProductsCard products={data.topProducts} />
         {analytics ? (
           <PopularStoresCard stores={analytics.popularStores} />
         ) : (
           <Skeleton className="h-72 rounded-2xl" />
         )}
+        {analytics ? (
+          <Card className="p-5">
+            <h3 className="text-sm font-semibold mb-3">Scan heatmap</h3>
+            <Heatmap data={analytics.heatmap} />
+          </Card>
+        ) : (
+          <Skeleton className="h-72 rounded-2xl" />
+        )}
       </div>
-
-      {analytics ? (
-        <Card className="p-5">
-          <h3 className="text-sm font-semibold mb-3">Scan heatmap (weekday × hour)</h3>
-          <Heatmap data={analytics.heatmap} />
-        </Card>
-      ) : null}
 
       <RecentActivityCard items={data.recentActivity} />
     </div>

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { OpportunityFeedCard } from "@/components/dashboard/opportunity-feed";
+import { SignalContributionsCard } from "@/components/dashboard/signal-contributions-card";
 import { requireFeature } from "@/lib/tier-guard";
 
 export const Route = createFileRoute("/_authenticated/intelligence/insights")({
@@ -16,6 +17,7 @@ function InsightsPage() {
         title="Demand Insights"
         description="Auto-generated explanations for every product — why scores moved, what to do about it."
       />
+      <SignalContributionsCard />
       <OpportunityFeedCard />
     </div>
   );

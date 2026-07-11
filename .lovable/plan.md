@@ -1,55 +1,26 @@
+## Changes
 
-## 1. Product image mismatch (CERELAC)
+### 1. Auto-categorise uncategorised products (no button)
+- In `src/routes/_authenticated/admin.categories.tsx` (or the CategoryAdminTab it renders), remove the manual "Auto-categorise uncategorised" bulk button.
+- Trigger auto-categorisation automatically: on mount of the Categories admin screen, if uncategorised products exist, kick off `suggestCategoryForProduct` in background batches with a subtle progress indicator (toast/inline). Also fire the same background sweep once from the Dashboard loader path (guarded so it only runs when count > 0 and not more than once per session) so it self-heals without visiting Admin.
+- Keep the per-product override UI intact.
 
-DB check confirms `image_status = ai_suggested` for GTIN `08941100296639` — Open Food Facts had no photo for this SA GTIN, so the resolver fell through to an AI-generated stylised image.
+### 2. Remove grey divider line on sidebar/nav
+- In `src/components/app-sidebar.tsx`, remove `border-b border-sidebar-border/60` from `SidebarHeader` and `border-t border-sidebar-border/60` from `SidebarFooter` so no horizontal line crosses the logo.
+- Verify no wrapper in `__root.tsx` or auth layout adds a top border across the header.
 
-**Fix in `src/lib/product-images.server.ts`:**
-- Try Open Food Facts with multiple GTIN normalisations (raw, leading-zero-stripped, EAN-13 from 14, UPC-12).
-- If direct GTIN misses, call OFF search API (`/cgi/search.pl?search_terms=<brand+name>&json=1`) and use the top hit's `image_url`.
-- Only then fall through to AI image / placeholder.
+### 3. New logo on hero / landing page
+- In `src/routes/index.tsx` (hero/landing), render `TagLogo` variant `wordmark` at a reasonably large but restrained size (e.g. `h-16 md:h-20`, not full-width). Ensure it uses the new `tag-logo-clear.png` asset already wired into `TagLogo`.
 
-## 2. "AI enrichment complete" never ticks green
+### 4. Dashboard layout: 3-up row
+- In `src/routes/_authenticated/dashboard.tsx`, restructure so **Top products by interest**, **Popular stores**, and **Scan heatmap** sit in a single responsive row (`grid gap-4 lg:grid-cols-3`), replacing the current 2-column split + full-width heatmap block.
+- The heatmap card will be compacted to fit its column (horizontal scroll preserved inside).
 
-DB shows passport `enrichment_status = enriched` but `DigitalIdentityProgress` checks for `"complete"`. Pure string mismatch.
+### 5. Move Signal Contributions to Insights (top)
+- Remove `<SignalContributionsCard />` from `src/routes/_authenticated/dashboard.tsx`.
+- Add it to the top of `src/routes/_authenticated/intelligence.insights.tsx` (Insights screen), above existing content.
 
-**Fix in `src/components/qr/digital-identity-progress.tsx`:** treat `enriched | complete | manual` as done, and `queued | running | enriching | pending` as in-progress. Aligns with `PassportTab`.
-
-## 3. Replace logos with new Tag barcode logo
-
-- Upload `user-uploads://TAGLogo-Clear.png` via `lovable-assets` to `src/assets/tag-logo-clear.png.asset.json`.
-- Point `src/components/tag-logo.tsx` (both `iconAsset` and `wordmarkAsset`) at the new pointer.
-- Point `src/components/auth-shell.tsx` (`heroLogo` import) at the new pointer.
-- Replace `public/favicon.ico` with a new `public/favicon.png` copy of the same logo and update `src/routes/__root.tsx` links.
-
-## 4. WhatsApp inbox — selected row text colour
-
-In the inbox list (`src/routes/_authenticated/inbox.tsx` and its row component), when a conversation is selected (orange background), force `text-white` (and muted text `text-white/80`) on the row so text pops. Non-selected rows unchanged.
-
-## 5. Admin: split into Users + Categories tabs, drop from Settings
-
-- New route file `src/routes/_authenticated/admin.users.tsx` rendering existing `UserAdminTab` (super-admin gated like the categories page).
-- Convert `src/routes/_authenticated/admin.categories.tsx` and the new `admin.users.tsx` into siblings under a small `admin` layout with a shared `Tabs` header (Categories | Users).
-- Update `src/lib/nav.ts` Admin entry to keep landing at `/admin/categories` but ensure both routes highlight the Admin item.
-- Remove the Category Admin tab from `src/routes/_authenticated/settings.tsx` (leave User Admin out of Settings too since it now lives under Admin).
-
-## 6. Customers — default status semantics
-
-Today every new customer defaults to `subscribed`. Change so only marketing opt-in = `subscribed`; everyone else is `registered`.
-
-- **Migration:** add `'registered'` value to the `customer_status` enum (or accept it as a text status) and backfill: `UPDATE customers SET status='registered' WHERE marketing_consent_at IS NULL AND status='subscribed'`.
-- `src/lib/customers.functions.ts` (`createCustomer`, `customerInputSchema`): default `status` to `registered` unless `marketing_consent` is true → `subscribed`. On `updateCustomer`, when marketing_consent toggles, flip status accordingly.
-- Scan-side signup path (`src/routes/api/public/scan.interest.ts` or `src/lib/scan.functions.ts`): create with `registered`, only promote to `subscribed` when the marketing checkbox is ticked.
-- UI: add "Registered" as a filter pill / badge variant in `src/routes/_authenticated/customers.tsx` alongside Subscribed/VIP/Dormant.
-
-## 7. Customers table — Last scan date + alignment
-
-Screenshot shows SCANS/INTERESTS/REVENUE headers centered but the values left-aligned.
-
-- In `listCustomers` (`src/lib/customers.functions.ts`), also compute `last_scan_at` per customer from the same `qr_scans` fetch (`MAX(scanned_at)` in JS reduce).
-- Customers table (`src/routes/_authenticated/customers.tsx` — or the extracted table component):
-  - Add a `Last scan` column (right of Interests) showing `formatDistanceToNow(last_scan_at)` or `—`.
-  - Add `text-center` (and `tabular-nums`) to the header **and** cell for `Scans`, `Interests`, and `Revenue`. Right-align isn't asked for; centre both to match the header.
-
-## Out of scope
-
-No changes to enrichment logic, QR, passport schema, or billing.
+## Technical notes
+- No schema changes.
+- Auto-categorisation reuses existing `suggestCategoryForProduct`; background trigger uses a `useEffect` + in-flight ref to avoid double runs.
+- Heatmap in a narrower column: keep min cell width (`minmax(14px,1fr)`) with overflow-x-auto wrapper already present.

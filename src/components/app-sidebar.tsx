@@ -25,7 +25,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="hidden border-r-0 overflow-visible md:flex">
-      <SidebarHeader className="relative h-16 flex-row items-center justify-center overflow-visible border-b border-sidebar-border/60 bg-sidebar p-0">
+      <SidebarHeader className="relative h-16 flex-row items-center justify-center overflow-visible bg-sidebar p-0">
         {collapsed ? (
           <TagLogo variant="icon" size="sm" />
         ) : (
@@ -73,7 +73,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border/60">
+      <SidebarFooter>
         {!collapsed && (
           <div className="px-3 py-2">
             <p className="text-[10px] font-medium uppercase tracking-wider text-sidebar-foreground/40">Tag</p>
