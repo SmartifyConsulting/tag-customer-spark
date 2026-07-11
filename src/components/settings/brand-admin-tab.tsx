@@ -72,8 +72,11 @@ export function BrandAdminTab() {
             <span className="text-muted-foreground">missing logos</span>
           </div>
           <div className="ml-auto flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => link.mutate()} disabled={link.isPending}>
-              <Wand2 className="mr-1 h-3.5 w-3.5" /> Auto-link products
+            <Button size="sm" variant="outline" onClick={() => merge.mutate()} disabled={merge.isPending}>
+              <Combine className="mr-1 h-3.5 w-3.5" /> Merge duplicates
+            </Button>
+            <Button size="sm" onClick={() => link.mutate()} disabled={link.isPending}>
+              <Wand2 className="mr-1 h-3.5 w-3.5" /> Auto-link & fetch logos
             </Button>
           </div>
         </div>
