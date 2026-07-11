@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Plus, Trash2, Pencil, FolderTree, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Trash2, Pencil, FolderTree, Sparkles, Combine } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
   renameCategory,
   deleteCategory,
   bulkAutoCategorise,
+  mergeDuplicateCategories,
 } from "@/lib/categories.functions";
 
 type Row = { id: string; name: string; parent_id: string | null; status: string };
