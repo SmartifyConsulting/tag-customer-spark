@@ -204,6 +204,24 @@ function ProductsListPage() {
         description="Manage products, stock levels, and QR tags in one place."
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex overflow-hidden rounded-md border">
+              <Button
+                size="sm"
+                variant={viewMode === "list" ? "default" : "ghost"}
+                className="rounded-none"
+                onClick={() => setViewMode("list")}
+              >
+                <List className="mr-1 h-3.5 w-3.5" /> List
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === "browse" ? "default" : "ghost"}
+                className="rounded-none"
+                onClick={() => setViewMode("browse")}
+              >
+                <Layers className="mr-1 h-3.5 w-3.5" /> Browse
+              </Button>
+            </div>
             {canManage && selectedIds.length > 0 && (
               <Button variant="outline" onClick={() => setBulkOpen(true)}>
                 <FileDown className="mr-2 h-4 w-4" />
