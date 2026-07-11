@@ -8,6 +8,8 @@ type Props = {
     gtin?: string | null;
     image_status?: string | null;
     image_source?: string | null;
+    normalised_at?: string | null;
+    category_id?: string | null;
     digital_product_passport_id?: string | null;
   };
   qr?: { active: boolean } | null;
@@ -19,6 +21,18 @@ export function DigitalIdentityProgress({ product, qr, passport }: Props) {
   const steps: Step[] = [
     { key: "barcode", label: "Valid GS1 barcode", done: !!product.gtin },
     {
+      key: "normalised",
+      label: "Product normalised",
+      done: !!product.normalised_at,
+      pending: !product.normalised_at,
+    },
+    {
+      key: "category",
+      label: "Category assigned",
+      done: !!product.category_id,
+      pending: !product.category_id,
+    },
+    {
       key: "image",
       label: "Product image resolved",
       done:
@@ -28,7 +42,6 @@ export function DigitalIdentityProgress({ product, qr, passport }: Props) {
         ),
       pending: !product.image_status || product.image_status === "pending",
     },
-
     { key: "qr", label: "GS1 QR code generated", done: !!qr?.active },
     {
       key: "passport",
