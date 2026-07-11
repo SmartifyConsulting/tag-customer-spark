@@ -78,6 +78,7 @@ function ProductsListPage() {
     staleTime: 60_000,
   });
 
+  const [viewMode, setViewMode] = useState<"list" | "browse">("list");
   const [searchTerm, setSearchTerm] = useState(search.search);
   useEffect(() => setSearchTerm(search.search), [search.search]);
   useEffect(() => {
