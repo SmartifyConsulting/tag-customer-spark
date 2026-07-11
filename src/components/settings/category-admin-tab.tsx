@@ -42,10 +42,21 @@ export function CategoryAdminTab() {
     mutationFn: () => bulkFn({ data: { onlyUncategorised: true, limit: 100 } }),
     onSuccess: (r: any) => {
       invalidate();
-      toast.success(`Auto-categorised ${r.assigned}/${r.total} products`);
+      if (r?.assigned) toast.success(`Auto-categorised ${r.assigned}/${r.total} products`);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+    onError: (e: any) => toast.error(e?.message ?? "Auto-categorise failed"),
   });
+
+  // Auto-run once per session when uncategorised products exist.
+  const autoRan = useRef(false);
+  const uncategorised = q.data?.uncategorisedCount ?? 0;
+  useEffect(() => {
+    if (autoRan.current) return;
+    if (uncategorised > 0 && !bulk.isPending) {
+      autoRan.current = true;
+      bulk.mutate();
+    }
+  }, [uncategorised, bulk]);
 
   const create = useMutation({
     mutationFn: (v: { name: string; parent_id: string | null }) => createFn({ data: v }),
