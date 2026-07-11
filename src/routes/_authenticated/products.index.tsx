@@ -388,6 +388,7 @@ function ProductsListPage() {
         total={data?.total ?? 0}
         onPage={(p) => navigate({ search: (s: any) => ({ ...s, page: p }) })}
       />
+      </>)}
 
       {canManage && (
         <ProductFormDialog open={createOpen} onOpenChange={setCreateOpen} />
