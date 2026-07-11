@@ -37,7 +37,7 @@ function formatZAR(cents?: number | null) {
 
 type ActionKey = "transfer" | "markdown" | "restock" | "promote";
 
-function actionMeta(action?: string, kind?: string): { key: ActionKey; icon: JSX.Element; label: string; verb: string; className: string } {
+function actionMeta(action?: string, kind?: string): { key: ActionKey; icon: ReactElement; label: string; verb: string; className: string } {
   const raw = (action ?? "").toLowerCase();
   const key: ActionKey =
     raw === "transfer" || raw === "markdown" || raw === "restock" || raw === "promote"
@@ -45,7 +45,7 @@ function actionMeta(action?: string, kind?: string): { key: ActionKey; icon: JSX
       : kind === "merchandising"
       ? "markdown"
       : "promote";
-  const map: Record<ActionKey, { icon: JSX.Element; label: string; verb: string; className: string }> = {
+  const map: Record<ActionKey, { icon: ReactElement; label: string; verb: string; className: string }> = {
     transfer: {
       icon: <ArrowLeftRight className="h-3.5 w-3.5" />,
       label: "Transfer",
@@ -74,7 +74,7 @@ function actionMeta(action?: string, kind?: string): { key: ActionKey; icon: JSX
   return { key, ...map[key] };
 }
 
-function signalMeta(signal?: string, body?: string): { icon: JSX.Element; label: string } {
+function signalMeta(signal?: string, body?: string): { icon: ReactElement; label: string } {
   const raw = (signal ?? "").toLowerCase();
   if (raw.includes("high") || raw.includes("demand"))
     return { icon: <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />, label: "High demand" };
