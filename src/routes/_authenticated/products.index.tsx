@@ -5,7 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { toast } from "sonner";
-import { FileDown, Loader2, Package, Plus, Sparkles, Upload } from "lucide-react";
+import { FileDown, Layers, List, Loader2, Package, Plus, Sparkles, Upload } from "lucide-react";
+import { DynamicTaxonomyBrowser } from "@/components/products/dynamic-taxonomy-browser";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +78,7 @@ function ProductsListPage() {
     staleTime: 60_000,
   });
 
+  const [viewMode, setViewMode] = useState<"list" | "browse">("list");
   const [searchTerm, setSearchTerm] = useState(search.search);
   useEffect(() => setSearchTerm(search.search), [search.search]);
   useEffect(() => {
@@ -202,6 +204,24 @@ function ProductsListPage() {
         description="Manage products, stock levels, and QR tags in one place."
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex overflow-hidden rounded-md border">
+              <Button
+                size="sm"
+                variant={viewMode === "list" ? "default" : "ghost"}
+                className="rounded-none"
+                onClick={() => setViewMode("list")}
+              >
+                <List className="mr-1 h-3.5 w-3.5" /> List
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === "browse" ? "default" : "ghost"}
+                className="rounded-none"
+                onClick={() => setViewMode("browse")}
+              >
+                <Layers className="mr-1 h-3.5 w-3.5" /> Browse
+              </Button>
+            </div>
             {canManage && selectedIds.length > 0 && (
               <Button variant="outline" onClick={() => setBulkOpen(true)}>
                 <FileDown className="mr-2 h-4 w-4" />
@@ -236,6 +256,9 @@ function ProductsListPage() {
 
 
 
+      {viewMode === "browse" ? (
+        <DynamicTaxonomyBrowser />
+      ) : (<>
       <ProductsToolbar
         value={{
           search: searchTerm,
@@ -365,6 +388,7 @@ function ProductsListPage() {
         total={data?.total ?? 0}
         onPage={(p) => navigate({ search: (s: any) => ({ ...s, page: p }) })}
       />
+      </>)}
 
       {canManage && (
         <ProductFormDialog open={createOpen} onOpenChange={setCreateOpen} />

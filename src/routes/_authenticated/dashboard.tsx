@@ -288,24 +288,32 @@ function DashboardContent() {
 
       <IntentSectionsCard />
 
-      <ScanTrendsCard
-        daily={data.scansDaily}
-        weekly={data.scansWeekly}
-        monthly={data.scansMonthly}
-      />
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <TopProductsCard products={data.topProducts} />
+      <div className="grid gap-4 lg:grid-cols-2">
         {analytics ? (
-          <PopularStoresCard stores={analytics.popularStores} />
+          <Card className="p-5">
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold">Scan heatmap</h3>
+              <HeatmapLegend />
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Shopper scans by day of week × hour of day — darker cells mean more scans in that slot. Use it to time WhatsApp broadcasts and staff coverage.
+            </p>
+            <Heatmap data={analytics.heatmap} />
+          </Card>
         ) : (
           <Skeleton className="h-72 rounded-2xl" />
         )}
+        <ScanTrendsCard
+          daily={data.scansDaily}
+          weekly={data.scansWeekly}
+          monthly={data.scansMonthly}
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <TopProductsCard products={data.topProducts} />
         {analytics ? (
-          <Card className="p-5">
-            <h3 className="text-sm font-semibold mb-3">Scan heatmap</h3>
-            <Heatmap data={analytics.heatmap} />
-          </Card>
+          <PopularStoresCard stores={analytics.popularStores} />
         ) : (
           <Skeleton className="h-72 rounded-2xl" />
         )}
@@ -350,29 +358,53 @@ function Heatmap({ data }: { data: number[][] }) {
   return (
     <div className="overflow-x-auto">
       <div className="inline-block">
-        <div className="grid grid-cols-[40px_repeat(24,_minmax(14px,1fr))] gap-0.5 text-[10px]">
-          <div />
-          {Array.from({ length: 24 }).map((_, h) => (
-            <div key={h} className="text-center text-muted-foreground">{h % 3 === 0 ? h : ""}</div>
-          ))}
-          {data.map((row, d) => (
-            <div key={`row-${d}`} className="contents">
-              <div className="text-muted-foreground self-center">{days[d]}</div>
-              {row.map((v, h) => {
-                const op = v / max;
-                return (
-                  <div
-                    key={`${d}-${h}`}
-                    title={`${days[d]} ${h}:00 — ${v} scans`}
-                    className="aspect-square rounded-sm"
-                    style={{ backgroundColor: `rgba(3, 28, 77, ${0.08 + op * 0.85})` }}
-                  />
-                );
-              })}
-            </div>
-          ))}
+        <div className="mb-1 pl-[44px] text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          Hour of day
+        </div>
+        <div className="flex gap-1">
+          <div className="grid grid-cols-[40px_repeat(24,_minmax(14px,1fr))] gap-0.5 text-[10px]">
+            <div />
+            {Array.from({ length: 24 }).map((_, h) => (
+              <div key={h} className="text-center text-muted-foreground">{h % 3 === 0 ? h : ""}</div>
+            ))}
+            {data.map((row, d) => (
+              <div key={`row-${d}`} className="contents">
+                <div className="text-muted-foreground self-center">{days[d]}</div>
+                {row.map((v, h) => {
+                  const op = v / max;
+                  return (
+                    <div
+                      key={`${d}-${h}`}
+                      title={`${days[d]} ${h}:00 — ${v} scans`}
+                      className="aspect-square rounded-sm"
+                      style={{ backgroundColor: `rgba(3, 28, 77, ${0.08 + op * 0.85})` }}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center pl-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl]">
+            Day of week
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function HeatmapLegend() {
+  return (
+    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+      <span>Fewer scans</span>
+      <div
+        className="h-2 w-24 rounded-full"
+        style={{
+          background:
+            "linear-gradient(to right, rgba(3,28,77,0.08), rgba(3,28,77,0.93))",
+        }}
+      />
+      <span>More scans</span>
     </div>
   );
 }
