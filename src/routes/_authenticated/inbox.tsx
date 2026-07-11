@@ -152,26 +152,26 @@ function InboxPage() {
                   onClick={() => setActiveId(c.id)}
                   className={cn(
                     "w-full text-left p-3 border-b border-border/60 hover:bg-accent/50 transition-colors",
-                    isActive && "bg-primary text-primary-foreground hover:bg-primary",
+                    isActive && "bg-accent text-white hover:bg-accent",
                   )}
                 >
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9">
                       <AvatarFallback className={cn(
                         "text-xs",
-                        isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/10 text-primary",
+                        isActive ? "bg-white/20 text-white" : "bg-primary/10 text-primary",
                       )}>
                         {initials(c.customer?.full_name)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium truncate text-sm">
+                        <span className={cn("font-medium truncate text-sm", isActive && "text-white")}>
                           {c.customer?.full_name ?? c.customer?.whatsapp_e164 ?? "Customer"}
                         </span>
                         <span className={cn(
                           "text-[10px] shrink-0",
-                          isActive ? "text-primary-foreground/80" : "text-muted-foreground",
+                          isActive ? "text-white/85" : "text-muted-foreground",
                         )}>
                           {fmtTime(c.last_message_at)}
                         </span>
@@ -179,14 +179,14 @@ function InboxPage() {
                       <div className="flex items-center justify-between gap-2 mt-0.5">
                         <span className={cn(
                           "text-xs truncate",
-                          isActive ? "text-primary-foreground/85" : "text-muted-foreground",
+                          isActive ? "text-white/90" : "text-muted-foreground",
                         )}>
                           {c.subject ?? "New conversation"}
                         </span>
                         {c.unread_count > 0 && (
                           <Badge className={cn(
                             "h-4 min-w-4 px-1 text-[10px]",
-                            isActive ? "bg-primary-foreground text-primary" : "bg-muted text-muted-foreground",
+                            isActive ? "bg-white text-accent" : "bg-muted text-muted-foreground",
                           )}>{c.unread_count}</Badge>
                         )}
                       </div>

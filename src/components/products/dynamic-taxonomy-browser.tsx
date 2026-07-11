@@ -1,18 +1,39 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronRight, Layers } from "lucide-react";
+import { ChevronRight, Layers, GitMerge, X, Check } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/empty-state";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { browseTaxonomy, getActiveProfile } from "@/lib/taxonomy.functions";
+import { mergeTaxonomyGroups, isMergeableAttribute } from "@/lib/taxonomy-merge.functions";
+import { cn } from "@/lib/utils";
 
 export function DynamicTaxonomyBrowser() {
+  const qc = useQueryClient();
   const activeFn = useServerFn(getActiveProfile);
   const browseFn = useServerFn(browseTaxonomy);
+  const mergeFn = useServerFn(mergeTaxonomyGroups);
   const [path, setPath] = useState<{ attribute_key: string; value: string; label: string }[]>([]);
+  const [mergeMode, setMergeMode] = useState(false);
+  const [target, setTarget] = useState<{ value: string; label: string; count: number } | null>(null);
+  const [sources, setSources] = useState<Record<string, { label: string; count: number }>>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [merging, setMerging] = useState(false);
 
   const activeQ = useQuery({ queryKey: ["taxonomy-active"], queryFn: () => activeFn() });
 
@@ -36,6 +57,15 @@ export function DynamicTaxonomyBrowser() {
     enabled: !!profileId && levels.length > 0,
   });
 
+  const resetMerge = () => {
+    setTarget(null);
+    setSources({});
+  };
+  const exitMerge = () => {
+    setMergeMode(false);
+    resetMerge();
+  };
+
   if (activeQ.isLoading) return <Skeleton className="h-40 w-full" />;
 
   if (!profileId || levels.length === 0) {
@@ -49,6 +79,57 @@ export function DynamicTaxonomyBrowser() {
   }
 
   const currentLevel = levels[path.length];
+  const canMerge =
+    !!currentLevel &&
+    isMergeableAttribute(currentLevel.attribute_key) &&
+    (q.data?.groups?.length ?? 0) >= 2;
+
+  const sourceCount = Object.keys(sources).length;
+  const sourceProductCount = Object.values(sources).reduce((n, s) => n + s.count, 0);
+
+  const handleGroupClick = (g: any) => {
+    if (!mergeMode) {
+      setPath((cur) => [
+        ...cur,
+        { attribute_key: currentLevel!.attribute_key, value: g.value, label: g.label },
+      ]);
+      return;
+    }
+    if (!target) {
+      setTarget({ value: g.value, label: g.label, count: g.count });
+      return;
+    }
+    if (g.value === target.value) return;
+    setSources((cur) => {
+      const next = { ...cur };
+      if (next[g.value]) delete next[g.value];
+      else next[g.value] = { label: g.label, count: g.count };
+      return next;
+    });
+  };
+
+  const doMerge = async () => {
+    if (!target || sourceCount === 0 || !currentLevel) return;
+    setMerging(true);
+    try {
+      const res = await mergeFn({
+        data: {
+          attribute_key: currentLevel.attribute_key as any,
+          target_value: target.value,
+          source_values: Object.keys(sources),
+        },
+      });
+      toast.success(`Merged ${sourceCount} section${sourceCount === 1 ? "" : "s"} into "${target.label}" (${res.updated} products)`);
+      exitMerge();
+      setConfirmOpen(false);
+      qc.invalidateQueries({ queryKey: ["taxonomy-browse"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Merge failed");
+    } finally {
+      setMerging(false);
+    }
+  };
 
   return (
     <Card className="rounded-2xl p-4">
@@ -82,7 +163,53 @@ export function DynamicTaxonomyBrowser() {
             </span>
           </>
         )}
+        <div className="ml-auto flex items-center gap-2">
+          {canMerge && !mergeMode && (
+            <Button size="sm" variant="outline" onClick={() => setMergeMode(true)} className="gap-1.5">
+              <GitMerge className="h-3.5 w-3.5" /> Merge sections
+            </Button>
+          )}
+          {mergeMode && (
+            <Button size="sm" variant="ghost" onClick={exitMerge} className="gap-1.5">
+              <X className="h-3.5 w-3.5" /> Cancel
+            </Button>
+          )}
+        </div>
       </div>
+
+      {mergeMode && (
+        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-accent/40 bg-accent/5 px-3 py-2 text-sm">
+          {!target ? (
+            <span className="text-muted-foreground">
+              Step 1 — click the section you want to <b>keep</b> (the target).
+            </span>
+          ) : (
+            <>
+              <span className="text-muted-foreground">Target:</span>
+              <Badge className="bg-accent text-white">{target.label}</Badge>
+              <button onClick={resetMerge} className="text-xs text-muted-foreground underline hover:text-foreground">
+                Change target
+              </button>
+              <span className="mx-2 text-muted-foreground">·</span>
+              <span className="text-muted-foreground">
+                {sourceCount === 0
+                  ? "Now select sections to merge into it."
+                  : `${sourceCount} section${sourceCount === 1 ? "" : "s"} selected (${sourceProductCount} products).`}
+              </span>
+              <div className="ml-auto">
+                <Button
+                  size="sm"
+                  disabled={sourceCount === 0}
+                  onClick={() => setConfirmOpen(true)}
+                  className="bg-accent text-white hover:bg-accent/90 gap-1.5"
+                >
+                  <GitMerge className="h-3.5 w-3.5" /> Merge into "{target.label}"
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {q.isLoading ? (
         <Skeleton className="h-48 w-full" />
@@ -115,22 +242,38 @@ export function DynamicTaxonomyBrowser() {
         </ul>
       ) : q.data?.groups && q.data.groups.length > 0 ? (
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {q.data.groups.map((g: any) => (
-            <li key={g.value}>
-              <button
-                onClick={() =>
-                  setPath((cur) => [
-                    ...cur,
-                    { attribute_key: currentLevel!.attribute_key, value: g.value, label: g.label },
-                  ])
-                }
-                className="flex w-full items-center justify-between rounded-xl border bg-card px-3 py-3 text-left transition hover:bg-accent"
-              >
-                <span className="truncate font-medium">{g.label}</span>
-                <Badge variant="secondary">{g.count}</Badge>
-              </button>
-            </li>
-          ))}
+          {q.data.groups.map((g: any) => {
+            const isTarget = mergeMode && target?.value === g.value;
+            const isSource = mergeMode && !!sources[g.value];
+            return (
+              <li key={g.value}>
+                <button
+                  onClick={() => handleGroupClick(g)}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-xl border bg-card px-3 py-3 text-left transition hover:bg-accent/40",
+                    isTarget && "border-accent ring-2 ring-accent bg-accent/10",
+                    isSource && "border-accent/60 bg-accent/5",
+                  )}
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    {mergeMode && (
+                      <span
+                        className={cn(
+                          "grid h-4 w-4 shrink-0 place-items-center rounded border",
+                          isTarget || isSource ? "bg-accent border-accent text-white" : "border-muted-foreground/40",
+                        )}
+                      >
+                        {(isTarget || isSource) && <Check className="h-3 w-3" />}
+                      </span>
+                    )}
+                    <span className="truncate font-medium">{g.label}</span>
+                    {isTarget && <Badge className="bg-accent text-white text-[10px]">Target</Badge>}
+                  </span>
+                  <Badge variant="secondary">{g.count}</Badge>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <EmptyState
@@ -139,6 +282,33 @@ export function DynamicTaxonomyBrowser() {
           description="Try a different branch of the hierarchy."
         />
       )}
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Merge {sourceCount} section{sourceCount === 1 ? "" : "s"} into "{target?.label}"?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {sourceProductCount} product{sourceProductCount === 1 ? "" : "s"} will be re-assigned to{" "}
+              <b>{target?.label}</b>. The emptied sections will be removed. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={merging}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={merging}
+              onClick={(e) => {
+                e.preventDefault();
+                void doMerge();
+              }}
+              className="bg-accent text-white hover:bg-accent/90"
+            >
+              {merging ? "Merging…" : "Merge"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
