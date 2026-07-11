@@ -36,14 +36,14 @@ function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Nav */}
-      <header className="mx-auto flex max-w-7xl items-start justify-between px-6 py-5">
-        <img src={heroLogo.url} alt="Tag" className="h-[144px] w-auto object-contain mt-[57px]" />
-        <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex mt-3">
+      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+        <img src={heroLogo.url} alt="Tag" className="h-16 md:h-20 w-auto object-contain" />
+        <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
           <a href="#features" className="hover:text-foreground">Features</a>
           <a href="#how" className="hover:text-foreground">How it works</a>
           <a href="#intelligence" className="hover:text-foreground">Intelligence</a>
         </nav>
-        <div className="flex items-center gap-2 mt-3">
+        <div className="flex items-center gap-2">
           <Button onClick={() => navigate({ to: primaryHref })} className="gap-2">
             {primaryLabel} <ArrowRight className="h-4 w-4" />
           </Button>
