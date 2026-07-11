@@ -42,14 +42,14 @@ export function BrandAdminTab() {
     mutationFn: (id: string) => deleteFn({ data: { id } }),
     onSuccess: () => { invalidate(); toast.success("Deleted"); },
   });
-  const fetchLogo = useMutation({
-    mutationFn: (id: string) => logoFn({ data: { id } }),
-    onSuccess: () => { invalidate(); toast.success("Logo updated"); },
-    onError: (e: any) => toast.error(e?.message ?? "Logo failed"),
+  const merge = useMutation({
+    mutationFn: () => mergeFn(),
+    onSuccess: (r: any) => { invalidate(); toast.success(r?.merged ? `Merged ${r.merged} duplicate brand${r.merged === 1 ? "" : "s"}` : "No duplicates found"); },
+    onError: (e: any) => toast.error(e?.message ?? "Merge failed"),
   });
   const link = useMutation({
     mutationFn: () => linkFn(),
-    onSuccess: (r: any) => { invalidate(); toast.success(`Linked ${r?.linked ?? 0} products (${r?.created ?? 0} new brands)`); },
+    onSuccess: (r: any) => { invalidate(); toast.success(`Linked ${r?.linked ?? 0} products · ${r?.created ?? 0} new brands · ${r?.logos ?? 0} logos fetched`); },
   });
 
   const rows = (q.data?.rows ?? []) as Brand[];
