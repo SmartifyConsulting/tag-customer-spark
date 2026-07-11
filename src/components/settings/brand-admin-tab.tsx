@@ -20,7 +20,7 @@ export function BrandAdminTab() {
   const q = useQuery({ queryKey: ["brands"], queryFn: () => listBrands() });
   const upsertFn = useServerFn(upsertBrand);
   const deleteFn = useServerFn(deleteBrand);
-  const logoFn = useServerFn(resolveBrandLogo);
+  const mergeFn = useServerFn(mergeDuplicateBrands);
   const linkFn = useServerFn(linkProductsToBrands);
 
   const [name, setName] = useState("");
