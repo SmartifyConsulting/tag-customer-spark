@@ -204,10 +204,10 @@ export function OpportunityFeedCard() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
-                  <TableHead className="text-[11px] uppercase tracking-wide">Product</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wide">Signal</TableHead>
                   <TableHead className="text-[11px] uppercase tracking-wide">AI Action</TableHead>
                   <TableHead className="text-[11px] uppercase tracking-wide hidden md:table-cell">Store Flow</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wide hidden md:table-cell">Signal</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wide hidden md:table-cell">Product</TableHead>
                   <TableHead className="text-[11px] uppercase tracking-wide text-right">Revenue</TableHead>
                   <TableHead className="text-[11px] uppercase tracking-wide">Confidence</TableHead>
                   <TableHead className="text-[11px] uppercase tracking-wide text-right">Actions</TableHead>
@@ -230,8 +230,10 @@ export function OpportunityFeedCard() {
                   return (
                     <TableRow key={op.id} className="group">
                       <TableCell className="font-medium">
-                        <span className="mr-1.5">{emoji}</span>
-                        <span className="align-middle">{productName}</span>
+                        <span className="inline-flex items-center gap-1.5 text-xs text-foreground/80">
+                          {sig.icon}
+                          {sig.label}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <span
@@ -248,10 +250,8 @@ export function OpportunityFeedCard() {
                         {flow}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-foreground/80">
-                          {sig.icon}
-                          {sig.label}
-                        </span>
+                        <span className="mr-1.5">{emoji}</span>
+                        <span className="align-middle">{productName}</span>
                       </TableCell>
                       <TableCell className="text-right font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
                         {revenue ?? "—"}

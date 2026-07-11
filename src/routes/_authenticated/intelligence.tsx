@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/page-header";
 import { OpportunityFeedCard } from "@/components/dashboard/opportunity-feed";
+import { OverallIntentCard } from "@/components/intent/product-intent-panel";
 import { listWeeklyReports, generateNowWeeklyReport, getExecutiveSummary } from "@/lib/ai.functions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,8 @@ function IntelligencePage() {
         title="AI Retail Intelligence"
         description="Daily opportunities, executive briefings and weekly performance reports — generated automatically."
       />
+
+      <OverallIntentCard />
 
       <OpportunityFeedCard />
 

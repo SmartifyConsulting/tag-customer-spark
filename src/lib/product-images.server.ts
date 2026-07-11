@@ -197,8 +197,13 @@ export async function resolveProductImage(
     }
   }
 
-  // 3) AI suggested — gated to Growth+ plan. Best-effort; falls to placeholder.
+  // 3) AI suggested — gated to Growth+ plan, and only for products with no
+  // GTIN. A barcode means real, manufacturer-designed packaging exists —
+  // an AI image (deliberately generated without text/logo, since we can't
+  // ask it to draw a specific real label) would misrepresent it. For those
+  // products we'd rather show the honest placeholder than a wrong photo.
   const canAI =
+    !input.gtin &&
     !!process.env.LOVABLE_API_KEY &&
     ["growth", "pro", "enterprise"].includes((input.planTier ?? "").toLowerCase());
   if (canAI) {

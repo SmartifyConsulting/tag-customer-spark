@@ -39,7 +39,7 @@ export function AppSidebar() {
         )}
       </SidebarHeader>
 
-      <SidebarContent className="px-1.5 pb-3 pt-[144px]">
+      <SidebarContent className="px-1.5 pb-3 pt-[176px]">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>

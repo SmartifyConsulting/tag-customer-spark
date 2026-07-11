@@ -20,9 +20,11 @@ export const ATTRIBUTE_CATALOG = [
   { key: "brand", label: "Brand" },
   { key: "category", label: "Category" },
   { key: "subcategory", label: "Sub-category" },
+  { key: "product_family", label: "Product Family" },
   { key: "supplier", label: "Supplier" },
   { key: "range", label: "Range" },
   { key: "collection", label: "Collection" },
+  { key: "style", label: "Style / Model" },
   { key: "season", label: "Season" },
   { key: "store", label: "Store" },
   { key: "size", label: "Size" },
@@ -300,9 +302,11 @@ export const browseTaxonomy = createServerFn({ method: "POST" })
     // keep working even before that migration has been deployed.
     const usedKeys = new Set(levels.map((l) => l.attribute_key));
     const extraCols = [
+      usedKeys.has("product_family") && "product_family",
       usedKeys.has("supplier") && "supplier",
       usedKeys.has("range") && "range_name",
       usedKeys.has("collection") && "collection",
+      usedKeys.has("style") && "style",
       usedKeys.has("season") && "season",
     ].filter(Boolean) as string[];
 
@@ -385,12 +389,16 @@ function applyFilter(query: any, attr: string, value: string, catById: Map<strin
   switch (attr) {
     case "brand":
       return value === "__none__" ? query.is("brand_id", null) : query.eq("brand_id", value);
+    case "product_family":
+      return value === "__none__" ? query.is("product_family", null) : query.eq("product_family", value);
     case "supplier":
       return value === "__none__" ? query.is("supplier", null) : query.eq("supplier", value);
     case "range":
       return value === "__none__" ? query.is("range_name", null) : query.eq("range_name", value);
     case "collection":
       return value === "__none__" ? query.is("collection", null) : query.eq("collection", value);
+    case "style":
+      return value === "__none__" ? query.is("style", null) : query.eq("style", value);
     case "season":
       return value === "__none__" ? query.is("season", null) : query.eq("season", value);
     case "store":
@@ -428,6 +436,10 @@ function extractGroup(p: any, attr: string, catById: Map<string, CatRow>): { val
       return p.brand_id
         ? { value: p.brand_id, label: p.brands?.name ?? "Unknown brand" }
         : { value: "__none__", label: "Unbranded" };
+    case "product_family":
+      return p.product_family
+        ? { value: String(p.product_family), label: String(p.product_family) }
+        : { value: "__none__", label: "No product family" };
     case "supplier":
       return p.supplier
         ? { value: String(p.supplier), label: String(p.supplier) }
@@ -440,6 +452,10 @@ function extractGroup(p: any, attr: string, catById: Map<string, CatRow>): { val
       return p.collection
         ? { value: String(p.collection), label: String(p.collection) }
         : { value: "__none__", label: "No collection" };
+    case "style":
+      return p.style
+        ? { value: String(p.style), label: String(p.style) }
+        : { value: "__none__", label: "No style" };
     case "season":
       return p.season
         ? { value: String(p.season), label: String(p.season) }
