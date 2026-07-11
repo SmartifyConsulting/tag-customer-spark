@@ -85,19 +85,25 @@ async function aiGenerateLogo(brandName: string): Promise<Uint8Array | null> {
   try {
     const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
       method: "POST",
-      headers: { "content-type": "application/json", "Lovable-API-Key": key },
+      headers: { "content-type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify({
-        model: "google/gemini-3.1-flash-image",
+        model: "openai/gpt-image-1-mini",
         prompt: `Clean, official-style brand wordmark logo for "${brandName}" on a solid white background. Centred, high contrast, no photo, no packaging, no extra graphics.`,
-        size: "512x512",
+        size: "1024x1024",
+        quality: "low",
+        n: 1,
       }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error("aiGenerateLogo failed", res.status, await res.text().catch(() => ""));
+      return null;
+    }
     const j = await res.json();
     const b64 = j?.data?.[0]?.b64_json;
     if (!b64) return null;
     return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-  } catch {
+  } catch (e) {
+    console.error("aiGenerateLogo threw", e);
     return null;
   }
 }
@@ -129,7 +135,7 @@ export const resolveBrandLogo = createServerFn({ method: "POST" })
       const bytes = await aiGenerateLogo(brand.name);
       if (bytes) payload = { bytes, contentType: "image/png" };
     }
-    if (!payload) throw new Error("Could not resolve a logo");
+    if (!payload) throw new Error(brand.website ? "Could not resolve a logo from the website or AI." : "Add a website for this brand, then retry — AI logo generation was unavailable.");
 
     const ext = payload.contentType.includes("png") ? "png" : payload.contentType.includes("svg") ? "svg" : "png";
     const path = `${brand.id}/logo-${Date.now()}.${ext}`;
