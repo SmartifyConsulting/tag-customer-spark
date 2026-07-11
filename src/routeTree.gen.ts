@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SetupRouteImport } from './routes/setup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -32,6 +33,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
+import { Route as AuthenticatedIntelligenceIndexRouteImport } from './routes/_authenticated/intelligence.index'
 import { Route as AuthenticatedProductsCompareRouteImport } from './routes/_authenticated/products.compare'
 import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products.$productId'
 import { Route as AuthenticatedOrganisationRolesRouteImport } from './routes/_authenticated/organisation.roles'
@@ -58,6 +60,11 @@ import { Route as ApiPublicHooksNotificationsTickRouteImport } from './routes/ap
 import { Route as ApiPublicHooksIntentTickRouteImport } from './routes/api/public/hooks.intent-tick'
 import { Route as ApiPublic01GtinRouteImport } from './routes/api/public/01.$gtin'
 
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -173,6 +180,12 @@ const AuthenticatedProductsIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedProductsRoute,
+  } as any)
+const AuthenticatedIntelligenceIndexRoute =
+  AuthenticatedIntelligenceIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedIntelligenceRoute,
   } as any)
 const AuthenticatedProductsCompareRoute =
   AuthenticatedProductsCompareRouteImport.update({
@@ -325,6 +338,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/setup': typeof SetupRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -358,6 +372,7 @@ export interface FileRoutesByFullPath {
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
+  '/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
@@ -374,11 +389,11 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/setup': typeof SetupRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
-  '/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/intent': typeof AuthenticatedIntentRoute
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -406,6 +421,7 @@ export interface FileRoutesByTo {
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
+  '/intelligence': typeof AuthenticatedIntelligenceIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
@@ -424,6 +440,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/setup': typeof SetupRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -457,6 +474,7 @@ export interface FileRoutesById {
   '/_authenticated/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/products/compare': typeof AuthenticatedProductsCompareRoute
+  '/_authenticated/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
@@ -475,6 +493,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/forgot-password'
     | '/reset-password'
+    | '/setup'
     | '/analytics'
     | '/customers'
     | '/dashboard'
@@ -508,6 +527,7 @@ export interface FileRouteTypes {
     | '/organisation/roles'
     | '/products/$productId'
     | '/products/compare'
+    | '/intelligence/'
     | '/products/'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/intent-tick'
@@ -524,11 +544,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/forgot-password'
     | '/reset-password'
+    | '/setup'
     | '/analytics'
     | '/customers'
     | '/dashboard'
     | '/inbox'
-    | '/intelligence'
     | '/intent'
     | '/roi'
     | '/settings'
@@ -556,6 +576,7 @@ export interface FileRouteTypes {
     | '/organisation/roles'
     | '/products/$productId'
     | '/products/compare'
+    | '/intelligence'
     | '/products'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/intent-tick'
@@ -573,6 +594,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/forgot-password'
     | '/reset-password'
+    | '/setup'
     | '/_authenticated/analytics'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
@@ -606,6 +628,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organisation/roles'
     | '/_authenticated/products/$productId'
     | '/_authenticated/products/compare'
+    | '/_authenticated/intelligence/'
     | '/_authenticated/products/'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/intent-tick'
@@ -624,6 +647,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SetupRoute: typeof SetupRoute
   NMessageIdRoute: typeof NMessageIdRoute
   PDppIdRoute: typeof PDppIdRoute
   PassportGtinRoute: typeof PassportGtinRoute
@@ -641,6 +665,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -801,6 +832,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/products/'
       preLoaderRoute: typeof AuthenticatedProductsIndexRouteImport
       parentRoute: typeof AuthenticatedProductsRoute
+    }
+    '/_authenticated/intelligence/': {
+      id: '/_authenticated/intelligence/'
+      path: '/'
+      fullPath: '/intelligence/'
+      preLoaderRoute: typeof AuthenticatedIntelligenceIndexRouteImport
+      parentRoute: typeof AuthenticatedIntelligenceRoute
     }
     '/_authenticated/products/compare': {
       id: '/_authenticated/products/compare'
@@ -1018,6 +1056,7 @@ interface AuthenticatedIntelligenceRouteChildren {
   AuthenticatedIntelligenceInsightsRoute: typeof AuthenticatedIntelligenceInsightsRoute
   AuthenticatedIntelligenceIntentRoute: typeof AuthenticatedIntelligenceIntentRoute
   AuthenticatedIntelligenceTrendsRoute: typeof AuthenticatedIntelligenceTrendsRoute
+  AuthenticatedIntelligenceIndexRoute: typeof AuthenticatedIntelligenceIndexRoute
 }
 
 const AuthenticatedIntelligenceRouteChildren: AuthenticatedIntelligenceRouteChildren =
@@ -1028,6 +1067,7 @@ const AuthenticatedIntelligenceRouteChildren: AuthenticatedIntelligenceRouteChil
       AuthenticatedIntelligenceInsightsRoute,
     AuthenticatedIntelligenceIntentRoute: AuthenticatedIntelligenceIntentRoute,
     AuthenticatedIntelligenceTrendsRoute: AuthenticatedIntelligenceTrendsRoute,
+    AuthenticatedIntelligenceIndexRoute: AuthenticatedIntelligenceIndexRoute,
   }
 
 const AuthenticatedIntelligenceRouteWithChildren =
@@ -1105,6 +1145,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SetupRoute: SetupRoute,
   NMessageIdRoute: NMessageIdRoute,
   PDppIdRoute: PDppIdRoute,
   PassportGtinRoute: PassportGtinRoute,

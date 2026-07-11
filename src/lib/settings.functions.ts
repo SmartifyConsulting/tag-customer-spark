@@ -53,6 +53,20 @@ export const updateRetailerProfile = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const saveRetailerPosSystem = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ posSystem: z.string().trim().min(1).max(120) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) throw new Error("No retailer");
+    // `pos_system` predates the generated Supabase types (added in a fresh
+    // migration); cast until `types.ts` is regenerated against the DB.
+    const { error } = await supabase.from("retailers").update({ pos_system: data.posSystem } as any).eq("id", retailerId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const listAuditLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

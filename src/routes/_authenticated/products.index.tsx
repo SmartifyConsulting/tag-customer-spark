@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { toast } from "sonner";
-import { FileDown, Layers, List, Loader2, Package, Plus, Sparkles, Upload } from "lucide-react";
+import { FileDown, Layers, List, Loader2, Package, Plus, Sparkles, Upload, Wand2 } from "lucide-react";
 import { DynamicTaxonomyBrowser } from "@/components/products/dynamic-taxonomy-browser";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -241,6 +241,13 @@ function ProductsListPage() {
             {canManage && (
               <Button variant="outline" onClick={() => setImportOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" /> Import
+              </Button>
+            )}
+            {canManage && (
+              <Button variant="outline" asChild>
+                <Link to="/setup">
+                  <Wand2 className="mr-2 h-4 w-4" /> TAG Setup
+                </Link>
               </Button>
             )}
 
