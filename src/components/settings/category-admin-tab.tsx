@@ -48,6 +48,11 @@ export function CategoryAdminTab() {
     },
     onError: (e: any) => toast.error(e?.message ?? "Auto-categorise failed"),
   });
+  const merge = useMutation({
+    mutationFn: () => mergeFn(),
+    onSuccess: (r: any) => { invalidate(); toast.success(r?.merged ? `Merged ${r.merged} duplicate categor${r.merged === 1 ? "y" : "ies"}` : "No duplicates found"); },
+    onError: (e: any) => toast.error(e?.message ?? "Merge failed"),
+  });
 
   // Auto-run once per session when uncategorised products exist.
   const autoRan = useRef(false);
