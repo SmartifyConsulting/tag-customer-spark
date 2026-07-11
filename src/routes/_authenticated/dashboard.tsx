@@ -385,6 +385,22 @@ function Heatmap({ data }: { data: number[][] }) {
   );
 }
 
+function HeatmapLegend() {
+  return (
+    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+      <span>Fewer scans</span>
+      <div
+        className="h-2 w-24 rounded-full"
+        style={{
+          background:
+            "linear-gradient(to right, rgba(3,28,77,0.08), rgba(3,28,77,0.93))",
+        }}
+      />
+      <span>More scans</span>
+    </div>
+  );
+}
+
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
