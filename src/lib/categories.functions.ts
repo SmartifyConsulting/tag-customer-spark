@@ -62,6 +62,117 @@ export const listCategoriesWithCounts = createServerFn({ method: "POST" })
     return { rows: cats ?? [], counts, uncategorisedCount, suggestedCount };
   });
 
+// ---------- Similar-category detection (for the manual merge dialog) ----------
+
+const STOPWORDS = new Set(["and", "the", "of", "a", "an", "&"]);
+
+function categoryTokens(name: string): string[] {
+  const cleaned = name.toLowerCase().replace(/&/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
+  return cleaned
+    .split(/\s+/)
+    .filter((w) => w && !STOPWORDS.has(w))
+    .map((w) => (w.length > 3 && w.endsWith("s") ? w.slice(0, -1) : w));
+}
+
+function normalizedKey(tokens: string[]): string {
+  return [...tokens].sort().join(" ");
+}
+
+function jaccard(a: string[], b: string[]): number {
+  const setA = new Set(a);
+  const setB = new Set(b);
+  const inter = [...setA].filter((t) => setB.has(t)).length;
+  const union = new Set([...setA, ...setB]).size;
+  return union === 0 ? 0 : inter / union;
+}
+
+// Union-find over the whole category tree (regardless of depth/parent) so
+// clusters can span any level, e.g. a top-level "Biscuits" and a nested
+// "Biscuits" under "Snacks" are still flagged together.
+export const findSimilarCategoryClusters = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) return { clusters: [] };
+
+    const [{ data: cats, error: cErr }, { data: prods, error: pErr }] = await Promise.all([
+      supabase
+        .from("product_categories")
+        .select("id, name, parent_id")
+        .eq("retailer_id", retailerId),
+      supabase
+        .from("products")
+        .select("category_id")
+        .eq("retailer_id", retailerId)
+        .neq("status", "archived"),
+    ]);
+    if (cErr) throw new Error(cErr.message);
+    if (pErr) throw new Error(pErr.message);
+
+    const rows = (cats ?? []) as { id: string; name: string; parent_id: string | null }[];
+    const counts: Record<string, number> = {};
+    for (const p of prods ?? []) {
+      if (p.category_id) counts[p.category_id] = (counts[p.category_id] ?? 0) + 1;
+    }
+    const nameById = new Map(rows.map((r) => [r.id, r.name]));
+
+    const tokensById = new Map(rows.map((r) => [r.id, categoryTokens(r.name)]));
+    const keyById = new Map(rows.map((r) => [r.id, normalizedKey(tokensById.get(r.id)!)]));
+
+    const parent = new Map(rows.map((r) => [r.id, r.id]));
+    function find(id: string): string {
+      while (parent.get(id) !== id) {
+        parent.set(id, parent.get(parent.get(id)!)!);
+        id = parent.get(id)!;
+      }
+      return id;
+    }
+    function union(a: string, b: string) {
+      const ra = find(a);
+      const rb = find(b);
+      if (ra !== rb) parent.set(ra, rb);
+    }
+
+    for (let i = 0; i < rows.length; i++) {
+      for (let j = i + 1; j < rows.length; j++) {
+        const a = rows[i];
+        const b = rows[j];
+        if (keyById.get(a.id) === keyById.get(b.id)) {
+          union(a.id, b.id);
+          continue;
+        }
+        if (jaccard(tokensById.get(a.id)!, tokensById.get(b.id)!) >= 0.5) {
+          union(a.id, b.id);
+        }
+      }
+    }
+
+    const groups = new Map<string, string[]>();
+    for (const r of rows) {
+      const root = find(r.id);
+      if (!groups.has(root)) groups.set(root, []);
+      groups.get(root)!.push(r.id);
+    }
+
+    const clusters = Array.from(groups.values())
+      .filter((ids) => ids.length >= 2)
+      .map((ids) =>
+        ids
+          .map((id) => ({
+            id,
+            name: nameById.get(id)!,
+            parentName: rows.find((r) => r.id === id)?.parent_id
+              ? nameById.get(rows.find((r) => r.id === id)!.parent_id!) ?? null
+              : null,
+            count: counts[id] ?? 0,
+          }))
+          .sort((a, b) => b.count - a.count),
+      );
+
+    return { clusters };
+  });
+
 export const createCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -482,36 +593,48 @@ export const moveProductCategory = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// ---------- Merge duplicate categories (same name + parent) ----------
-export const mergeDuplicateCategories = createServerFn({ method: "POST" })
+// ---------- Merge categories (admin picks target + sources manually) ----------
+export const mergeCategories = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        targetId: z.string().uuid(),
+        sourceIds: z.array(z.string().uuid()).min(1),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer");
-    const { data: rows } = await supabase.from("product_categories")
-      .select("id, name, parent_id, created_at")
-      .eq("retailer_id", retailerId)
-      .order("created_at", { ascending: true });
-    const groups = new Map<string, any[]>();
-    for (const r of rows ?? []) {
-      const key = `${(r.name || "").trim().toLowerCase()}|${r.parent_id ?? "_"}`;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(r);
-    }
-    let merged = 0;
-    for (const list of groups.values()) {
-      if (list.length < 2) continue;
-      const winner = list[0];
-      const losers = list.slice(1).map((l) => l.id);
-      await supabase.from("products").update({ category_id: winner.id })
-        .in("category_id", losers).eq("retailer_id", retailerId);
-      // Reparent any children whose parent was a loser
-      await supabase.from("product_categories").update({ parent_id: winner.id })
-        .in("parent_id", losers).eq("retailer_id", retailerId);
-      await supabase.from("product_categories").delete()
-        .in("id", losers).eq("retailer_id", retailerId);
-      merged += losers.length;
-    }
-    return { merged };
+    const sourceIds = data.sourceIds.filter((id) => id !== data.targetId);
+    if (sourceIds.length === 0) return { merged: 0 };
+
+    const { error: prodErr } = await supabase
+      .from("products")
+      .update({ category_id: data.targetId })
+      .in("category_id", sourceIds)
+      .eq("retailer_id", retailerId);
+    if (prodErr) throw new Error(prodErr.message);
+
+    // Reparent children of the merged-away categories, but never touch the
+    // target row itself (avoids the target becoming its own parent when the
+    // target's current parent happens to be one of the sources).
+    const { error: reparentErr } = await supabase
+      .from("product_categories")
+      .update({ parent_id: data.targetId })
+      .in("parent_id", sourceIds)
+      .neq("id", data.targetId)
+      .eq("retailer_id", retailerId);
+    if (reparentErr) throw new Error(reparentErr.message);
+
+    const { error: delErr } = await supabase
+      .from("product_categories")
+      .delete()
+      .in("id", sourceIds)
+      .eq("retailer_id", retailerId);
+    if (delErr) throw new Error(delErr.message);
+
+    return { merged: sourceIds.length };
   });

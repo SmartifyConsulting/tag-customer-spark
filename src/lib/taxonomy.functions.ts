@@ -16,9 +16,14 @@ async function resolveRetailerId(supabase: any, userId: string): Promise<string 
 // Every attribute the browser can group by.
 // Extend by adding an entry here + a case in `groupProductsBy`.
 export const ATTRIBUTE_CATALOG = [
+  { key: "department", label: "Department" },
   { key: "brand", label: "Brand" },
   { key: "category", label: "Category" },
   { key: "subcategory", label: "Sub-category" },
+  { key: "supplier", label: "Supplier" },
+  { key: "range", label: "Range" },
+  { key: "collection", label: "Collection" },
+  { key: "season", label: "Season" },
   { key: "store", label: "Store" },
   { key: "size", label: "Size" },
   { key: "colour", label: "Colour" },
@@ -29,6 +34,40 @@ export const ATTRIBUTE_CATALOG = [
   { key: "on_promotion", label: "On promotion" },
   { key: "product", label: "Product (leaf)" },
 ] as const;
+
+// Department/Category/Sub-category are resolved by walking the (arbitrarily
+// deep, self-referencing) product_categories tree: depth 0 = root ancestor
+// ("Department"), depth 1 = its child ("Category"), depth 2 = grandchild
+// ("Sub-category"). A product whose own category sits shallower than the
+// requested depth has no value at that level ("__none__").
+const CATEGORY_DEPTH: Record<string, number> = { department: 0, category: 1, subcategory: 2 };
+
+type CatRow = { id: string; name: string; parent_id: string | null };
+
+function ancestorChain(catId: string | null | undefined, byId: Map<string, CatRow>): CatRow[] {
+  const chain: CatRow[] = [];
+  let cur = catId ? byId.get(catId) : undefined;
+  const seen = new Set<string>();
+  while (cur && !seen.has(cur.id)) {
+    chain.unshift(cur);
+    seen.add(cur.id);
+    cur = cur.parent_id ? byId.get(cur.parent_id) : undefined;
+  }
+  return chain;
+}
+
+function ancestorAtDepth(catId: string | null | undefined, depth: number, byId: Map<string, CatRow>): CatRow | null {
+  return ancestorChain(catId, byId)[depth] ?? null;
+}
+
+function categoryIdsAtDepth(byId: Map<string, CatRow>, depth: number, value: string): string[] {
+  const ids: string[] = [];
+  for (const cat of byId.values()) {
+    const anc = ancestorAtDepth(cat.id, depth, byId);
+    if (value === "__none__" ? !anc : anc?.id === value) ids.push(cat.id);
+  }
+  return ids;
+}
 
 export type AttributeKey = typeof ATTRIBUTE_CATALOG[number]["key"];
 
@@ -247,12 +286,22 @@ export const browseTaxonomy = createServerFn({ method: "POST" })
     }
     if (!levels.length) return { levels: [], depth: 0, groups: [], products: [] };
 
+    // Full category tree (small, bounded set) so department/category/
+    // sub-category can be resolved by actual depth rather than a single
+    // fixed column.
+    const { data: catRows } = await supabase
+      .from("product_categories")
+      .select("id, name, parent_id")
+      .eq("retailer_id", retailerId);
+    const catById = new Map<string, CatRow>((catRows ?? []).map((c: CatRow) => [c.id, c]));
+
     // Build query with ancestor filters
     let query = supabase
       .from("products")
       .select(
         `id, display_name, name, sku, price_cents, sale_price_cents, stock_qty, low_stock_threshold, currency, status,
          image_url, thumbnail_url, images, size, color, variant, on_promotion,
+         supplier, range_name, collection, season,
          brand_id, category_id, store_id,
          brands:brand_id ( id, name, logo_url ),
          product_categories:category_id ( id, name, parent_id ),
@@ -261,7 +310,7 @@ export const browseTaxonomy = createServerFn({ method: "POST" })
       .eq("retailer_id", retailerId);
 
     for (const step of data.path) {
-      query = applyFilter(query, step.attribute_key, step.value);
+      query = applyFilter(query, step.attribute_key, step.value, catById);
     }
 
     const { data: prods, error } = await query.limit(2000);
@@ -294,7 +343,7 @@ export const browseTaxonomy = createServerFn({ method: "POST" })
     const nextAttr = levels[depth].attribute_key;
     const groupMap = new Map<string, { label: string; count: number }>();
     for (const p of prods ?? []) {
-      const { value, label } = extractGroup(p, nextAttr);
+      const { value, label } = extractGroup(p, nextAttr, catById);
       if (!value) continue;
       const cur = groupMap.get(value);
       if (cur) cur.count++;
@@ -313,14 +362,26 @@ export const browseTaxonomy = createServerFn({ method: "POST" })
     return { levels, depth, groups, products: [] };
   });
 
-function applyFilter(query: any, attr: string, value: string) {
+function applyFilter(query: any, attr: string, value: string, catById: Map<string, CatRow>) {
+  if (attr in CATEGORY_DEPTH) {
+    const depth = CATEGORY_DEPTH[attr];
+    const ids = categoryIdsAtDepth(catById, depth, value);
+    if (value === "__none__") {
+      return ids.length ? query.or(`category_id.is.null,category_id.in.(${ids.join(",")})`) : query.is("category_id", null);
+    }
+    return ids.length ? query.in("category_id", ids) : query.eq("id", "00000000-0000-0000-0000-000000000000");
+  }
   switch (attr) {
     case "brand":
       return value === "__none__" ? query.is("brand_id", null) : query.eq("brand_id", value);
-    case "category":
-      return value === "__none__" ? query.is("category_id", null) : query.eq("category_id", value);
-    case "subcategory":
-      return query.eq("category_id", value);
+    case "supplier":
+      return value === "__none__" ? query.is("supplier", null) : query.eq("supplier", value);
+    case "range":
+      return value === "__none__" ? query.is("range_name", null) : query.eq("range_name", value);
+    case "collection":
+      return value === "__none__" ? query.is("collection", null) : query.eq("collection", value);
+    case "season":
+      return value === "__none__" ? query.is("season", null) : query.eq("season", value);
     case "store":
       return value === "__none__" ? query.is("store_id", null) : query.eq("store_id", value);
     case "size":
@@ -343,20 +404,35 @@ function applyFilter(query: any, attr: string, value: string) {
   }
 }
 
-function extractGroup(p: any, attr: string): { value: string; label: string } {
+function extractGroup(p: any, attr: string, catById: Map<string, CatRow>): { value: string; label: string } {
+  if (attr in CATEGORY_DEPTH) {
+    const depth = CATEGORY_DEPTH[attr];
+    const anc = ancestorAtDepth(p.category_id, depth, catById);
+    if (anc) return { value: anc.id, label: anc.name };
+    const noneLabel = attr === "department" ? "No department" : attr === "category" ? "Uncategorised" : "No sub-category";
+    return { value: "__none__", label: noneLabel };
+  }
   switch (attr) {
     case "brand":
       return p.brand_id
         ? { value: p.brand_id, label: p.brands?.name ?? "Unknown brand" }
         : { value: "__none__", label: "Unbranded" };
-    case "category":
-      return p.category_id
-        ? { value: p.category_id, label: p.product_categories?.name ?? "Uncategorised" }
-        : { value: "__none__", label: "Uncategorised" };
-    case "subcategory":
-      return p.category_id
-        ? { value: p.category_id, label: p.product_categories?.name ?? "—" }
-        : { value: "__none__", label: "Uncategorised" };
+    case "supplier":
+      return p.supplier
+        ? { value: String(p.supplier), label: String(p.supplier) }
+        : { value: "__none__", label: "No supplier" };
+    case "range":
+      return p.range_name
+        ? { value: String(p.range_name), label: String(p.range_name) }
+        : { value: "__none__", label: "No range" };
+    case "collection":
+      return p.collection
+        ? { value: String(p.collection), label: String(p.collection) }
+        : { value: "__none__", label: "No collection" };
+    case "season":
+      return p.season
+        ? { value: String(p.season), label: String(p.season) }
+        : { value: "__none__", label: "No season" };
     case "store":
       return p.store_id
         ? { value: p.store_id, label: p.stores?.name ?? "Store" }

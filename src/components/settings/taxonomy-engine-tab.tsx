@@ -187,23 +187,27 @@ export function TaxonomyEngineTab() {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="min-w-[220px]">
-            <Select value={selectedId ?? "__new__"} onValueChange={(v) => (v === "__new__" ? startNew() : setSelectedId(v))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select profile…" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__new__">➕ New profile</SelectItem>
-                {profiles.map((p: any) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                    {p.is_default ? " · default" : ""}
-                    {p.is_published ? " · published" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {profiles.length > 0 && (
+            <div className="min-w-[220px]">
+              <Select value={selectedId ?? undefined} onValueChange={setSelectedId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select profile…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {profiles.map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                      {p.is_default ? " · default" : ""}
+                      {p.is_published ? " · published" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <Button size="sm" variant="outline" onClick={startNew}>
+            <Plus className="mr-1 h-3.5 w-3.5" /> New profile
+          </Button>
           {selectedId && (
             <>
               <Button size="sm" variant="outline" onClick={() => makeDefault.mutate()}>

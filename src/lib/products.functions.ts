@@ -386,6 +386,110 @@ export const deleteProduct = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Duplicate product detection + merge ----------
+// SKU is already unique per retailer at the DB level, so real-world
+// duplicates show up as two rows sharing the same GTIN/barcode (e.g. the
+// same item scanned in twice). We group on GTIN only.
+
+export const findDuplicateProducts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ categoryId: z.string().uuid().optional() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) return { groups: [] };
+
+    let q = supabase
+      .from("products")
+      .select("id, name, display_name, sku, gtin, stock_qty, price_cents, currency, image_url, thumbnail_url")
+      .eq("retailer_id", retailerId)
+      .neq("status", "archived")
+      .not("gtin", "is", null);
+    if (data.categoryId) q = q.eq("category_id", data.categoryId);
+
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+
+    const byGtin = new Map<string, any[]>();
+    for (const p of rows ?? []) {
+      const key = String(p.gtin).trim();
+      if (!key) continue;
+      if (!byGtin.has(key)) byGtin.set(key, []);
+      byGtin.get(key)!.push(p);
+    }
+
+    const groups = Array.from(byGtin.entries())
+      .filter(([, list]) => list.length >= 2)
+      .map(([gtin, list]) => ({
+        gtin,
+        products: list
+          .map((p) => ({
+            id: p.id,
+            name: p.display_name || p.name,
+            sku: p.sku,
+            stock_qty: p.stock_qty,
+            price_cents: p.price_cents,
+            currency: p.currency,
+            image_url: p.thumbnail_url || p.image_url,
+          }))
+          .sort((a, b) => (b.stock_qty ?? 0) - (a.stock_qty ?? 0)),
+      }));
+
+    return { groups };
+  });
+
+export const mergeProducts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        targetId: z.string().uuid(),
+        sourceIds: z.array(z.string().uuid()).min(1),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) throw new Error("No retailer");
+    const sourceIds = data.sourceIds.filter((id) => id !== data.targetId);
+    if (sourceIds.length === 0) return { merged: 0 };
+
+    const { data: rows, error: fetchErr } = await supabase
+      .from("products")
+      .select("id, stock_qty")
+      .eq("retailer_id", retailerId)
+      .in("id", [data.targetId, ...sourceIds]);
+    if (fetchErr) throw new Error(fetchErr.message);
+
+    const target = rows?.find((r: any) => r.id === data.targetId);
+    if (!target) throw new Error("Target product not found");
+    const addedStock = (rows ?? [])
+      .filter((r: any) => sourceIds.includes(r.id))
+      .reduce((sum: number, r: any) => sum + (r.stock_qty ?? 0), 0);
+
+    // Preserve history (passport scans, order lines, etc. all cascade off
+    // products.id) by archiving the merged-away rows instead of deleting
+    // them — only the target stays active/visible.
+    const { error: targetErr } = await supabase
+      .from("products")
+      .update({ stock_qty: (target.stock_qty ?? 0) + addedStock })
+      .eq("id", data.targetId)
+      .eq("retailer_id", retailerId);
+    if (targetErr) throw new Error(targetErr.message);
+
+    const { error: archiveErr } = await supabase
+      .from("products")
+      .update({ status: "archived", stock_qty: 0 })
+      .in("id", sourceIds)
+      .eq("retailer_id", retailerId);
+    if (archiveErr) throw new Error(archiveErr.message);
+
+    return { merged: sourceIds.length };
+  });
+
 export const createProductImageUploadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ChevronRight, Layers, GitMerge, X, Check } from "lucide-react";
@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState } from "@/components/empty-state";
 import {
   AlertDialog,
@@ -19,13 +20,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { browseTaxonomy, getActiveProfile } from "@/lib/taxonomy.functions";
+import { browseTaxonomy, getActiveProfile, getProfile, listProfiles } from "@/lib/taxonomy.functions";
 import { mergeTaxonomyGroups, isMergeableAttribute } from "@/lib/taxonomy-merge.functions";
 import { cn } from "@/lib/utils";
+
+const CHOSEN_PROFILE_KEY = "tag:taxonomy-browser-profile";
 
 export function DynamicTaxonomyBrowser() {
   const qc = useQueryClient();
   const activeFn = useServerFn(getActiveProfile);
+  const profileFn = useServerFn(getProfile);
+  const profilesFn = useServerFn(listProfiles);
   const browseFn = useServerFn(browseTaxonomy);
   const mergeFn = useServerFn(mergeTaxonomyGroups);
   const [path, setPath] = useState<{ attribute_key: string; value: string; label: string }[]>([]);
@@ -35,10 +40,38 @@ export function DynamicTaxonomyBrowser() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [merging, setMerging] = useState(false);
 
-  const activeQ = useQuery({ queryKey: ["taxonomy-active"], queryFn: () => activeFn() });
+  // Every user can pick which saved profile they browse with — independent
+  // of whichever single profile an admin has "published" org-wide.
+  const [chosenProfileId, setChosenProfileId] = useState<string | null>(() =>
+    typeof window !== "undefined" ? window.localStorage.getItem(CHOSEN_PROFILE_KEY) : null,
+  );
 
-  const profileId = activeQ.data?.profile?.id;
-  const levels = activeQ.data?.levels ?? [];
+  const profilesQ = useQuery({ queryKey: ["taxonomy-profiles-list"], queryFn: () => profilesFn() });
+  const activeQ = useQuery({ queryKey: ["taxonomy-active"], queryFn: () => activeFn(), enabled: !chosenProfileId });
+  const chosenQ = useQuery({
+    queryKey: ["taxonomy-profile", chosenProfileId],
+    queryFn: () => profileFn({ data: { id: chosenProfileId! } }),
+    enabled: !!chosenProfileId,
+  });
+
+  // Once we know the org's active profile, adopt it as the default choice
+  // (without overriding whatever the user has already picked).
+  useEffect(() => {
+    if (chosenProfileId || !activeQ.data?.profile?.id) return;
+    setChosenProfileId(activeQ.data.profile.id);
+  }, [chosenProfileId, activeQ.data]);
+
+  const handleProfileChange = (id: string) => {
+    setChosenProfileId(id);
+    window.localStorage.setItem(CHOSEN_PROFILE_KEY, id);
+    setPath([]);
+  };
+
+  const profileId = chosenProfileId ?? activeQ.data?.profile?.id;
+  const activeProfileName = chosenProfileId
+    ? profilesQ.data?.profiles?.find((p: any) => p.id === chosenProfileId)?.name
+    : activeQ.data?.profile?.name;
+  const levels = (chosenProfileId ? chosenQ.data?.levels : activeQ.data?.levels) ?? [];
 
   const key = useMemo(
     () => JSON.stringify({ profileId, path: path.map((p) => ({ a: p.attribute_key, v: p.value })) }),
@@ -66,7 +99,8 @@ export function DynamicTaxonomyBrowser() {
     resetMerge();
   };
 
-  if (activeQ.isLoading) return <Skeleton className="h-40 w-full" />;
+  const initializing = chosenProfileId ? chosenQ.isLoading && !chosenQ.data : activeQ.isLoading;
+  if (initializing) return <Skeleton className="h-40 w-full" />;
 
   if (!profileId || levels.length === 0) {
     return (
@@ -134,9 +168,22 @@ export function DynamicTaxonomyBrowser() {
   return (
     <Card className="rounded-2xl p-4">
       <div className="mb-3 flex flex-wrap items-center gap-1 text-sm">
-        <span className="text-xs uppercase tracking-wide text-muted-foreground">
-          {activeQ.data?.profile?.name}
-        </span>
+        {(profilesQ.data?.profiles?.length ?? 0) > 1 ? (
+          <Select value={profileId ?? undefined} onValueChange={handleProfileChange}>
+            <SelectTrigger className="h-7 w-auto gap-1 border-none bg-transparent px-2 text-xs uppercase tracking-wide text-muted-foreground shadow-none">
+              <SelectValue placeholder="Profile" />
+            </SelectTrigger>
+            <SelectContent>
+              {profilesQ.data!.profiles.map((p: any) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">{activeProfileName}</span>
+        )}
         <span className="mx-2 text-muted-foreground">·</span>
         <button
           onClick={() => setPath([])}
