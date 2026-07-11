@@ -256,6 +256,9 @@ function ProductsListPage() {
 
 
 
+      {viewMode === "browse" ? (
+        <DynamicTaxonomyBrowser />
+      ) : (<>
       <ProductsToolbar
         value={{
           search: searchTerm,
