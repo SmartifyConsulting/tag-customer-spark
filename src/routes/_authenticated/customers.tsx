@@ -44,7 +44,7 @@ const LETTERS = ["all", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""), "#"] as const
 
 function CustomersPage() {
   const [search, setSearch] = useState("");
-  const [segment, setSegment] = useState<"all" | "subscribed" | "vip" | "dormant">("all");
+  const [segment, setSegment] = useState<"all" | "registered" | "subscribed" | "vip" | "dormant">("all");
   const [letter, setLetter] = useState<(typeof LETTERS)[number]>("all");
   const [page, setPage] = useState(1);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -119,6 +119,7 @@ function CustomersPage() {
           <Tabs value={segment} onValueChange={(v) => { setSegment(v as any); setPage(1); }}>
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="registered">Registered</TabsTrigger>
               <TabsTrigger value="subscribed">Subscribed</TabsTrigger>
               <TabsTrigger value="vip">VIP</TabsTrigger>
               <TabsTrigger value="dormant">Dormant</TabsTrigger>
@@ -131,12 +132,13 @@ function CustomersPage() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y">
-            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] gap-3 px-6 py-3 text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="grid grid-cols-[1.5fr_1fr_0.8fr_0.8fr_1fr_1fr_auto] gap-3 px-6 py-3 text-xs uppercase tracking-wide text-muted-foreground">
               <span className="text-left">Customer</span>
               <span className="text-left">Status</span>
-              <span className="text-left">Scans</span>
-              <span className="text-left">Interests</span>
-              <span className="text-left">Revenue</span>
+              <span className="text-center">Scans</span>
+              <span className="text-center">Interests</span>
+              <span className="text-center">Revenue</span>
+              <span className="text-left">Last scan</span>
               <span />
             </div>
             {list.isLoading ? (
@@ -144,7 +146,7 @@ function CustomersPage() {
             ) : (list.data?.rows ?? []).length === 0 ? (
               <div className="p-6"><EmptyState icon={Users} title="No customers yet" description="Customers appear here after their first QR scan and opt-in." /></div>
             ) : (list.data!.rows as any[]).map((c) => (
-              <div key={c.id} className="grid w-full grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] items-center gap-3 px-6 py-3 hover:bg-muted/40">
+              <div key={c.id} className="grid w-full grid-cols-[1.5fr_1fr_0.8fr_0.8fr_1fr_1fr_auto] items-center gap-3 px-6 py-3 hover:bg-muted/40">
                 <button onClick={() => setActiveId(c.id)} className="min-w-0 text-left">
                   <p className="flex items-center gap-2 truncate text-sm font-medium">
                     <span className="truncate">{c.full_name || "Unnamed"}</span>
@@ -156,10 +158,24 @@ function CustomersPage() {
                   </p>
                   <p className="truncate text-xs text-muted-foreground">{c.whatsapp_e164}</p>
                 </button>
-                <Badge variant={c.status === "subscribed" ? "success" : "outline"} className="w-fit capitalize">{c.status}</Badge>
-                <span className="text-sm tabular-nums">{c.scans}</span>
-                <span className="text-sm tabular-nums">{c.interests}</span>
-                <span className="text-sm tabular-nums">{money(c.lifetime_revenue_cents)}</span>
+                <Badge
+                  variant={
+                    c.status === "subscribed"
+                      ? "success"
+                      : c.status === "registered"
+                        ? "secondary"
+                        : "outline"
+                  }
+                  className="w-fit capitalize"
+                >
+                  {c.status}
+                </Badge>
+                <span className="text-center text-sm tabular-nums">{c.scans}</span>
+                <span className="text-center text-sm tabular-nums">{c.interests}</span>
+                <span className="text-center text-sm tabular-nums">{money(c.lifetime_revenue_cents)}</span>
+                <span className="text-sm text-muted-foreground">
+                  {c.last_scan_at ? new Date(c.last_scan_at).toLocaleDateString() : "—"}
+                </span>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setActiveId(c.id)}
