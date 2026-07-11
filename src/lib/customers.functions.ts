@@ -19,7 +19,7 @@ export const listCustomers = createServerFn({ method: "POST" })
     z
       .object({
         search: z.string().trim().optional(),
-        segment: z.enum(["all", "subscribed", "vip", "dormant"]).default("all"),
+        segment: z.enum(["all", "registered", "subscribed", "vip", "dormant"]).default("all"),
         letter: z.string().trim().max(3).optional(),
         page: z.number().int().min(1).default(1),
         pageSize: z.number().int().min(10).max(100).default(25),
@@ -43,6 +43,7 @@ export const listCustomers = createServerFn({ method: "POST" })
       .range(from, to);
 
     if (data.segment === "subscribed") q = q.eq("status", "subscribed");
+    if (data.segment === "registered") q = q.eq("status", "registered");
     if (data.segment === "dormant") q = q.lte("opted_in_at", new Date(Date.now() - 60 * 86400_000).toISOString());
     if (data.search) q = q.or(`full_name.ilike.%${data.search}%,whatsapp_e164.ilike.%${data.search}%`);
     if (data.letter && data.letter !== "all") {
@@ -61,14 +62,18 @@ export const listCustomers = createServerFn({ method: "POST" })
     if (ids.length === 0) return { rows: rows ?? [], total: count ?? 0 };
 
     const [scans, recoveries, interests] = await Promise.all([
-      supabase.from("qr_scans").select("customer_id").in("customer_id", ids),
+      supabase.from("qr_scans").select("customer_id, scanned_at").in("customer_id", ids),
       supabase.from("sales_recoveries").select("customer_id, amount_cents").in("customer_id", ids),
       supabase.from("customer_interests").select("customer_id").in("customer_id", ids),
     ]);
 
     const scanCount = new Map<string, number>();
-    for (const s of (scans.data ?? []) as any[])
+    const lastScan = new Map<string, string>();
+    for (const s of (scans.data ?? []) as any[]) {
       scanCount.set(s.customer_id, (scanCount.get(s.customer_id) ?? 0) + 1);
+      const prev = lastScan.get(s.customer_id);
+      if (!prev || (s.scanned_at && s.scanned_at > prev)) lastScan.set(s.customer_id, s.scanned_at);
+    }
     const revenue = new Map<string, number>();
     for (const s of (recoveries.data ?? []) as any[])
       revenue.set(s.customer_id, (revenue.get(s.customer_id) ?? 0) + (s.amount_cents ?? 0));
@@ -81,6 +86,7 @@ export const listCustomers = createServerFn({ method: "POST" })
       is_new: r.viewed_at == null,
       scans: scanCount.get(r.id) ?? 0,
       interests: interestCount.get(r.id) ?? 0,
+      last_scan_at: lastScan.get(r.id) ?? null,
       lifetime_revenue_cents: revenue.get(r.id) ?? 0,
     }));
 
@@ -151,7 +157,7 @@ const customerInputSchema = z.object({
     .regex(/^\+?[1-9]\d{7,14}$/, "Enter a valid phone number in international format")
     .transform((v) => (v.startsWith("+") ? v : `+${v}`)),
   email: z.string().trim().email().max(200).nullable().optional().or(z.literal("")),
-  status: z.enum(["subscribed", "unsubscribed", "blocked"]).default("subscribed"),
+  status: z.enum(["registered", "subscribed", "unsubscribed", "blocked"]).optional(),
   marketing_consent: z.boolean().default(false),
   notify_consent: z.boolean().default(true),
 });
@@ -164,12 +170,15 @@ export const createCustomer = createServerFn({ method: "POST" })
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer assigned");
     const now = new Date().toISOString();
+    // Only mark customers as "subscribed" when they opted in to marketing.
+    // Everyone else is "registered" (signed up but not opted in).
+    const resolvedStatus = data.status ?? (data.marketing_consent ? "subscribed" : "registered");
     const row: any = {
       retailer_id: retailerId,
       full_name: data.full_name || null,
       whatsapp_e164: data.whatsapp_e164,
       email: data.email || null,
-      status: data.status,
+      status: resolvedStatus,
       opted_in_at: now,
       marketing_consent_at: data.marketing_consent ? now : null,
       notify_consent_at: data.notify_consent ? now : null,
@@ -195,8 +204,13 @@ export const updateCustomer = createServerFn({ method: "POST" })
     if (p.whatsapp_e164 !== undefined) patch.whatsapp_e164 = p.whatsapp_e164;
     if (p.email !== undefined) patch.email = p.email || null;
     if (p.status !== undefined) patch.status = p.status;
-    if (p.marketing_consent !== undefined)
+    if (p.marketing_consent !== undefined) {
       patch.marketing_consent_at = p.marketing_consent ? new Date().toISOString() : null;
+      // If status wasn't explicitly set, flip it based on marketing opt-in.
+      if (p.status === undefined) {
+        patch.status = p.marketing_consent ? "subscribed" : "registered";
+      }
+    }
     if (p.notify_consent !== undefined)
       patch.notify_consent_at = p.notify_consent ? new Date().toISOString() : null;
     const { error } = await context.supabase.from("customers").update(patch).eq("id", data.id);

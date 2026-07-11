@@ -38,8 +38,8 @@ export function DigitalIdentityProgress({ product, qr, passport }: Props) {
     {
       key: "enrichment",
       label: "AI enrichment complete",
-      done: enrichment === "complete",
-      pending: enrichment === "pending" || enrichment === "running",
+      done: ["enriched", "complete", "manual"].includes(enrichment),
+      pending: ["pending", "queued", "running", "enriching"].includes(enrichment),
     },
   ];
   const completed = steps.filter((s) => s.done).length;
