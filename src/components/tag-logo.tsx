@@ -1,5 +1,5 @@
-import iconAsset from "@/assets/tag-logo-2026b.png.asset.json";
-import wordmarkAsset from "@/assets/tag-logo-2026b.png.asset.json";
+import iconAsset from "@/assets/tag-logo-clear.png.asset.json";
+import wordmarkAsset from "@/assets/tag-logo-clear.png.asset.json";
 
 export function TagLogo({
   className,

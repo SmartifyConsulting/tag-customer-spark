@@ -1,54 +1,55 @@
-## Goal
 
-Products should get a sensible category automatically, and every retailer (not just super admin) should have a proper Category Admin screen to review and correct them.
+## 1. Product image mismatch (CERELAC)
 
-## What you'll see
+DB check confirms `image_status = ai_suggested` for GTIN `08941100296639` — Open Food Facts had no photo for this SA GTIN, so the resolver fell through to an AI-generated stylised image.
 
-1. **Automatic category on new products**
-   - When a product is imported, scanned, or manually added without a category, the system picks the best matching category (or sub-category) from the retailer's existing tree.
-   - If no existing category is a good fit, a new one is created (or an existing "Uncategorised" bucket is used, retailer's choice — default: create when confidence is high, otherwise place under "Uncategorised").
-   - The passport enrichment step also proposes a `category_path` (e.g. `Food › Biscuits`) that feeds back into this.
+**Fix in `src/lib/product-images.server.ts`:**
+- Try Open Food Facts with multiple GTIN normalisations (raw, leading-zero-stripped, EAN-13 from 14, UPC-12).
+- If direct GTIN misses, call OFF search API (`/cgi/search.pl?search_terms=<brand+name>&json=1`) and use the top hit's `image_url`.
+- Only then fall through to AI image / placeholder.
 
-2. **Category Admin as a first-class screen**
-   - New nav item under **Admin → Categories** (visible to retail admins and store managers, not just super admin).
-   - Existing Category Admin UI (tree with sub-categories, add/rename/delete) becomes the base of that page.
-   - Adds a "Products in this category" count next to each row.
-   - Adds a "Re-categorise all uncategorised" button that runs auto-categorisation across products missing a category.
-   - Adds an inline "Move to…" action on each product from the Inventory row menu so a retailer can quickly fix a wrong category.
+## 2. "AI enrichment complete" never ticks green
 
-3. **Retailer can always override**
-   - The existing product edit form already lets a retailer change category; we surface the AI-suggested category with a small "AI suggested" badge, and clearing/overriding it is one click.
+DB shows passport `enrichment_status = enriched` but `DigitalIdentityProgress` checks for `"complete"`. Pure string mismatch.
 
-## How it works (technical)
+**Fix in `src/components/qr/digital-identity-progress.tsx`:** treat `enriched | complete | manual` as done, and `queued | running | enriching | pending` as in-progress. Aligns with `PassportTab`.
 
-- New server helper `suggestCategoryForProduct` in `src/lib/categories.functions.ts`:
-  - Inputs: retailer id, product name, brand, description, GTIN, existing categories tree.
-  - Uses Lovable AI (`google/gemini-3-flash-preview`) with a strict JSON schema:
-    `{ existing_category_id?: uuid, new_category?: { name, parent_name? }, confidence: 0-1 }`.
-  - Falls back to a deterministic keyword mapper (biscuits, coffee, apparel, etc.) when AI is unavailable, and to "Uncategorised" otherwise.
-- Hook it into:
-  - `commitProductImport` in `src/lib/import.functions.ts` — when `category_id` is null after the current name-match step.
-  - Manual product create/update in `src/lib/products.functions.ts` — same fallback path.
-  - Passport enrichment — if `category_path` returned by AI is stronger than the current assignment, propose (do not overwrite) via a new `suggested_category_id` column.
-- New nullable column `products.suggested_category_id uuid` + `products.category_confidence numeric` (nullable). Migration adds them with a GRANT/RLS-safe change (no new table).
-- New server functions:
-  - `bulkAutoCategorise({ onlyUncategorised: boolean })` — batches through products and applies suggestions.
-  - `applySuggestedCategory({ productId })` and `dismissSuggestedCategory({ productId })`.
-- New route `src/routes/_authenticated/admin.categories.tsx` that hosts `CategoryAdminTab` with the added counts + bulk action; nav `Admin` gains a Categories sub-link.
-- Category Admin becomes visible to any user with `super_admin`, `retail_admin`, or `store_manager` role — same guard already used in Inventory.
-- Inventory table gets a small pill on rows whose `suggested_category_id` differs from `category_id`, with quick "Apply" / "Dismiss" buttons.
+## 3. Replace logos with new Tag barcode logo
 
-## Files to add/change
+- Upload `user-uploads://TAGLogo-Clear.png` via `lovable-assets` to `src/assets/tag-logo-clear.png.asset.json`.
+- Point `src/components/tag-logo.tsx` (both `iconAsset` and `wordmarkAsset`) at the new pointer.
+- Point `src/components/auth-shell.tsx` (`heroLogo` import) at the new pointer.
+- Replace `public/favicon.ico` with a new `public/favicon.png` copy of the same logo and update `src/routes/__root.tsx` links.
 
-- Add `src/routes/_authenticated/admin.categories.tsx`.
-- Update `src/lib/nav.ts` (add Categories under Admin) and `src/routes/_authenticated/settings.tsx` (leave settings tab or remove — recommend keep for super admin, redirect retailers to new screen).
-- Extend `src/lib/categories.functions.ts` with `suggestCategoryForProduct`, `bulkAutoCategorise`, `applySuggestedCategory`, `dismissSuggestedCategory`, and `listCategoriesWithCounts`.
-- Extend `src/lib/import.functions.ts` and `src/lib/products.functions.ts` create/update paths to call the suggester.
-- Extend `src/lib/passport.server.ts` to write `suggested_category_id` from `category_path` when confidence is high.
-- One migration: add `suggested_category_id` and `category_confidence` to `products`.
+## 4. WhatsApp inbox — selected row text colour
+
+In the inbox list (`src/routes/_authenticated/inbox.tsx` and its row component), when a conversation is selected (orange background), force `text-white` (and muted text `text-white/80`) on the row so text pops. Non-selected rows unchanged.
+
+## 5. Admin: split into Users + Categories tabs, drop from Settings
+
+- New route file `src/routes/_authenticated/admin.users.tsx` rendering existing `UserAdminTab` (super-admin gated like the categories page).
+- Convert `src/routes/_authenticated/admin.categories.tsx` and the new `admin.users.tsx` into siblings under a small `admin` layout with a shared `Tabs` header (Categories | Users).
+- Update `src/lib/nav.ts` Admin entry to keep landing at `/admin/categories` but ensure both routes highlight the Admin item.
+- Remove the Category Admin tab from `src/routes/_authenticated/settings.tsx` (leave User Admin out of Settings too since it now lives under Admin).
+
+## 6. Customers — default status semantics
+
+Today every new customer defaults to `subscribed`. Change so only marketing opt-in = `subscribed`; everyone else is `registered`.
+
+- **Migration:** add `'registered'` value to the `customer_status` enum (or accept it as a text status) and backfill: `UPDATE customers SET status='registered' WHERE marketing_consent_at IS NULL AND status='subscribed'`.
+- `src/lib/customers.functions.ts` (`createCustomer`, `customerInputSchema`): default `status` to `registered` unless `marketing_consent` is true → `subscribed`. On `updateCustomer`, when marketing_consent toggles, flip status accordingly.
+- Scan-side signup path (`src/routes/api/public/scan.interest.ts` or `src/lib/scan.functions.ts`): create with `registered`, only promote to `subscribed` when the marketing checkbox is ticked.
+- UI: add "Registered" as a filter pill / badge variant in `src/routes/_authenticated/customers.tsx` alongside Subscribed/VIP/Dormant.
+
+## 7. Customers table — Last scan date + alignment
+
+Screenshot shows SCANS/INTERESTS/REVENUE headers centered but the values left-aligned.
+
+- In `listCustomers` (`src/lib/customers.functions.ts`), also compute `last_scan_at` per customer from the same `qr_scans` fetch (`MAX(scanned_at)` in JS reduce).
+- Customers table (`src/routes/_authenticated/customers.tsx` — or the extracted table component):
+  - Add a `Last scan` column (right of Interests) showing `formatDistanceToNow(last_scan_at)` or `—`.
+  - Add `text-center` (and `tabular-nums`) to the header **and** cell for `Scans`, `Interests`, and `Revenue`. Right-align isn't asked for; centre both to match the header.
 
 ## Out of scope
 
-- Reorganising the existing category tree automatically.
-- Multi-category-per-product.
-- Re-training or fine-tuning; we rely on Lovable AI + deterministic fallback.
+No changes to enrichment logic, QR, passport schema, or billing.

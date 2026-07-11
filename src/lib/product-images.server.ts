@@ -294,6 +294,71 @@ async function generateAiImage(input: ResolveInput): Promise<Uint8Array | null> 
   }
 }
 
+// ----- Open Food Facts lookup with GTIN normalisations + search fallback --
+
+async function offFetch(url: string): Promise<any | null> {
+  try {
+    const r = await fetch(url, { headers: { "User-Agent": "TAG-DPP/1.0" } });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch {
+    return null;
+  }
+}
+
+function pickOffImage(prod: any): string | null {
+  return (
+    prod?.image_front_url ??
+    prod?.image_url ??
+    prod?.selected_images?.front?.display?.en ??
+    prod?.selected_images?.front?.display?.[Object.keys(prod?.selected_images?.front?.display ?? {})[0]] ??
+    null
+  );
+}
+
+async function lookupOpenFoodFactsImage(
+  gtin: string,
+  name: string,
+  brand: string | null,
+): Promise<string | null> {
+  const clean = gtin.replace(/\D/g, "");
+  const variants = new Set<string>();
+  if (clean) variants.add(clean);
+  // Strip leading zeros
+  const stripped = clean.replace(/^0+/, "");
+  if (stripped) variants.add(stripped);
+  // EAN-13 from GTIN-14 (drop leading digit)
+  if (clean.length === 14) variants.add(clean.slice(1));
+  // UPC-A (12) — either strip leading 0 from EAN-13 or take last 12
+  if (clean.length === 13 && clean.startsWith("0")) variants.add(clean.slice(1));
+  if (clean.length >= 12) variants.add(clean.slice(-12));
+  // Zero-pad shorter codes to 13
+  if (clean.length > 0 && clean.length < 13) variants.add(clean.padStart(13, "0"));
+
+  for (const v of variants) {
+    const j = await offFetch(`https://world.openfoodfacts.org/api/v2/product/${v}.json`);
+    if (j?.status === 1 && j.product) {
+      const url = pickOffImage(j.product);
+      if (url) return url;
+    }
+  }
+
+  // Search fallback by brand + name
+  const query = [brand, name].filter(Boolean).join(" ").trim();
+  if (query.length >= 3) {
+    const j = await offFetch(
+      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&json=1&page_size=5`,
+    );
+    const products: any[] = j?.products ?? [];
+    for (const p of products) {
+      const url = pickOffImage(p);
+      if (url) return url;
+    }
+  }
+
+  return null;
+}
+
 // Helper for callers that need to sync the resolved image into products +
 // passport in one shot.
 export async function resolveAndSyncProductImage(input: {
@@ -317,23 +382,11 @@ export async function resolveAndSyncProductImage(input: {
     .eq("retailer_id", product.retailer_id)
     .maybeSingle();
 
-  // Cheap best-effort Open Food Facts lookup (no AI here — that's in enrichment)
+  // Try Open Food Facts across several GTIN normalisations, then fall back
+  // to a brand+name search. AI/placeholder only kick in if nothing matches.
   let offUrl: string | null = null;
   if (product.gtin) {
-    try {
-      const digits = product.gtin.replace(/^0+/, "") || product.gtin;
-      const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${digits}.json`, {
-        headers: { "User-Agent": "TAG-DPP/1.0" },
-      });
-      if (r.ok) {
-        const j: any = await r.json();
-        if (j?.status === 1 && j.product) {
-          offUrl = j.product.image_url ?? j.product.image_front_url ?? null;
-        }
-      }
-    } catch {
-      /* ignore */
-    }
+    offUrl = await lookupOpenFoodFactsImage(product.gtin, product.name, product.brand);
   }
 
   const result = await resolveProductImage({

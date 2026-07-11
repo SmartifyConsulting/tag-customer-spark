@@ -3254,7 +3254,7 @@ export type Database = {
         | "custom"
       category_status: "active" | "archived"
       conversation_status: "open" | "closed" | "archived"
-      customer_status: "subscribed" | "unsubscribed" | "blocked"
+      customer_status: "subscribed" | "unsubscribed" | "blocked" | "registered"
       interest_status: "active" | "notified" | "converted" | "expired"
       message_direction: "inbound" | "outbound"
       message_status: "sent" | "delivered" | "read" | "failed"
@@ -3444,7 +3444,7 @@ export const Constants = {
       ],
       category_status: ["active", "archived"],
       conversation_status: ["open", "closed", "archived"],
-      customer_status: ["subscribed", "unsubscribed", "blocked"],
+      customer_status: ["subscribed", "unsubscribed", "blocked", "registered"],
       interest_status: ["active", "notified", "converted", "expired"],
       message_direction: ["inbound", "outbound"],
       message_status: ["sent", "delivered", "read", "failed"],
