@@ -17,7 +17,15 @@ function slugify(s: string) {
 const brandInput = z.object({
   id: z.string().uuid().optional(),
   name: z.string().trim().min(1).max(120),
-  website: z.string().url().nullable().optional(),
+  website: z.preprocess(
+    (v) => {
+      if (v == null) return null;
+      const s = String(v).trim();
+      if (!s) return null;
+      return /^https?:\/\//i.test(s) ? s : `https://${s}`;
+    },
+    z.string().url().nullable().optional(),
+  ),
   description: z.string().max(500).nullable().optional(),
 });
 
