@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, Sparkles, Tag as TagIcon, Wand2 } from "lucide-react";
+import { Plus, Trash2, Pencil, Tag as TagIcon, Wand2, Combine } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/empty-state";
-import { listBrands, upsertBrand, deleteBrand, resolveBrandLogo, linkProductsToBrands } from "@/lib/brands.functions";
+import { listBrands, upsertBrand, deleteBrand, linkProductsToBrands, mergeDuplicateBrands } from "@/lib/brands.functions";
 
 type Brand = {
   id: string; name: string; slug: string;
