@@ -288,24 +288,32 @@ function DashboardContent() {
 
       <IntentSectionsCard />
 
-      <ScanTrendsCard
-        daily={data.scansDaily}
-        weekly={data.scansWeekly}
-        monthly={data.scansMonthly}
-      />
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <TopProductsCard products={data.topProducts} />
+      <div className="grid gap-4 lg:grid-cols-2">
         {analytics ? (
-          <PopularStoresCard stores={analytics.popularStores} />
+          <Card className="p-5">
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold">Scan heatmap</h3>
+              <HeatmapLegend />
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Shopper scans by day of week × hour of day — darker cells mean more scans in that slot. Use it to time WhatsApp broadcasts and staff coverage.
+            </p>
+            <Heatmap data={analytics.heatmap} />
+          </Card>
         ) : (
           <Skeleton className="h-72 rounded-2xl" />
         )}
+        <ScanTrendsCard
+          daily={data.scansDaily}
+          weekly={data.scansWeekly}
+          monthly={data.scansMonthly}
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <TopProductsCard products={data.topProducts} />
         {analytics ? (
-          <Card className="p-5">
-            <h3 className="text-sm font-semibold mb-3">Scan heatmap</h3>
-            <Heatmap data={analytics.heatmap} />
-          </Card>
+          <PopularStoresCard stores={analytics.popularStores} />
         ) : (
           <Skeleton className="h-72 rounded-2xl" />
         )}
