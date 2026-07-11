@@ -15,11 +15,13 @@ import { ChevronRight, Image as ImageIcon } from "lucide-react";
 
 export function SignalContributionsCard() {
   const [active, setActive] = useState<SignalContribution | null>(null);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["dashboard", "signal-contributions"],
     queryFn: () => getSignalContributions(),
     staleTime: 60_000,
   });
+  const contributions = data?.contributions ?? [];
+  const hasSignal = contributions.some((c) => (c.pct ?? 0) > 0);
 
   return (
     <>
@@ -37,9 +39,28 @@ export function SignalContributionsCard() {
                 <Skeleton key={i} className="h-6 w-full" />
               ))}
             </div>
+          ) : error ? (
+            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+              Couldn't load signal contributions. Try refreshing.
+            </div>
+          ) : !hasSignal ? (
+            <div className="grid gap-x-8 gap-y-4 md:grid-cols-3">
+              {contributions.map((c) => (
+                <div key={c.key} className="flex flex-col gap-1 opacity-60">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{c.label}</span>
+                    <span className="tabular-nums font-medium text-foreground">0%</span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" />
+                </div>
+              ))}
+              <p className="md:col-span-3 mt-2 text-xs text-muted-foreground">
+                No intent signals yet — scans, watchlists and notifications will populate this once shoppers start engaging.
+              </p>
+            </div>
           ) : (
             <div className="grid gap-x-8 gap-y-4 md:grid-cols-3">
-              {(data?.contributions ?? []).map((c) => (
+              {contributions.map((c) => (
                 <button
                   key={c.key}
                   onClick={() => setActive(c)}

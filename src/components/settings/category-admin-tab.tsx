@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Plus, Trash2, Pencil, FolderTree, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Trash2, Pencil, FolderTree, Sparkles, Combine } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
   renameCategory,
   deleteCategory,
   bulkAutoCategorise,
+  mergeDuplicateCategories,
 } from "@/lib/categories.functions";
 
 type Row = { id: string; name: string; parent_id: string | null; status: string };
@@ -26,6 +27,7 @@ export function CategoryAdminTab() {
   const renameFn = useServerFn(renameCategory);
   const deleteFn = useServerFn(deleteCategory);
   const bulkFn = useServerFn(bulkAutoCategorise);
+  const mergeFn = useServerFn(mergeDuplicateCategories);
 
   const [newParent, setNewParent] = useState("");
   const [subFor, setSubFor] = useState<string | null>(null);
@@ -45,6 +47,11 @@ export function CategoryAdminTab() {
       if (r?.assigned) toast.success(`Auto-categorised ${r.assigned}/${r.total} products`);
     },
     onError: (e: any) => toast.error(e?.message ?? "Auto-categorise failed"),
+  });
+  const merge = useMutation({
+    mutationFn: () => mergeFn(),
+    onSuccess: (r: any) => { invalidate(); toast.success(r?.merged ? `Merged ${r.merged} duplicate categor${r.merged === 1 ? "y" : "ies"}` : "No duplicates found"); },
+    onError: (e: any) => toast.error(e?.message ?? "Merge failed"),
   });
 
   // Auto-run once per session when uncategorised products exist.
@@ -122,6 +129,11 @@ export function CategoryAdminTab() {
                 </span>
               </>
             )}
+          </div>
+          <div className="ml-auto">
+            <Button size="sm" variant="outline" onClick={() => merge.mutate()} disabled={merge.isPending}>
+              <Combine className="mr-1 h-3.5 w-3.5" /> Merge duplicates
+            </Button>
           </div>
         </div>
 

@@ -44,9 +44,9 @@ export const NAV: readonly NavItem[] = [
   },
   {
     title: "Insights",
-    url: "/analytics",
+    url: "/intelligence/insights",
     icon: TrendingUp,
-    match: ["/analytics", "/intelligence", "/roi", "/commerce"],
+    match: ["/intelligence", "/analytics", "/roi", "/commerce"],
     feature: "roi",
   },
   {

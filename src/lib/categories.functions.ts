@@ -481,3 +481,37 @@ export const moveProductCategory = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------- Merge duplicate categories (same name + parent) ----------
+export const mergeDuplicateCategories = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) throw new Error("No retailer");
+    const { data: rows } = await supabase.from("product_categories")
+      .select("id, name, parent_id, created_at")
+      .eq("retailer_id", retailerId)
+      .order("created_at", { ascending: true });
+    const groups = new Map<string, any[]>();
+    for (const r of rows ?? []) {
+      const key = `${(r.name || "").trim().toLowerCase()}|${r.parent_id ?? "_"}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(r);
+    }
+    let merged = 0;
+    for (const list of groups.values()) {
+      if (list.length < 2) continue;
+      const winner = list[0];
+      const losers = list.slice(1).map((l) => l.id);
+      await supabase.from("products").update({ category_id: winner.id })
+        .in("category_id", losers).eq("retailer_id", retailerId);
+      // Reparent any children whose parent was a loser
+      await supabase.from("product_categories").update({ parent_id: winner.id })
+        .in("parent_id", losers).eq("retailer_id", retailerId);
+      await supabase.from("product_categories").delete()
+        .in("id", losers).eq("retailer_id", retailerId);
+      merged += losers.length;
+    }
+    return { merged };
+  });

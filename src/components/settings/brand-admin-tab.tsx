@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, Sparkles, Tag as TagIcon, Wand2 } from "lucide-react";
+import { Plus, Trash2, Pencil, Tag as TagIcon, Wand2, Combine } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/empty-state";
-import { listBrands, upsertBrand, deleteBrand, resolveBrandLogo, linkProductsToBrands } from "@/lib/brands.functions";
+import { listBrands, upsertBrand, deleteBrand, linkProductsToBrands, mergeDuplicateBrands } from "@/lib/brands.functions";
 
 type Brand = {
   id: string; name: string; slug: string;
@@ -20,7 +20,7 @@ export function BrandAdminTab() {
   const q = useQuery({ queryKey: ["brands"], queryFn: () => listBrands() });
   const upsertFn = useServerFn(upsertBrand);
   const deleteFn = useServerFn(deleteBrand);
-  const logoFn = useServerFn(resolveBrandLogo);
+  const mergeFn = useServerFn(mergeDuplicateBrands);
   const linkFn = useServerFn(linkProductsToBrands);
 
   const [name, setName] = useState("");
@@ -42,14 +42,14 @@ export function BrandAdminTab() {
     mutationFn: (id: string) => deleteFn({ data: { id } }),
     onSuccess: () => { invalidate(); toast.success("Deleted"); },
   });
-  const fetchLogo = useMutation({
-    mutationFn: (id: string) => logoFn({ data: { id } }),
-    onSuccess: () => { invalidate(); toast.success("Logo updated"); },
-    onError: (e: any) => toast.error(e?.message ?? "Logo failed"),
+  const merge = useMutation({
+    mutationFn: () => mergeFn(),
+    onSuccess: (r: any) => { invalidate(); toast.success(r?.merged ? `Merged ${r.merged} duplicate brand${r.merged === 1 ? "" : "s"}` : "No duplicates found"); },
+    onError: (e: any) => toast.error(e?.message ?? "Merge failed"),
   });
   const link = useMutation({
     mutationFn: () => linkFn(),
-    onSuccess: (r: any) => { invalidate(); toast.success(`Linked ${r?.linked ?? 0} products (${r?.created ?? 0} new brands)`); },
+    onSuccess: (r: any) => { invalidate(); toast.success(`Linked ${r?.linked ?? 0} products · ${r?.created ?? 0} new brands · ${r?.logos ?? 0} logos fetched`); },
   });
 
   const rows = (q.data?.rows ?? []) as Brand[];
@@ -72,8 +72,11 @@ export function BrandAdminTab() {
             <span className="text-muted-foreground">missing logos</span>
           </div>
           <div className="ml-auto flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => link.mutate()} disabled={link.isPending}>
-              <Wand2 className="mr-1 h-3.5 w-3.5" /> Auto-link products
+            <Button size="sm" variant="outline" onClick={() => merge.mutate()} disabled={merge.isPending}>
+              <Combine className="mr-1 h-3.5 w-3.5" /> Merge duplicates
+            </Button>
+            <Button size="sm" onClick={() => link.mutate()} disabled={link.isPending}>
+              <Wand2 className="mr-1 h-3.5 w-3.5" /> Auto-link & fetch logos
             </Button>
           </div>
         </div>
@@ -120,9 +123,6 @@ export function BrandAdminTab() {
                   )}
                 </div>
                 <span className="text-xs text-muted-foreground">{counts[b.id] ?? 0} products</span>
-                <Button size="sm" variant="ghost" onClick={() => fetchLogo.mutate(b.id)} disabled={fetchLogo.isPending}>
-                  <Sparkles className="mr-1 h-3.5 w-3.5" /> Logo
-                </Button>
                 {editing?.id === b.id ? (
                   <Button size="sm" onClick={() => save.mutate(editing)}>Save</Button>
                 ) : (
