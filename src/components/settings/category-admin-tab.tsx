@@ -3,6 +3,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
   ChevronDown,
   ChevronRight,
   Plus,
@@ -11,6 +23,7 @@ import {
   FolderTree,
   Sparkles,
   GitMerge,
+  GripVertical,
   Package,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -37,10 +50,15 @@ import {
   deleteCategory,
   bulkAutoCategorise,
   mergeCategories,
+  moveProductCategory,
 } from "@/lib/categories.functions";
 import { listProducts, findDuplicateProducts, mergeProducts } from "@/lib/products.functions";
+import { cn } from "@/lib/utils";
 
 type Row = { id: string; name: string; parent_id: string | null; status: string };
+
+type DragProductData = { type: "product"; productId: string; name: string; sourceCategoryId: string };
+type DropCategoryData = { type: "category"; categoryId: string; categoryName: string };
 
 export function CategoryAdminTab() {
   const qc = useQueryClient();
@@ -49,9 +67,16 @@ export function CategoryAdminTab() {
   const renameFn = useServerFn(renameCategory);
   const deleteFn = useServerFn(deleteCategory);
   const bulkFn = useServerFn(bulkAutoCategorise);
+  const moveFn = useServerFn(moveProductCategory);
 
   const [newParent, setNewParent] = useState("");
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [activeDrag, setActiveDrag] = useState<DragProductData | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor),
+  );
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["categories"] });
@@ -96,6 +121,30 @@ export function CategoryAdminTab() {
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
 
+  const move = useMutation({
+    mutationFn: (v: { productId: string; categoryId: string; productName: string; targetName: string }) =>
+      moveFn({ data: { productId: v.productId, categoryId: v.categoryId } }),
+    onSuccess: (_r, v) => {
+      invalidate();
+      toast.success(`Moved "${v.productName}" to "${v.targetName}"`);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Couldn't move product"),
+  });
+
+  const handleDragStart = (e: DragStartEvent) => {
+    const data = e.active.data.current as DragProductData | undefined;
+    if (data?.type === "product") setActiveDrag(data);
+  };
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    setActiveDrag(null);
+    const a = e.active.data.current as DragProductData | undefined;
+    const o = e.over?.data.current as DropCategoryData | undefined;
+    if (!a || a.type !== "product" || !o || o.type !== "category") return;
+    if (a.sourceCategoryId === o.categoryId) return;
+    move.mutate({ productId: a.productId, categoryId: o.categoryId, productName: a.name, targetName: o.categoryName });
+  };
+
   const { roots, childrenOf } = useMemo(() => {
     const rows = (q.data?.rows ?? []) as Row[];
     const roots = rows.filter((r) => !r.parent_id);
@@ -114,7 +163,10 @@ export function CategoryAdminTab() {
     <Card className="rounded-2xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><FolderTree className="h-5 w-5" /> Category admin</CardTitle>
-        <CardDescription>Manage product categories and sub-categories at any depth (e.g. Men → Shirts → Formal).</CardDescription>
+        <CardDescription>
+          Manage product categories and sub-categories at any depth (e.g. Men → Shirts → Formal). Expand a category
+          and drag a product onto another category to move it.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-muted/30 p-3">
@@ -170,22 +222,32 @@ export function CategoryAdminTab() {
         ) : roots.length === 0 ? (
           <EmptyState icon={FolderTree} title="No categories yet" description="Add a top-level category to get started." />
         ) : (
-          <ul className="divide-y rounded-xl border">
-            {roots.map((r) => (
-              <CategoryNode
-                key={r.id}
-                row={r}
-                depth={0}
-                childrenOf={childrenOf}
-                counts={q.data?.counts ?? {}}
-                onRename={(id, name) => rename.mutate({ id, name })}
-                onDelete={(id, name) => {
-                  if (confirm(`Delete "${name}" and all sub-categories?`)) remove.mutate(id);
-                }}
-                onAddSub={(parentId, name) => create.mutate({ name, parent_id: parentId })}
-              />
-            ))}
-          </ul>
+          <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <ul className="divide-y rounded-xl border">
+              {roots.map((r) => (
+                <CategoryNode
+                  key={r.id}
+                  row={r}
+                  depth={0}
+                  childrenOf={childrenOf}
+                  counts={q.data?.counts ?? {}}
+                  onRename={(id, name) => rename.mutate({ id, name })}
+                  onDelete={(id, name) => {
+                    if (confirm(`Delete "${name}" and all sub-categories?`)) remove.mutate(id);
+                  }}
+                  onAddSub={(parentId, name) => create.mutate({ name, parent_id: parentId })}
+                />
+              ))}
+            </ul>
+            <DragOverlay>
+              {activeDrag && (
+                <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5 text-xs shadow-lg">
+                  <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                  {activeDrag.name}
+                </div>
+              )}
+            </DragOverlay>
+          </DndContext>
         )}
       </CardContent>
 
@@ -220,9 +282,20 @@ function CategoryNode({
   const kids = childrenOf.get(row.id) ?? [];
   const count = counts[row.id] ?? 0;
 
+  const { setNodeRef, isOver } = useDroppable({
+    id: `cat:${row.id}`,
+    data: { type: "category", categoryId: row.id, categoryName: row.name } satisfies DropCategoryData,
+  });
+
   return (
     <li className="px-3 py-2" style={{ marginLeft: depth > 0 ? 24 : 0 }}>
-      <div className="flex items-center gap-2">
+      <div
+        ref={setNodeRef}
+        className={cn(
+          "flex items-center gap-2 rounded-lg transition-colors",
+          isOver && "bg-primary/10 ring-2 ring-primary/40",
+        )}
+      >
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -353,14 +426,7 @@ function CategoryProductsPanel({ categoryId, categoryName, count }: { categoryId
       ) : productsQ.data?.rows?.length ? (
         <ul className="divide-y rounded-md border bg-background">
           {productsQ.data.rows.map((p: any) => (
-            <li key={p.id} className="flex items-center gap-2 px-2 py-1.5 text-xs">
-              <div className="grid h-6 w-6 shrink-0 place-items-center overflow-hidden rounded bg-muted">
-                {p.image_url ? <img src={p.image_url} alt="" className="h-full w-full object-cover" /> : <Package className="h-3 w-3 text-muted-foreground" />}
-              </div>
-              <span className="min-w-0 flex-1 truncate">{p.name}</span>
-              {p.sku && <span className="text-muted-foreground">{p.sku}</span>}
-              <Badge variant="outline" className="text-[10px]">{p.stock_qty ?? 0} qty</Badge>
-            </li>
+            <DraggableProductRow key={p.id} product={p} sourceCategoryId={categoryId} />
           ))}
           {count > (productsQ.data?.rows?.length ?? 0) && (
             <li className="px-2 py-1.5 text-center text-[11px] text-muted-foreground">
@@ -383,6 +449,39 @@ function CategoryProductsPanel({ categoryId, categoryName, count }: { categoryId
         }}
       />
     </div>
+  );
+}
+
+function DraggableProductRow({ product: p, sourceCategoryId }: { product: any; sourceCategoryId: string }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `prod:${p.id}`,
+    data: { type: "product", productId: p.id, name: p.name, sourceCategoryId } satisfies DragProductData,
+  });
+  const style = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 10 }
+    : undefined;
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={cn("flex items-center gap-2 px-2 py-1.5 text-xs bg-background", isDragging && "opacity-40")}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab touch-none text-muted-foreground active:cursor-grabbing"
+        aria-label="Drag to move to another category"
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </button>
+      <div className="grid h-6 w-6 shrink-0 place-items-center overflow-hidden rounded bg-muted">
+        {p.image_url ? <img src={p.image_url} alt="" className="h-full w-full object-cover" /> : <Package className="h-3 w-3 text-muted-foreground" />}
+      </div>
+      <span className="min-w-0 flex-1 truncate">{p.name}</span>
+      {p.sku && <span className="text-muted-foreground">{p.sku}</span>}
+      <Badge variant="outline" className="text-[10px]">{p.stock_qty ?? 0} qty</Badge>
+    </li>
   );
 }
 
