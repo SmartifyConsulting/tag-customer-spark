@@ -113,6 +113,14 @@ export const listProducts = createServerFn({ method: "POST" })
     if (data.category_id) q = q.eq("category_id", data.category_id);
     if (data.brand_id) q = q.eq("brand_id", data.brand_id);
     if (data.store_id) q = q.eq("store_id", data.store_id);
+    // A product is "tagged" once a GS1 QR asset has been generated for it.
+    const { data: qrRows } = await supabase.from("product_qr_assets").select("product_id");
+    const taggedIds = new Set<string>((qrRows ?? []).map((r: any) => r.product_id));
+    if (data.tagged === "tagged") {
+      q = q.in("id", taggedIds.size ? Array.from(taggedIds) : ["00000000-0000-0000-0000-000000000000"]);
+    } else if (data.tagged === "untagged" && taggedIds.size) {
+      q = q.not("id", "in", `(${Array.from(taggedIds).join(",")})`);
+    }
     if (data.promotion) {
       const now = new Date().toISOString();
       q = q
@@ -152,6 +160,7 @@ export const listProducts = createServerFn({ method: "POST" })
         (p: any) => p.stock_qty <= (p.low_stock_threshold ?? 0),
       );
     }
+    filtered = filtered.map((p: any) => ({ ...p, is_tagged: taggedIds.has(p.id) }));
 
     return {
       rows: filtered,

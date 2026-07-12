@@ -10,7 +10,8 @@ export const Route = createFileRoute("/_authenticated/admin/users")({
 
 function UsersAdminPage() {
   const { hasRole } = useAuth();
-  if (!hasRole("super_admin")) return <Navigate to="/dashboard" />;
+  const canManage = hasRole("super_admin") || hasRole("retail_admin") || hasRole("store_manager");
+  if (!canManage) return <Navigate to="/dashboard" />;
   return (
     <div className="space-y-6">
       <PageHeader

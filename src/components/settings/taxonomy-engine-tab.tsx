@@ -21,6 +21,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   ChevronRight,
+  Eye,
+  EyeOff,
   GripVertical,
   Layers,
   Plus,
@@ -47,7 +49,7 @@ import {
   upsertProfile,
 } from "@/lib/taxonomy.functions";
 
-type Level = { id?: string; attribute_key: string; label: string; tmpId: string };
+type Level = { id?: string; attribute_key: string; label: string; hidden: boolean; tmpId: string };
 
 export function TaxonomyEngineTab() {
   const qc = useQueryClient();
@@ -80,6 +82,7 @@ export function TaxonomyEngineTab() {
         id: l.id,
         attribute_key: l.attribute_key,
         label: l.label,
+        hidden: l.hidden ?? false,
         tmpId: crypto.randomUUID(),
       })),
     );
@@ -102,6 +105,7 @@ export function TaxonomyEngineTab() {
             attribute_key: l.attribute_key,
             label: l.label.trim() || l.attribute_key,
             position: i,
+            hidden: l.hidden,
           })),
         },
       }),
@@ -158,7 +162,7 @@ export function TaxonomyEngineTab() {
     if (!cat) return;
     setLevels((cur) => [
       ...cur,
-      { attribute_key, label: cat.label, tmpId: crypto.randomUUID() },
+      { attribute_key, label: cat.label, hidden: false, tmpId: crypto.randomUUID() },
     ]);
   };
 
@@ -166,9 +170,9 @@ export function TaxonomyEngineTab() {
     setSelectedId(null);
     setName("New profile");
     setLevels([
-      { attribute_key: "brand", label: "Brand", tmpId: crypto.randomUUID() },
-      { attribute_key: "category", label: "Category", tmpId: crypto.randomUUID() },
-      { attribute_key: "product", label: "Product", tmpId: crypto.randomUUID() },
+      { attribute_key: "brand", label: "Brand", hidden: false, tmpId: crypto.randomUUID() },
+      { attribute_key: "category", label: "Category", hidden: false, tmpId: crypto.randomUUID() },
+      { attribute_key: "product", label: "Product", hidden: false, tmpId: crypto.randomUUID() },
     ]);
   };
 
@@ -281,6 +285,9 @@ export function TaxonomyEngineTab() {
                             onAttrChange={(v) =>
                               setLevels((cur) => cur.map((x) => (x.tmpId === l.tmpId ? { ...x, attribute_key: v } : x)))
                             }
+                            onToggleHidden={() =>
+                              setLevels((cur) => cur.map((x) => (x.tmpId === l.tmpId ? { ...x, hidden: !x.hidden } : x)))
+                            }
                             onRemove={() => setLevels((cur) => cur.filter((x) => x.tmpId !== l.tmpId))}
                           />
                         ))}
@@ -306,7 +313,7 @@ export function TaxonomyEngineTab() {
                 <span className="text-[10px] text-muted-foreground">Uses your live catalogue</span>
               </div>
               <TaxonomyPreview
-                levels={levels.map((l) => ({ attribute_key: l.attribute_key, label: l.label }))}
+                levels={levels.map((l) => ({ attribute_key: l.attribute_key, label: l.label, hidden: l.hidden }))}
               />
             </div>
           </div>
@@ -351,12 +358,14 @@ function SortableLevel({
   index,
   onLabelChange,
   onAttrChange,
+  onToggleHidden,
   onRemove,
 }: {
   level: Level;
   index: number;
   onLabelChange: (v: string) => void;
   onAttrChange: (v: string) => void;
+  onToggleHidden: () => void;
   onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -365,7 +374,7 @@ function SortableLevel({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.6 : 1,
+    opacity: isDragging ? 0.6 : level.hidden ? 0.55 : 1,
   };
   return (
     <li
@@ -402,6 +411,15 @@ function SortableLevel({
         className="h-8 flex-1"
         placeholder="Display label"
       />
+      <Button
+        size="icon"
+        variant="ghost"
+        className="h-8 w-8"
+        onClick={onToggleHidden}
+        title={level.hidden ? "Hidden — click to show in the browser" : "Visible — click to hide"}
+      >
+        {level.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+      </Button>
       <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={onRemove}>
         <Trash2 className="h-3.5 w-3.5" />
       </Button>
@@ -410,12 +428,16 @@ function SortableLevel({
 }
 
 function TaxonomyPreview({
-  levels,
+  levels: rawLevels,
 }: {
-  levels: { attribute_key: string; label: string }[];
+  levels: { attribute_key: string; label: string; hidden?: boolean }[];
 }) {
   const browse = useServerFn(browseTaxonomy);
   const [path, setPath] = useState<{ attribute_key: string; value: string; label: string }[]>([]);
+
+  // Hidden levels are skipped server-side, so index by the same visible-only
+  // list here to keep breadcrumb/depth positions in sync.
+  const levels = useMemo(() => rawLevels.filter((l) => !l.hidden), [rawLevels]);
 
   // Reset when hierarchy shape changes.
   useEffect(() => {

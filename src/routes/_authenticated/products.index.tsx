@@ -100,6 +100,9 @@ function ProductsListPage() {
       store_id: search.store,
       promotion: search.promo,
       low_stock: search.lowStock,
+      // Inventory only ever shows tagged items — untagged/uploaded-but-not-yet-
+      // tagged products are reviewed from Admin > Inventory instead.
+      tagged: "tagged" as const,
       sort: search.sort,
       page: search.page,
       pageSize: 100,

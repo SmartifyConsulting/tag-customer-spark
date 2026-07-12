@@ -49,6 +49,7 @@ import { Route as AuthenticatedCommerceFunnelRouteImport } from './routes/_authe
 import { Route as AuthenticatedAnalyticsReportsRouteImport } from './routes/_authenticated/analytics.reports'
 import { Route as AuthenticatedAnalyticsHistoryRouteImport } from './routes/_authenticated/analytics.history'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
+import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authenticated/admin.inventory'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin.categories'
 import { Route as ApiPublicWebhooksTwilioInboundRouteImport } from './routes/api/public/webhooks/twilio-inbound'
 import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public/webhooks/paypal'
@@ -276,6 +277,12 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminInventoryRoute =
+  AuthenticatedAdminInventoryRouteImport.update({
+    id: '/admin/inventory',
+    path: '/admin/inventory',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminCategoriesRoute =
   AuthenticatedAdminCategoriesRouteImport.update({
     id: '/admin/categories',
@@ -357,6 +364,7 @@ export interface FileRoutesByFullPath {
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
+  '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -406,6 +414,7 @@ export interface FileRoutesByTo {
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
+  '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -459,6 +468,7 @@ export interface FileRoutesById {
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
+  '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/_authenticated/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -512,6 +522,7 @@ export interface FileRouteTypes {
     | '/passport/$gtin'
     | '/scan/$shortCode'
     | '/admin/categories'
+    | '/admin/inventory'
     | '/admin/users'
     | '/analytics/history'
     | '/analytics/reports'
@@ -561,6 +572,7 @@ export interface FileRouteTypes {
     | '/passport/$gtin'
     | '/scan/$shortCode'
     | '/admin/categories'
+    | '/admin/inventory'
     | '/admin/users'
     | '/analytics/history'
     | '/analytics/reports'
@@ -613,6 +625,7 @@ export interface FileRouteTypes {
     | '/passport/$gtin'
     | '/scan/$shortCode'
     | '/_authenticated/admin/categories'
+    | '/_authenticated/admin/inventory'
     | '/_authenticated/admin/users'
     | '/_authenticated/analytics/history'
     | '/_authenticated/analytics/reports'
@@ -945,6 +958,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/inventory': {
+      id: '/_authenticated/admin/inventory'
+      path: '/admin/inventory'
+      fullPath: '/admin/inventory'
+      preLoaderRoute: typeof AuthenticatedAdminInventoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/categories': {
       id: '/_authenticated/admin/categories'
       path: '/admin/categories'
@@ -1107,6 +1127,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedWatchlistsRoute: typeof AuthenticatedWatchlistsRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
+  AuthenticatedAdminInventoryRoute: typeof AuthenticatedAdminInventoryRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedCommerceFunnelRoute: typeof AuthenticatedCommerceFunnelRoute
   AuthenticatedCommercePricingRoute: typeof AuthenticatedCommercePricingRoute
@@ -1129,6 +1150,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedWatchlistsRoute: AuthenticatedWatchlistsRoute,
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
+  AuthenticatedAdminInventoryRoute: AuthenticatedAdminInventoryRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedCommerceFunnelRoute: AuthenticatedCommerceFunnelRoute,
   AuthenticatedCommercePricingRoute: AuthenticatedCommercePricingRoute,

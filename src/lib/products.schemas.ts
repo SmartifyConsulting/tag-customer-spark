@@ -30,6 +30,7 @@ export const listProductsSchema = z.object({
   category_id: z.string().uuid().optional().nullable(),
   brand_id: z.string().uuid().optional().nullable(),
   store_id: z.string().uuid().optional().nullable(),
+  tagged: z.enum(["all", "tagged", "untagged"]).optional().default("all"),
   promotion: z.boolean().optional().default(false),
   low_stock: z.boolean().optional().default(false),
   sort: z

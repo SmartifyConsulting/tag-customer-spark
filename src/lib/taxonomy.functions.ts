@@ -13,6 +13,33 @@ async function resolveRetailerId(supabase: any, userId: string): Promise<string 
   return data?.retailer_id ?? null;
 }
 
+type LevelRow = { id?: string; position: number; attribute_key: string; label: string; hidden: boolean };
+
+// `hidden` is a newer column that may not exist yet on a database that
+// hasn't had this migration deployed. Try selecting it; if that 400s
+// (column doesn't exist), fall back to the columns that are always there
+// so profile loading never breaks while a deploy is pending.
+async function fetchLevels(
+  supabase: any,
+  profileId: string,
+  opts: { onlyVisible?: boolean } = {},
+): Promise<LevelRow[]> {
+  let q = supabase
+    .from("taxonomy_levels")
+    .select("id, position, attribute_key, label, hidden")
+    .eq("profile_id", profileId);
+  if (opts.onlyVisible) q = q.eq("hidden", false);
+  const { data, error } = await q.order("position");
+  if (!error) return (data ?? []) as LevelRow[];
+
+  const { data: fallback } = await supabase
+    .from("taxonomy_levels")
+    .select("id, position, attribute_key, label")
+    .eq("profile_id", profileId)
+    .order("position");
+  return (fallback ?? []).map((r: any) => ({ ...r, hidden: false }));
+}
+
 // Every attribute the browser can group by.
 // Extend by adding an entry here + a case in `groupProductsBy`.
 export const ATTRIBUTE_CATALOG = [
@@ -78,6 +105,7 @@ const levelSchema = z.object({
   position: z.number().int().min(0),
   attribute_key: z.string(),
   label: z.string().min(1).max(80),
+  hidden: z.boolean().optional().default(false),
 });
 
 // ---------------- Profile CRUD ----------------
@@ -108,12 +136,8 @@ export const getProfile = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (!profile) throw new Error("Profile not found");
-    const { data: levels } = await supabase
-      .from("taxonomy_levels")
-      .select("id, position, attribute_key, label")
-      .eq("profile_id", profile.id)
-      .order("position");
-    return { profile, levels: levels ?? [] };
+    const levels = await fetchLevels(supabase, profile.id);
+    return { profile, levels };
   });
 
 export const upsertProfile = createServerFn({ method: "POST" })
@@ -157,9 +181,17 @@ export const upsertProfile = createServerFn({ method: "POST" })
         position: idx,
         attribute_key: l.attribute_key,
         label: l.label,
+        hidden: l.hidden ?? false,
       }));
-      const { error } = await supabase.from("taxonomy_levels").insert(rows);
-      if (error) throw new Error(error.message);
+      // `hidden` may not exist yet on a database that hasn't had this
+      // migration deployed — fall back to inserting without it so saving a
+      // profile never breaks while a deploy is pending.
+      const { error } = await supabase.from("taxonomy_levels").insert(rows as any);
+      if (error) {
+        const rowsWithoutHidden = rows.map(({ hidden, ...rest }) => rest);
+        const { error: fallbackError } = await supabase.from("taxonomy_levels").insert(rowsWithoutHidden);
+        if (fallbackError) throw new Error(fallbackError.message);
+      }
     }
     return { ok: true, id: profileId };
   });
@@ -217,12 +249,8 @@ export const getActiveProfile = createServerFn({ method: "POST" })
       profiles.find((p: any) => p.is_published) ??
       profiles.find((p: any) => p.is_default) ??
       profiles[0];
-    const { data: levels } = await supabase
-      .from("taxonomy_levels")
-      .select("id, position, attribute_key, label")
-      .eq("profile_id", pick.id)
-      .order("position");
-    return { profile: pick, levels: levels ?? [] };
+    const levels = await fetchLevels(supabase, pick.id, { onlyVisible: true });
+    return { profile: pick, levels };
   });
 
 // ---------------- Browsing engine ----------------
@@ -263,7 +291,7 @@ export const browseTaxonomy = createServerFn({ method: "POST" })
         profileId: z.string().uuid().optional(),
         // when set, ignores stored levels and previews with these instead
         dryLevels: z
-          .array(z.object({ attribute_key: z.string(), label: z.string() }))
+          .array(z.object({ attribute_key: z.string(), label: z.string(), hidden: z.boolean().optional() }))
           .optional(),
         path: z.array(z.object({ attribute_key: z.string(), value: z.string() })).default([]),
       })
@@ -274,17 +302,14 @@ export const browseTaxonomy = createServerFn({ method: "POST" })
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) return { levels: [], depth: 0, groups: [], products: [] };
 
-    // Resolve levels
+    // Resolve levels — hidden levels stay configured but never appear in the
+    // actual browse hierarchy.
     let levels: { attribute_key: string; label: string }[] = [];
     if (data.dryLevels && data.dryLevels.length) {
-      levels = data.dryLevels;
+      levels = data.dryLevels.filter((l) => !l.hidden);
     } else if (data.profileId) {
-      const { data: rows } = await supabase
-        .from("taxonomy_levels")
-        .select("attribute_key, label, position")
-        .eq("profile_id", data.profileId)
-        .order("position");
-      levels = (rows ?? []).map((r: any) => ({ attribute_key: r.attribute_key, label: r.label }));
+      const rows = await fetchLevels(supabase, data.profileId, { onlyVisible: true });
+      levels = rows.map((r) => ({ attribute_key: r.attribute_key, label: r.label }));
     }
     if (!levels.length) return { levels: [], depth: 0, groups: [], products: [] };
 
