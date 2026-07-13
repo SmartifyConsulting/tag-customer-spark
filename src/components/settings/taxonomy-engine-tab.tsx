@@ -238,7 +238,9 @@ export function TaxonomyEngineTab() {
         </CardTitle>
         <CardDescription>
           Configure how the product browser is organised. Drag levels to reorder — the Live Preview refreshes as you edit.
-          Publish a profile to make it the active browser layout. Multiple profiles let Retail, Buying, Warehouse and Marketing each browse the same catalogue their own way.
+          <br />
+          <strong>Publish</strong> makes the selected hierarchy the one the Inventory browser uses to group products. It does not add or remove any products.
+          Multiple profiles let Retail, Buying, Warehouse and Marketing each browse the same catalogue their own way.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
