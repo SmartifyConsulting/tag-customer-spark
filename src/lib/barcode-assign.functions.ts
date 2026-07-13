@@ -75,8 +75,10 @@ export const assignMissingBarcodes = createServerFn({ method: "POST" })
       }
       usedInBatch.add(gtin);
 
-      const patch: Record<string, unknown> = { gtin, barcode_type: "GTIN-13" };
-      if (!p.sku || String(p.sku).trim() === "") patch.sku = gtin;
+      const needsSku = !p.sku || String(p.sku).trim() === "";
+      const patch = needsSku
+        ? { gtin, barcode_type: "GTIN-13", sku: gtin }
+        : { gtin, barcode_type: "GTIN-13" };
 
       const { error: upErr } = await supabase
         .from("products")
