@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { toast } from "sonner";
-import { FileDown, Layers, List, Loader2, Package, Plus, Sparkles, Upload, Wand2 } from "lucide-react";
+import { Boxes, FileDown, Layers, List, Loader2, Package, Plus, Sparkles, Upload, Wand2 } from "lucide-react";
 import { DynamicTaxonomyBrowser } from "@/components/products/dynamic-taxonomy-browser";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
