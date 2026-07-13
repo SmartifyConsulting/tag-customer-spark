@@ -142,6 +142,60 @@ export const Route = createFileRoute("/api/public/webhooks/twilio-inbound")({
           return new Response(twiml, { headers: { "Content-Type": "text/xml" } });
         }
 
+        // Quick Reply click on an alert template ("Collection" / "Delivery")
+        // — real purchase intent. Figures out which product by looking at the
+        // customer's most recent alert send (watchlist-dispatch.server.ts
+        // stamps notification_history.payload.product_id on every send).
+        if (from && (body === "COLLECTION" || body === "DELIVERY")) {
+          const fulfillment = body === "COLLECTION" ? "collection" : "delivery";
+          const { data: customer } = await supabaseAdmin
+            .from("customers")
+            .select("id, retailer_id")
+            .eq("whatsapp_e164", from)
+            .maybeSingle();
+
+          if (customer) {
+            const { data: lastNotif } = await supabaseAdmin
+              .from("notification_history")
+              .select("id, payload, created_at")
+              .eq("customer_id", customer.id)
+              .not("payload->>product_id", "is", null)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            const productId = (lastNotif?.payload as any)?.product_id as string | undefined;
+
+            if (productId) {
+              const { data: product } = await supabaseAdmin
+                .from("products")
+                .select("price_cents, sale_price_cents, currency")
+                .eq("id", productId)
+                .maybeSingle();
+
+              await supabaseAdmin
+                .from("customer_interests")
+                .update({ status: "converted" } as any)
+                .eq("customer_id", customer.id)
+                .eq("product_id", productId);
+
+              await supabaseAdmin.from("sales_recoveries").insert({
+                retailer_id: customer.retailer_id,
+                customer_id: customer.id,
+                product_id: productId,
+                notification_id: lastNotif?.id ?? null,
+                amount_cents: product?.sale_price_cents ?? product?.price_cents ?? 0,
+                currency: product?.currency ?? "ZAR",
+                status: "pending",
+                fulfillment,
+              } as any);
+            }
+          }
+
+          const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>Great choice! We've let the store know you'd like ${fulfillment === "collection" ? "to collect this in-store" : "this delivered"} — they'll be in touch to confirm.</Message></Response>`;
+          return new Response(twiml, { headers: { "Content-Type": "text/xml" } });
+        }
+
         // Log free-form inbound messages into a conversation if a customer exists
         if (from && body) {
           const { data: customer } = await supabaseAdmin

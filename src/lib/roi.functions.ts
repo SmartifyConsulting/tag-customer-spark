@@ -179,3 +179,46 @@ export const runAttributionSweep = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { inserted: data ?? 0 };
   });
+
+// Purchase-intent signals from a customer tapping "Collection"/"Delivery" on
+// a WhatsApp alert — not yet a confirmed sale. A retailer confirms (with the
+// real amount) or rejects each one once they know whether it actually sold.
+export const listPendingRecoveries = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ customerId: z.string().uuid().optional() }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) return [];
+    let q = supabase
+      .from("sales_recoveries")
+      .select("id, customer_id, product_id, amount_cents, currency, fulfillment, recovered_at, product:products(name, image_url)")
+      .eq("retailer_id", retailerId)
+      .eq("status", "pending")
+      .order("recovered_at", { ascending: false });
+    if (data.customerId) q = q.eq("customer_id", data.customerId);
+    const { data: rows } = await q;
+    return rows ?? [];
+  });
+
+export const resolvePendingRecovery = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        action: z.enum(["confirm", "reject"]),
+        amountCents: z.number().int().min(0).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const patch: any =
+      data.action === "confirm"
+        ? { status: "attributed", amount_cents: data.amountCents ?? undefined }
+        : { status: "rejected" };
+    const { error } = await supabase.from("sales_recoveries").update(patch).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

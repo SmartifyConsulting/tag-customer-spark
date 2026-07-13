@@ -25,6 +25,8 @@ import {
   listAssignableStaff,
 } from "@/lib/inbox.functions";
 import { summariseConversation } from "@/lib/ai.functions";
+import { resolvePendingRecovery } from "@/lib/roi.functions";
+import { formatMoney } from "@/lib/format";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
@@ -225,6 +227,7 @@ function ConversationPane({ id }: { id: string }) {
   const replyFn = useServerFn(sendReply);
   const updateFn = useServerFn(updateConversation);
   const staffFn = useServerFn(listAssignableStaff);
+  const resolveRecoveryFn = useServerFn(resolvePendingRecovery);
 
   const { data, isLoading } = useQuery({
     queryKey: ["conversation", id],
@@ -284,6 +287,25 @@ function ConversationPane({ id }: { id: string }) {
   async function removeTag(t: string) {
     const next = (data?.conversation?.tags ?? []).filter((x: string) => x !== t);
     await updateFn({ data: { id, tags: next } });
+    qc.invalidateQueries({ queryKey: ["conversation", id] });
+  }
+
+  async function confirmRecovery(recoveryId: string, defaultAmountCents: number) {
+    const input = window.prompt("Confirm sale amount (Rands):", (defaultAmountCents / 100).toFixed(2));
+    if (input === null) return;
+    const amountCents = Math.round(parseFloat(input) * 100);
+    if (!Number.isFinite(amountCents) || amountCents < 0) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+    await resolveRecoveryFn({ data: { id: recoveryId, action: "confirm", amountCents } });
+    toast.success("Sale confirmed");
+    qc.invalidateQueries({ queryKey: ["conversation", id] });
+  }
+
+  async function rejectRecovery(recoveryId: string) {
+    await resolveRecoveryFn({ data: { id: recoveryId, action: "reject" } });
+    toast.success("Marked as not sold");
     qc.invalidateQueries({ queryKey: ["conversation", id] });
   }
 
@@ -442,6 +464,41 @@ function ConversationPane({ id }: { id: string }) {
             ))}
           </div>
         </div>
+
+        {data.pendingRecoveries.length > 0 && (
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+              Pending fulfilment
+            </h3>
+            <div className="space-y-2">
+              {data.pendingRecoveries.map((r: any) => (
+                <div key={r.id} className="rounded-lg border border-border p-2 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    {r.product?.image_url ? (
+                      <img src={r.product.image_url} alt="" className="h-10 w-10 rounded-md object-cover" />
+                    ) : (
+                      <div className="h-10 w-10 rounded-md bg-muted" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm truncate">{r.product?.name}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {r.fulfillment === "collection" ? "Collection" : "Delivery"} · {formatMoney(r.amount_cents, r.currency)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <Button size="sm" className="h-7 flex-1 text-xs" onClick={() => confirmRecovery(r.id, r.amount_cents)}>
+                      Confirm sale
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 flex-1 text-xs" onClick={() => rejectRecovery(r.id)}>
+                      Didn't sell
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </aside>
     </>
   );

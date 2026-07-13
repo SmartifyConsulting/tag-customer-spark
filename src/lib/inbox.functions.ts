@@ -76,12 +76,24 @@ export const getConversation = createServerFn({ method: "POST" })
 
     const { data: interests } = await supabase
       .from("customer_interests")
-      .select("id, created_at, product:products(id, name, image_url, price)")
+      .select("id, created_at, status, product:products(id, name, image_url, price)")
       .eq("customer_id", convo.customer_id)
       .order("created_at", { ascending: false })
       .limit(20);
 
-    return { conversation: convo, messages: messages ?? [], interests: interests ?? [] };
+    const { data: pendingRecoveries } = await supabase
+      .from("sales_recoveries")
+      .select("id, amount_cents, currency, fulfillment, recovered_at, product:products(name, image_url)")
+      .eq("customer_id", convo.customer_id)
+      .eq("status", "pending")
+      .order("recovered_at", { ascending: false });
+
+    return {
+      conversation: convo,
+      messages: messages ?? [],
+      interests: interests ?? [],
+      pendingRecoveries: pendingRecoveries ?? [],
+    };
   });
 
 export const sendReply = createServerFn({ method: "POST" })
