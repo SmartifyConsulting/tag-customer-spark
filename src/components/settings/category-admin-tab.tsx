@@ -43,6 +43,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/empty-state";
+import { MergeProductsSearchDialog } from "@/components/settings/merge-products-search-dialog";
 import {
   listCategoriesWithCounts,
   createCategory,
@@ -71,6 +72,7 @@ export function CategoryAdminTab() {
 
   const [newParent, setNewParent] = useState("");
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [productMergeOpen, setProductMergeOpen] = useState(false);
   const [activeDrag, setActiveDrag] = useState<DragProductData | null>(null);
 
   const sensors = useSensors(
@@ -190,9 +192,12 @@ export function CategoryAdminTab() {
               </>
             )}
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setProductMergeOpen(true)}>
+              <GitMerge className="mr-1 h-3.5 w-3.5" /> Merge products
+            </Button>
             <Button size="sm" variant="outline" onClick={() => setMergeDialogOpen(true)}>
-              <GitMerge className="mr-1 h-3.5 w-3.5" /> Merge
+              <GitMerge className="mr-1 h-3.5 w-3.5" /> Merge categories
             </Button>
           </div>
         </div>
@@ -252,6 +257,7 @@ export function CategoryAdminTab() {
       </CardContent>
 
       <MergeCategoriesDialog open={mergeDialogOpen} onOpenChange={setMergeDialogOpen} onMerged={invalidate} />
+      <MergeProductsSearchDialog open={productMergeOpen} onOpenChange={setProductMergeOpen} onMerged={invalidate} />
     </Card>
   );
 }

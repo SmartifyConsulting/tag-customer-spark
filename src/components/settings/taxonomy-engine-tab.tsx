@@ -166,6 +166,19 @@ export function TaxonomyEngineTab() {
     ]);
   };
 
+  const addCustomLevel = (label: string) => {
+    const slug = label
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+    if (!slug) return;
+    setLevels((cur) => [
+      ...cur,
+      { attribute_key: `custom:${slug}`, label: label.trim(), hidden: false, tmpId: crypto.randomUUID() },
+    ]);
+  };
+
   const startNew = () => {
     setSelectedId(null);
     setName("New profile");
@@ -263,7 +276,11 @@ export function TaxonomyEngineTab() {
                   <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Hierarchy (drag to reorder)
                   </label>
-                  <AttributePicker onPick={addLevel} used={levels.map((l) => l.attribute_key)} />
+                  <AttributePicker
+                    onPick={addLevel}
+                    onPickCustom={addCustomLevel}
+                    used={levels.map((l) => l.attribute_key)}
+                  />
                 </div>
 
                 {levels.length === 0 ? (
@@ -323,30 +340,80 @@ export function TaxonomyEngineTab() {
   );
 }
 
-function AttributePicker({ onPick, used }: { onPick: (k: string) => void; used: string[] }) {
+function AttributePicker({
+  onPick,
+  onPickCustom,
+  used,
+}: {
+  onPick: (k: string) => void;
+  onPickCustom: (label: string) => void;
+  used: string[];
+}) {
   const [open, setOpen] = useState(false);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customLabel, setCustomLabel] = useState("");
   const available = ATTRIBUTE_CATALOG.filter(
     (a) => a.key === "product" || !used.includes(a.key),
   );
+  const closeAll = () => {
+    setOpen(false);
+    setCustomOpen(false);
+    setCustomLabel("");
+  };
   return (
     <div className="relative">
       <Button size="sm" variant="outline" onClick={() => setOpen((v) => !v)}>
         <Plus className="mr-1 h-3.5 w-3.5" /> Add level
       </Button>
       {open && (
-        <div className="absolute right-0 z-20 mt-1 w-56 rounded-md border bg-popover p-1 shadow-md">
+        <div className="absolute right-0 z-20 mt-1 w-60 rounded-md border bg-popover p-1 shadow-md">
+          {available.length === 0 && !customOpen && (
+            <p className="px-2 py-1.5 text-xs text-muted-foreground">
+              Every built-in attribute is already in this hierarchy.
+            </p>
+          )}
           {available.map((a) => (
             <button
               key={a.key}
               className="block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent"
               onClick={() => {
                 onPick(a.key);
-                setOpen(false);
+                closeAll();
               }}
             >
               {a.label}
             </button>
           ))}
+          <div className="my-1 border-t" />
+          {customOpen ? (
+            <form
+              className="flex gap-1 p-1"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!customLabel.trim()) return;
+                onPickCustom(customLabel);
+                closeAll();
+              }}
+            >
+              <Input
+                autoFocus
+                value={customLabel}
+                onChange={(e) => setCustomLabel(e.target.value)}
+                placeholder="e.g. Material"
+                className="h-7 flex-1 text-xs"
+              />
+              <Button size="sm" type="submit" className="h-7 px-2 text-xs">
+                Add
+              </Button>
+            </form>
+          ) : (
+            <button
+              className="block w-full rounded px-2 py-1.5 text-left text-sm text-primary hover:bg-accent"
+              onClick={() => setCustomOpen(true)}
+            >
+              <Plus className="mr-1 inline h-3 w-3" /> Custom level…
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -376,6 +443,10 @@ function SortableLevel({
     transition,
     opacity: isDragging ? 0.6 : level.hidden ? 0.55 : 1,
   };
+  const isCustom = level.attribute_key.startsWith("custom:");
+  const selectOptions = isCustom
+    ? [...ATTRIBUTE_CATALOG, { key: level.attribute_key, label: level.label || level.attribute_key }]
+    : ATTRIBUTE_CATALOG;
   return (
     <li
       ref={setNodeRef}
@@ -398,7 +469,7 @@ function SortableLevel({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {ATTRIBUTE_CATALOG.map((a) => (
+          {selectOptions.map((a) => (
             <SelectItem key={a.key} value={a.key}>
               {a.label}
             </SelectItem>

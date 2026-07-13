@@ -253,6 +253,64 @@ export const getActiveProfile = createServerFn({ method: "POST" })
     return { profile: pick, levels };
   });
 
+// ---------------- Custom attribute values ----------------
+// Lets a retailer pre-declare the known values of a custom (JSONB-backed)
+// level before any product carries one, the same way categories/brands can
+// be created ahead of tagging products into them.
+
+export const listAttributeValues = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ attribute_key: z.string() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) return { values: [] as { id: string; value: string; label: string }[] };
+    const { data: rows, error } = await (supabase as any)
+      .from("taxonomy_attribute_values")
+      .select("id, value, label")
+      .eq("retailer_id", retailerId)
+      .eq("attribute_key", data.attribute_key)
+      .order("label");
+    if (error) return { values: [] };
+    return { values: rows ?? [] };
+  });
+
+export const createAttributeValue = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        attribute_key: z.string(),
+        label: z.string().trim().min(1).max(80),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) throw new Error("No retailer");
+    const { error } = await (supabase as any).from("taxonomy_attribute_values").insert({
+      retailer_id: retailerId,
+      attribute_key: data.attribute_key,
+      value: data.label.trim(),
+      label: data.label.trim(),
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteAttributeValue = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase as any)
+      .from("taxonomy_attribute_values")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // ---------------- Browsing engine ----------------
 
 type BrowseNode = {
@@ -326,6 +384,7 @@ export const browseTaxonomy = createServerFn({ method: "POST" })
     // them, so profiles that don't touch Supplier/Range/Collection/Season
     // keep working even before that migration has been deployed.
     const usedKeys = new Set(levels.map((l) => l.attribute_key));
+    const hasCustom = [...usedKeys].some((k) => k.startsWith("custom:"));
     const extraCols = [
       usedKeys.has("product_family") && "product_family",
       usedKeys.has("supplier") && "supplier",
@@ -333,6 +392,7 @@ export const browseTaxonomy = createServerFn({ method: "POST" })
       usedKeys.has("collection") && "collection",
       usedKeys.has("style") && "style",
       usedKeys.has("season") && "season",
+      hasCustom && "custom_attributes",
     ].filter(Boolean) as string[];
 
     // Build query with ancestor filters
@@ -402,6 +462,70 @@ export const browseTaxonomy = createServerFn({ method: "POST" })
     return { levels, depth, groups, products: [] };
   });
 
+// Attributes that map to a single literal (non-hierarchical) product column
+// and are therefore safe to reassign directly via drag-and-drop in the
+// generic attribute admin tab / preview. Category/department/subcategory are
+// deliberately excluded — they're reassigned via `moveProductCategory`
+// against the category tree instead. Derived/computed attributes (gender,
+// status, price_band, on_promotion) aren't reassignable this way either.
+const REASSIGNABLE_COLUMNS: Record<string, string> = {
+  brand: "brand_id",
+  store: "store_id",
+  size: "size",
+  colour: "color",
+  variant: "variant",
+  product_family: "product_family",
+  supplier: "supplier",
+  range: "range_name",
+  collection: "collection",
+  style: "style",
+  season: "season",
+};
+
+export const moveProductAttribute = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        productId: z.string().uuid(),
+        attribute_key: z.string(),
+        value: z.string(), // "__none__" clears the attribute
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { productId, attribute_key, value } = data;
+    const newValue = value === "__none__" ? null : value;
+
+    if (attribute_key.startsWith("custom:")) {
+      const slug = attribute_key.slice("custom:".length);
+      const { data: current } = await (supabase as any)
+        .from("products")
+        .select("custom_attributes")
+        .eq("id", productId)
+        .maybeSingle();
+      const attrs = { ...(current?.custom_attributes ?? {}) };
+      if (newValue == null) delete attrs[slug];
+      else attrs[slug] = newValue;
+      const { error } = await (supabase as any)
+        .from("products")
+        .update({ custom_attributes: attrs })
+        .eq("id", productId);
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    }
+
+    const col = REASSIGNABLE_COLUMNS[attribute_key];
+    if (!col) throw new Error(`"${attribute_key}" cannot be reassigned this way`);
+    const { error } = await supabase
+      .from("products")
+      .update({ [col]: newValue } as any)
+      .eq("id", productId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 function applyFilter(query: any, attr: string, value: string, catById: Map<string, CatRow>) {
   if (attr in CATEGORY_DEPTH) {
     const depth = CATEGORY_DEPTH[attr];
@@ -410,6 +534,11 @@ function applyFilter(query: any, attr: string, value: string, catById: Map<strin
       return ids.length ? query.or(`category_id.is.null,category_id.in.(${ids.join(",")})`) : query.is("category_id", null);
     }
     return ids.length ? query.in("category_id", ids) : query.eq("id", "00000000-0000-0000-0000-000000000000");
+  }
+  if (attr.startsWith("custom:")) {
+    const slug = attr.slice("custom:".length);
+    const col = `custom_attributes->>${slug}`;
+    return value === "__none__" ? query.is(col, null) : query.eq(col, value);
   }
   switch (attr) {
     case "brand":
@@ -455,6 +584,11 @@ function extractGroup(p: any, attr: string, catById: Map<string, CatRow>): { val
     if (anc) return { value: anc.id, label: anc.name };
     const noneLabel = attr === "department" ? "No department" : attr === "category" ? "Uncategorised" : "No sub-category";
     return { value: "__none__", label: noneLabel };
+  }
+  if (attr.startsWith("custom:")) {
+    const slug = attr.slice("custom:".length);
+    const v = p.custom_attributes?.[slug];
+    return v ? { value: String(v), label: String(v) } : { value: "__none__", label: "No value" };
   }
   switch (attr) {
     case "brand":
