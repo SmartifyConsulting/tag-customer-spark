@@ -36,6 +36,7 @@ import {
   listIncompleteDigitalIdentityIds,
   listProducts,
 } from "@/lib/products.functions";
+import { seedSampleProducts } from "@/lib/sample-products.functions";
 import { useAuth } from "@/hooks/use-auth";
 
 
