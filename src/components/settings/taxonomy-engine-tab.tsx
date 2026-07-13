@@ -266,6 +266,16 @@ export function TaxonomyEngineTab() {
           <Button size="sm" variant="outline" onClick={() => setTemplatePickerOpen(true)}>
             <Plus className="mr-1 h-3.5 w-3.5" /> New profile
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => seedTemplates.mutate()}
+            disabled={seedTemplates.isPending}
+            title="Add every built-in sector template (Fashion, Grocery, Pharmacy, …) as ready-to-pick profiles"
+          >
+            <Layers className="mr-1 h-3.5 w-3.5" />
+            {seedTemplates.isPending ? "Loading…" : "Load sector templates"}
+          </Button>
           {selectedId && (
             <>
               <Button size="sm" variant="outline" onClick={() => makeDefault.mutate()}>
