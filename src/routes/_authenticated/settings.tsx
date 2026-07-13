@@ -5,15 +5,26 @@ import { Settings as SettingsIcon, Building2, CreditCard, ShieldCheck, History, 
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { getWorkspaceSettings, updateRetailerProfile, listAuditLog, uploadRetailerLogo } from "@/lib/settings.functions";
+import { reseedAsCapeUnionMart } from "@/lib/reseed.functions";
 import { sendTestEmail, sendDailyBriefingEmail, sendWeeklyRoiEmail } from "@/lib/email.functions";
 import { BillingTab } from "@/components/settings/billing-tab";
 import { PlanAdminTab } from "@/components/settings/plan-admin-tab";
@@ -30,6 +41,7 @@ function SettingsPage() {
   const audit = useQuery({ queryKey: ["audit"], queryFn: () => listAuditLog() });
   const { roles } = useAuth();
   const isSuperAdmin = (roles ?? []).includes("super_admin");
+  const canReseed = isSuperAdmin || (roles ?? []).includes("retail_admin");
   const r = settings.data?.retailer;
   const [form, setForm] = useState<any>(null);
   const current = form ?? r ?? { name: "", contact_email: "", logo_url: "" };
@@ -85,6 +97,8 @@ function SettingsPage() {
               )}
             </CardContent>
           </Card>
+
+          {canReseed && <DangerZoneCard />}
         </TabsContent>
 
         <TabsContent value="emails">
@@ -138,6 +152,76 @@ function SettingsPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function DangerZoneCard() {
+  const qc = useQueryClient();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const reseed = useMutation({
+    mutationFn: () => reseedAsCapeUnionMart(),
+    onSuccess: (r: any) => {
+      toast.success(`Reseeded: ${r.stores} stores, ${r.brands} brands, ${r.categories} categories, ${r.products} products`);
+      qc.invalidateQueries();
+      setConfirmOpen(false);
+      setConfirmText("");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Reseed failed"),
+  });
+
+  return (
+    <Card className="rounded-2xl border-destructive/40">
+      <CardHeader>
+        <CardTitle className="text-destructive">Danger zone</CardTitle>
+        <CardDescription>Retailer admins only. These actions cannot be undone.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between rounded-xl border border-destructive/30 p-4">
+          <div>
+            <p className="text-sm font-medium">Reseed as Cape Union Mart</p>
+            <p className="text-xs text-muted-foreground">
+              Deletes all products, categories, brands and stores for this workspace, renames it "Cape Union Mart",
+              and loads a representative South African outdoor-retail catalogue and branch list.
+            </p>
+          </div>
+          <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
+            Reseed data
+          </Button>
+        </div>
+      </CardContent>
+
+      <AlertDialog open={confirmOpen} onOpenChange={(v) => { setConfirmOpen(v); if (!v) setConfirmText(""); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently delete current catalogue?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This deletes every product, category, brand and store in this workspace and replaces them with the
+              Cape Union Mart demo catalogue. This cannot be undone. Type <b>DELETE</b> to confirm.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder="Type DELETE"
+            autoFocus
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={confirmText !== "DELETE" || reseed.isPending}
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={(e) => {
+                e.preventDefault();
+                reseed.mutate();
+              }}
+            >
+              {reseed.isPending ? "Reseeding…" : "Delete and reseed"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Card>
   );
 }
 

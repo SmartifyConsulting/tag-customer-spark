@@ -37,6 +37,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/empty-state";
 import {
   ATTRIBUTE_CATALOG,
@@ -48,6 +55,7 @@ import {
   setDefaultProfile,
   upsertProfile,
 } from "@/lib/taxonomy.functions";
+import { TAXONOMY_TEMPLATES, type TaxonomyTemplate } from "@/lib/taxonomy-templates";
 
 type Level = { id?: string; attribute_key: string; label: string; hidden: boolean; tmpId: string };
 
@@ -179,7 +187,7 @@ export function TaxonomyEngineTab() {
     ]);
   };
 
-  const startNew = () => {
+  const startBlank = () => {
     setSelectedId(null);
     setName("New profile");
     setLevels([
@@ -188,6 +196,21 @@ export function TaxonomyEngineTab() {
       { attribute_key: "product", label: "Product", hidden: false, tmpId: crypto.randomUUID() },
     ]);
   };
+
+  const startFromTemplate = (template: TaxonomyTemplate) => {
+    setSelectedId(null);
+    setName(template.name);
+    setLevels(
+      template.levels.map((l) => ({
+        attribute_key: l.attribute_key,
+        label: l.label,
+        hidden: false,
+        tmpId: crypto.randomUUID(),
+      })),
+    );
+  };
+
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
 
   const isEditing = selectedId !== null || levels.length > 0;
 
@@ -222,7 +245,7 @@ export function TaxonomyEngineTab() {
               </Select>
             </div>
           )}
-          <Button size="sm" variant="outline" onClick={startNew}>
+          <Button size="sm" variant="outline" onClick={() => setTemplatePickerOpen(true)}>
             <Plus className="mr-1 h-3.5 w-3.5" /> New profile
           </Button>
           {selectedId && (
@@ -336,7 +359,78 @@ export function TaxonomyEngineTab() {
           </div>
         )}
       </CardContent>
+
+      <TemplatePickerDialog
+        open={templatePickerOpen}
+        onOpenChange={setTemplatePickerOpen}
+        onPickBlank={() => {
+          startBlank();
+          setTemplatePickerOpen(false);
+        }}
+        onPickTemplate={(t) => {
+          startFromTemplate(t);
+          setTemplatePickerOpen(false);
+        }}
+      />
     </Card>
+  );
+}
+
+function TemplatePickerDialog({
+  open,
+  onOpenChange,
+  onPickBlank,
+  onPickTemplate,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onPickBlank: () => void;
+  onPickTemplate: (t: TaxonomyTemplate) => void;
+}) {
+  const groups: TaxonomyTemplate["group"][] = ["Retail", "Wholesale"];
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Start a new profile</DialogTitle>
+          <DialogDescription>
+            Pick a template close to your business and adjust it, or start from scratch.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+          <button
+            className="flex w-full items-center justify-between rounded-lg border border-dashed px-3 py-2 text-left text-sm hover:bg-accent"
+            onClick={onPickBlank}
+          >
+            <span className="font-medium">Blank profile</span>
+            <span className="text-xs text-muted-foreground">Brand → Category → Product</span>
+          </button>
+          {groups.map((group) => (
+            <div key={group}>
+              <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {group}
+              </div>
+              <ul className="grid gap-1.5 sm:grid-cols-2">
+                {TAXONOMY_TEMPLATES.filter((t) => t.group === group).map((t) => (
+                  <li key={t.id}>
+                    <button
+                      className="flex w-full flex-col gap-0.5 rounded-lg border px-3 py-2 text-left text-sm hover:bg-accent"
+                      onClick={() => onPickTemplate(t)}
+                    >
+                      <span className="font-medium">{t.name}</span>
+                      <span className="text-xs text-muted-foreground">{t.description}</span>
+                      <span className="mt-1 text-[10px] text-muted-foreground">
+                        {t.levels.map((l) => l.label).join(" → ")}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
