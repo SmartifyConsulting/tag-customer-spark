@@ -63,6 +63,7 @@ function ProductsListPage() {
   const { hasRole } = useAuth();
   const canManage =
     hasRole("super_admin") || hasRole("retail_admin") || hasRole("store_manager");
+  const isSuperAdmin = hasRole("super_admin");
 
   const optsFn = useServerFn(getProductFormOptions);
   const listFn = useServerFn(listProducts);
@@ -70,6 +71,7 @@ function ProductsListPage() {
   const deleteFn = useServerFn(deleteProduct);
   const bulkCompleteFn = useServerFn(bulkCompleteDigitalIdentity);
   const listIncompleteFn = useServerFn(listIncompleteDigitalIdentityIds);
+  const seedSamplesFn = useServerFn(seedSampleProducts);
   const qc = useQueryClient();
 
 
