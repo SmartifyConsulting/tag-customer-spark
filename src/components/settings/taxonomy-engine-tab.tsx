@@ -68,6 +68,7 @@ export function TaxonomyEngineTab() {
   const defaultFn = useServerFn(setDefaultProfile);
   const publishFn = useServerFn(publishProfile);
   const detailFn = useServerFn(getProfile);
+  const seedFn = useServerFn(seedSectorTemplates);
 
   const profilesQ = useQuery({ queryKey: ["taxonomy-profiles"], queryFn: () => profilesFn() });
   const profiles = profilesQ.data?.profiles ?? [];
