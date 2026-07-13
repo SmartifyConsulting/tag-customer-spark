@@ -269,6 +269,16 @@ function ProductsListPage() {
                 <Upload className="mr-2 h-4 w-4" /> Import
               </Button>
             )}
+            {isSuperAdmin && (
+              <Button variant="outline" onClick={handleSeedSamples} disabled={seeding}>
+                {seeding ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Boxes className="mr-2 h-4 w-4" />
+                )}
+                Load sample products
+              </Button>
+            )}
             {canManage && (
               <Button variant="outline" asChild>
                 <Link to="/setup">
