@@ -202,6 +202,26 @@ function ProductsListPage() {
     }
   };
 
+  const [seeding, setSeeding] = useState(false);
+  const handleSeedSamples = async () => {
+    if (seeding) return;
+    if (!confirm("Add ~20 real-world sample products with valid barcodes for QR testing?")) return;
+    setSeeding(true);
+    const id = toast.loading("Fetching sample products from Open Food Facts…");
+    try {
+      const r = await seedSamplesFn();
+      await qc.invalidateQueries();
+      toast.success(
+        `Added ${r.created} products${r.skipped ? `, skipped ${r.skipped} already present` : ""}. Click "Complete digital identity" to generate QRs.`,
+        { id },
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Sample seed failed", { id });
+    } finally {
+      setSeeding(false);
+    }
+  };
+
 
   return (
     <div className="grid gap-6">
