@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { listCustomers, getCustomerDetail, deleteCustomer, markCustomersViewed } from "@/lib/customers.functions";
 import { CustomerFormDialog } from "@/components/customers/customer-form-dialog";
+import { formatMoney } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/customers")({
   head: () => ({ meta: [{ title: "Customers — Tag" }] }),
@@ -37,7 +38,7 @@ export const Route = createFileRoute("/_authenticated/customers")({
 });
 
 function money(c?: number | null) {
-  return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR", maximumFractionDigits: 0 }).format((c ?? 0) / 100);
+  return formatMoney(c, "ZAR", { maximumFractionDigits: 0 });
 }
 
 const LETTERS = ["all", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""), "#"] as const;

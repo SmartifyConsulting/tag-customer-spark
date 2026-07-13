@@ -21,6 +21,7 @@ import { EmptyState } from "@/components/empty-state";
 import {
   getRoiOverview, getRoiSettings, updateRoiSettings, runAttributionSweep,
 } from "@/lib/roi.functions";
+import { formatMoney } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/roi")({
   head: () => ({ meta: [{ title: "ROI Engine — Tag" }] }),
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/roi")({
 });
 
 function money(c: number, currency = "ZAR") {
-  return new Intl.NumberFormat("en-ZA", { style: "currency", currency, maximumFractionDigits: 0 }).format((c ?? 0) / 100);
+  return formatMoney(c, currency, { maximumFractionDigits: 0 });
 }
 
 function RoiPage() {

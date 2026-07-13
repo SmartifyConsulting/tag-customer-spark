@@ -1,13 +1,18 @@
-export function formatMoney(cents: number | null | undefined, currency = "ZAR") {
+export function formatMoney(
+  cents: number | null | undefined,
+  currency = "ZAR",
+  opts: { maximumFractionDigits?: number } = {},
+) {
   const v = ((cents ?? 0) / 100);
+  const maximumFractionDigits = opts.maximumFractionDigits ?? 2;
   try {
     return new Intl.NumberFormat(undefined, {
       style: "currency",
       currency,
-      maximumFractionDigits: 2,
+      maximumFractionDigits,
     }).format(v);
   } catch {
-    return `${currency} ${v.toFixed(2)}`;
+    return `${currency} ${v.toFixed(maximumFractionDigits)}`;
   }
 }
 

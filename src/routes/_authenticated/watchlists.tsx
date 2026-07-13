@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import {
   listWatchlists, getWatchlistOverview, triggerWatchlistNow, updateWatchlistStatus,
 } from "@/lib/watchlists.functions";
+import { formatMoney } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/watchlists")({
   head: () => ({ meta: [{ title: "Watchlists — Tag" }] }),
@@ -41,7 +42,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
 
 function money(c?: number | null) {
   if (c == null) return "—";
-  return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR", maximumFractionDigits: 0 }).format(c / 100);
+  return formatMoney(c, "ZAR", { maximumFractionDigits: 0 });
 }
 
 function WatchlistsPage() {

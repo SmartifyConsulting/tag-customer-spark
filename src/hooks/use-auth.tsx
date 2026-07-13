@@ -1,8 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { completeSignup } from "@/lib/signup.functions";
 
 export type AppRole = "super_admin" | "retail_admin" | "store_manager" | "sales_assistant";
 
@@ -47,6 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const completeSignupFn = useServerFn(completeSignup);
+  const provisioningAttempted = useRef(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
@@ -78,10 +82,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfileAndRoles = async (userId: string) => {
     const [{ data: prof }, { data: roleRows }] = await Promise.all([
       supabase.from("profiles").select("id, full_name, avatar_url").eq("id", userId).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", userId),
+      supabase.from("user_roles").select("role, retailer_id").eq("user_id", userId),
     ]);
     setProfile(prof ?? null);
-    setRoles(((roleRows ?? []) as { role: AppRole }[]).map((r) => r.role));
+    let rows = (roleRows ?? []) as { role: AppRole; retailer_id: string | null }[];
+
+    // Safety net: a session with no retailer_id yet (email-confirmation link
+    // or Google OAuth landing directly, bypassing the explicit signUp/signIn
+    // handlers in auth.tsx) — try provisioning once. Idempotent server-side.
+    if (!provisioningAttempted.current && rows.length > 0 && rows.every((r) => !r.retailer_id)) {
+      provisioningAttempted.current = true;
+      try {
+        await completeSignupFn({ data: {} });
+        const { data: refreshed } = await supabase
+          .from("user_roles")
+          .select("role, retailer_id")
+          .eq("user_id", userId);
+        rows = (refreshed ?? []) as { role: AppRole; retailer_id: string | null }[];
+      } catch {
+        // No pending invite/metadata to provision from — leave as-is.
+      }
+    }
+
+    setRoles(rows.map((r) => r.role));
   };
 
   const signOut = async () => {

@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTier } from "@/hooks/use-tier";
+import { formatMoney } from "@/lib/format";
 import {
   Table,
   TableBody,
@@ -32,7 +33,7 @@ import {
 
 function formatZAR(cents?: number | null) {
   if (cents == null) return null;
-  return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR", maximumFractionDigits: 0 }).format(cents / 100);
+  return formatMoney(cents, "ZAR", { maximumFractionDigits: 0 });
 }
 
 type ActionKey = "transfer" | "markdown" | "restock" | "promote";

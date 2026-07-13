@@ -1,15 +1,19 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AuthShell } from "@/components/auth-shell";
 import { PasswordInput } from "@/components/password-input";
 import { mapAuthError } from "@/lib/auth-errors";
+import { completeSignup } from "@/lib/signup.functions";
+import { SIGNUP_COUNTRIES } from "@/lib/countries";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — Tag" }] }),
@@ -26,6 +30,7 @@ function GoogleIcon() {
 
 function AuthPage() {
   const navigate = useNavigate();
+  const completeSignupFn = useServerFn(completeSignup);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -36,6 +41,8 @@ function AuthPage() {
   const [suName, setSuName] = useState("");
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
+  const [suCompany, setSuCompany] = useState("");
+  const [suCountry, setSuCountry] = useState("ZA");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -48,13 +55,23 @@ function AuthPage() {
     setInlineError(null);
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email: siEmail, password: siPassword });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       const friendly = mapAuthError(error, "signin");
       setInlineError(friendly);
       toast.error(friendly);
       return;
     }
+    // Idempotent: a no-op if this user already has a retailer. Covers the
+    // case where email confirmation was required, so provisioning couldn't
+    // happen at signUp time — this is their first real authenticated moment.
+    try {
+      await completeSignupFn({ data: {} });
+    } catch {
+      // Non-fatal — an existing user with no pending invite/metadata just
+      // won't get auto-provisioned here; nothing to attach them to yet.
+    }
+    setLoading(false);
     navigate({ to: "/dashboard", replace: true });
   };
 
@@ -62,21 +79,54 @@ function AuthPage() {
     e.preventDefault();
     setInlineError(null);
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const country = SIGNUP_COUNTRIES.find((c) => c.code === suCountry) ?? SIGNUP_COUNTRIES[0];
+    const companyName = suCompany.trim() || `${suName}'s workspace`;
+    const { data, error } = await supabase.auth.signUp({
       email: suEmail,
       password: suPassword,
       options: {
         emailRedirectTo: window.location.origin,
-        data: { full_name: suName },
+        // Persisted on the auth user regardless of confirmation state, so
+        // `complete_signup` can still use it if it only runs later (see
+        // handleSignIn) once the user actually has a session.
+        data: {
+          full_name: suName,
+          company_name: companyName,
+          billing_country: country.code,
+          currency: country.currency,
+          country_name: country.name,
+        },
       },
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       const friendly = mapAuthError(error, "signup");
       setInlineError(friendly);
       toast.error(friendly);
       return;
     }
+
+    if (!data.session) {
+      // Email confirmation is required — no session yet, so provisioning
+      // happens on their first sign-in instead (see handleSignIn).
+      setLoading(false);
+      toast.success("Check your email to confirm your account, then sign in.");
+      setMode("signin");
+      setSiEmail(suEmail);
+      return;
+    }
+
+    try {
+      await completeSignupFn({
+        data: { name: companyName, billingCountry: country.code, currency: country.currency, countryName: country.name },
+      });
+    } catch (err: any) {
+      setLoading(false);
+      toast.error(err?.message ?? "Couldn't set up your workspace");
+      return;
+    }
+
+    setLoading(false);
     toast.success("Welcome to Tag");
     navigate({ to: "/dashboard", replace: true });
   };
@@ -166,6 +216,35 @@ function AuthPage() {
               value={suEmail}
               onChange={(e) => setSuEmail(e.target.value)}
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="su-company">Company / workspace name</Label>
+            <Input
+              id="su-company"
+              type="text"
+              autoComplete="organization"
+              placeholder="e.g. Cape Union Mart"
+              value={suCompany}
+              onChange={(e) => setSuCompany(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              If you were invited to an existing workspace, this is ignored — you'll join that one instead.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="su-country">Country</Label>
+            <Select value={suCountry} onValueChange={setSuCountry}>
+              <SelectTrigger id="su-country">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SIGNUP_COUNTRIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.name} ({c.currency})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="su-password">Password</Label>

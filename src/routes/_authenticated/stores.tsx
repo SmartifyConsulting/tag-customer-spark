@@ -16,6 +16,7 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import { toast } from "sonner";
 import { listStores, upsertStore } from "@/lib/stores.functions";
+import { formatMoney } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/stores")({
   head: () => ({ meta: [{ title: "Stores — Tag" }] }),
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/stores")({
 });
 
 function money(c: number) {
-  return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR", maximumFractionDigits: 0 }).format(c / 100);
+  return formatMoney(c, "ZAR", { maximumFractionDigits: 0 });
 }
 
 function StoresPage() {
