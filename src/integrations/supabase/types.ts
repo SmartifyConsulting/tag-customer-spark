@@ -1796,6 +1796,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           currency: string
+          custom_attributes: Json
           description: string | null
           digital_link_url: string | null
           digital_product_passport_id: string
@@ -1850,6 +1851,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           currency?: string
+          custom_attributes?: Json
           description?: string | null
           digital_link_url?: string | null
           digital_product_passport_id?: string
@@ -1904,6 +1906,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           currency?: string
+          custom_attributes?: Json
           description?: string | null
           digital_link_url?: string | null
           digital_product_passport_id?: string
@@ -2417,6 +2420,7 @@ export type Database = {
           contact_email: string | null
           created_at: string
           created_by: string | null
+          currency: string
           id: string
           logo_url: string | null
           name: string
@@ -2433,6 +2437,7 @@ export type Database = {
           contact_email?: string | null
           created_at?: string
           created_by?: string | null
+          currency?: string
           id?: string
           logo_url?: string | null
           name: string
@@ -2449,6 +2454,7 @@ export type Database = {
           contact_email?: string | null
           created_at?: string
           created_by?: string | null
+          currency?: string
           id?: string
           logo_url?: string | null
           name?: string
@@ -3009,6 +3015,33 @@ export type Database = {
           },
         ]
       }
+      taxonomy_attribute_values: {
+        Row: {
+          attribute_key: string
+          created_at: string
+          id: string
+          label: string
+          retailer_id: string
+          value: string
+        }
+        Insert: {
+          attribute_key: string
+          created_at?: string
+          id?: string
+          label: string
+          retailer_id: string
+          value: string
+        }
+        Update: {
+          attribute_key?: string
+          created_at?: string
+          id?: string
+          label?: string
+          retailer_id?: string
+          value?: string
+        }
+        Relationships: []
+      }
       taxonomy_levels: {
         Row: {
           attribute_key: string
@@ -3353,6 +3386,15 @@ export type Database = {
       can_manage_retailer: {
         Args: { _retailer_id: string; _user_id: string }
         Returns: boolean
+      }
+      complete_signup: {
+        Args: {
+          p_billing_country?: string
+          p_country_name?: string
+          p_currency?: string
+          p_name?: string
+        }
+        Returns: string
       }
       enqueue_intent_recompute: {
         Args: { _product_id: string }
