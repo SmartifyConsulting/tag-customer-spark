@@ -212,7 +212,16 @@ export const setDefaultProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) throw new Error("No retailer");
+    // Belt-and-braces: clear siblings first (a trigger also enforces this).
+    await supabase
+      .from("taxonomy_profiles")
+      .update({ is_default: false })
+      .eq("retailer_id", retailerId)
+      .neq("id", data.id);
+    const { error } = await supabase
       .from("taxonomy_profiles")
       .update({ is_default: true })
       .eq("id", data.id);
@@ -226,7 +235,18 @@ export const publishProfile = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), publish: z.boolean() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) throw new Error("No retailer");
+    if (data.publish) {
+      // Only one profile is published at a time — matches how the browser picks the active layout.
+      await supabase
+        .from("taxonomy_profiles")
+        .update({ is_published: false })
+        .eq("retailer_id", retailerId)
+        .neq("id", data.id);
+    }
+    const { error } = await supabase
       .from("taxonomy_profiles")
       .update({ is_published: data.publish })
       .eq("id", data.id);
@@ -245,12 +265,57 @@ export const getActiveProfile = createServerFn({ method: "POST" })
       .select("id, name, is_default, is_published")
       .eq("retailer_id", retailerId);
     if (!profiles?.length) return { profile: null, levels: [] };
+    // Published beats default beats first — publishing is the explicit "make this live" action.
     const pick =
       profiles.find((p: any) => p.is_published) ??
       profiles.find((p: any) => p.is_default) ??
       profiles[0];
     const levels = await fetchLevels(supabase, pick.id, { onlyVisible: true });
     return { profile: pick, levels };
+  });
+
+// Seed all built-in sector templates (Fashion & Apparel, Grocery, Pharmacy, …)
+// as ready-to-pick profiles for the current retailer. Idempotent — skips any
+// template whose name is already present.
+export const seedSectorTemplates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) throw new Error("No retailer");
+
+    const { TAXONOMY_TEMPLATES } = await import("./taxonomy-templates");
+
+    const { data: existing } = await supabase
+      .from("taxonomy_profiles")
+      .select("name")
+      .eq("retailer_id", retailerId);
+    const existingNames = new Set((existing ?? []).map((r: any) => r.name));
+
+    let created = 0;
+    for (const t of TAXONOMY_TEMPLATES) {
+      if (existingNames.has(t.name)) continue;
+      const { data: ins, error } = await supabase
+        .from("taxonomy_profiles")
+        .insert({ retailer_id: retailerId, name: t.name, created_by: userId })
+        .select("id")
+        .single();
+      if (error || !ins) continue;
+      const rows = t.levels.map((l, idx) => ({
+        profile_id: ins.id,
+        position: idx,
+        attribute_key: l.attribute_key,
+        label: l.label,
+        hidden: false,
+      }));
+      const { error: lvlErr } = await supabase.from("taxonomy_levels").insert(rows as any);
+      if (lvlErr) {
+        const rowsNoHidden = rows.map(({ hidden, ...rest }) => rest);
+        await supabase.from("taxonomy_levels").insert(rowsNoHidden);
+      }
+      created++;
+    }
+    return { created, total: TAXONOMY_TEMPLATES.length };
   });
 
 // ---------------- Custom attribute values ----------------

@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { toast } from "sonner";
-import { FileDown, Layers, List, Loader2, Package, Plus, Sparkles, Upload, Wand2 } from "lucide-react";
+import { Boxes, FileDown, Layers, List, Loader2, Package, Plus, Sparkles, Upload, Wand2 } from "lucide-react";
 import { DynamicTaxonomyBrowser } from "@/components/products/dynamic-taxonomy-browser";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ import {
   listIncompleteDigitalIdentityIds,
   listProducts,
 } from "@/lib/products.functions";
+import { seedSampleProducts } from "@/lib/sample-products.functions";
 import { useAuth } from "@/hooks/use-auth";
 
 
@@ -62,6 +63,7 @@ function ProductsListPage() {
   const { hasRole } = useAuth();
   const canManage =
     hasRole("super_admin") || hasRole("retail_admin") || hasRole("store_manager");
+  const isSuperAdmin = hasRole("super_admin");
 
   const optsFn = useServerFn(getProductFormOptions);
   const listFn = useServerFn(listProducts);
@@ -69,6 +71,7 @@ function ProductsListPage() {
   const deleteFn = useServerFn(deleteProduct);
   const bulkCompleteFn = useServerFn(bulkCompleteDigitalIdentity);
   const listIncompleteFn = useServerFn(listIncompleteDigitalIdentityIds);
+  const seedSamplesFn = useServerFn(seedSampleProducts);
   const qc = useQueryClient();
 
 
@@ -199,6 +202,26 @@ function ProductsListPage() {
     }
   };
 
+  const [seeding, setSeeding] = useState(false);
+  const handleSeedSamples = async () => {
+    if (seeding) return;
+    if (!confirm("Add ~20 real-world sample products with valid barcodes for QR testing?")) return;
+    setSeeding(true);
+    const id = toast.loading("Fetching sample products from Open Food Facts…");
+    try {
+      const r = await seedSamplesFn();
+      await qc.invalidateQueries();
+      toast.success(
+        `Added ${r.created} products${r.skipped ? `, skipped ${r.skipped} already present` : ""}. Click "Complete digital identity" to generate QRs.`,
+        { id },
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Sample seed failed", { id });
+    } finally {
+      setSeeding(false);
+    }
+  };
+
 
   return (
     <div className="grid gap-6">
@@ -244,6 +267,16 @@ function ProductsListPage() {
             {canManage && (
               <Button variant="outline" onClick={() => setImportOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" /> Import
+              </Button>
+            )}
+            {isSuperAdmin && (
+              <Button variant="outline" onClick={handleSeedSamples} disabled={seeding}>
+                {seeding ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Boxes className="mr-2 h-4 w-4" />
+                )}
+                Load sample products
               </Button>
             )}
             {canManage && (

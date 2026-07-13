@@ -52,6 +52,7 @@ import {
   getProfile,
   listProfiles,
   publishProfile,
+  seedSectorTemplates,
   setDefaultProfile,
   upsertProfile,
 } from "@/lib/taxonomy.functions";
@@ -67,6 +68,7 @@ export function TaxonomyEngineTab() {
   const defaultFn = useServerFn(setDefaultProfile);
   const publishFn = useServerFn(publishProfile);
   const detailFn = useServerFn(getProfile);
+  const seedFn = useServerFn(seedSectorTemplates);
 
   const profilesQ = useQuery({ queryKey: ["taxonomy-profiles"], queryFn: () => profilesFn() });
   const profiles = profilesQ.data?.profiles ?? [];
@@ -146,10 +148,24 @@ export function TaxonomyEngineTab() {
 
   const togglePublish = useMutation({
     mutationFn: (publish: boolean) => publishFn({ data: { id: selectedId!, publish } }),
-    onSuccess: () => {
+    onSuccess: (_r, publish) => {
       invalidate();
-      toast.success("Updated");
+      toast.success(
+        publish
+          ? `Inventory browser now uses "${name}". Existing products are unchanged.`
+          : "Unpublished — the browser falls back to the default profile.",
+      );
     },
+  });
+
+  const seedTemplates = useMutation({
+    mutationFn: () => seedFn(),
+    onSuccess: (r: any) => {
+      invalidate();
+      if (r.created === 0) toast.info("All sector templates are already loaded.");
+      else toast.success(`Added ${r.created} sector templates. Pick one from the dropdown.`);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not load templates"),
   });
 
   const sensors = useSensors(
@@ -222,7 +238,9 @@ export function TaxonomyEngineTab() {
         </CardTitle>
         <CardDescription>
           Configure how the product browser is organised. Drag levels to reorder — the Live Preview refreshes as you edit.
-          Publish a profile to make it the active browser layout. Multiple profiles let Retail, Buying, Warehouse and Marketing each browse the same catalogue their own way.
+          <br />
+          <strong>Publish</strong> makes the selected hierarchy the one the Inventory browser uses to group products. It does not add or remove any products.
+          Multiple profiles let Retail, Buying, Warehouse and Marketing each browse the same catalogue their own way.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -247,6 +265,16 @@ export function TaxonomyEngineTab() {
           )}
           <Button size="sm" variant="outline" onClick={() => setTemplatePickerOpen(true)}>
             <Plus className="mr-1 h-3.5 w-3.5" /> New profile
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => seedTemplates.mutate()}
+            disabled={seedTemplates.isPending}
+            title="Add every built-in sector template (Fashion, Grocery, Pharmacy, …) as ready-to-pick profiles"
+          >
+            <Layers className="mr-1 h-3.5 w-3.5" />
+            {seedTemplates.isPending ? "Loading…" : "Load sector templates"}
           </Button>
           {selectedId && (
             <>
