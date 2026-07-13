@@ -20,6 +20,11 @@ const UNSUBSCRIBE_KEYWORDS = new Set([
   "CANCEL",
 ]);
 
+// Text of the Quick Reply button on the `tag_conversation_starter` template
+// (see whatsapp-twilio-guide). Twilio delivers a Quick Reply click as an
+// inbound message whose Body is exactly this button text.
+const MARKETING_OPT_IN_BUTTON_TEXT = "YES, KEEP ME POSTED";
+
 function verifyTwilioSignature(
   authToken: string,
   fullUrl: string,
@@ -123,6 +128,17 @@ export const Route = createFileRoute("/api/public/webhooks/twilio-inbound")({
             } as any)
             .eq("whatsapp_e164", from);
           const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>Welcome back — you're subscribed to updates again.</Message></Response>`;
+          return new Response(twiml, { headers: { "Content-Type": "text/xml" } });
+        }
+
+        // Quick Reply click on the conversation-starter template — this is the
+        // actual marketing-consent signal, not just a free-form reply.
+        if (from && body === MARKETING_OPT_IN_BUTTON_TEXT) {
+          await supabaseAdmin
+            .from("customers")
+            .update({ marketing_consent_at: new Date().toISOString() } as any)
+            .eq("whatsapp_e164", from);
+          const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>Thanks! You're now also opted in for marketing updates and specials. Reply STOP anytime to unsubscribe from everything.</Message></Response>`;
           return new Response(twiml, { headers: { "Content-Type": "text/xml" } });
         }
 
