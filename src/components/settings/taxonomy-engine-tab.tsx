@@ -52,6 +52,7 @@ import {
   getProfile,
   listProfiles,
   publishProfile,
+  seedSectorTemplates,
   setDefaultProfile,
   upsertProfile,
 } from "@/lib/taxonomy.functions";
