@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Boxes, FileDown, Layers, List, Loader2, Package, Plus, Sparkles, Upload, Wand2 } from "lucide-react";
+import { Barcode, FileDown, Layers, List, Loader2, Package, Plus, Sparkles, Upload, Wand2 } from "lucide-react";
 import { DynamicTaxonomyBrowser } from "@/components/products/dynamic-taxonomy-browser";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ import {
   listIncompleteDigitalIdentityIds,
   listProducts,
 } from "@/lib/products.functions";
-import { seedSampleProducts } from "@/lib/sample-products.functions";
+import { assignMissingBarcodes } from "@/lib/barcode-assign.functions";
 import { useAuth } from "@/hooks/use-auth";
 
 
@@ -71,7 +71,7 @@ function ProductsListPage() {
   const deleteFn = useServerFn(deleteProduct);
   const bulkCompleteFn = useServerFn(bulkCompleteDigitalIdentity);
   const listIncompleteFn = useServerFn(listIncompleteDigitalIdentityIds);
-  const seedSamplesFn = useServerFn(seedSampleProducts);
+  const assignBarcodesFn = useServerFn(assignMissingBarcodes);
   const qc = useQueryClient();
 
 
@@ -202,23 +202,25 @@ function ProductsListPage() {
     }
   };
 
-  const [seeding, setSeeding] = useState(false);
-  const handleSeedSamples = async () => {
-    if (seeding) return;
-    if (!confirm("Add ~20 real-world sample products with valid barcodes for QR testing?")) return;
-    setSeeding(true);
-    const id = toast.loading("Fetching sample products from Open Food Facts…");
+  const [assigningBarcodes, setAssigningBarcodes] = useState(false);
+  const handleAssignBarcodes = async () => {
+    if (assigningBarcodes) return;
+    if (!confirm("Assign valid GTIN-13 barcodes to any product missing one, then queue QR generation?")) return;
+    setAssigningBarcodes(true);
+    const id = toast.loading("Generating barcodes…");
     try {
-      const r = await seedSamplesFn();
+      const r = await assignBarcodesFn();
       await qc.invalidateQueries();
       toast.success(
-        `Added ${r.created} products${r.skipped ? `, skipped ${r.skipped} already present` : ""}. Click "Complete digital identity" to generate QRs.`,
+        r.updated === 0
+          ? "All products already have barcodes."
+          : `Assigned barcodes to ${r.updated} product${r.updated === 1 ? "" : "s"}. Click "Complete digital identity" to generate QRs.`,
         { id },
       );
     } catch (e: any) {
-      toast.error(e?.message ?? "Sample seed failed", { id });
+      toast.error(e?.message ?? "Barcode assignment failed", { id });
     } finally {
-      setSeeding(false);
+      setAssigningBarcodes(false);
     }
   };
 
@@ -269,14 +271,14 @@ function ProductsListPage() {
                 <Upload className="mr-2 h-4 w-4" /> Import
               </Button>
             )}
-            {isSuperAdmin && (
-              <Button variant="outline" onClick={handleSeedSamples} disabled={seeding}>
-                {seeding ? (
+            {canManage && (
+              <Button variant="outline" onClick={handleAssignBarcodes} disabled={assigningBarcodes}>
+                {assigningBarcodes ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Boxes className="mr-2 h-4 w-4" />
+                  <Barcode className="mr-2 h-4 w-4" />
                 )}
-                Load sample products
+                Generate barcodes
               </Button>
             )}
             {canManage && (
