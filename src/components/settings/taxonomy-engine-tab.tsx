@@ -148,10 +148,24 @@ export function TaxonomyEngineTab() {
 
   const togglePublish = useMutation({
     mutationFn: (publish: boolean) => publishFn({ data: { id: selectedId!, publish } }),
-    onSuccess: () => {
+    onSuccess: (_r, publish) => {
       invalidate();
-      toast.success("Updated");
+      toast.success(
+        publish
+          ? `Inventory browser now uses "${name}". Existing products are unchanged.`
+          : "Unpublished — the browser falls back to the default profile.",
+      );
     },
+  });
+
+  const seedTemplates = useMutation({
+    mutationFn: () => seedFn(),
+    onSuccess: (r: any) => {
+      invalidate();
+      if (r.created === 0) toast.info("All sector templates are already loaded.");
+      else toast.success(`Added ${r.created} sector templates. Pick one from the dropdown.`);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not load templates"),
   });
 
   const sensors = useSensors(
