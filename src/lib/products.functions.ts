@@ -372,6 +372,14 @@ export const updateProduct = createServerFn({ method: "POST" })
       .update(patch)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    if ("price_cents" in patch || "sale_price_cents" in patch || "stock_qty" in patch) {
+      const { processWatchlistEvents } = await import("@/lib/watchlist-dispatch.server");
+      processWatchlistEvents(supabase, data.id).catch((e) =>
+        console.warn("[updateProduct] watchlist dispatch failed", e?.message ?? e),
+      );
+    }
+
     return { ok: true };
   });
 
@@ -580,6 +588,12 @@ export const updateStock = createServerFn({ method: "POST" })
       .update(patch)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    const { processWatchlistEvents } = await import("@/lib/watchlist-dispatch.server");
+    processWatchlistEvents(context.supabase, data.id).catch((e) =>
+      console.warn("[updateStock] watchlist dispatch failed", e?.message ?? e),
+    );
+
     return { ok: true };
   });
 

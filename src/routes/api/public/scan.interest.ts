@@ -121,6 +121,33 @@ export const Route = createFileRoute("/api/public/scan/interest")({
             .eq("id", existingInterest.id);
         }
 
+        // Watch this product for price/stock changes — "I'm interested" means
+        // "notify me of any update" (sale, restock, or low-stock). Reactivates
+        // a previously-fired or cancelled watch on a repeat scan.
+        const { data: existingWatch } = await supabaseAdmin
+          .from("watchlists")
+          .select("id, status")
+          .eq("customer_id", customerId)
+          .eq("product_id", tag.product_id)
+          .eq("trigger", "any_update")
+          .maybeSingle();
+
+        if (!existingWatch) {
+          await supabaseAdmin.from("watchlists").insert({
+            retailer_id: tag.retailer_id,
+            customer_id: customerId,
+            product_id: tag.product_id,
+            trigger: "any_update",
+            channel: "whatsapp",
+            status: "active",
+          });
+        } else if (existingWatch.status !== "active") {
+          await supabaseAdmin
+            .from("watchlists")
+            .update({ status: "active" })
+            .eq("id", existingWatch.id);
+        }
+
         // Open or refresh conversation
         const { data: convo } = await supabaseAdmin
           .from("conversations")
