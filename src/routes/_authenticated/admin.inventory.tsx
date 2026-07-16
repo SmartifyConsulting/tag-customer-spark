@@ -4,12 +4,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
+  ArrowRight,
   Barcode,
   Loader2,
   Package,
   Plus,
+  QrCode,
   Search,
-  Sparkles,
   Tag as TagIcon,
   Upload,
 } from "lucide-react";
@@ -71,17 +72,43 @@ function InventoryAdminPage() {
   const rows = (q.data?.rows ?? []) as any[];
   const taggedCount = rows.filter((r) => r.is_tagged).length;
 
-  const [completing, setCompleting] = useState(false);
-  const handleCompleteIdentity = async () => {
-    if (completing) return;
-    setCompleting(true);
-    const toastId = toast.loading("Finding products that need attention…");
+  // Merges what used to be two separate actions ("Generate barcodes" then
+  // "Complete digital identity") into one pipeline: a product needs a
+  // barcode before a QR/digital identity can be generated for it, so this
+  // always assigns missing barcodes first, then completes digital identity
+  // for whatever still needs it.
+  const [runningTagIntelligence, setRunningTagIntelligence] = useState(false);
+  const handleTagIntelligence = async () => {
+    if (runningTagIntelligence) return;
+    if (
+      !confirm(
+        "Assign valid GTIN-13 barcodes to any product missing one, then generate QR codes for everything that needs one?",
+      )
+    )
+      return;
+    setRunningTagIntelligence(true);
+    const toastId = toast.loading("Assigning barcodes…");
     try {
+      const barcodeResult = await assignBarcodesFn();
+      await qc.invalidateQueries();
+
+      toast.loading("Finding products that need attention…", { id: toastId });
       const { ids } = await listIncompleteFn();
+      const barcodeText =
+        barcodeResult.updated > 0
+          ? `${barcodeResult.updated} barcode${barcodeResult.updated === 1 ? "" : "s"} assigned`
+          : "";
+
       if (ids.length === 0) {
-        toast.success("All products already have a complete digital identity.", { id: toastId });
+        toast.success(
+          [barcodeText, "all products already have a complete digital identity"]
+            .filter(Boolean)
+            .join(" — "),
+          { id: toastId },
+        );
         return;
       }
+
       const CHUNK = 10;
       let done = 0;
       let succeeded = 0;
@@ -89,7 +116,7 @@ function InventoryAdminPage() {
       const allErrors: Array<{ productId: string; step: string; message: string }> = [];
       for (let i = 0; i < ids.length; i += CHUNK) {
         const chunk = ids.slice(i, i + CHUNK);
-        toast.loading(`Completing digital identity… ${done} / ${ids.length}`, { id: toastId });
+        toast.loading(`Generating QR codes… ${done} / ${ids.length}`, { id: toastId });
         const r = await bulkCompleteFn({ data: { productIds: chunk } });
         succeeded += r.succeeded;
         skipped += r.skipped;
@@ -99,40 +126,18 @@ function InventoryAdminPage() {
       await qc.invalidateQueries();
       const errText = allErrors.length ? ` (${allErrors.length} issues)` : "";
       toast.success(
-        `Done — ${succeeded} completed${skipped ? `, ${skipped} skipped` : ""}${errText}.`,
+        [
+          barcodeText,
+          `${succeeded} QR code${succeeded === 1 ? "" : "s"} generated${skipped ? `, ${skipped} skipped` : ""}${errText}`,
+        ]
+          .filter(Boolean)
+          .join(" — "),
         { id: toastId },
       );
     } catch (e: any) {
-      toast.error(e?.message ?? "Bulk completion failed", { id: toastId });
+      toast.error(e?.message ?? "Tag intelligence run failed", { id: toastId });
     } finally {
-      setCompleting(false);
-    }
-  };
-
-  const [assigningBarcodes, setAssigningBarcodes] = useState(false);
-  const handleAssignBarcodes = async () => {
-    if (assigningBarcodes) return;
-    if (
-      !confirm(
-        "Assign valid GTIN-13 barcodes to any product missing one, then queue QR generation?",
-      )
-    )
-      return;
-    setAssigningBarcodes(true);
-    const id = toast.loading("Generating barcodes…");
-    try {
-      const r = await assignBarcodesFn();
-      await qc.invalidateQueries();
-      toast.success(
-        r.updated === 0
-          ? "All products already have barcodes."
-          : `Assigned barcodes to ${r.updated} product${r.updated === 1 ? "" : "s"}. Click "Complete digital identity" to generate QRs.`,
-        { id },
-      );
-    } catch (e: any) {
-      toast.error(e?.message ?? "Barcode assignment failed", { id });
-    } finally {
-      setAssigningBarcodes(false);
+      setRunningTagIntelligence(false);
     }
   };
 
@@ -145,27 +150,27 @@ function InventoryAdminPage() {
         description="Every uploaded product, tagged or not. The main Inventory screen only shows tagged items — review and tag the rest here."
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleTagIntelligence}
+              disabled={runningTagIntelligence}
+            >
+              {runningTagIntelligence ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <span className="mr-2 inline-flex items-center gap-1">
+                  <Barcode className="h-4 w-4" />
+                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                  <QrCode className="h-4 w-4" />
+                </span>
+              )}
+              Tag Intelligence
+            </Button>
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" /> Import
             </Button>
             <Button onClick={() => setCreateOpen(true)}>
               <Plus className="mr-2 h-4 w-4" /> Add Product
-            </Button>
-            <Button variant="outline" onClick={handleAssignBarcodes} disabled={assigningBarcodes}>
-              {assigningBarcodes ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Barcode className="mr-2 h-4 w-4" />
-              )}
-              Generate barcodes
-            </Button>
-            <Button variant="outline" onClick={handleCompleteIdentity} disabled={completing}>
-              {completing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              Complete digital identity
             </Button>
           </div>
         }
