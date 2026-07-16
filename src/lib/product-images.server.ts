@@ -1,6 +1,6 @@
 // Server-only image resolver for TAG products.
 // Priority: retailer_upload > retailer_import_url > official (OpenFoodFacts)
-//   > ai_suggested (Lovable AI) > placeholder (SVG).
+//   > ai_suggested (Lovable AI) > brand_logo > placeholder (SVG).
 // The pipeline downloads and re-uploads to the `product-images` public bucket
 // so consumers are never served flaky third-party URLs.
 
@@ -17,6 +17,7 @@ type ResolveInput = {
   currentImageUrl: string | null;
   currentImageStatus: string | null;
   openFoodFactsImageUrl?: string | null;
+  brandLogoUrl?: string | null;
   planTier?: string | null;
 };
 
@@ -24,7 +25,7 @@ type ResolveOutput = {
   image_url: string;
   thumbnail_url: string;
   hero_image: string;
-  image_status: "retailer" | "official" | "ai_suggested" | "placeholder";
+  image_status: "retailer" | "official" | "ai_suggested" | "brand_logo" | "placeholder";
   image_source: string;
   image_gallery: Array<{
     url: string;
@@ -80,9 +81,14 @@ function extForContentType(ct: string): string {
 // ----- Placeholder generator (deterministic SVG) -------------------------
 
 const BRAND_PALETTE = [
-  ["#0A1F5C", "#4C7EFF"], ["#0E7C66", "#3ED1B3"], ["#B15E00", "#FFB040"],
-  ["#8E1E5C", "#FF8AC7"], ["#1D4E2B", "#79D67F"], ["#3B2A6B", "#A38CFF"],
-  ["#7A2D2D", "#FF8080"], ["#004466", "#4FC3E0"],
+  ["#0A1F5C", "#4C7EFF"],
+  ["#0E7C66", "#3ED1B3"],
+  ["#B15E00", "#FFB040"],
+  ["#8E1E5C", "#FF8AC7"],
+  ["#1D4E2B", "#79D67F"],
+  ["#3B2A6B", "#A38CFF"],
+  ["#7A2D2D", "#FF8080"],
+  ["#004466", "#4FC3E0"],
 ];
 
 function hashString(s: string): number {
@@ -99,8 +105,9 @@ function initialsFor(name: string, brand: string | null): string {
 }
 
 function xmlEscape(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!),
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
   );
 }
 
@@ -157,9 +164,7 @@ async function uploadPlaceholder(
 
 // ----- Main resolver -----------------------------------------------------
 
-export async function resolveProductImage(
-  input: ResolveInput,
-): Promise<ResolveOutput> {
+export async function resolveProductImage(input: ResolveInput): Promise<ResolveOutput> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   // 1) Retailer-supplied URL (already on the row and not sourced by us before)
@@ -170,8 +175,7 @@ export async function resolveProductImage(
     input.currentImageStatus !== "placeholder"
   ) {
     // If it's already a supabase public URL for our bucket, keep as-is.
-    const alreadyOurs =
-      input.currentImageUrl.includes("/storage/v1/object/public/product-images/");
+    const alreadyOurs = input.currentImageUrl.includes("/storage/v1/object/public/product-images/");
     if (alreadyOurs) {
       return finalize({
         primary: input.currentImageUrl,
@@ -219,13 +223,30 @@ export async function resolveProductImage(
     }
   }
 
-  // 4) Placeholder
+  // 4) Brand logo — when no product-specific photo could be found or
+  // generated (very common for barcoded products, since step 3 is
+  // deliberately skipped for those), a real, recognisable brand mark is a
+  // much more honest fallback than the generic initials placeholder.
+  if (input.brandLogoUrl) {
+    const dest = bucketPath(input.retailerId, input.gtin, input.productId, "brand-logo.png");
+    const r = await downloadAndUpload(supabaseAdmin, input.brandLogoUrl, dest);
+    if (r.ok) {
+      return finalize({ primary: r.url, status: "brand_logo", source: "brand_logo" });
+    }
+  }
+
+  // 5) Placeholder
   const svg = generatePlaceholderSvg({
     name: input.name,
     brand: input.brand,
     categoryName: input.categoryName,
   });
-  const placeholderPath = bucketPath(input.retailerId, input.gtin, input.productId, "placeholder.svg");
+  const placeholderPath = bucketPath(
+    input.retailerId,
+    input.gtin,
+    input.productId,
+    "placeholder.svg",
+  );
   const placeholderUrl = await uploadPlaceholder(supabaseAdmin, placeholderPath, svg);
   return finalize({
     primary: placeholderUrl ?? "",
@@ -316,7 +337,9 @@ function pickOffImage(prod: any): string | null {
     prod?.image_front_url ??
     prod?.image_url ??
     prod?.selected_images?.front?.display?.en ??
-    prod?.selected_images?.front?.display?.[Object.keys(prod?.selected_images?.front?.display ?? {})[0]] ??
+    prod?.selected_images?.front?.display?.[
+      Object.keys(prod?.selected_images?.front?.display ?? {})[0]
+    ] ??
     null
   );
 }
@@ -374,7 +397,7 @@ export async function resolveAndSyncProductImage(input: {
   const { data: product } = await supabase
     .from("products")
     .select(
-      "id, retailer_id, gtin, name, brand, image_url, image_status, category:product_categories!products_category_id_fkey(name)",
+      "id, retailer_id, gtin, name, brand, image_url, image_status, category:product_categories!products_category_id_fkey(name), brands:brand_id(id, name, website, logo_url)",
     )
     .eq("id", productId)
     .maybeSingle();
@@ -394,6 +417,15 @@ export async function resolveAndSyncProductImage(input: {
     offUrl = await lookupOpenFoodFactsImage(product.gtin, product.name, product.brand);
   }
 
+  // Resolve (and cache) the linked brand's logo as a fallback for when no
+  // product-specific photo is available — a no-op if it's already set.
+  let brandLogoUrl: string | null = null;
+  const linkedBrand = (product as any).brands;
+  if (linkedBrand) {
+    const { ensureBrandLogo } = await import("./brands.functions");
+    brandLogoUrl = await ensureBrandLogo(supabase, linkedBrand);
+  }
+
   const result = await resolveProductImage({
     productId: product.id,
     retailerId: product.retailer_id,
@@ -404,6 +436,7 @@ export async function resolveAndSyncProductImage(input: {
     currentImageUrl: product.image_url,
     currentImageStatus: product.image_status,
     openFoodFactsImageUrl: offUrl,
+    brandLogoUrl,
     planTier: (sub as any)?.plan ?? null,
   });
 

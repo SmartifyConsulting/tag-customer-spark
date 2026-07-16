@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
@@ -12,11 +12,13 @@ import {
   QrCode,
   Search,
   Tag as TagIcon,
+  Trash2,
   Upload,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +34,7 @@ import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { ImportProductsDialog } from "@/components/products/import-products-dialog";
 import {
   bulkCompleteDigitalIdentity,
+  bulkDeleteProducts,
   listIncompleteDigitalIdentityIds,
   listProducts,
 } from "@/lib/products.functions";
@@ -53,11 +56,13 @@ function InventoryAdminPage() {
   const bulkCompleteFn = useServerFn(bulkCompleteDigitalIdentity);
   const listIncompleteFn = useServerFn(listIncompleteDigitalIdentityIds);
   const assignBarcodesFn = useServerFn(assignMissingBarcodes);
+  const bulkDeleteFn = useServerFn(bulkDeleteProducts);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [tagged, setTagged] = useState<Tagged>("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const params = useMemo(
     () => ({ search, status: "all" as const, tagged, pageSize: 100 }),
@@ -71,6 +76,49 @@ function InventoryAdminPage() {
 
   const rows = (q.data?.rows ?? []) as any[];
   const taggedCount = rows.filter((r) => r.is_tagged).length;
+  const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
+
+  const toggleSelected = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const bulkDelete = useMutation({
+    mutationFn: (ids: string[]) => bulkDeleteFn({ data: { ids } }),
+    onSuccess: (res) => {
+      qc.invalidateQueries();
+      setSelected(new Set());
+      toast.success(`Deleted ${res.deleted} product${res.deleted === 1 ? "" : "s"}.`);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
+  });
+
+  const handleDeleteSelected = () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    if (
+      !confirm(
+        `Delete ${ids.length} selected product${ids.length === 1 ? "" : "s"}? This permanently removes them, their QR tags and scan history.`,
+      )
+    )
+      return;
+    bulkDelete.mutate(ids);
+  };
+
+  const handleDeleteAll = () => {
+    if (rows.length === 0) return;
+    if (
+      !confirm(
+        `Delete all ${rows.length} product${rows.length === 1 ? "" : "s"} shown here? This permanently removes them, their QR tags and scan history.`,
+      )
+    )
+      return;
+    bulkDelete.mutate(rows.map((r) => r.id));
+  };
 
   // Merges what used to be two separate actions ("Generate barcodes" then
   // "Complete digital identity") into one pipeline: a product needs a
@@ -205,6 +253,40 @@ function InventoryAdminPage() {
             )}
           </div>
 
+          {!q.isLoading && rows.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2">
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={(v) =>
+                    setSelected(v ? new Set(rows.map((r) => r.id)) : new Set())
+                  }
+                />
+                {selected.size > 0 ? `${selected.size} selected` : "Select all"}
+              </label>
+              <div className="ml-auto flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  disabled={selected.size === 0 || bulkDelete.isPending}
+                  onClick={handleDeleteSelected}
+                >
+                  <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete selected
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  disabled={bulkDelete.isPending}
+                  onClick={handleDeleteAll}
+                >
+                  <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete all ({rows.length})
+                </Button>
+              </div>
+            </div>
+          )}
+
           {q.isLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -220,11 +302,16 @@ function InventoryAdminPage() {
           ) : (
             <ul className="divide-y rounded-xl border">
               {rows.map((p) => (
-                <li key={p.id}>
+                <li key={p.id} className="flex items-center gap-1 pl-3">
+                  <Checkbox
+                    checked={selected.has(p.id)}
+                    onCheckedChange={() => toggleSelected(p.id)}
+                    aria-label={`Select ${p.name}`}
+                  />
                   <Link
                     to="/products/$productId"
                     params={{ productId: p.id }}
-                    className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50"
+                    className="flex flex-1 items-center gap-3 px-2 py-2 hover:bg-muted/50"
                   >
                     <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted">
                       {p.image_url ? (

@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { productInputSchema, listProductsSchema } from "./products.schemas";
 
-
 async function resolveRetailerId(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
     .from("user_roles")
@@ -35,20 +34,14 @@ export const getProductFormOptions = createServerFn({ method: "GET" })
         .select("id, name")
         .eq("retailer_id", retailerId)
         .order("name"),
-      supabase
-        .from("stores")
-        .select("id, name")
-        .eq("retailer_id", retailerId)
-        .order("name"),
+      supabase.from("stores").select("id, name").eq("retailer_id", retailerId).order("name"),
     ]);
     return { categories: cats ?? [], stores: stores ?? [], retailerId };
   });
 
 export const lookupBarcode = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ code: z.string().trim().min(3).max(64) }).parse(d),
-  )
+  .inputValidator((d: unknown) => z.object({ code: z.string().trim().min(3).max(64) }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const retailerId = await resolveRetailerId(supabase, userId);
@@ -66,9 +59,7 @@ export const lookupBarcode = createServerFn({ method: "POST" })
 
     try {
       const res = await fetch(
-        `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(
-          data.code,
-        )}.json`,
+        `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(data.code)}.json`,
         { headers: { "user-agent": "tag-app/1.0" } },
       );
       if (res.ok) {
@@ -117,7 +108,10 @@ export const listProducts = createServerFn({ method: "POST" })
     const { data: qrRows } = await supabase.from("product_qr_assets").select("product_id");
     const taggedIds = new Set<string>((qrRows ?? []).map((r: any) => r.product_id));
     if (data.tagged === "tagged") {
-      q = q.in("id", taggedIds.size ? Array.from(taggedIds) : ["00000000-0000-0000-0000-000000000000"]);
+      q = q.in(
+        "id",
+        taggedIds.size ? Array.from(taggedIds) : ["00000000-0000-0000-0000-000000000000"],
+      );
     } else if (data.tagged === "untagged" && taggedIds.size) {
       q = q.not("id", "in", `(${Array.from(taggedIds).join(",")})`);
     }
@@ -156,9 +150,7 @@ export const listProducts = createServerFn({ method: "POST" })
 
     let filtered = rows ?? [];
     if (data.low_stock) {
-      filtered = filtered.filter(
-        (p: any) => p.stock_qty <= (p.low_stock_threshold ?? 0),
-      );
+      filtered = filtered.filter((p: any) => p.stock_qty <= (p.low_stock_threshold ?? 0));
     }
     filtered = filtered.map((p: any) => ({ ...p, is_tagged: taggedIds.has(p.id) }));
 
@@ -203,8 +195,6 @@ export const getProduct = createServerFn({ method: "POST" })
       }
     }
 
-
-
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
     const [
@@ -220,7 +210,9 @@ export const getProduct = createServerFn({ method: "POST" })
     ] = await Promise.all([
       supabase
         .from("product_qr_assets")
-        .select("id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path")
+        .select(
+          "id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path",
+        )
         .eq("product_id", data.id)
         .eq("status", "active")
         .maybeSingle(),
@@ -299,7 +291,6 @@ export const getProduct = createServerFn({ method: "POST" })
       qr: qrEnriched,
       passport: passport ?? null,
       analytics: {
-
         scans30: scans30 ?? 0,
         scansTotal: scansTotal ?? 0,
         interestedCount: interestedCount ?? 0,
@@ -365,12 +356,8 @@ export const updateProduct = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const patch: any = { ...data.patch };
-    if (data.patch.images && data.patch.images.length)
-      patch.image_url = data.patch.images[0].url;
-    const { error } = await supabase
-      .from("products")
-      .update(patch)
-      .eq("id", data.id);
+    if (data.patch.images && data.patch.images.length) patch.image_url = data.patch.images[0].url;
+    const { error } = await supabase.from("products").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
 
     if ("price_cents" in patch || "sale_price_cents" in patch || "stock_qty" in patch) {
@@ -404,6 +391,20 @@ export const deleteProduct = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const bulkDeleteProducts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ ids: z.array(z.string().uuid()).min(1).max(1000) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { error, count } = await context.supabase
+      .from("products")
+      .delete({ count: "exact" })
+      .in("id", data.ids);
+    if (error) throw new Error(error.message);
+    return { ok: true, deleted: count ?? data.ids.length };
+  });
+
 // ---------- Duplicate product detection + merge ----------
 // SKU is already unique per retailer at the DB level, so real-world
 // duplicates show up as two rows sharing the same GTIN/barcode (e.g. the
@@ -411,9 +412,7 @@ export const deleteProduct = createServerFn({ method: "POST" })
 
 export const findDuplicateProducts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ categoryId: z.string().uuid().optional() }).parse(d),
-  )
+  .inputValidator((d: unknown) => z.object({ categoryId: z.string().uuid().optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const retailerId = await resolveRetailerId(supabase, userId);
@@ -421,7 +420,9 @@ export const findDuplicateProducts = createServerFn({ method: "POST" })
 
     let q = supabase
       .from("products")
-      .select("id, name, display_name, sku, gtin, stock_qty, price_cents, currency, image_url, thumbnail_url")
+      .select(
+        "id, name, display_name, sku, gtin, stock_qty, price_cents, currency, image_url, thumbnail_url",
+      )
       .eq("retailer_id", retailerId)
       .neq("status", "archived")
       .not("gtin", "is", null);
@@ -523,8 +524,7 @@ export const createProductImageUploadUrl = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer assigned");
-    if (!(await canManage(supabase, userId, retailerId)))
-      throw new Error("Not permitted");
+    if (!(await canManage(supabase, userId, retailerId))) throw new Error("Not permitted");
 
     const safe = data.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
     const id = crypto.randomUUID();
@@ -583,10 +583,7 @@ export const updateStock = createServerFn({ method: "POST" })
     };
     if (data.low_stock_threshold !== undefined)
       patch.low_stock_threshold = data.low_stock_threshold;
-    const { error } = await context.supabase
-      .from("products")
-      .update(patch)
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("products").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
 
     const { processWatchlistEvents } = await import("@/lib/watchlist-dispatch.server");
@@ -620,10 +617,7 @@ export const listStockOverview = createServerFn({ method: "POST" })
     const list = (rows ?? []).filter((p: any) => {
       if (data.filter === "out") return (p.stock_qty ?? 0) <= 0;
       if (data.filter === "low")
-        return (
-          (p.stock_qty ?? 0) > 0 &&
-          (p.stock_qty ?? 0) <= (p.low_stock_threshold ?? 0)
-        );
+        return (p.stock_qty ?? 0) > 0 && (p.stock_qty ?? 0) <= (p.low_stock_threshold ?? 0);
       return true;
     });
     return list;
@@ -684,7 +678,11 @@ export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
         try {
           await resolveAndSyncProductImage({ supabase, productId: pid });
         } catch (e: any) {
-          results.errors.push({ productId: pid, step: "image", message: e?.message ?? "Image failed" });
+          results.errors.push({
+            productId: pid,
+            step: "image",
+            message: e?.message ?? "Image failed",
+          });
         }
 
         // 3. Passport enrichment
@@ -694,7 +692,11 @@ export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
             results.errors.push({ productId: pid, step: "enrichment", message: r.error });
           }
         } catch (e: any) {
-          results.errors.push({ productId: pid, step: "enrichment", message: e?.message ?? "Enrichment failed" });
+          results.errors.push({
+            productId: pid,
+            step: "enrichment",
+            message: e?.message ?? "Enrichment failed",
+          });
         }
 
         results.succeeded++;

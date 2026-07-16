@@ -29,11 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  archiveProduct,
-  deleteProduct,
-  getProduct,
-} from "@/lib/products.functions";
+import { archiveProduct, deleteProduct, getProduct } from "@/lib/products.functions";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { PassportTab } from "@/components/products/passport-tab";
 import { ProductQrPanel } from "@/components/qr/product-qr-panel";
@@ -62,8 +58,7 @@ export const Route = createFileRoute("/_authenticated/products/$productId")({
 function ProductDetail() {
   const { productId } = useParams({ from: "/_authenticated/products/$productId" });
   const { hasRole } = useAuth();
-  const canManage =
-    hasRole("super_admin") || hasRole("retail_admin") || hasRole("store_manager");
+  const canManage = hasRole("super_admin") || hasRole("retail_admin") || hasRole("store_manager");
 
   const fn = useServerFn(getProduct);
   const archiveFn = useServerFn(archiveProduct);
@@ -123,7 +118,7 @@ function ProductDetail() {
         </Link>
       </div>
 
-      <div className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="grid gap-4 rounded-xl border border-border bg-card p-5 md:grid-cols-[180px_minmax(0,1fr)]">
         <div className="grid gap-2">
           <div className="aspect-square overflow-hidden rounded-xl border border-border bg-muted">
             <ProductImage product={p as any} variant="hero" alt={p.name} />
@@ -131,21 +126,24 @@ function ProductDetail() {
           {images.length > 1 && (
             <div className="grid grid-cols-4 gap-2">
               {images.slice(0, 4).map((img: any) => (
-                <div key={img.url} className="aspect-square overflow-hidden rounded-md border border-border">
+                <div
+                  key={img.url}
+                  className="aspect-square overflow-hidden rounded-md border border-border"
+                >
                   <img src={img.url} alt="" className="h-full w-full object-cover" />
                 </div>
               ))}
             </div>
           )}
         </div>
-        <div className="grid content-start gap-3">
+        <div className="grid content-start gap-2">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+              <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight">
                 {p.name}
                 {p.on_promotion && (
                   <Star
-                    className="h-5 w-5 fill-red-600 text-red-600"
+                    className="h-4 w-4 fill-red-600 text-red-600"
                     aria-label={p.promotion_label ?? "On promotion"}
                   />
                 )}
@@ -155,10 +153,12 @@ function ProductDetail() {
                 {p.brand ? ` · ${p.brand}` : ""}
               </p>
             </div>
-            <Badge variant="outline" className="capitalize">{p.status}</Badge>
+            <Badge variant="outline" className="capitalize">
+              {p.status}
+            </Badge>
           </div>
-          <div className="flex items-baseline gap-3">
-            <span className={`text-2xl font-semibold ${onSale ? "text-success" : ""}`}>
+          <div className="flex flex-wrap items-baseline gap-3">
+            <span className={`text-xl font-semibold ${onSale ? "text-success" : ""}`}>
               {formatMoney(onSale ? p.sale_price_cents : p.price_cents, p.currency)}
             </span>
             {onSale && (
@@ -166,37 +166,38 @@ function ProductDetail() {
                 {formatMoney(p.price_cents, p.currency)}
               </span>
             )}
+            {p.description && (
+              <span className="text-sm text-muted-foreground">{p.description}</span>
+            )}
           </div>
-          {p.description && (
-            <p className="text-sm text-muted-foreground">{p.description}</p>
-          )}
+          <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3 lg:grid-cols-6">
+            <Fact label="Category" value={p.category?.name ?? "—"} />
+            <Fact label="Store" value={p.store?.name ?? "—"} />
+            <Fact label="Stock" value={`${p.stock_qty}`} />
+            <Fact label="Low at" value={`${p.low_stock_threshold}`} />
+            {p.color && <Fact label="Colour" value={p.color} />}
+            {p.size && <Fact label="Size" value={p.size} />}
+          </div>
           {canManage && (
             <div className="flex flex-wrap gap-2 pt-1">
-              <Button variant="outline" onClick={() => setEditOpen(true)}>
-                <Edit className="mr-2 h-4 w-4" /> Edit
+              <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+                <Edit className="mr-2 h-3.5 w-3.5" /> Edit
               </Button>
               {p.status !== "archived" && (
-                <Button variant="outline" onClick={() => archive.mutate()}>
-                  <Archive className="mr-2 h-4 w-4" /> Archive
+                <Button size="sm" variant="outline" onClick={() => archive.mutate()}>
+                  <Archive className="mr-2 h-3.5 w-3.5" /> Archive
                 </Button>
               )}
               <Button
+                size="sm"
                 variant="outline"
                 className="text-destructive hover:text-destructive"
                 onClick={() => setConfirmDelete(true)}
               >
-                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
               </Button>
             </div>
           )}
-        </div>
-        <div className="md:col-span-2 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
-          <Fact label="Category" value={p.category?.name ?? "—"} />
-          <Fact label="Store" value={p.store?.name ?? "—"} />
-          <Fact label="Stock" value={`${p.stock_qty}`} />
-          <Fact label="Low at" value={`${p.low_stock_threshold}`} />
-          {p.color && <Fact label="Colour" value={p.color} />}
-          {p.size && <Fact label="Size" value={p.size} />}
         </div>
       </div>
 
@@ -222,9 +223,15 @@ function ProductDetail() {
 
       <Tabs defaultValue="passport">
         <TabsList>
-          <TabsTrigger value="passport"><Sparkles className="mr-2 h-4 w-4" /> Digital Passport</TabsTrigger>
-          <TabsTrigger value="scans"><Smartphone className="mr-2 h-4 w-4" /> Scans</TabsTrigger>
-          <TabsTrigger value="analytics"><TrendingUp className="mr-2 h-4 w-4" /> Analytics</TabsTrigger>
+          <TabsTrigger value="passport">
+            <Sparkles className="mr-2 h-4 w-4" /> Digital Passport
+          </TabsTrigger>
+          <TabsTrigger value="scans">
+            <Smartphone className="mr-2 h-4 w-4" /> Scans
+          </TabsTrigger>
+          <TabsTrigger value="analytics">
+            <TrendingUp className="mr-2 h-4 w-4" /> Analytics
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="passport" className="pt-4">
           <PassportTab productId={productId} dppId={(p as any).digital_product_passport_id} />
@@ -236,7 +243,6 @@ function ProductDetail() {
           <AnalyticsTab analytics={data.analytics} />
         </TabsContent>
       </Tabs>
-
 
       {canManage && editOpen && (
         <ProductFormDialog
@@ -277,16 +283,12 @@ function ProductDetail() {
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/30 p-3">
+    <div className="rounded-lg border border-border bg-muted/30 px-2.5 py-1.5">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-0.5 font-medium">{value}</p>
     </div>
   );
 }
-
-
-
-
 
 function AnalyticsTab({ analytics }: { analytics: any }) {
   const kpis = [
