@@ -13,7 +13,13 @@ async function resolveRetailerId(supabase: any, userId: string): Promise<string 
   return data?.retailer_id ?? null;
 }
 
-type LevelRow = { id?: string; position: number; attribute_key: string; label: string; hidden: boolean };
+type LevelRow = {
+  id?: string;
+  position: number;
+  attribute_key: string;
+  label: string;
+  hidden: boolean;
+};
 
 // `hidden` is a newer column that may not exist yet on a database that
 // hasn't had this migration deployed. Try selecting it; if that 400s
@@ -85,7 +91,11 @@ function ancestorChain(catId: string | null | undefined, byId: Map<string, CatRo
   return chain;
 }
 
-function ancestorAtDepth(catId: string | null | undefined, depth: number, byId: Map<string, CatRow>): CatRow | null {
+function ancestorAtDepth(
+  catId: string | null | undefined,
+  depth: number,
+  byId: Map<string, CatRow>,
+): CatRow | null {
   return ancestorChain(catId, byId)[depth] ?? null;
 }
 
@@ -98,7 +108,7 @@ function categoryIdsAtDepth(byId: Map<string, CatRow>, depth: number, value: str
   return ids;
 }
 
-export type AttributeKey = typeof ATTRIBUTE_CATALOG[number]["key"];
+export type AttributeKey = (typeof ATTRIBUTE_CATALOG)[number]["key"];
 
 const levelSchema = z.object({
   id: z.string().optional(),
@@ -189,7 +199,9 @@ export const upsertProfile = createServerFn({ method: "POST" })
       const { error } = await supabase.from("taxonomy_levels").insert(rows as any);
       if (error) {
         const rowsWithoutHidden = rows.map(({ hidden, ...rest }) => rest);
-        const { error: fallbackError } = await supabase.from("taxonomy_levels").insert(rowsWithoutHidden);
+        const { error: fallbackError } = await supabase
+          .from("taxonomy_levels")
+          .insert(rowsWithoutHidden);
         if (fallbackError) throw new Error(fallbackError.message);
       }
     }
@@ -200,10 +212,7 @@ export const deleteProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("taxonomy_profiles")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("taxonomy_profiles").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -273,6 +282,148 @@ export const getActiveProfile = createServerFn({ method: "POST" })
     const levels = await fetchLevels(supabase, pick.id, { onlyVisible: true });
     return { profile: pick, levels };
   });
+
+// ---------------- Auto-detect profile from imported products ----------------
+// Keyword signals used to guess which sector template best matches a batch
+// of freshly-imported products, keyed by TAXONOMY_TEMPLATES id.
+const TEMPLATE_SIGNALS: Record<string, RegExp[]> = {
+  "fashion-apparel": [
+    /\b(shirt|t-?shirt|blouse|jumper|hoodie|jacket|coat|jean|pants?|trouser|shorts|skirt|dress|shoe|sneaker|boot|sandal|heel|apparel|clothing|footwear)\b/i,
+  ],
+  "grocery-supermarket": [
+    /\b(biscuit|cookie|chocolate|coffee|tea|milk|yoghurt|cheese|bread|snack|cereal|pasta|rice|sauce|juice|soda|beverage|grocery|fmcg)\b/i,
+  ],
+  "pharmacy-health": [
+    /\b(tablet|capsule|vitamin|paracetamol|ibuprofen|syrup|ointment|dosage|pharmacy|medicine|analgesic)\b/i,
+  ],
+  "electronics-appliances": [
+    /\b(phone|laptop|charger|cable|headphone|earbud|speaker|television|\btv\b|fridge|microwave|blender|appliance|electronics)\b/i,
+  ],
+  "home-diy-hardware": [
+    /\b(drill|screwdriver|hammer|nail|screw|paint|hardware|power tool|cement|timber|plumbing)\b/i,
+  ],
+  "sporting-outdoor": [
+    /\b(tent|backpack|hiking|camping|bicycle|gym|fitness|football|rugby|cricket|golf|outdoor)\b/i,
+  ],
+  "beauty-cosmetics": [
+    /\b(lipstick|mascara|foundation|skincare|shampoo|conditioner|moistur|serum|cosmetic|makeup)\b/i,
+  ],
+  "liquor-bottle-store": [/\b(beer|wine|whisky|vodka|gin|rum|cider|liquor|spirits)\b/i],
+  "automotive-parts": [
+    /\b(tyre|tire|brake pad|exhaust|spark plug|oil filter|automotive|car part)\b/i,
+  ],
+  "toys-games": [/\b(toy|doll|lego|puzzle|board game|action figure)\b/i],
+  "furniture-homeware": [
+    /\b(sofa|couch|coffee table|armchair|furniture|decor|homeware|cushion|curtain)\b/i,
+  ],
+  "pet-supplies": [/\b(dog food|cat food|pet food|leash|collar|aquarium|\bpet\b)\b/i],
+  "baby-kids": [/\b(nappy|diaper|baby|infant|toddler|stroller|pram)\b/i],
+  "books-stationery-office": [
+    /\b(novel|paperback|hardcover|pen|pencil|notebook|stationery|office supply)\b/i,
+  ],
+  "wholesale-cash-carry": [/\b(bulk|wholesale|cash and carry|pack of \d+|case of \d+)\b/i],
+};
+
+// Categories that lean on size/colour as a defining attribute (apparel-like
+// sectors) get a small bonus when most imported rows carry those fields —
+// keyword hits alone under-detect plain SKU names like "Men's Crew Tee M".
+const SIZE_COLOUR_BONUS_TEMPLATES = ["fashion-apparel", "sporting-outdoor", "baby-kids"];
+
+type DetectableRow = {
+  name: string;
+  category_name?: string | null;
+  brand?: string | null;
+  description?: string | null;
+  size?: string | null;
+  color?: string | null;
+};
+
+// Minimum keyword score required before we act — avoids mis-tagging an
+// ambiguous/mixed import with a confident-looking wrong sector.
+const DETECTION_THRESHOLD = 3;
+
+export function detectTaxonomyTemplateId(rows: DetectableRow[]): string | null {
+  if (!rows.length) return null;
+  const scores = new Map<string, number>();
+  for (const row of rows) {
+    const hay = `${row.name} ${row.category_name ?? ""} ${row.brand ?? ""} ${row.description ?? ""}`;
+    for (const [id, patterns] of Object.entries(TEMPLATE_SIGNALS)) {
+      if (patterns.some((p) => p.test(hay))) {
+        scores.set(id, (scores.get(id) ?? 0) + 1);
+      }
+    }
+  }
+  const sizeColourShare = rows.filter((r) => r.size || r.color).length / rows.length;
+  if (sizeColourShare > 0.4) {
+    for (const id of SIZE_COLOUR_BONUS_TEMPLATES) {
+      scores.set(id, (scores.get(id) ?? 0) + 2);
+    }
+  }
+  let bestId: string | null = null;
+  let bestScore = 0;
+  for (const [id, score] of scores) {
+    if (score > bestScore) {
+      bestScore = score;
+      bestId = id;
+    }
+  }
+  return bestScore >= DETECTION_THRESHOLD ? bestId : null;
+}
+
+/**
+ * Auto-detect and apply the taxonomy profile that best matches a batch of
+ * imported products. Only acts the first time a retailer imports products —
+ * once they have any taxonomy profile (auto-created or hand-built), this is
+ * a no-op so it never overrides deliberate configuration.
+ */
+export async function autoDetectTaxonomyProfile(opts: {
+  supabase: any;
+  retailerId: string;
+  userId?: string;
+  rows: DetectableRow[];
+}): Promise<{ applied: boolean; templateName?: string }> {
+  const { supabase, retailerId, userId, rows } = opts;
+
+  const { count } = await supabase
+    .from("taxonomy_profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("retailer_id", retailerId);
+  if ((count ?? 0) > 0) return { applied: false };
+
+  const templateId = detectTaxonomyTemplateId(rows);
+  if (!templateId) return { applied: false };
+
+  const { TAXONOMY_TEMPLATES } = await import("./taxonomy-templates");
+  const template = TAXONOMY_TEMPLATES.find((t) => t.id === templateId);
+  if (!template) return { applied: false };
+
+  const { data: profile, error } = await supabase
+    .from("taxonomy_profiles")
+    .insert({
+      retailer_id: retailerId,
+      name: template.name,
+      created_by: userId ?? null,
+      is_default: true,
+      is_published: true,
+    })
+    .select("id")
+    .single();
+  if (error || !profile) return { applied: false };
+
+  const levelRows = template.levels.map((l, idx) => ({
+    profile_id: profile.id,
+    position: idx,
+    attribute_key: l.attribute_key,
+    label: l.label,
+    hidden: false,
+  }));
+  const { error: lvlErr } = await supabase.from("taxonomy_levels").insert(levelRows as any);
+  if (lvlErr) {
+    const rowsNoHidden = levelRows.map(({ hidden, ...rest }) => rest);
+    await supabase.from("taxonomy_levels").insert(rowsNoHidden);
+  }
+  return { applied: true, templateName: template.name };
+}
 
 // Seed all built-in sector templates (Fashion & Apparel, Grocery, Pharmacy, …)
 // as ready-to-pick profiles for the current retailer. Idempotent — skips any
@@ -396,7 +547,15 @@ function priceBand(cents: number | null): string {
 }
 
 function priceBandOrder(band: string): number {
-  const order = ["Under R50", "R50–R100", "R100–R250", "R250–R500", "R500–R1 000", "Over R1 000", "unknown"];
+  const order = [
+    "Under R50",
+    "R50–R100",
+    "R100–R250",
+    "R250–R500",
+    "R500–R1 000",
+    "Over R1 000",
+    "unknown",
+  ];
   return order.indexOf(band);
 }
 
@@ -414,7 +573,13 @@ export const browseTaxonomy = createServerFn({ method: "POST" })
         profileId: z.string().uuid().optional(),
         // when set, ignores stored levels and previews with these instead
         dryLevels: z
-          .array(z.object({ attribute_key: z.string(), label: z.string(), hidden: z.boolean().optional() }))
+          .array(
+            z.object({
+              attribute_key: z.string(),
+              label: z.string(),
+              hidden: z.boolean().optional(),
+            }),
+          )
           .optional(),
         path: z.array(z.object({ attribute_key: z.string(), value: z.string() })).default([]),
       })
@@ -498,7 +663,8 @@ export const browseTaxonomy = createServerFn({ method: "POST" })
           currency: p.currency,
           stock_qty: p.stock_qty,
           low_stock_threshold: p.low_stock_threshold,
-          image_url: p.thumbnail_url || p.image_url || (Array.isArray(p.images) ? p.images[0]?.url : null),
+          image_url:
+            p.thumbnail_url || p.image_url || (Array.isArray(p.images) ? p.images[0]?.url : null),
           brand: p.brands?.name ?? null,
           category: p.product_categories?.name ?? null,
         })),
@@ -596,9 +762,13 @@ function applyFilter(query: any, attr: string, value: string, catById: Map<strin
     const depth = CATEGORY_DEPTH[attr];
     const ids = categoryIdsAtDepth(catById, depth, value);
     if (value === "__none__") {
-      return ids.length ? query.or(`category_id.is.null,category_id.in.(${ids.join(",")})`) : query.is("category_id", null);
+      return ids.length
+        ? query.or(`category_id.is.null,category_id.in.(${ids.join(",")})`)
+        : query.is("category_id", null);
     }
-    return ids.length ? query.in("category_id", ids) : query.eq("id", "00000000-0000-0000-0000-000000000000");
+    return ids.length
+      ? query.in("category_id", ids)
+      : query.eq("id", "00000000-0000-0000-0000-000000000000");
   }
   if (attr.startsWith("custom:")) {
     const slug = attr.slice("custom:".length);
@@ -609,7 +779,9 @@ function applyFilter(query: any, attr: string, value: string, catById: Map<strin
     case "brand":
       return value === "__none__" ? query.is("brand_id", null) : query.eq("brand_id", value);
     case "product_family":
-      return value === "__none__" ? query.is("product_family", null) : query.eq("product_family", value);
+      return value === "__none__"
+        ? query.is("product_family", null)
+        : query.eq("product_family", value);
     case "supplier":
       return value === "__none__" ? query.is("supplier", null) : query.eq("supplier", value);
     case "range":
@@ -642,12 +814,21 @@ function applyFilter(query: any, attr: string, value: string, catById: Map<strin
   }
 }
 
-function extractGroup(p: any, attr: string, catById: Map<string, CatRow>): { value: string; label: string } {
+function extractGroup(
+  p: any,
+  attr: string,
+  catById: Map<string, CatRow>,
+): { value: string; label: string } {
   if (attr in CATEGORY_DEPTH) {
     const depth = CATEGORY_DEPTH[attr];
     const anc = ancestorAtDepth(p.category_id, depth, catById);
     if (anc) return { value: anc.id, label: anc.name };
-    const noneLabel = attr === "department" ? "No department" : attr === "category" ? "Uncategorised" : "No sub-category";
+    const noneLabel =
+      attr === "department"
+        ? "No department"
+        : attr === "category"
+          ? "Uncategorised"
+          : "No sub-category";
     return { value: "__none__", label: noneLabel };
   }
   if (attr.startsWith("custom:")) {

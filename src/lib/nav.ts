@@ -62,8 +62,8 @@ export const NAV: readonly NavItem[] = [
     icon: ShieldCheck,
     match: ["/staff", "/stores", "/organisation", "/admin"],
     items: [
-      { title: "Taxonomy", url: "/admin/categories", match: ["/admin/categories"] },
       { title: "Inventory", url: "/admin/inventory", match: ["/admin/inventory"] },
+      { title: "Taxonomy", url: "/admin/categories", match: ["/admin/categories"] },
       { title: "Stores", url: "/stores", match: ["/stores"] },
       { title: "Users", url: "/admin/users", match: ["/admin/users"] },
     ],
