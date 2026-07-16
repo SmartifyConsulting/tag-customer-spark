@@ -117,8 +117,8 @@ async function callEnrichmentAI(input: {
 }): Promise<EnrichedPassport> {
   const { generateObject } = await import("ai");
   const { getGatewayFromEnv } = await import("./ai-gateway.server");
-  const gateway = getGatewayFromEnv();
-  const model = gateway("google/gemini-3-flash-preview");
+  const gateway = getGatewayFromEnv(undefined, { structuredOutputs: true });
+  const model = gateway("openai/gpt-5.5");
 
   const prompt = `Enrich the following product into a Digital Product Passport.
 Use the lookup data as ground truth when present. For any field you cannot ground in the lookup or common, verifiable public knowledge about this exact GTIN/brand/product, return null and DO NOT invent.
@@ -217,7 +217,7 @@ export async function enrichProductPassport(
 
     const sources = [
       ...(lookupSource ? [lookupSource] : []),
-      { provider: "lovable-ai", model: "google/gemini-3-flash-preview", generated_at: new Date().toISOString() },
+      { provider: "lovable-ai", model: "openai/gpt-5.5", generated_at: new Date().toISOString() },
     ];
 
     // Merge: never blank a field that already has a value unless overwrite
@@ -254,7 +254,7 @@ export async function enrichProductPassport(
       sources,
       field_confidence: enriched.field_confidence ?? {},
       enrichment_status: "enriched",
-      enrichment_model: "google/gemini-3-flash-preview",
+      enrichment_model: "openai/gpt-5.5",
       enriched_at: new Date().toISOString(),
       version: (existing?.version ?? 0) + 1,
     };

@@ -2,7 +2,11 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
 const LOVABLE_AIG_RUN_ID_HEADER = "X-Lovable-AIG-Run-ID";
 
-export function createLovableAiGatewayProvider(lovableApiKey: string, initialRunId?: string) {
+export function createLovableAiGatewayProvider(
+  lovableApiKey: string,
+  initialRunId?: string,
+  options?: { structuredOutputs?: boolean },
+) {
   let runId = initialRunId?.trim() || undefined;
   let resolveRunId: (value: string | undefined) => void = () => {};
   let runIdResolved = false;
@@ -23,6 +27,7 @@ export function createLovableAiGatewayProvider(lovableApiKey: string, initialRun
   const provider = createOpenAICompatible({
     name: "lovable",
     baseURL: "https://ai.gateway.lovable.dev/v1",
+    supportsStructuredOutputs: options?.structuredOutputs ?? false,
     headers: {
       "Lovable-API-Key": lovableApiKey,
       "X-Lovable-AIG-SDK": "vercel-ai-sdk",
@@ -49,8 +54,8 @@ export function createLovableAiGatewayProvider(lovableApiKey: string, initialRun
   });
 }
 
-export function getGatewayFromEnv(runId?: string) {
+export function getGatewayFromEnv(runId?: string, options?: { structuredOutputs?: boolean }) {
   const key = process.env.LOVABLE_API_KEY;
   if (!key) throw new Error("LOVABLE_API_KEY is not configured");
-  return createLovableAiGatewayProvider(key, runId);
+  return createLovableAiGatewayProvider(key, runId, options);
 }
