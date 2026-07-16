@@ -201,6 +201,24 @@ export async function resolveProductImage(input: ResolveInput): Promise<ResolveO
     }
   }
 
+  // 2b) Google Custom Search — searches the wider web for a product photo
+  // using GTIN when available, otherwise brand + name. Skipped silently
+  // when the CSE secrets are not configured or when the daily free-tier
+  // quota is exhausted.
+  const googleUrl = await lookupGoogleImage({
+    gtin: input.gtin,
+    name: input.name,
+    brand: input.brand,
+  });
+  if (googleUrl) {
+    const dest = bucketPath(input.retailerId, input.gtin, input.productId, `original.jpg`);
+    const r = await downloadAndUpload(supabaseAdmin, googleUrl, dest);
+    if (r.ok) {
+      return finalize({ primary: r.url, status: "official", source: "google_cse" });
+    }
+  }
+
+
   // 3) AI suggested — gated to Growth+ plan, and only for products with no
   // GTIN. A barcode means real, manufacturer-designed packaging exists —
   // an AI image (deliberately generated without text/logo, since we can't
