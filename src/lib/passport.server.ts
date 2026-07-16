@@ -217,7 +217,7 @@ export async function enrichProductPassport(
 
     const sources = [
       ...(lookupSource ? [lookupSource] : []),
-      { provider: "lovable-ai", model: "google/gemini-3-flash-preview", generated_at: new Date().toISOString() },
+      { provider: "lovable-ai", model: "openai/gpt-5.5", generated_at: new Date().toISOString() },
     ];
 
     // Merge: never blank a field that already has a value unless overwrite
@@ -254,7 +254,7 @@ export async function enrichProductPassport(
       sources,
       field_confidence: enriched.field_confidence ?? {},
       enrichment_status: "enriched",
-      enrichment_model: "google/gemini-3-flash-preview",
+      enrichment_model: "openai/gpt-5.5",
       enriched_at: new Date().toISOString(),
       version: (existing?.version ?? 0) + 1,
     };

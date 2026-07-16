@@ -54,7 +54,7 @@ Rules: Title Case display_name. Do NOT include brand or size in display_name. Fi
       method: "POST",
       headers: { "content-type": "application/json", "Lovable-API-Key": key },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "openai/gpt-5.4-mini",
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: "You normalise messy retail product data into clean structured JSON." },
