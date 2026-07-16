@@ -108,13 +108,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!provisioningAttempted.current && rows.length > 0 && rows.every((r) => !r.retailer_id)) {
       provisioningAttempted.current = true;
       try {
-        const result = await completeSignupFn({ data: {} });
+        await completeSignupFn({ data: {} });
         const { data: refreshed } = await supabase
           .from("user_roles")
           .select("role, retailer_id")
           .eq("user_id", userId);
         rows = (refreshed ?? []) as { role: AppRole; retailer_id: string | null }[];
-        if (result.isNew) navigate({ to: "/setup", replace: true });
+        // Went from "no retailer at all" to "has one" in this exact call —
+        // this account's very first usable moment, whether as a brand-new
+        // owner or a staff invite just being attached. Don't try to tell
+        // those two apart via complete_signup's return value (that
+        // depends on a migration that may not be deployed yet, and this
+        // redirect kept silently failing because of it) — the observable
+        // before/after state alone is enough, and seeing the wizard once
+        // is harmless even for an invited staff member.
+        if (rows.some((r) => r.retailer_id)) {
+          navigate({ to: "/setup", replace: true });
+        }
       } catch {
         // No pending invite/metadata to provision from — leave as-is.
       }

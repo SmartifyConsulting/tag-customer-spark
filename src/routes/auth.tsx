@@ -74,22 +74,12 @@ function AuthPage() {
       toast.error(friendly);
       return;
     }
-    // Idempotent: a no-op if this user already has a retailer. Covers the
-    // case where email confirmation was required, so provisioning couldn't
-    // happen at signUp time — this is their first real authenticated moment.
-    let isNewSignup = false;
-    try {
-      const result = await completeSignupFn({ data: {} });
-      isNewSignup = result.isNew;
-    } catch {
-      // Non-fatal — an existing user with no pending invite/metadata just
-      // won't get auto-provisioned here; nothing to attach them to yet.
-    }
+    // Provisioning (and routing a first-time confirmation into TAG Setup
+    // instead of the dashboard) happens in AuthProvider's onAuthStateChange
+    // handler, which fires for this sign-in the same as any other — no
+    // need to duplicate that here. See use-auth.tsx.
     setLoading(false);
-    // Only a first-time confirmation actually provisions a retailer here —
-    // that's the moment TAG Setup needs to run, since it never got a chance
-    // to at signUp time (no session existed yet).
-    navigate({ to: isNewSignup ? "/setup" : "/dashboard", replace: true });
+    navigate({ to: "/dashboard", replace: true });
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -104,8 +94,8 @@ function AuthPage() {
       options: {
         emailRedirectTo: window.location.origin,
         // Persisted on the auth user regardless of confirmation state, so
-        // `complete_signup` can still use it if it only runs later (see
-        // handleSignIn) once the user actually has a session.
+        // `complete_signup` can still use it if it only runs later, via
+        // AuthProvider's safety net, once the user actually has a session.
         data: {
           full_name: suName,
           company_name: companyName,
@@ -125,7 +115,9 @@ function AuthPage() {
 
     if (!data.session) {
       // Email confirmation is required — no session yet, so provisioning
-      // happens on their first sign-in instead (see handleSignIn).
+      // (and the TAG Setup redirect) happens later via AuthProvider's
+      // safety net, whichever way they end up with a session: clicking
+      // the confirmation link directly, or signing in here manually.
       // Supabase's own built-in confirmation email is unreliable (the same
       // reason password reset was moved off it — see send-password-reset),
       // so send a proper one through the same Resend-based function.
@@ -148,9 +140,11 @@ function AuthPage() {
       return;
     }
 
-    let isNewRetailer = false;
     try {
-      const result = await completeSignupFn({
+      // Called explicitly (not left to AuthProvider's safety net) because
+      // this is the one place with the actually-typed company name/country
+      // fresh from the form — the generic call passes none of that.
+      await completeSignupFn({
         data: {
           name: companyName,
           billingCountry: country.code,
@@ -158,7 +152,6 @@ function AuthPage() {
           countryName: country.name,
         },
       });
-      isNewRetailer = result.isNew;
     } catch (err: any) {
       setLoading(false);
       toast.error(err?.message ?? "Couldn't set up your workspace");
@@ -167,9 +160,11 @@ function AuthPage() {
 
     setLoading(false);
     toast.success("Welcome to Tag");
-    // A staff invite match attaches to an existing, already-configured
-    // retailer — only a brand-new retailer needs the setup wizard.
-    navigate({ to: isNewRetailer ? "/setup" : "/dashboard", replace: true });
+    // Unconditional: signUp() just created this auth user moments ago, so
+    // this is always their first-ever usable moment — no need to ask
+    // complete_signup whether it was "new" (that call raced AuthProvider's
+    // own safety-net check anyway, since this one runs first and wins).
+    navigate({ to: "/setup", replace: true });
   };
 
   const handleGoogle = async () => {
