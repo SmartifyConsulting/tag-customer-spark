@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AuthShell } from "@/components/auth-shell";
 import { PasswordInput } from "@/components/password-input";
 import { mapAuthError } from "@/lib/auth-errors";
@@ -23,7 +29,10 @@ export const Route = createFileRoute("/auth")({
 function GoogleIcon() {
   return (
     <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.4-1.6 4.1-5.5 4.1-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.7 14.6 2.8 12 2.8 6.9 2.8 2.8 6.9 2.8 12s4.1 9.2 9.2 9.2c5.3 0 8.8-3.7 8.8-9 0-.6-.1-1.1-.2-1.6H12z" />
+      <path
+        fill="#EA4335"
+        d="M12 10.2v3.9h5.5c-.2 1.4-1.6 4.1-5.5 4.1-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.7 14.6 2.8 12 2.8 6.9 2.8 2.8 6.9 2.8 12s4.1 9.2 9.2 9.2c5.3 0 8.8-3.7 8.8-9 0-.6-.1-1.1-.2-1.6H12z"
+      />
     </svg>
   );
 }
@@ -54,7 +63,10 @@ function AuthPage() {
     e.preventDefault();
     setInlineError(null);
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: siEmail, password: siPassword });
+    const { error } = await supabase.auth.signInWithPassword({
+      email: siEmail,
+      password: siPassword,
+    });
     if (error) {
       setLoading(false);
       const friendly = mapAuthError(error, "signin");
@@ -118,7 +130,12 @@ function AuthPage() {
 
     try {
       await completeSignupFn({
-        data: { name: companyName, billingCountry: country.code, currency: country.currency, countryName: country.name },
+        data: {
+          name: companyName,
+          billingCountry: country.code,
+          currency: country.currency,
+          countryName: country.name,
+        },
       });
     } catch (err: any) {
       setLoading(false);
@@ -128,7 +145,7 @@ function AuthPage() {
 
     setLoading(false);
     toast.success("Welcome to Tag");
-    navigate({ to: "/dashboard", replace: true });
+    navigate({ to: "/setup", replace: true });
   };
 
   const handleGoogle = async () => {
@@ -178,7 +195,9 @@ function AuthPage() {
             />
           </div>
           {inlineError && (
-            <p className="text-sm text-destructive" aria-live="polite">{inlineError}</p>
+            <p className="text-sm text-destructive" aria-live="polite">
+              {inlineError}
+            </p>
           )}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Signing in…" : "Sign in"}
@@ -228,7 +247,8 @@ function AuthPage() {
               onChange={(e) => setSuCompany(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              If you were invited to an existing workspace, this is ignored — you'll join that one instead.
+              If you were invited to an existing workspace, this is ignored — you'll join that one
+              instead.
             </p>
           </div>
           <div className="space-y-1.5">
@@ -259,7 +279,9 @@ function AuthPage() {
             <p className="text-xs text-muted-foreground">At least 8 characters.</p>
           </div>
           {inlineError && (
-            <p className="text-sm text-destructive" aria-live="polite">{inlineError}</p>
+            <p className="text-sm text-destructive" aria-live="polite">
+              {inlineError}
+            </p>
           )}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Creating account…" : "Create account"}
@@ -291,7 +313,10 @@ function AuthPage() {
             <button
               type="button"
               className="font-medium text-foreground underline-offset-2 hover:underline"
-              onClick={() => { setInlineError(null); setMode("signup"); }}
+              onClick={() => {
+                setInlineError(null);
+                setMode("signup");
+              }}
             >
               Create an account
             </button>
@@ -302,7 +327,10 @@ function AuthPage() {
             <button
               type="button"
               className="font-medium text-foreground underline-offset-2 hover:underline"
-              onClick={() => { setInlineError(null); setMode("signin"); }}
+              onClick={() => {
+                setInlineError(null);
+                setMode("signin");
+              }}
             >
               Sign in
             </button>

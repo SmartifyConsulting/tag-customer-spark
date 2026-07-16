@@ -12,7 +12,6 @@ import {
   Sparkles,
   Tag as TagIcon,
   Upload,
-  Wand2,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -146,11 +145,6 @@ function InventoryAdminPage() {
         description="Every uploaded product, tagged or not. The main Inventory screen only shows tagged items — review and tag the rest here."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" asChild>
-              <Link to="/setup">
-                <Wand2 className="mr-2 h-4 w-4" /> TAG Setup
-              </Link>
-            </Button>
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" /> Import
             </Button>
