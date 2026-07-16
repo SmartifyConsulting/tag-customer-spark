@@ -22,11 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  previewProductImport,
-  commitProductImport,
-  type ImportRow,
-} from "@/lib/import.functions";
+import { previewProductImport, commitProductImport, type ImportRow } from "@/lib/import.functions";
 
 async function fileToBase64(file: File): Promise<string> {
   const buf = await file.arrayBuffer();
@@ -72,9 +68,14 @@ export function ImportProductsDialog({
     mutationFn: () => commitFn({ data: { rows } }),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["admin-inventory"] });
       toast.success(
         `Imported: ${res.created} new, ${res.updated} updated${res.failed ? `, ${res.failed} failed` : ""}`,
       );
+      if (res.taxonomyProfileApplied) {
+        qc.invalidateQueries({ queryKey: ["taxonomy-active"] });
+        toast.success(`Detected "${res.taxonomyProfileName}" taxonomy — set up automatically.`);
+      }
       if (res.errors?.length) console.warn("Import errors:", res.errors);
       setRows([]);
       setFile(null);
@@ -101,8 +102,8 @@ export function ImportProductsDialog({
         <DialogHeader>
           <DialogTitle>Import products</DialogTitle>
           <DialogDescription>
-            Upload an XLSX, CSV, or PDF catalogue. AI will map columns, preserve GTINs,
-            and generate GS1 Digital Link QR codes (PNG, SVG, PDF).
+            Upload an XLSX, CSV, or PDF catalogue. AI will map columns, preserve GTINs, and generate
+            GS1 Digital Link QR codes (PNG, SVG, PDF).
           </DialogDescription>
         </DialogHeader>
 

@@ -54,14 +54,21 @@ function priceToCents(v: unknown): number {
   return Math.round(n * 100);
 }
 
-async function callAiJson(prompt: string, systemPrompt: string, filePart?: { mime: string; base64: string; filename: string }) {
+async function callAiJson(
+  prompt: string,
+  systemPrompt: string,
+  filePart?: { mime: string; base64: string; filename: string },
+) {
   const key = process.env.LOVABLE_API_KEY;
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
   const content: any[] = [{ type: "text", text: prompt }];
   if (filePart) {
     content.push({
       type: "file",
-      file: { filename: filePart.filename, file_data: `data:${filePart.mime};base64,${filePart.base64}` },
+      file: {
+        filename: filePart.filename,
+        file_data: `data:${filePart.mime};base64,${filePart.base64}`,
+      },
     });
   }
   const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -115,7 +122,7 @@ export const previewProductImport = createServerFn({ method: "POST" })
     let mapped: ImportRow[] = [];
     if (isPdf) {
       const result = await callAiJson(
-        "Extract every product from the attached PDF. Return JSON like {\"rows\":[{...}]} where each row has: name, sku, gtin (barcode digits only), brand, description, category_name, color, size, price (as number, ZAR), sale_price (optional), stock (integer). If SKU is missing, use the GTIN as SKU. Preserve barcode identifiers exactly.",
+        'Extract every product from the attached PDF. Return JSON like {"rows":[{...}]} where each row has: name, sku, gtin (barcode digits only), brand, description, category_name, color, size, price (as number, ZAR), sale_price (optional), stock (integer). If SKU is missing, use the GTIN as SKU. Preserve barcode identifiers exactly.',
         "You are a product-catalogue extraction assistant. Output only valid JSON.",
         { mime: data.mime, base64: data.base64, filename: data.filename },
       );
@@ -182,9 +189,7 @@ function normaliseRow(r: any): ImportRow | null {
 
 export const commitProductImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ rows: z.array(rowSchema).min(1).max(500) }).parse(d),
-  )
+  .inputValidator((d: unknown) => z.object({ rows: z.array(rowSchema).min(1).max(500) }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const retailerId = await resolveRetailerId(supabase, userId);
@@ -299,10 +304,7 @@ export const commitProductImport = createServerFn({ method: "POST" })
 
         let productId: string;
         if (existing) {
-          const { error } = await supabase
-            .from("products")
-            .update(payload)
-            .eq("id", existing.id);
+          const { error } = await supabase.from("products").update(payload).eq("id", existing.id);
           if (error) throw new Error(error.message);
           productId = existing.id;
           updated++;
@@ -342,5 +344,20 @@ export const commitProductImport = createServerFn({ method: "POST" })
       }
     }
 
-    return { created, updated, failed, errors };
+    const { autoDetectTaxonomyProfile } = await import("./taxonomy.functions");
+    const taxonomy = await autoDetectTaxonomyProfile({
+      supabase,
+      retailerId,
+      userId,
+      rows: data.rows,
+    });
+
+    return {
+      created,
+      updated,
+      failed,
+      errors,
+      taxonomyProfileApplied: taxonomy.applied,
+      taxonomyProfileName: taxonomy.templateName ?? null,
+    };
   });
