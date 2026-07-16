@@ -41,6 +41,12 @@ async function fileToBase64(file: File): Promise<string> {
   return btoa(binary);
 }
 
+// Batch size for both phases — small enough that the progress bar advances
+// smoothly and a single request never takes too long, since commit runs
+// AI category-suggestion and QR/image work per row server-side.
+const IMPORT_CHUNK = 25;
+const TAG_CHUNK = 10;
+
 export function ImportProductsDialog({
   open,
   onOpenChange,
@@ -57,9 +63,9 @@ export function ImportProductsDialog({
   const inputRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [file, setFile] = useState<File | null>(null);
-  const [tagging, setTagging] = useState(false);
-  const [taggingLabel, setTaggingLabel] = useState("");
-  const [taggingProgress, setTaggingProgress] = useState(0);
+  const [processing, setProcessing] = useState(false);
+  const [label, setLabel] = useState("");
+  const [progress, setProgress] = useState(0);
 
   const preview = useMutation({
     mutationFn: async (f: File) => {
@@ -76,69 +82,82 @@ export function ImportProductsDialog({
     onError: (e: any) => toast.error(e.message ?? "Failed to read file"),
   });
 
-  // Runs right after a successful import so any product that came in
-  // without a usable barcode (and so didn't get a QR during commit) still
-  // ends up tagged, without the retailer having to remember to click
-  // "Tag Intelligence" themselves afterwards.
-  const runTagIntelligence = async () => {
-    setTagging(true);
+  // One continuous, aggregate progress bar for the whole operation — import
+  // (chunked so progress reflects real completion, not a single opaque
+  // request), then the same barcode-to-QR pipeline as "Tag Intelligence" so
+  // any product that came in without a usable barcode still ends up tagged.
+  const runImportAndTag = async () => {
+    setProcessing(true);
     try {
-      setTaggingProgress(10);
-      setTaggingLabel("Assigning missing barcodes…");
-      await assignBarcodesFn();
-      await qc.invalidateQueries();
+      let created = 0;
+      let updated = 0;
+      let failed = 0;
+      const errors: string[] = [];
+      let taxonomyApplied = false;
+      let taxonomyName: string | null = null;
 
-      setTaggingProgress(30);
-      setTaggingLabel("Finding products that still need a QR code…");
-      const { ids } = await listIncompleteFn();
-
-      if (ids.length === 0) {
-        setTaggingProgress(100);
-        setTaggingLabel("All products are tagged.");
-      } else {
-        const CHUNK = 10;
-        let done = 0;
-        for (let i = 0; i < ids.length; i += CHUNK) {
-          const chunk = ids.slice(i, i + CHUNK);
-          setTaggingLabel(`Generating QR codes… ${done} / ${ids.length}`);
-          await bulkCompleteFn({ data: { productIds: chunk } });
-          done += chunk.length;
-          setTaggingProgress(30 + Math.round((done / ids.length) * 70));
+      setProgress(2);
+      for (let i = 0; i < rows.length; i += IMPORT_CHUNK) {
+        const chunk = rows.slice(i, i + IMPORT_CHUNK);
+        const done = Math.min(i + chunk.length, rows.length);
+        setLabel(`Importing products… ${done} / ${rows.length}`);
+        const res = await commitFn({ data: { rows: chunk } });
+        created += res.created;
+        updated += res.updated;
+        failed += res.failed;
+        errors.push(...res.errors);
+        if (res.taxonomyProfileApplied) {
+          taxonomyApplied = true;
+          taxonomyName = res.taxonomyProfileName ?? null;
         }
-        setTaggingLabel(
-          `Generated QR codes for ${ids.length} product${ids.length === 1 ? "" : "s"}.`,
-        );
+        setProgress(2 + Math.round((done / rows.length) * 43));
       }
-      await qc.invalidateQueries();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Tag intelligence run failed");
-    } finally {
-      setTimeout(() => {
-        setTagging(false);
-        setRows([]);
-        setFile(null);
-        onOpenChange(false);
-      }, 900);
-    }
-  };
-
-  const commit = useMutation({
-    mutationFn: () => commitFn({ data: { rows } }),
-    onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["admin-inventory"] });
-      toast.success(
-        `Imported: ${res.created} new, ${res.updated} updated${res.failed ? `, ${res.failed} failed` : ""}`,
-      );
-      if (res.taxonomyProfileApplied) {
-        qc.invalidateQueries({ queryKey: ["taxonomy-active"] });
-        toast.success(`Detected "${res.taxonomyProfileName}" taxonomy — set up automatically.`);
+      if (taxonomyApplied) qc.invalidateQueries({ queryKey: ["taxonomy-active"] });
+
+      setProgress(50);
+      setLabel("Assigning missing barcodes…");
+      await assignBarcodesFn();
+      await qc.invalidateQueries();
+      setProgress(60);
+
+      setLabel("Finding products that still need a QR code…");
+      const { ids } = await listIncompleteFn();
+
+      if (ids.length > 0) {
+        let done = 0;
+        for (let i = 0; i < ids.length; i += TAG_CHUNK) {
+          const chunk = ids.slice(i, i + TAG_CHUNK);
+          setLabel(`Generating QR codes… ${done} / ${ids.length}`);
+          await bulkCompleteFn({ data: { productIds: chunk } });
+          done += chunk.length;
+          setProgress(60 + Math.round((done / ids.length) * 40));
+        }
+      } else {
+        setProgress(100);
       }
-      if (res.errors?.length) console.warn("Import errors:", res.errors);
-      runTagIntelligence();
-    },
-    onError: (e: any) => toast.error(e.message ?? "Import failed"),
-  });
+      await qc.invalidateQueries();
+
+      setLabel("All done.");
+      toast.success(
+        `Imported: ${created} new, ${updated} updated${failed ? `, ${failed} failed` : ""}`,
+      );
+      if (taxonomyApplied && taxonomyName) {
+        toast.success(`Detected "${taxonomyName}" taxonomy — set up automatically.`);
+      }
+      if (errors.length) console.warn("Import errors:", errors);
+
+      await new Promise((r) => setTimeout(r, 600));
+      setProcessing(false);
+      setRows([]);
+      setFile(null);
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Import failed");
+      setProcessing(false);
+    }
+  };
 
   const reset = () => {
     setRows([]);
@@ -150,7 +169,7 @@ export function ImportProductsDialog({
     <Dialog
       open={open}
       onOpenChange={(v) => {
-        if (tagging) return;
+        if (processing) return;
         if (!v) reset();
         onOpenChange(v);
       }}
@@ -164,7 +183,7 @@ export function ImportProductsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {tagging ? (
+        {processing ? (
           <div className="grid gap-5 py-6 text-center">
             <div className="flex items-center justify-center gap-2 text-muted-foreground">
               <Barcode className="h-5 w-5" />
@@ -172,10 +191,10 @@ export function ImportProductsDialog({
               <QrCode className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-medium">Applying Tag Intelligence…</p>
-              <p className="mt-1 text-sm text-muted-foreground">{taggingLabel}</p>
+              <p className="font-medium">Importing your products…</p>
+              <p className="mt-1 text-sm text-muted-foreground">{label}</p>
             </div>
-            <Progress value={taggingProgress} className="mx-auto max-w-sm" />
+            <Progress value={progress} className="mx-auto max-w-sm" />
           </div>
         ) : rows.length === 0 ? (
           <div className="grid gap-4">
@@ -255,20 +274,14 @@ export function ImportProductsDialog({
           </>
         )}
 
-        {!tagging && (
+        {!processing && (
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             {rows.length > 0 && (
-              <Button onClick={() => commit.mutate()} disabled={commit.isPending}>
-                {commit.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Importing…
-                  </>
-                ) : (
-                  `Import ${rows.length} products & generate QR codes`
-                )}
+              <Button onClick={runImportAndTag}>
+                {`Import ${rows.length} products & generate QR codes`}
               </Button>
             )}
           </DialogFooter>

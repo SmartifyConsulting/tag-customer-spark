@@ -188,9 +188,20 @@ function SetupWizard() {
 
     (async () => {
       try {
-        setImportProgress(5);
-        setImportLabel(`Importing ${rows.length} product${rows.length === 1 ? "" : "s"}…`);
-        const commitRes = await commitFn({ data: { rows } });
+        let created = 0;
+        let updated = 0;
+        const IMPORT_CHUNK = 25;
+        setImportProgress(2);
+        for (let i = 0; i < rows.length; i += IMPORT_CHUNK) {
+          if (cancelled) return;
+          const chunk = rows.slice(i, i + IMPORT_CHUNK);
+          const done = Math.min(i + chunk.length, rows.length);
+          setImportLabel(`Importing products… ${done} / ${rows.length}`);
+          const res = await commitFn({ data: { rows: chunk } });
+          created += res.created;
+          updated += res.updated;
+          setImportProgress(2 + Math.round((done / rows.length) * 33));
+        }
         if (cancelled) return;
         setImportProgress(35);
 
@@ -220,7 +231,7 @@ function SetupWizard() {
         if (cancelled) return;
 
         setImportLabel("All done — your products are ready.");
-        setResult({ created: commitRes.created, updated: commitRes.updated });
+        setResult({ created, updated });
         await sleep(500);
         if (!cancelled) setStep("customerFile");
       } catch {

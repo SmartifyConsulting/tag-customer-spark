@@ -8,8 +8,8 @@ import {
   Archive,
   ArrowLeft,
   Edit,
+  RefreshCw,
   Smartphone,
-  Sparkles,
   Star,
   Tag,
   Trash2,
@@ -30,13 +30,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { archiveProduct, deleteProduct, getProduct } from "@/lib/products.functions";
+import { resetProductImage } from "@/lib/product-images.functions";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { PassportTab } from "@/components/products/passport-tab";
 import { ProductQrPanel } from "@/components/qr/product-qr-panel";
 import { ProductIntentPanel } from "@/components/intent/product-intent-panel";
 import { ScansTable } from "@/components/qr/scans-table";
 import { ProductImage } from "@/components/products/product-image";
-import { ImageStatusCard } from "@/components/products/image-status-card";
 import { DigitalIdentityProgress } from "@/components/qr/digital-identity-progress";
 import { formatMoney } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
@@ -63,6 +63,7 @@ function ProductDetail() {
   const fn = useServerFn(getProduct);
   const archiveFn = useServerFn(archiveProduct);
   const deleteFn = useServerFn(deleteProduct);
+  const resetImageFn = useServerFn(resetProductImage);
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -89,6 +90,14 @@ function ProductDetail() {
       window.history.back();
     },
     onError: (e: any) => toast.error(e.message ?? "Delete failed"),
+  });
+  const refreshImage = useMutation({
+    mutationFn: () => resetImageFn({ data: { productId } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["product", productId] });
+      toast.success("Image refreshed with a fresh lookup.");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to refresh image"),
   });
 
   if (isLoading) {
@@ -183,6 +192,17 @@ function ProductDetail() {
               <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
                 <Edit className="mr-2 h-3.5 w-3.5" /> Edit
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => refreshImage.mutate()}
+                disabled={refreshImage.isPending}
+              >
+                <RefreshCw
+                  className={`mr-2 h-3.5 w-3.5 ${refreshImage.isPending ? "animate-spin" : ""}`}
+                />
+                Refresh image
+              </Button>
               {p.status !== "archived" && (
                 <Button size="sm" variant="outline" onClick={() => archive.mutate()}>
                   <Archive className="mr-2 h-3.5 w-3.5" /> Archive
@@ -201,8 +221,13 @@ function ProductDetail() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <ImageStatusCard product={p as any} />
+      <div id="product-qr" className="grid gap-4 md:grid-cols-2">
+        <ProductQrPanel
+          productId={productId}
+          productName={p.name}
+          qr={data.qr as any}
+          dppId={(p as any).digital_product_passport_id}
+        />
         <DigitalIdentityProgress
           product={p as any}
           qr={data.qr ? { active: (data.qr as any).status === "active" } : null}
@@ -210,22 +235,12 @@ function ProductDetail() {
         />
       </div>
 
-      <div id="product-qr">
-        <ProductQrPanel
-          productId={productId}
-          productName={p.name}
-          qr={data.qr as any}
-          dppId={(p as any).digital_product_passport_id}
-        />
-      </div>
+      <PassportTab productId={productId} dppId={(p as any).digital_product_passport_id} />
 
       <ProductIntentPanel productId={productId} />
 
-      <Tabs defaultValue="passport">
+      <Tabs defaultValue="scans">
         <TabsList>
-          <TabsTrigger value="passport">
-            <Sparkles className="mr-2 h-4 w-4" /> Digital Passport
-          </TabsTrigger>
           <TabsTrigger value="scans">
             <Smartphone className="mr-2 h-4 w-4" /> Scans
           </TabsTrigger>
@@ -233,9 +248,6 @@ function ProductDetail() {
             <TrendingUp className="mr-2 h-4 w-4" /> Analytics
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="passport" className="pt-4">
-          <PassportTab productId={productId} dppId={(p as any).digital_product_passport_id} />
-        </TabsContent>
         <TabsContent value="scans" className="pt-4">
           <ScansTable productId={productId} />
         </TabsContent>

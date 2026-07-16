@@ -370,6 +370,39 @@ export function detectTaxonomyTemplateId(rows: DetectableRow[]): string | null {
   return bestScore >= DETECTION_THRESHOLD ? bestId : null;
 }
 
+// AI-first template pick: much more accurate than the keyword scorer above
+// (it can read a genuinely mixed or ambiguously-worded catalogue), which is
+// kept only as a fallback for when the AI gateway is unavailable or errors.
+async function detectTaxonomyTemplateIdViaAI(rows: DetectableRow[]): Promise<string | null> {
+  if (!process.env.LOVABLE_API_KEY) return null;
+  try {
+    const { TAXONOMY_TEMPLATES } = await import("./taxonomy-templates");
+    const { callAiJson } = await import("./import.functions");
+    const sample = rows.slice(0, 30).map((r) => ({
+      name: r.name,
+      category: r.category_name ?? null,
+      brand: r.brand ?? null,
+      hasSize: !!r.size,
+      hasColour: !!r.color,
+    }));
+    const templates = TAXONOMY_TEMPLATES.map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+    }));
+    const result = await callAiJson(
+      `Sample of imported products (JSON): ${JSON.stringify(sample)}\n\nAvailable sector templates (JSON): ${JSON.stringify(templates)}\n\nWhich single template id best matches this product catalogue's retail sector? Return JSON: {"template_id": string|null, "confidence": number 0-1}. Use null if none fit reasonably well.`,
+      "You classify a retail product catalogue into the single best-matching sector taxonomy template from a fixed list. Output only valid JSON.",
+    );
+    const id = result?.template_id as string | undefined;
+    const confidence = Number(result?.confidence ?? 0);
+    if (!id || confidence < 0.5) return null;
+    return TAXONOMY_TEMPLATES.some((t) => t.id === id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Auto-detect and apply the taxonomy profile that best matches a batch of
  * imported products. Only acts the first time a retailer imports products —
@@ -390,7 +423,7 @@ export async function autoDetectTaxonomyProfile(opts: {
     .eq("retailer_id", retailerId);
   if ((count ?? 0) > 0) return { applied: false };
 
-  const templateId = detectTaxonomyTemplateId(rows);
+  const templateId = (await detectTaxonomyTemplateIdViaAI(rows)) ?? detectTaxonomyTemplateId(rows);
   if (!templateId) return { applied: false };
 
   const { TAXONOMY_TEMPLATES } = await import("./taxonomy-templates");
