@@ -345,6 +345,23 @@ export const createProduct = createServerFn({ method: "POST" })
         // non-fatal
       }
     }
+
+    // The manual "Add Product" form has no barcode field, so a product
+    // created here always starts with no GTIN — same gap import used to
+    // have before commitProductImport ran the barcode-to-QR pipeline
+    // inline. Do the same here, non-fatally, so a manually-added product
+    // shows up as tagged in Inventory without a separate manual step.
+    try {
+      const { assignMissingBarcodesForRetailer } = await import("./barcode-assign.functions");
+      await assignMissingBarcodesForRetailer(supabase, retailerId);
+      const { generateForProduct } = await import("./qr.functions");
+      const { resolveAndSyncProductImage } = await import("./product-images.server");
+      await generateForProduct(supabase, userId, row.id, false);
+      await resolveAndSyncProductImage({ supabase, productId: row.id });
+    } catch {
+      // non-fatal — the retailer can still run Tag Intelligence manually.
+    }
+
     return { id: row.id as string };
   });
 

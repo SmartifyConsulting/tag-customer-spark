@@ -54,7 +54,7 @@ function priceToCents(v: unknown): number {
   return Math.round(n * 100);
 }
 
-async function callAiJson(
+export async function callAiJson(
   prompt: string,
   systemPrompt: string,
   filePart?: { mime: string; base64: string; filename: string },

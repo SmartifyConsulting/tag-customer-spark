@@ -39,12 +39,65 @@ function makeGtin13(productId: string): string {
 }
 
 async function resolveRetailerId(supabase: any, userId: string): Promise<string | null> {
+  // `staff` only ever gets a row for invited team members — a retailer
+  // owner who signed up directly never has one, so resolving through it
+  // (as this used to) silently broke barcode assignment for every owner
+  // account. `user_roles` is the correct, retailer-agnostic source of
+  // truth used everywhere else in the app.
   const { data } = await supabase
-    .from("staff")
+    .from("user_roles")
     .select("retailer_id")
     .eq("user_id", userId)
+    .not("retailer_id", "is", null)
+    .limit(1)
     .maybeSingle();
   return data?.retailer_id ?? null;
+}
+
+// Plain function so callers that already run server-side (createProduct,
+// the setup wizard's import pipeline) can assign barcodes inline without
+// going through the createServerFn RPC wrapper.
+export async function assignMissingBarcodesForRetailer(
+  supabase: any,
+  retailerId: string,
+): Promise<{ updated: number; total: number }> {
+  const { data: products, error } = await supabase
+    .from("products")
+    .select("id, sku, gtin")
+    .eq("retailer_id", retailerId)
+    .is("gtin", null);
+  if (error) throw new Error(error.message);
+
+  const rows = products ?? [];
+  let updated = 0;
+  const usedInBatch = new Set<string>();
+
+  for (const p of rows) {
+    let gtin = makeGtin13(p.id);
+    // Avoid same-batch collisions (extremely unlikely, but cheap).
+    let salt = 0;
+    while (usedInBatch.has(gtin)) {
+      salt++;
+      gtin = makeGtin13(`${p.id}:${salt}`);
+    }
+    usedInBatch.add(gtin);
+
+    const needsSku = !p.sku || String(p.sku).trim() === "";
+    const patch = needsSku
+      ? { gtin, barcode_type: "GTIN-13", sku: gtin }
+      : { gtin, barcode_type: "GTIN-13" };
+
+    const { error: upErr } = await supabase.from("products").update(patch).eq("id", p.id);
+    if (upErr) continue;
+
+    await supabase
+      .from("passport_enrichment_queue")
+      .upsert({ product_id: p.id } as any, { onConflict: "product_id" });
+
+    updated++;
+  }
+
+  return { updated, total: rows.length };
 }
 
 export const assignMissingBarcodes = createServerFn({ method: "POST" })
@@ -53,45 +106,5 @@ export const assignMissingBarcodes = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const retailer_id = await resolveRetailerId(supabase, userId);
     if (!retailer_id) throw new Error("No retailer");
-
-    const { data: products, error } = await supabase
-      .from("products")
-      .select("id, sku, gtin")
-      .eq("retailer_id", retailer_id)
-      .is("gtin", null);
-    if (error) throw new Error(error.message);
-
-    const rows = products ?? [];
-    let updated = 0;
-    const usedInBatch = new Set<string>();
-
-    for (const p of rows) {
-      let gtin = makeGtin13(p.id);
-      // Avoid same-batch collisions (extremely unlikely, but cheap).
-      let salt = 0;
-      while (usedInBatch.has(gtin)) {
-        salt++;
-        gtin = makeGtin13(`${p.id}:${salt}`);
-      }
-      usedInBatch.add(gtin);
-
-      const needsSku = !p.sku || String(p.sku).trim() === "";
-      const patch = needsSku
-        ? { gtin, barcode_type: "GTIN-13", sku: gtin }
-        : { gtin, barcode_type: "GTIN-13" };
-
-      const { error: upErr } = await supabase
-        .from("products")
-        .update(patch)
-        .eq("id", p.id);
-      if (upErr) continue;
-
-      await supabase
-        .from("passport_enrichment_queue")
-        .upsert({ product_id: p.id } as any, { onConflict: "product_id" });
-
-      updated++;
-    }
-
-    return { updated, total: rows.length };
+    return assignMissingBarcodesForRetailer(supabase, retailer_id);
   });
