@@ -31,7 +31,14 @@ const BodySchema = z.object({
   redirectTo: z.string().url().optional(),
 });
 
-function brandedHtml(ctaUrl: string) {
+function brandedHtml(ctaUrl: string, mode: "signup" | "magiclink" = "signup") {
+  const heading = mode === "magiclink" ? "Continue to Tag" : "Confirm your email";
+  const body =
+    mode === "magiclink"
+      ? "Use this secure link to continue to Tag. If your email still needs confirmation, this link will complete that step too."
+      : "Welcome to Tag — click the button below to confirm your email address and finish setting up your account.";
+  const button = mode === "magiclink" ? "Continue to Tag" : "Confirm email";
+
   return `<!doctype html>
 <html><body style="margin:0;padding:0;background:${CREAM};font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:${INK}">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${CREAM}">
@@ -41,12 +48,12 @@ function brandedHtml(ctaUrl: string) {
           <h1 style="margin:0;color:${CREAM};font-family:'Sora','Manrope',sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.02em">Tag</h1>
         </td></tr>
         <tr><td style="padding:32px 28px">
-          <h2 style="margin:0 0 14px;font-family:'Sora','Manrope',sans-serif;font-size:24px;font-weight:700;color:${INK};letter-spacing:-0.02em">Confirm your email</h2>
+          <h2 style="margin:0 0 14px;font-family:'Sora','Manrope',sans-serif;font-size:24px;font-weight:700;color:${INK};letter-spacing:-0.02em">${heading}</h2>
           <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:#374151">
-            Welcome to Tag — click the button below to confirm your email address and finish setting up your account.
+            ${body}
           </p>
           <p style="margin:0 0 28px">
-            <a href="${ctaUrl}" style="display:inline-block;background:${INK};color:${CREAM};text-decoration:none;padding:14px 26px;border-radius:12px;font-weight:600;font-size:15px;font-family:'Sora','Manrope',sans-serif">Confirm email</a>
+            <a href="${ctaUrl}" style="display:inline-block;background:${INK};color:${CREAM};text-decoration:none;padding:14px 26px;border-radius:12px;font-weight:600;font-size:15px;font-family:'Sora','Manrope',sans-serif">${button}</a>
           </p>
           <p style="margin:24px 0 0;font-size:12px;color:#6b7280;line-height:1.55">
             If you didn't create a Tag account, you can safely ignore this email.
@@ -59,6 +66,11 @@ function brandedHtml(ctaUrl: string) {
     </td></tr>
   </table>
 </body></html>`;
+}
+
+function readActionUrl(linkData: unknown) {
+  const data = linkData as { properties?: { action_link?: string }; action_link?: string } | null;
+  return data?.properties?.action_link || data?.action_link || null;
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
@@ -145,16 +157,28 @@ Deno.serve(async (req) => {
       options: redirectTo ? { redirectTo } : undefined,
     });
 
-    // Don't leak whether the email exists — always return ok.
-    if (linkErr || !linkData) {
-      console.warn("[send-signup-confirmation] generateLink silenced:", linkErr?.message);
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    let actionUrl = readActionUrl(linkData);
+    let emailMode: "signup" | "magiclink" = "signup";
+
+    if (!actionUrl && linkErr?.message?.toLowerCase().includes("already")) {
+      // Repeated signups for the same unconfirmed email are common. The signup
+      // link API refuses those, so fall back to a one-time email link rather
+      // than silently telling the user to check an inbox that will receive
+      // nothing. The endpoint still returns the same response for privacy.
+      const { data: magicData, error: magicErr } = await admin.auth.admin.generateLink({
+        type: "magiclink",
+        email,
+        options: redirectTo ? { redirectTo } : undefined,
       });
+      actionUrl = readActionUrl(magicData);
+      emailMode = "magiclink";
+      if (!actionUrl) {
+        console.warn("[send-signup-confirmation] magiclink fallback silenced:", magicErr?.message);
+      }
+    } else if (linkErr || !linkData) {
+      console.warn("[send-signup-confirmation] generateLink silenced:", linkErr?.message);
     }
 
-    const actionUrl = (linkData as any).properties?.action_link || (linkData as any).action_link;
     if (!actionUrl) {
       console.warn("[send-signup-confirmation] no action link");
       return new Response(JSON.stringify({ ok: true }), {
@@ -163,7 +187,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    const result = await sendEmail(email, "Confirm your Tag account", brandedHtml(actionUrl));
+    const result = await sendEmail(
+      email,
+      emailMode === "magiclink" ? "Continue to Tag" : "Confirm your Tag account",
+      brandedHtml(actionUrl, emailMode),
+    );
     console.log("[send-signup-confirmation] dispatch", {
       to: email,
       ok: result.ok,
