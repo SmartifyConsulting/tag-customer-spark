@@ -124,15 +124,20 @@ function AuthPage() {
       // Supabase's own built-in confirmation email is unreliable (the same
       // reason password reset was moved off it — see send-password-reset),
       // so send a proper one through the same Resend-based function.
-      supabase.functions
-        .invoke("send-signup-confirmation", {
+      const { error: confirmationError } = await supabase.functions.invoke(
+        "send-signup-confirmation",
+        {
           body: { email: suEmail, redirectTo: window.location.origin },
-        })
-        .catch(() => {
-          // Non-fatal — Supabase's own confirmation email may still land.
-        });
+        },
+      );
       setLoading(false);
-      toast.success("Check your email to confirm your account, then sign in.");
+      if (confirmationError) {
+        const friendly = "We couldn't send the confirmation email. Please try again.";
+        setInlineError(friendly);
+        toast.error(friendly);
+        return;
+      }
+      toast.success("Check your email for your secure Tag sign-in link.");
       setMode("signin");
       setSiEmail(suEmail);
       return;
