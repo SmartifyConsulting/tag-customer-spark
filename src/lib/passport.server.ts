@@ -117,8 +117,8 @@ async function callEnrichmentAI(input: {
 }): Promise<EnrichedPassport> {
   const { generateObject } = await import("ai");
   const { getGatewayFromEnv } = await import("./ai-gateway.server");
-  const gateway = getGatewayFromEnv();
-  const model = gateway("google/gemini-3-flash-preview");
+  const gateway = getGatewayFromEnv(undefined, { structuredOutputs: true });
+  const model = gateway("openai/gpt-5.5");
 
   const prompt = `Enrich the following product into a Digital Product Passport.
 Use the lookup data as ground truth when present. For any field you cannot ground in the lookup or common, verifiable public knowledge about this exact GTIN/brand/product, return null and DO NOT invent.
