@@ -77,14 +77,19 @@ function AuthPage() {
     // Idempotent: a no-op if this user already has a retailer. Covers the
     // case where email confirmation was required, so provisioning couldn't
     // happen at signUp time — this is their first real authenticated moment.
+    let isNewSignup = false;
     try {
-      await completeSignupFn({ data: {} });
+      const result = await completeSignupFn({ data: {} });
+      isNewSignup = result.isNew;
     } catch {
       // Non-fatal — an existing user with no pending invite/metadata just
       // won't get auto-provisioned here; nothing to attach them to yet.
     }
     setLoading(false);
-    navigate({ to: "/dashboard", replace: true });
+    // Only a first-time confirmation actually provisions a retailer here —
+    // that's the moment TAG Setup needs to run, since it never got a chance
+    // to at signUp time (no session existed yet).
+    navigate({ to: isNewSignup ? "/setup" : "/dashboard", replace: true });
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -138,8 +143,9 @@ function AuthPage() {
       return;
     }
 
+    let isNewRetailer = false;
     try {
-      await completeSignupFn({
+      const result = await completeSignupFn({
         data: {
           name: companyName,
           billingCountry: country.code,
@@ -147,6 +153,7 @@ function AuthPage() {
           countryName: country.name,
         },
       });
+      isNewRetailer = result.isNew;
     } catch (err: any) {
       setLoading(false);
       toast.error(err?.message ?? "Couldn't set up your workspace");
@@ -155,7 +162,9 @@ function AuthPage() {
 
     setLoading(false);
     toast.success("Welcome to Tag");
-    navigate({ to: "/setup", replace: true });
+    // A staff invite match attaches to an existing, already-configured
+    // retailer — only a brand-new retailer needs the setup wizard.
+    navigate({ to: isNewRetailer ? "/setup" : "/dashboard", replace: true });
   };
 
   const handleGoogle = async () => {

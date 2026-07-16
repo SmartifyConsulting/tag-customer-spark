@@ -3,7 +3,15 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
-import { ArrowRight, QrCode, MessageCircle, TrendingUp, Sparkles, Bell, BarChart3 } from "lucide-react";
+import {
+  ArrowRight,
+  QrCode,
+  MessageCircle,
+  TrendingUp,
+  Sparkles,
+  Bell,
+  BarChart3,
+} from "lucide-react";
 
 import heroLogo from "@/assets/tag-logo-clear.png.asset.json";
 
@@ -12,7 +20,11 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Tag — Recover lost in-store sales" },
-      { name: "description", content: "Tag helps retailers reconnect with in-store shoppers via WhatsApp when products go on sale, restock, or run low." },
+      {
+        name: "description",
+        content:
+          "Tag helps retailers reconnect with in-store shoppers via WhatsApp when products go on sale, restock, or run low.",
+      },
     ],
   }),
   component: Landing,
@@ -38,10 +50,16 @@ function Landing() {
       {/* Nav */}
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
         <img src={heroLogo.url} alt="Tag" className="mt-[2cm] h-56 md:h-72 w-auto object-contain" />
-        <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
-          <a href="#features" className="hover:text-foreground">Features</a>
-          <a href="#how" className="hover:text-foreground">How it works</a>
-          <a href="#intelligence" className="hover:text-foreground">Intelligence</a>
+        <nav className="hidden items-center gap-8 text-sm font-bold text-muted-foreground md:flex">
+          <a href="#features" className="hover:text-foreground">
+            Features
+          </a>
+          <a href="#how" className="hover:text-foreground">
+            How it works
+          </a>
+          <a href="#intelligence" className="hover:text-foreground">
+            Intelligence
+          </a>
         </nav>
         <div className="flex items-center gap-2">
           <Button onClick={() => navigate({ to: primaryHref })} className="gap-2">
@@ -62,13 +80,18 @@ function Landing() {
               Turn in-store curiosity into <span className="text-primary">recovered revenue.</span>
             </h1>
             <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-              Tag lets shoppers scan a product QR, opt into WhatsApp, and get notified the moment that item goes on sale, restocks, or runs low. The result: sales you used to lose at the door.
+              Tag lets shoppers scan a product QR, opt into WhatsApp, and get notified the moment
+              that item goes on sale, restocks, or runs low. The result: sales you used to lose at
+              the door.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Button size="lg" onClick={() => navigate({ to: primaryHref })} className="gap-2">
                 {primaryLabel} <ArrowRight className="h-4 w-4" />
               </Button>
-              <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              <a
+                href="#features"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
                 See how it works →
               </a>
             </div>
@@ -93,8 +116,13 @@ function Landing() {
             <div className="w-full max-w-md rounded-3xl border border-border/60 bg-card p-6 shadow-xl">
               <div className="flex items-center gap-3 border-b border-border/60 pb-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366]">
-                  <svg viewBox="0 0 32 32" className="h-6 w-6 text-white" fill="currentColor" aria-hidden="true">
-                    <path d="M19.11 17.205c-.372 0-1.088 1.39-1.518 1.39a.63.63 0 0 1-.315-.1c-.802-.402-1.504-.817-2.163-1.447-.545-.516-1.146-1.29-1.46-1.963a.426.426 0 0 1-.073-.215c0-.33.99-.945.99-1.49 0-.143-.73-2.09-.832-2.335-.14-.372-.214-.487-.6-.487-.187 0-.36-.043-.53-.043-.302 0-.53.115-.746.315-.688.645-1.032 1.318-1.06 2.264v.114c-.015.99.472 1.977 1.017 2.792 1.23 1.82 2.506 3.41 4.554 4.34.616.287 2.035.888 2.72.888.517 0 2.15-.658 2.478-1.72.187-.573.187-1.088.115-1.19-.13-.14-.302-.216-.63-.373zM16.5 5c-6.348 0-11.5 5.152-11.5 11.5 0 2.024.516 3.976 1.516 5.7L5 27l4.907-1.474a11.4 11.4 0 0 0 5.593 1.474h.005c6.348 0 11.5-5.152 11.5-11.5S22.853 5 16.505 5zm0 21.05a9.5 9.5 0 0 1-4.847-1.32l-.35-.215-3.626 1.09 1.077-3.53-.235-.363a9.5 9.5 0 1 1 8.001 4.339z"/>
+                  <svg
+                    viewBox="0 0 32 32"
+                    className="h-6 w-6 text-white"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M19.11 17.205c-.372 0-1.088 1.39-1.518 1.39a.63.63 0 0 1-.315-.1c-.802-.402-1.504-.817-2.163-1.447-.545-.516-1.146-1.29-1.46-1.963a.426.426 0 0 1-.073-.215c0-.33.99-.945.99-1.49 0-.143-.73-2.09-.832-2.335-.14-.372-.214-.487-.6-.487-.187 0-.36-.043-.53-.043-.302 0-.53.115-.746.315-.688.645-1.032 1.318-1.06 2.264v.114c-.015.99.472 1.977 1.017 2.792 1.23 1.82 2.506 3.41 4.554 4.34.616.287 2.035.888 2.72.888.517 0 2.15-.658 2.478-1.72.187-.573.187-1.088.115-1.19-.13-.14-.302-.216-.63-.373zM16.5 5c-6.348 0-11.5 5.152-11.5 11.5 0 2.024.516 3.976 1.516 5.7L5 27l4.907-1.474a11.4 11.4 0 0 0 5.593 1.474h.005c6.348 0 11.5-5.152 11.5-11.5S22.853 5 16.505 5zm0 21.05a9.5 9.5 0 0 1-4.847-1.32l-.35-.215-3.626 1.09 1.077-3.53-.235-.363a9.5 9.5 0 1 1 8.001 4.339z" />
                   </svg>
                 </div>
                 <div>
@@ -104,7 +132,8 @@ function Landing() {
               </div>
               <div className="mt-5 space-y-3">
                 <div className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-primary px-4 py-3 text-sm text-primary-foreground shadow-sm">
-                  Hi Georgia 👋 The Linen Trench you scanned at Sandton is now <b>20% off</b> until Sunday. Reserve in one tap.
+                  Hi Georgia 👋 The Linen Trench you scanned at Sandton is now <b>20% off</b> until
+                  Sunday. Reserve in one tap.
                 </div>
                 <div className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-primary px-4 py-3 text-sm text-primary-foreground shadow-sm">
                   Only 3 left in your size. Want us to hold one for you?
@@ -114,9 +143,18 @@ function Landing() {
                 </div>
               </div>
               <div className="mt-6 grid grid-cols-3 gap-3 border-t border-border/60 pt-4 text-center text-xs">
-                <div className="rounded-lg bg-muted/60 py-2"><div className="font-semibold text-foreground">Scanned</div><div className="text-muted-foreground">Today 14:02</div></div>
-                <div className="rounded-lg bg-muted/60 py-2"><div className="font-semibold text-foreground">Notified</div><div className="text-muted-foreground">+3 days</div></div>
-                <div className="rounded-lg bg-[color:var(--mint)] py-2 shadow-sm"><div className="font-semibold text-white">Recovered</div><div className="text-white/90">R 4,290</div></div>
+                <div className="rounded-lg bg-muted/60 py-2">
+                  <div className="font-semibold text-foreground">Scanned</div>
+                  <div className="text-muted-foreground">Today 14:02</div>
+                </div>
+                <div className="rounded-lg bg-muted/60 py-2">
+                  <div className="font-semibold text-foreground">Notified</div>
+                  <div className="text-muted-foreground">+3 days</div>
+                </div>
+                <div className="rounded-lg bg-[color:var(--mint)] py-2 shadow-sm">
+                  <div className="font-semibold text-white">Recovered</div>
+                  <div className="text-white/90">R 4,290</div>
+                </div>
               </div>
             </div>
           </div>
@@ -126,19 +164,50 @@ function Landing() {
       {/* Features */}
       <section id="features" className="mx-auto max-w-7xl px-6 py-20">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Built for modern retail floors</h2>
-          <p className="mt-3 text-muted-foreground">Every scan is an opt-in. Every opt-in becomes a recoverable sale.</p>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            Built for modern retail floors
+          </h2>
+          <p className="mt-3 text-muted-foreground">
+            Every scan is an opt-in. Every opt-in becomes a recoverable sale.
+          </p>
         </div>
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { icon: QrCode, title: "Smart QR Tags", body: "Generate, print and track unique QR codes for every product on the floor." },
-            { icon: MessageCircle, title: "WhatsApp Engine", body: "Reach shoppers on the channel they actually read — with 98% open rates." },
-            { icon: Bell, title: "Restock & Sale Alerts", body: "Trigger notifications when stock drops, restocks land, or promotions launch." },
-            { icon: TrendingUp, title: "ROI Attribution", body: "See exactly how much revenue each scan and notification has recovered." },
-            { icon: BarChart3, title: "Intent Score", body: "A 0–100 score per product based on real customer interest signals." },
-            { icon: Sparkles, title: "AI Retail Intelligence", body: "Daily AI briefings, opportunity feeds, and campaign drafting baked in." },
+            {
+              icon: QrCode,
+              title: "Smart QR Tags",
+              body: "Generate, print and track unique QR codes for every product on the floor.",
+            },
+            {
+              icon: MessageCircle,
+              title: "WhatsApp Engine",
+              body: "Reach shoppers on the channel they actually read — with 98% open rates.",
+            },
+            {
+              icon: Bell,
+              title: "Restock & Sale Alerts",
+              body: "Trigger notifications when stock drops, restocks land, or promotions launch.",
+            },
+            {
+              icon: TrendingUp,
+              title: "ROI Attribution",
+              body: "See exactly how much revenue each scan and notification has recovered.",
+            },
+            {
+              icon: BarChart3,
+              title: "Intent Score",
+              body: "A 0–100 score per product based on real customer interest signals.",
+            },
+            {
+              icon: Sparkles,
+              title: "AI Retail Intelligence",
+              body: "Daily AI briefings, opportunity feeds, and campaign drafting baked in.",
+            },
           ].map(({ icon: Icon, title, body }) => (
-            <div key={title} className="rounded-2xl border border-border/60 bg-card p-6 transition hover:border-primary/40 hover:shadow-md">
+            <div
+              key={title}
+              className="rounded-2xl border border-border/60 bg-card p-6 transition hover:border-primary/40 hover:shadow-md"
+            >
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Icon className="h-5 w-5" />
               </div>
@@ -153,14 +222,32 @@ function Landing() {
       <section id="how" className="bg-muted/40 py-20">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">From scan to sale in four steps</h2>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              From scan to sale in four steps
+            </h2>
           </div>
           <div className="mt-14 grid gap-6 md:grid-cols-4">
             {[
-              { n: "01", t: "Tag your products", d: "Print QR cards with your logo, product image and short message." },
-              { n: "02", t: "Shoppers scan", d: "A mobile-first landing lets them opt into WhatsApp in seconds." },
-              { n: "03", t: "You notify", d: "Send sale, restock, and low-stock alerts from a single composer." },
-              { n: "04", t: "Revenue returns", d: "Track recovered sales and ROI per campaign automatically." },
+              {
+                n: "01",
+                t: "Tag your products",
+                d: "Print QR cards with your logo, product image and short message.",
+              },
+              {
+                n: "02",
+                t: "Shoppers scan",
+                d: "A mobile-first landing lets them opt into WhatsApp in seconds.",
+              },
+              {
+                n: "03",
+                t: "You notify",
+                d: "Send sale, restock, and low-stock alerts from a single composer.",
+              },
+              {
+                n: "04",
+                t: "Revenue returns",
+                d: "Track recovered sales and ROI per campaign automatically.",
+              },
             ].map((s) => (
               <div key={s.n} className="rounded-2xl border border-border/60 bg-card p-6">
                 <div className="text-xs font-semibold text-primary">{s.n}</div>
@@ -174,7 +261,9 @@ function Landing() {
 
       {/* CTA */}
       <section id="intelligence" className="mx-auto max-w-7xl px-6 py-24 text-center">
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Ready to recover the sales walking out the door?</h2>
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          Ready to recover the sales walking out the door?
+        </h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
           Join retailers using Tag to turn every store visit into a long-term customer relationship.
         </p>

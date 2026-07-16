@@ -24,12 +24,17 @@ export const completeSignup = createServerFn({ method: "POST" })
     // Any field left unset falls back to the signup-time metadata stored on
     // the auth user (see auth.tsx) — needed since this may run well after
     // signUp, once the user confirms their email and actually gets a session.
-    const { data: retailerId, error } = await supabase.rpc("complete_signup", {
+    const { data: rows, error } = await supabase.rpc("complete_signup", {
       p_name: data.name ?? null,
       p_billing_country: data.billingCountry ?? null,
       p_currency: data.currency ?? null,
       p_country_name: data.countryName ?? null,
     });
     if (error) throw new Error(error.message);
-    return { retailerId };
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    // `isNew` tells the caller whether this call provisioned a brand-new
+    // retailer (the owner's first-ever signup) — not just any first
+    // attachment, so a staff member accepting an invite doesn't also get
+    // routed into TAG Setup. Used to route only that case into the wizard.
+    return { retailerId: row?.retailer_id, isNew: !!row?.provisioned_new_retailer };
   });
