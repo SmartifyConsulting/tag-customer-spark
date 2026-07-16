@@ -484,3 +484,63 @@ export async function resolveAndSyncProductImage(input: {
 
   return result;
 }
+
+// ----- Google Custom Search image lookup ---------------------------------
+// Uses Google Programmable Search Engine (Custom Search JSON API) to find
+// a real product photo on the web. Free tier: 100 queries/day.
+// Requires GOOGLE_CSE_API_KEY and GOOGLE_CSE_ID env vars; returns null
+// silently when either is missing, on any HTTP failure, or when no result
+// has an https URL with an allowed image MIME.
+
+async function lookupGoogleImage(input: {
+  gtin: string | null;
+  name: string;
+  brand: string | null;
+}): Promise<string | null> {
+  const apiKey = process.env.GOOGLE_CSE_API_KEY;
+  const cx = process.env.GOOGLE_CSE_ID;
+  if (!apiKey || !cx) return null;
+
+  const query = input.gtin
+    ? `"${input.gtin.replace(/\D/g, "")}"`
+    : [input.brand, input.name].filter(Boolean).join(" ").trim();
+  if (!query || query.length < 3) return null;
+
+  const url = new URL("https://www.googleapis.com/customsearch/v1");
+  url.searchParams.set("key", apiKey);
+  url.searchParams.set("cx", cx);
+  url.searchParams.set("q", query);
+  url.searchParams.set("searchType", "image");
+  url.searchParams.set("num", "5");
+  url.searchParams.set("safe", "active");
+  url.searchParams.set("imgSize", "large");
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: { "User-Agent": "TAG-Product-Image/1.0" },
+    });
+    if (!res.ok) {
+      console.warn(`[google-cse] HTTP ${res.status} for query "${query}"`);
+      return null;
+    }
+    const json: any = await res.json();
+    const items: any[] = Array.isArray(json?.items) ? json.items : [];
+    for (const item of items) {
+      const link = typeof item?.link === "string" ? item.link : null;
+      const mime = typeof item?.mime === "string" ? item.mime.toLowerCase() : "";
+      if (!link || !link.startsWith("https://")) continue;
+      if (!ALLOWED_MIME.has(mime)) continue;
+      return link;
+    }
+    // Fallback: first https result even without a declared MIME
+    // (Google sometimes omits it; downloadAndUpload will validate content-type).
+    for (const item of items) {
+      const link = typeof item?.link === "string" ? item.link : null;
+      if (link && link.startsWith("https://")) return link;
+    }
+    return null;
+  } catch (e: any) {
+    console.warn("[google-cse] fetch failed", e?.message ?? e);
+    return null;
+  }
+}
