@@ -22,13 +22,16 @@ export const completeSignup = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     // Any field left unset falls back to the signup-time metadata stored on
-    // the auth user (see auth.tsx) — needed since this may run well after
-    // signUp, once the user confirms their email and actually gets a session.
+    // the auth user (see auth.tsx's `options.data` on signUp) — needed since
+    // this often runs well after signUp, from AuthProvider's generic safety
+    // net (no form data available there) rather than the signup form itself.
+    const meta = ((context as any).claims?.user_metadata ?? {}) as Record<string, unknown>;
     const { data: rows, error } = await supabase.rpc("complete_signup", {
-      p_name: data.name ?? null,
-      p_billing_country: data.billingCountry ?? null,
-      p_currency: data.currency ?? null,
-      p_country_name: data.countryName ?? null,
+      p_name: data.name ?? (meta.company_name as string | undefined) ?? null,
+      p_billing_country:
+        data.billingCountry ?? (meta.billing_country as string | undefined) ?? null,
+      p_currency: data.currency ?? (meta.currency as string | undefined) ?? null,
+      p_country_name: data.countryName ?? (meta.country_name as string | undefined) ?? null,
     });
     if (error) throw new Error(error.message);
     const row = Array.isArray(rows) ? rows[0] : rows;

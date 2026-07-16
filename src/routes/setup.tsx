@@ -22,6 +22,11 @@ import {
   listIncompleteDigitalIdentityIds,
 } from "@/lib/products.functions";
 import { assignMissingBarcodes } from "@/lib/barcode-assign.functions";
+import {
+  previewCustomerImport,
+  commitCustomerImport,
+  type CustomerImportRow,
+} from "@/lib/customer-import.functions";
 import { saveRetailerPosSystem } from "@/lib/settings.functions";
 import heroLogo from "@/assets/tag-logo-clear.png.asset.json";
 
@@ -76,7 +81,15 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-type Step = "welcome" | "system" | "connecting" | "file" | "importing" | "done";
+type Step =
+  | "welcome"
+  | "system"
+  | "connecting"
+  | "file"
+  | "importing"
+  | "customerFile"
+  | "customerImporting"
+  | "done";
 
 function SetupWizard() {
   const navigate = useNavigate();
@@ -90,12 +103,23 @@ function SetupWizard() {
   const [importProgress, setImportProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [customerFile, setCustomerFile] = useState<File | null>(null);
+  const [customerRows, setCustomerRows] = useState<CustomerImportRow[]>([]);
+  const [customerResult, setCustomerResult] = useState<{ created: number; updated: number } | null>(
+    null,
+  );
+  const [customerImportLabel, setCustomerImportLabel] = useState("");
+  const [customerImportProgress, setCustomerImportProgress] = useState(0);
+  const customerInputRef = useRef<HTMLInputElement>(null);
+
   const savePosFn = useServerFn(saveRetailerPosSystem);
   const previewFn = useServerFn(previewProductImport);
   const commitFn = useServerFn(commitProductImport);
   const assignBarcodesFn = useServerFn(assignMissingBarcodes);
   const listIncompleteFn = useServerFn(listIncompleteDigitalIdentityIds);
   const bulkCompleteFn = useServerFn(bulkCompleteDigitalIdentity);
+  const customerPreviewFn = useServerFn(previewCustomerImport);
+  const customerCommitFn = useServerFn(commitCustomerImport);
 
   const preview = useMutation({
     mutationFn: async (f: File) => {
@@ -111,6 +135,24 @@ function SetupWizard() {
       }
       setRows(res.rows);
       setStep("importing");
+    },
+    onError: () => toast.error("That file didn't come through — please try another export."),
+  });
+
+  const customerPreview = useMutation({
+    mutationFn: async (f: File) => {
+      const base64 = await fileToBase64(f);
+      return customerPreviewFn({
+        data: { filename: f.name, mime: f.type || "application/octet-stream", base64 },
+      });
+    },
+    onSuccess: (res) => {
+      if (!res.rows.length) {
+        toast.warning("We couldn't find any customers with a name and phone number in that file.");
+        return;
+      }
+      setCustomerRows(res.rows);
+      setStep("customerImporting");
     },
     onError: () => toast.error("That file didn't come through — please try another export."),
   });
@@ -180,7 +222,7 @@ function SetupWizard() {
         setImportLabel("All done — your products are ready.");
         setResult({ created: commitRes.created, updated: commitRes.updated });
         await sleep(500);
-        if (!cancelled) setStep("done");
+        if (!cancelled) setStep("customerFile");
       } catch {
         if (!cancelled)
           toast.error("We hit a snag getting your products ready — please try again.");
@@ -193,6 +235,35 @@ function SetupWizard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, rows]);
 
+  // Same real-progress approach as the product import above.
+  useEffect(() => {
+    if (step !== "customerImporting" || customerRows.length === 0) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setCustomerImportProgress(20);
+        setCustomerImportLabel(
+          `Importing ${customerRows.length} customer${customerRows.length === 1 ? "" : "s"}…`,
+        );
+        const res = await customerCommitFn({ data: { rows: customerRows } });
+        if (cancelled) return;
+        setCustomerImportProgress(100);
+        setCustomerImportLabel("All done — your customers are ready.");
+        setCustomerResult({ created: res.created, updated: res.updated });
+        await sleep(500);
+        if (!cancelled) setStep("done");
+      } catch {
+        if (!cancelled) toast.error("We hit a snag importing your customers — please try again.");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, customerRows]);
+
   const handlePickSystem = (system: string) => {
     setPosSystem(system);
     savePosFn({ data: { posSystem: system } }).catch(() => {});
@@ -204,13 +275,19 @@ function SetupWizard() {
     preview.mutate(f);
   };
 
+  const handleCustomerFile = (f: File) => {
+    setCustomerFile(f);
+    customerPreview.mutate(f);
+  };
+
   const totalProducts = (result?.created ?? 0) + (result?.updated ?? 0);
+  const totalCustomers = (customerResult?.created ?? 0) + (customerResult?.updated ?? 0);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-10">
       <div className="w-full max-w-lg space-y-6">
         <div className="flex justify-center">
-          <img src={heroLogo.url} alt="Tag" className="h-24 w-auto object-contain" />
+          <img src={heroLogo.url} alt="Tag" className="h-[9.6rem] w-auto object-contain" />
         </div>
         <Card className="rounded-2xl border-border/60 p-8 shadow-sm">
           {step === "welcome" && <WelcomeStep onNext={() => setStep("system")} />}
@@ -225,9 +302,27 @@ function SetupWizard() {
             />
           )}
           {step === "importing" && <ImportingStep label={importLabel} progress={importProgress} />}
+          {step === "customerFile" && (
+            <CustomerFileStep
+              inputRef={customerInputRef}
+              file={customerFile}
+              loading={customerPreview.isPending}
+              posSystem={posSystem}
+              onFile={handleCustomerFile}
+              onSkip={() => setStep("done")}
+            />
+          )}
+          {step === "customerImporting" && (
+            <ImportingStep
+              title="Getting your customers ready…"
+              label={customerImportLabel}
+              progress={customerImportProgress}
+            />
+          )}
           {step === "done" && (
             <DoneStep
-              count={totalProducts}
+              productCount={totalProducts}
+              customerCount={totalCustomers}
               onGoToDashboard={() => navigate({ to: "/dashboard" })}
             />
           )}
@@ -339,10 +434,66 @@ function FileStep({
   );
 }
 
-function ImportingStep({ label, progress }: { label: string; progress: number }) {
+function CustomerFileStep({
+  inputRef,
+  file,
+  loading,
+  posSystem,
+  onFile,
+  onSkip,
+}: {
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  file: File | null;
+  loading: boolean;
+  posSystem: string | null;
+  onFile: (f: File) => void;
+  onSkip: () => void;
+}) {
+  return (
+    <div className="space-y-5 text-center">
+      <div>
+        <h1 className="text-xl font-bold tracking-tight">Bring in your customers too</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {posSystem
+            ? `Export your customer list from ${posSystem} and upload it here — we'll map the columns automatically.`
+            : "Upload your customer list — we'll map the columns automatically."}
+        </p>
+      </div>
+      <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 p-10 hover:bg-muted/50">
+        <FileUp className="mb-3 h-8 w-8 text-muted-foreground" />
+        <span className="font-medium">Choose your customer file</span>
+        <span className="mt-1 text-xs text-muted-foreground">XLSX or CSV</span>
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onFile(f);
+          }}
+        />
+      </label>
+      {loading && <p className="text-sm text-muted-foreground">Reading {file?.name}…</p>}
+      <Button variant="ghost" className="w-full" onClick={onSkip} disabled={loading}>
+        Skip for now
+      </Button>
+    </div>
+  );
+}
+
+function ImportingStep({
+  label,
+  progress,
+  title = "Getting your products ready…",
+}: {
+  label: string;
+  progress: number;
+  title?: string;
+}) {
   return (
     <div className="space-y-6 py-4 text-center">
-      <h1 className="text-xl font-bold tracking-tight">Getting your products ready…</h1>
+      <h1 className="text-xl font-bold tracking-tight">{title}</h1>
       <p className="text-sm text-muted-foreground">{label}</p>
       <Progress value={progress} className="mx-auto max-w-sm" />
     </div>
@@ -370,7 +521,15 @@ function ProgressLine({ label, done, active }: { label: string; done: boolean; a
   );
 }
 
-function DoneStep({ count, onGoToDashboard }: { count: number; onGoToDashboard: () => void }) {
+function DoneStep({
+  productCount,
+  customerCount,
+  onGoToDashboard,
+}: {
+  productCount: number;
+  customerCount: number;
+  onGoToDashboard: () => void;
+}) {
   return (
     <div className="space-y-6 text-center">
       <div className="flex justify-center">
@@ -379,8 +538,15 @@ function DoneStep({ count, onGoToDashboard }: { count: number; onGoToDashboard: 
       <div>
         <h1 className="text-2xl font-bold tracking-tight">You're all set!</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {count.toLocaleString()} product{count === 1 ? "" : "s"} {count === 1 ? "is" : "are"} now
-          ready on TAG.
+          {productCount.toLocaleString()} product{productCount === 1 ? "" : "s"}{" "}
+          {productCount === 1 ? "is" : "are"} now ready on TAG.
+          {customerCount > 0 && (
+            <>
+              {" "}
+              {customerCount.toLocaleString()} customer{customerCount === 1 ? "" : "s"}{" "}
+              {customerCount === 1 ? "was" : "were"} imported too.
+            </>
+          )}
         </p>
       </div>
       <Button size="lg" className="w-full" onClick={onGoToDashboard}>

@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,6 @@ import {
 import { AuthShell } from "@/components/auth-shell";
 import { PasswordInput } from "@/components/password-input";
 import { mapAuthError } from "@/lib/auth-errors";
-import { completeSignup } from "@/lib/signup.functions";
 import { SIGNUP_COUNTRIES } from "@/lib/countries";
 
 export const Route = createFileRoute("/auth")({
@@ -39,7 +37,6 @@ function GoogleIcon() {
 
 function AuthPage() {
   const navigate = useNavigate();
-  const completeSignupFn = useServerFn(completeSignup);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -74,12 +71,12 @@ function AuthPage() {
       toast.error(friendly);
       return;
     }
-    // Provisioning (and routing a first-time confirmation into TAG Setup
-    // instead of the dashboard) happens in AuthProvider's onAuthStateChange
-    // handler, which fires for this sign-in the same as any other — no
-    // need to duplicate that here. See use-auth.tsx.
+    // Provisioning AND navigating onward (to TAG Setup on a first-ever
+    // confirmation, /dashboard otherwise) happens in AuthProvider's
+    // onAuthStateChange handler, which fires for this sign-in the same as
+    // any other — doing it here too would race it and flash the wrong
+    // page first. See use-auth.tsx.
     setLoading(false);
-    navigate({ to: "/dashboard", replace: true });
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -140,31 +137,15 @@ function AuthPage() {
       return;
     }
 
-    try {
-      // Called explicitly (not left to AuthProvider's safety net) because
-      // this is the one place with the actually-typed company name/country
-      // fresh from the form — the generic call passes none of that.
-      await completeSignupFn({
-        data: {
-          name: companyName,
-          billingCountry: country.code,
-          currency: country.currency,
-          countryName: country.name,
-        },
-      });
-    } catch (err: any) {
-      setLoading(false);
-      toast.error(err?.message ?? "Couldn't set up your workspace");
-      return;
-    }
-
+    // Provisioning and the TAG Setup redirect both happen in AuthProvider's
+    // onAuthStateChange handler (signUp() with an immediate session fires
+    // "SIGNED_IN" the same as a manual sign-in). It reads the company
+    // name/country from the auth user's metadata — set above via
+    // options.data — via a fallback in completeSignup, so there's no need
+    // to call it again here with the form values; doing so raced
+    // AuthProvider's own check and produced a flash to /dashboard first.
     setLoading(false);
     toast.success("Welcome to Tag");
-    // Unconditional: signUp() just created this auth user moments ago, so
-    // this is always their first-ever usable moment — no need to ask
-    // complete_signup whether it was "new" (that call raced AuthProvider's
-    // own safety-net check anyway, since this one runs first and wins).
-    navigate({ to: "/setup", replace: true });
   };
 
   const handleGoogle = async () => {

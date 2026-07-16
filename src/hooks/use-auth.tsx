@@ -63,12 +63,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
+        // "SIGNED_IN" only fires for an actual sign-in action completing —
+        // credentials submitted, a confirmation/magic link processed, OAuth
+        // callback — never for a session silently restored on page load
+        // (that's "INITIAL_SESSION"). Only that case should navigate the
+        // browser onward; a session restore shouldn't hijack whatever
+        // protected page the user is already looking at.
+        const isFreshSignIn = event === "SIGNED_IN";
         // defer to avoid deadlock
-        setTimeout(() => loadProfileAndRoles(newSession.user.id), 0);
+        setTimeout(() => loadProfileAndRoles(newSession.user.id, isFreshSignIn), 0);
       } else {
         setProfile(null);
         setRoles([]);
@@ -89,22 +96,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadProfileAndRoles = async (userId: string) => {
+  // `isFreshSignIn` (only true on the "SIGNED_IN" event) is what decides
+  // whether this call is responsible for navigating the browser onward.
+  // This is the single place that owns post-auth navigation now — auth.tsx
+  // no longer does its own, so there's only one navigate() decision instead
+  // of two racing ones (the second always used to win a moment later,
+  // producing a visible flash to the wrong page first).
+  const loadProfileAndRoles = async (userId: string, isFreshSignIn = false) => {
     const [{ data: prof }, { data: roleRows }] = await Promise.all([
       supabase.from("profiles").select("id, full_name, avatar_url").eq("id", userId).maybeSingle(),
       supabase.from("user_roles").select("role, retailer_id").eq("user_id", userId),
     ]);
     setProfile(prof ?? null);
     let rows = (roleRows ?? []) as { role: AppRole; retailer_id: string | null }[];
+    let routedToSetup = false;
 
-    // Safety net: a session with no retailer_id yet (email-confirmation link
-    // or Google OAuth landing directly, bypassing the explicit signUp/signIn
-    // handlers in auth.tsx) — try provisioning once. Idempotent server-side.
-    // This is the ONLY code that runs for every entry path uniformly, so it's
-    // also where "send a brand-new owner into TAG Setup" has to live — a
-    // confirmation-link click establishes the session and lands the browser
-    // wherever `redirectTo` pointed (the marketing page today), never
-    // touching handleSignUp/handleSignIn in auth.tsx at all.
+    // Safety net: a session with no retailer_id yet — try provisioning
+    // once. Idempotent server-side. Covers every entry path uniformly
+    // (confirmation link, magic link, OAuth, manual sign-in/sign-up), so
+    // it's also where "send a brand-new owner into TAG Setup" has to live.
     if (!provisioningAttempted.current && rows.length > 0 && rows.every((r) => !r.retailer_id)) {
       provisioningAttempted.current = true;
       try {
@@ -124,10 +134,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // is harmless even for an invited staff member.
         if (rows.some((r) => r.retailer_id)) {
           navigate({ to: "/setup", replace: true });
+          routedToSetup = true;
         }
       } catch {
         // No pending invite/metadata to provision from — leave as-is.
       }
+    }
+
+    if (isFreshSignIn && !routedToSetup) {
+      navigate({ to: "/dashboard", replace: true });
     }
 
     setRoles(rows.map((r) => r.role));
