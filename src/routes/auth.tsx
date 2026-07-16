@@ -121,6 +121,16 @@ function AuthPage() {
     if (!data.session) {
       // Email confirmation is required — no session yet, so provisioning
       // happens on their first sign-in instead (see handleSignIn).
+      // Supabase's own built-in confirmation email is unreliable (the same
+      // reason password reset was moved off it — see send-password-reset),
+      // so send a proper one through the same Resend-based function.
+      supabase.functions
+        .invoke("send-signup-confirmation", {
+          body: { email: suEmail, redirectTo: window.location.origin },
+        })
+        .catch(() => {
+          // Non-fatal — Supabase's own confirmation email may still land.
+        });
       setLoading(false);
       toast.success("Check your email to confirm your account, then sign in.");
       setMode("signin");

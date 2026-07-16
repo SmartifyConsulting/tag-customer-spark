@@ -1,10 +1,14 @@
-// Sends a branded Tag password-reset email via Resend.
+// Sends a branded Tag signup-confirmation email via Resend.
+//
+// `supabase.auth.signUp()` also triggers Supabase's own built-in
+// confirmation email when the project requires email confirmation, but that
+// path has proven unreliable (see send-password-reset, which was built for
+// the same reason). This bypasses it the same way: generate the real
+// confirmation link with the service role, then deliver it through the
+// Lovable Resend connector gateway.
+//
 // Public endpoint: validates email format only. Always returns 200 to avoid
 // leaking which addresses are registered.
-//
-// Bypasses Supabase's built-in send-email hook by using
-// admin.auth.admin.generateLink() with the service role, then sending a
-// branded email through the Lovable Resend connector gateway.
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { z } from "npm:zod@3.23.8";
@@ -37,16 +41,15 @@ function brandedHtml(ctaUrl: string) {
           <h1 style="margin:0;color:${CREAM};font-family:'Sora','Manrope',sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.02em">Tag</h1>
         </td></tr>
         <tr><td style="padding:32px 28px">
-          <h2 style="margin:0 0 14px;font-family:'Sora','Manrope',sans-serif;font-size:24px;font-weight:700;color:${INK};letter-spacing:-0.02em">Reset your password</h2>
+          <h2 style="margin:0 0 14px;font-family:'Sora','Manrope',sans-serif;font-size:24px;font-weight:700;color:${INK};letter-spacing:-0.02em">Confirm your email</h2>
           <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:#374151">
-            We received a request to reset the password for your Tag account.
-            Click the button below to choose a new one. This link expires in 1 hour.
+            Welcome to Tag — click the button below to confirm your email address and finish setting up your account.
           </p>
           <p style="margin:0 0 28px">
-            <a href="${ctaUrl}" style="display:inline-block;background:${INK};color:${CREAM};text-decoration:none;padding:14px 26px;border-radius:12px;font-weight:600;font-size:15px;font-family:'Sora','Manrope',sans-serif">Reset password</a>
+            <a href="${ctaUrl}" style="display:inline-block;background:${INK};color:${CREAM};text-decoration:none;padding:14px 26px;border-radius:12px;font-weight:600;font-size:15px;font-family:'Sora','Manrope',sans-serif">Confirm email</a>
           </p>
           <p style="margin:24px 0 0;font-size:12px;color:#6b7280;line-height:1.55">
-            If you didn't request a password reset, you can safely ignore this email — your password won't change.
+            If you didn't create a Tag account, you can safely ignore this email.
           </p>
         </td></tr>
         <tr><td style="background:${CREAM};padding:18px 28px;text-align:center;font-size:12px;color:#6b7280">
@@ -87,39 +90,6 @@ async function sendEmail(to: string, subject: string, html: string) {
     data,
     error: resp.ok ? undefined : `Resend ${resp.status}`,
   };
-}
-
-async function sendWhatsAppReset(to: string, resetUrl: string) {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
-  const FROM_WA = Deno.env.get("TWILIO_WHATSAPP_FROM");
-  if (!LOVABLE_API_KEY || !TWILIO_API_KEY || !FROM_WA) return { ok: false };
-  const toWa = to.startsWith("whatsapp:") ? to : `whatsapp:${to}`;
-  const fromWa = FROM_WA.startsWith("whatsapp:") ? FROM_WA : `whatsapp:${FROM_WA}`;
-  const body =
-    `Your Tag password reset link: ${resetUrl}\n\n` +
-    `Expires in 1 hour. If you didn't request this, ignore this message.`;
-  const form = new URLSearchParams({ To: toWa, From: fromWa, Body: body });
-  try {
-    const resp = await fetch(`https://connector-gateway.lovable.dev/twilio/Messages.json`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": TWILIO_API_KEY,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: form.toString(),
-    });
-    if (!resp.ok) {
-      const t = await resp.text();
-      console.warn("[send-password-reset] whatsapp failed", resp.status, t.slice(0, 200));
-      return { ok: false };
-    }
-    return { ok: true };
-  } catch (e) {
-    console.warn("[send-password-reset] whatsapp error", (e as Error).message);
-    return { ok: false };
-  }
 }
 
 Deno.serve(async (req) => {
@@ -164,15 +134,20 @@ Deno.serve(async (req) => {
   });
 
   try {
+    // `password` is required by the admin API's type signature but is only
+    // used if this call also has to create the user — for an existing
+    // unconfirmed signup (the normal case here) it's ignored and the link
+    // is issued for the account as-is.
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-      type: "recovery",
+      type: "signup",
       email,
+      password: crypto.randomUUID(),
       options: redirectTo ? { redirectTo } : undefined,
     });
 
     // Don't leak whether the email exists — always return ok.
     if (linkErr || !linkData) {
-      console.warn("[send-password-reset] generateLink silenced:", linkErr?.message);
+      console.warn("[send-signup-confirmation] generateLink silenced:", linkErr?.message);
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -181,44 +156,30 @@ Deno.serve(async (req) => {
 
     const actionUrl = (linkData as any).properties?.action_link || (linkData as any).action_link;
     if (!actionUrl) {
-      console.warn("[send-password-reset] no action link");
+      console.warn("[send-signup-confirmation] no action link");
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const result = await sendEmail(email, "Reset your Tag password", brandedHtml(actionUrl));
-    console.log("[send-password-reset] dispatch", {
+    const result = await sendEmail(email, "Confirm your Tag account", brandedHtml(actionUrl));
+    console.log("[send-signup-confirmation] dispatch", {
       to: email,
       ok: result.ok,
       status: result.status,
     });
     if (!result.ok) {
-      console.error("[send-password-reset] send failed", result.status, result.error, result.data);
+      console.error(
+        "[send-signup-confirmation] send failed",
+        result.status,
+        result.error,
+        result.data,
+      );
       return new Response(JSON.stringify({ error: "Email send failed" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    }
-
-    // Additive: also send via WhatsApp if the user has a phone number on their profile.
-    try {
-      const userId = (linkData as any).user?.id ?? (linkData as any).properties?.user_id;
-      if (userId) {
-        const { data: profile } = await admin
-          .from("profiles")
-          .select("whatsapp_e164")
-          .eq("id", userId)
-          .maybeSingle();
-        const phone = (profile as any)?.whatsapp_e164;
-        if (phone) {
-          const waRes = await sendWhatsAppReset(phone, actionUrl);
-          console.log("[send-password-reset] whatsapp", { userId, ok: waRes.ok });
-        }
-      }
-    } catch (waErr) {
-      console.warn("[send-password-reset] whatsapp lookup/send failed", (waErr as Error).message);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
@@ -227,7 +188,7 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
-    console.error("[send-password-reset] error:", msg);
+    console.error("[send-signup-confirmation] error:", msg);
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

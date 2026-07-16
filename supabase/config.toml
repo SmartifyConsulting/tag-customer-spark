@@ -1,3 +1,5 @@
 project_id = "wgiktarhvepatqssryfg"
 [functions.send-password-reset]
 verify_jwt = false
+[functions.send-signup-confirmation]
+verify_jwt = false
