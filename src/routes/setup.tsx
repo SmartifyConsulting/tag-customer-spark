@@ -7,6 +7,7 @@ import { Check, FileUp, PartyPopper, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   Command,
   CommandEmpty,
@@ -16,6 +17,11 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { previewProductImport, commitProductImport, type ImportRow } from "@/lib/import.functions";
+import {
+  bulkCompleteDigitalIdentity,
+  listIncompleteDigitalIdentityIds,
+} from "@/lib/products.functions";
+import { assignMissingBarcodes } from "@/lib/barcode-assign.functions";
 import { saveRetailerPosSystem } from "@/lib/settings.functions";
 import heroLogo from "@/assets/tag-logo-clear.png.asset.json";
 
@@ -55,14 +61,6 @@ const CONNECTING_STEPS = [
   "Preparing your product experience…",
 ];
 
-const IMPORTING_STEPS = [
-  "Getting your products ready…",
-  "Preparing your products…",
-  "Creating your digital products…",
-  "Adding product details…",
-  "Finalising your products…",
-];
-
 async function fileToBase64(file: File): Promise<string> {
   const buf = await file.arrayBuffer();
   let binary = "";
@@ -85,20 +83,26 @@ function SetupWizard() {
   const [step, setStep] = useState<Step>("welcome");
   const [posSystem, setPosSystem] = useState<string | null>(null);
   const [connectingIdx, setConnectingIdx] = useState(0);
-  const [importingIdx, setImportingIdx] = useState(0);
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [result, setResult] = useState<{ created: number; updated: number } | null>(null);
+  const [importLabel, setImportLabel] = useState("");
+  const [importProgress, setImportProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const savePosFn = useServerFn(saveRetailerPosSystem);
   const previewFn = useServerFn(previewProductImport);
   const commitFn = useServerFn(commitProductImport);
+  const assignBarcodesFn = useServerFn(assignMissingBarcodes);
+  const listIncompleteFn = useServerFn(listIncompleteDigitalIdentityIds);
+  const bulkCompleteFn = useServerFn(bulkCompleteDigitalIdentity);
 
   const preview = useMutation({
     mutationFn: async (f: File) => {
       const base64 = await fileToBase64(f);
-      return previewFn({ data: { filename: f.name, mime: f.type || "application/octet-stream", base64 } });
+      return previewFn({
+        data: { filename: f.name, mime: f.type || "application/octet-stream", base64 },
+      });
     },
     onSuccess: (res) => {
       if (!res.rows.length) {
@@ -109,10 +113,6 @@ function SetupWizard() {
       setStep("importing");
     },
     onError: () => toast.error("That file didn't come through — please try another export."),
-  });
-
-  const commit = useMutation({
-    mutationFn: (importRows: ImportRow[]) => commitFn({ data: { rows: importRows } }),
   });
 
   // Themed "connecting" animation — always resolves to the fallback file
@@ -135,37 +135,57 @@ function SetupWizard() {
     };
   }, [step]);
 
-  // Perceived-progress ticker for the real import, coordinated with the
-  // actual commitProductImport call so it never shows "done" before the
-  // work has actually finished.
+  // The real import, then the same barcode-to-QR pipeline as "Tag
+  // Intelligence" — the progress bar tracks actual completion (not a fixed
+  // timer), so "done" only shows once every imported product genuinely has
+  // a complete digital identity and is ready to appear in Inventory and
+  // Taxonomy, however long that takes.
   useEffect(() => {
     if (step !== "importing" || rows.length === 0) return;
-    setImportingIdx(0);
     let cancelled = false;
 
-    const tick = (async () => {
-      for (let i = 0; i < IMPORTING_STEPS.length - 1; i++) {
-        await sleep(900);
+    (async () => {
+      try {
+        setImportProgress(5);
+        setImportLabel(`Importing ${rows.length} product${rows.length === 1 ? "" : "s"}…`);
+        const commitRes = await commitFn({ data: { rows } });
         if (cancelled) return;
-        setImportingIdx(i + 1);
+        setImportProgress(35);
+
+        setImportLabel("Assigning missing barcodes…");
+        await assignBarcodesFn();
+        if (cancelled) return;
+        setImportProgress(45);
+
+        setImportLabel("Finding products that still need a QR code…");
+        const { ids } = await listIncompleteFn();
+        if (cancelled) return;
+
+        if (ids.length > 0) {
+          const CHUNK = 10;
+          let done = 0;
+          for (let i = 0; i < ids.length; i += CHUNK) {
+            if (cancelled) return;
+            const chunk = ids.slice(i, i + CHUNK);
+            setImportLabel(`Generating QR codes… ${done} / ${ids.length}`);
+            await bulkCompleteFn({ data: { productIds: chunk } });
+            done += chunk.length;
+            setImportProgress(45 + Math.round((done / ids.length) * 55));
+          }
+        } else {
+          setImportProgress(100);
+        }
+        if (cancelled) return;
+
+        setImportLabel("All done — your products are ready.");
+        setResult({ created: commitRes.created, updated: commitRes.updated });
+        await sleep(500);
+        if (!cancelled) setStep("done");
+      } catch {
+        if (!cancelled)
+          toast.error("We hit a snag getting your products ready — please try again.");
       }
     })();
-
-    const work = commit.mutateAsync(rows).then((res) => {
-      if (cancelled) return null;
-      return res;
-    });
-
-    Promise.all([tick, work]).then(([, res]) => {
-      if (cancelled || !res) return;
-      setImportingIdx(IMPORTING_STEPS.length);
-      setResult({ created: res.created, updated: res.updated });
-      sleep(600).then(() => {
-        if (!cancelled) setStep("done");
-      });
-    }).catch(() => {
-      if (!cancelled) toast.error("We hit a snag getting your products ready — please try again.");
-    });
 
     return () => {
       cancelled = true;
@@ -204,7 +224,7 @@ function SetupWizard() {
               onFile={handleFile}
             />
           )}
-          {step === "importing" && <ImportingStep activeIdx={importingIdx} />}
+          {step === "importing" && <ImportingStep label={importLabel} progress={importProgress} />}
           {step === "done" && (
             <DoneStep
               count={totalProducts}
@@ -238,7 +258,9 @@ function SystemStep({ onPick }: { onPick: (system: string) => void }) {
     <div className="space-y-5">
       <div className="text-center">
         <h1 className="text-xl font-bold tracking-tight">Which retail system do you use?</h1>
-        <p className="mt-1 text-sm text-muted-foreground">This helps us set things up the right way for you.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          This helps us set things up the right way for you.
+        </p>
       </div>
       <Command className="rounded-xl border">
         <div className="flex items-center border-b px-3">
@@ -249,7 +271,12 @@ function SystemStep({ onPick }: { onPick: (system: string) => void }) {
           <CommandEmpty>No matches — pick "Other / not listed" below.</CommandEmpty>
           <CommandGroup>
             {RETAIL_SYSTEMS.map((system) => (
-              <CommandItem key={system} value={system} onSelect={() => onPick(system)} className="cursor-pointer">
+              <CommandItem
+                key={system}
+                value={system}
+                onSelect={() => onPick(system)}
+                className="cursor-pointer"
+              >
                 {system}
               </CommandItem>
             ))}
@@ -307,22 +334,17 @@ function FileStep({
           }}
         />
       </label>
-      {loading && (
-        <p className="text-sm text-muted-foreground">Reading {file?.name}…</p>
-      )}
+      {loading && <p className="text-sm text-muted-foreground">Reading {file?.name}…</p>}
     </div>
   );
 }
 
-function ImportingStep({ activeIdx }: { activeIdx: number }) {
+function ImportingStep({ label, progress }: { label: string; progress: number }) {
   return (
     <div className="space-y-6 py-4 text-center">
-      <h1 className="text-xl font-bold tracking-tight">Connecting your products…</h1>
-      <div className="space-y-4">
-        {IMPORTING_STEPS.map((label, i) => (
-          <ProgressLine key={label} label={label} done={i < activeIdx} active={i === activeIdx} />
-        ))}
-      </div>
+      <h1 className="text-xl font-bold tracking-tight">Getting your products ready…</h1>
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <Progress value={progress} className="mx-auto max-w-sm" />
     </div>
   );
 }
@@ -337,7 +359,11 @@ function ProgressLine({ label, done, active }: { label: string; done: boolean; a
       >
         {done && <Check className="h-3 w-3" />}
       </span>
-      <span className={done || active ? "text-sm font-medium text-foreground" : "text-sm text-muted-foreground"}>
+      <span
+        className={
+          done || active ? "text-sm font-medium text-foreground" : "text-sm text-muted-foreground"
+        }
+      >
         {label}
       </span>
     </div>
@@ -353,7 +379,8 @@ function DoneStep({ count, onGoToDashboard }: { count: number; onGoToDashboard: 
       <div>
         <h1 className="text-2xl font-bold tracking-tight">You're all set!</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {count.toLocaleString()} product{count === 1 ? "" : "s"} {count === 1 ? "is" : "are"} now ready on TAG.
+          {count.toLocaleString()} product{count === 1 ? "" : "s"} {count === 1 ? "is" : "are"} now
+          ready on TAG.
         </p>
       </div>
       <Button size="lg" className="w-full" onClick={onGoToDashboard}>

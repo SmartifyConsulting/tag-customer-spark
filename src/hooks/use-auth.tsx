@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -53,7 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const provisioningAttempted = useRef(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
@@ -90,15 +100,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Safety net: a session with no retailer_id yet (email-confirmation link
     // or Google OAuth landing directly, bypassing the explicit signUp/signIn
     // handlers in auth.tsx) — try provisioning once. Idempotent server-side.
+    // This is the ONLY code that runs for every entry path uniformly, so it's
+    // also where "send a brand-new owner into TAG Setup" has to live — a
+    // confirmation-link click establishes the session and lands the browser
+    // wherever `redirectTo` pointed (the marketing page today), never
+    // touching handleSignUp/handleSignIn in auth.tsx at all.
     if (!provisioningAttempted.current && rows.length > 0 && rows.every((r) => !r.retailer_id)) {
       provisioningAttempted.current = true;
       try {
-        await completeSignupFn({ data: {} });
+        const result = await completeSignupFn({ data: {} });
         const { data: refreshed } = await supabase
           .from("user_roles")
           .select("role, retailer_id")
           .eq("user_id", userId);
         rows = (refreshed ?? []) as { role: AppRole; retailer_id: string | null }[];
+        if (result.isNew) navigate({ to: "/setup", replace: true });
       } catch {
         // No pending invite/metadata to provision from — leave as-is.
       }
