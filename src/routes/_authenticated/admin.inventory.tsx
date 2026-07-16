@@ -146,16 +146,16 @@ function InventoryAdminPage() {
         description="Every uploaded product, tagged or not. The main Inventory screen only shows tagged items — review and tag the rest here."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={handleCompleteIdentity} disabled={completing}>
-              {completing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              Complete digital identity
+            <Button variant="outline" asChild>
+              <Link to="/setup">
+                <Wand2 className="mr-2 h-4 w-4" /> TAG Setup
+              </Link>
             </Button>
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" /> Import
+            </Button>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Add Product
             </Button>
             <Button variant="outline" onClick={handleAssignBarcodes} disabled={assigningBarcodes}>
               {assigningBarcodes ? (
@@ -165,13 +165,13 @@ function InventoryAdminPage() {
               )}
               Generate barcodes
             </Button>
-            <Button variant="outline" asChild>
-              <Link to="/setup">
-                <Wand2 className="mr-2 h-4 w-4" /> TAG Setup
-              </Link>
-            </Button>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" /> Add Product
+            <Button variant="outline" onClick={handleCompleteIdentity} disabled={completing}>
+              {completing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              Complete digital identity
             </Button>
           </div>
         }
