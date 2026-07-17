@@ -63,26 +63,25 @@ function Landing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Nav */}
-      <header className="mx-auto flex max-w-7xl items-center px-6 py-5">
-        <img
-          src={heroLogo}
-          alt="Tag"
-          className="h-[10rem] w-auto object-contain md:h-[11rem]"
-        />
-
-        <MarketingNav />
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate({ to: primaryHref })} className="gap-2">
-            {primaryLabel}
-          </Button>
-          {!authed && (
-            <Button onClick={() => setShowSignup(true)} className="gap-2">
-              Start Setup <ArrowRight className="h-4 w-4" />
+      <MarketingHeader
+        right={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => navigate({ to: primaryHref })}
+              className="gap-2"
+            >
+              {primaryLabel}
             </Button>
-          )}
-        </div>
-      </header>
+            {!authed && (
+              <Button onClick={() => setShowSignup(true)} className="gap-2">
+                Start Setup <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
+          </>
+        }
+      />
+
 
       {/* Hero */}
       <section className="relative overflow-hidden">
