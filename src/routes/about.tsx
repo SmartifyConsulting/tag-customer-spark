@@ -68,7 +68,7 @@ function Landing() {
         <img
           src={heroLogo}
           alt="Tag"
-          className="mt-[2cm] mr-[3cm] h-[13.44rem] w-auto object-contain md:h-[17.28rem]"
+          className="mt-[4cm] mr-[3cm] h-[8.064rem] w-auto object-contain md:h-[10.368rem]"
         />
         <MarketingNav />
         <div className="flex items-center gap-2">
