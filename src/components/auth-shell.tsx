@@ -15,13 +15,13 @@ export function AuthShell({
 }) {
   return (
     <div className="min-h-screen bg-white px-4 py-6 lg:px-10">
-      <div className="mx-auto flex max-w-6xl items-center py-4">
+      <div className="mx-auto flex max-w-6xl items-center gap-8 py-5">
+        <img src={heroLogo} alt="Tag" className="h-[10rem] w-auto object-contain" />
         <MarketingNav />
       </div>
-      <div className="mx-auto grid max-w-6xl items-end gap-10 lg:grid-cols-[1fr_1fr]">
-        {/* Hero panel — hidden on small screens to keep the form the focus */}
+      <div className="mx-auto grid max-w-6xl items-start gap-10 lg:grid-cols-[1fr_1fr]">
+        {/* Hero copy column */}
         <div className="hidden lg:block">
-          <img src={heroLogo} alt="Tag" className="mt-[2cm] h-[11.52rem] w-auto object-contain" />
           <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight text-foreground xl:text-5xl">
             Your customers are interested—your products just don't know it yet.
           </h1>
@@ -35,9 +35,6 @@ export function AuthShell({
 
         {/* Form column */}
         <div className="mx-auto w-full max-w-md space-y-4">
-          <div className="flex justify-center lg:hidden">
-            <img src={heroLogo} alt="Tag" className="h-[12.8rem] w-auto object-contain" />
-          </div>
           <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
             <div className="mb-6 space-y-1 text-center">
               <h2 className="text-2xl font-bold tracking-tight text-foreground">{title}</h2>
@@ -49,5 +46,6 @@ export function AuthShell({
         </div>
       </div>
     </div>
+
   );
 }
