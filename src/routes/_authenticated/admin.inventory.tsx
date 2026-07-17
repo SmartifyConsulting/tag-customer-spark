@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -38,6 +38,7 @@ import {
   listIncompleteDigitalIdentityIds,
   listProducts,
 } from "@/lib/products.functions";
+import { backfillStaleProductImages } from "@/lib/product-images.functions";
 import { assignMissingBarcodes } from "@/lib/barcode-assign.functions";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -73,6 +74,24 @@ function InventoryAdminPage() {
     queryKey: ["admin-inventory", params],
     queryFn: () => listFn({ data: params }),
   });
+
+  // Silently retry image resolution for a few products still stuck on a
+  // fallback image each time this page loads — no button, no loading state;
+  // any newly-found photos just appear once the list re-fetches.
+  const backfillFn = useServerFn(backfillStaleProductImages);
+  const backfillRan = useRef(false);
+  useEffect(() => {
+    if (backfillRan.current) return;
+    backfillRan.current = true;
+    (async () => {
+      for (let i = 0; i < 5; i++) {
+        const res = await backfillFn().catch(() => null);
+        if (!res || res.processed === 0) break;
+        if (res.changed > 0) qc.invalidateQueries({ queryKey: ["admin-inventory"] });
+        if (!res.remaining) break;
+      }
+    })();
+  }, [backfillFn, qc]);
 
   const rows = (q.data?.rows ?? []) as any[];
   const taggedCount = rows.filter((r) => r.is_tagged).length;

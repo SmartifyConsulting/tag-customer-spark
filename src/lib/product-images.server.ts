@@ -167,12 +167,21 @@ async function uploadPlaceholder(
 export async function resolveProductImage(input: ResolveInput): Promise<ResolveOutput> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  // 1) Retailer-supplied URL (already on the row and not sourced by us before)
+  // 1) Retailer-supplied URL (already on the row and not sourced by us before).
+  // Excludes every status *we* assign as a fallback (official/ai_suggested/
+  // placeholder/brand_logo) so a refresh can always try to upgrade to a real
+  // photo — otherwise a product stuck on a fallback status short-circuits
+  // here forever and never reaches Open Food Facts / Serper / AI again. The
+  // brand-logo.png filename check also self-heals older rows that were
+  // mislabeled "retailer" by this same bug before the fix.
+  const isBrandLogoFile = input.currentImageUrl?.includes("/brand-logo.png") ?? false;
   if (
     input.currentImageUrl &&
+    !isBrandLogoFile &&
     input.currentImageStatus !== "official" &&
     input.currentImageStatus !== "ai_suggested" &&
-    input.currentImageStatus !== "placeholder"
+    input.currentImageStatus !== "placeholder" &&
+    input.currentImageStatus !== "brand_logo"
   ) {
     // If it's already a supabase public URL for our bucket, keep as-is.
     const alreadyOurs = input.currentImageUrl.includes("/storage/v1/object/public/product-images/");
@@ -391,7 +400,6 @@ async function lookupSerperImage(input: {
 }
 
 // ----- Open Food Facts lookup with GTIN normalisations + search fallback --
-
 
 async function offFetch(url: string): Promise<any | null> {
   try {
