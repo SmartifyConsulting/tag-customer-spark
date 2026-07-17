@@ -132,7 +132,7 @@ async function aiGenerateLogo(brandName: string): Promise<Uint8Array | null> {
   }
 }
 
-async function tryClearbit(
+export async function tryClearbit(
   website: string | null,
 ): Promise<{ bytes: Uint8Array; contentType: string } | null> {
   if (!website) return null;

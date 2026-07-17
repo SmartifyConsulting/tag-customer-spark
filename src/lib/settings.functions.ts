@@ -134,3 +134,32 @@ export const uploadRetailerLogo = createServerFn({ method: "POST" })
 
     return { url };
   });
+
+// Derives the retailer's logo from their company website (via Clearbit's
+// logo API — same lookup already used for brand logos) instead of asking
+// for a file upload. Best-effort: returns { url: null } rather than
+// throwing when nothing is found, since a missing logo shouldn't block
+// onboarding — it can always be set manually in Settings later.
+export const setRetailerLogoFromWebsite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ website: z.string().trim().min(1) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) throw new Error("No retailer");
+
+    const { tryClearbit } = await import("./brands.functions");
+    const payload = await tryClearbit(data.website);
+    if (!payload) return { url: null };
+
+    const ext = EXT_BY_MIME[payload.contentType] ?? "png";
+    const path = `${retailerId}/logo-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("retailer-logos")
+      .upload(path, payload.bytes, { contentType: payload.contentType, upsert: true });
+    if (upErr) return { url: null };
+
+    const { data: pub } = supabase.storage.from("retailer-logos").getPublicUrl(path);
+    await supabase.from("retailers").update({ logo_url: pub.publicUrl }).eq("id", retailerId);
+    return { url: pub.publicUrl };
+  });

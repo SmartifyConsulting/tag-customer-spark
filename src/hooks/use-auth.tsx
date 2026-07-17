@@ -13,9 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { completeSignup } from "@/lib/signup.functions";
-import { uploadRetailerLogo } from "@/lib/settings.functions";
-
-const PENDING_LOGO_KEY = "tag_pending_logo";
+import { setRetailerLogoFromWebsite } from "@/lib/settings.functions";
 
 export type AppRole = "super_admin" | "retail_admin" | "store_manager" | "sales_assistant";
 
@@ -61,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const completeSignupFn = useServerFn(completeSignup);
-  const uploadLogoFn = useServerFn(uploadRetailerLogo);
+  const setLogoFromWebsiteFn = useServerFn(setRetailerLogoFromWebsite);
   const provisioningAttempted = useRef(false);
 
   useEffect(() => {
@@ -100,19 +98,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Uploads a logo picked on the sign-up form, if one was stashed to
-  // localStorage there — signup can't upload it directly since Supabase
-  // Storage needs a session, which doesn't exist yet at that point
-  // (especially when email confirmation is required). Best-effort: a
-  // failure here shouldn't block onboarding, since the logo can always be
-  // added later in Settings.
-  const uploadPendingLogo = async () => {
-    const raw = localStorage.getItem(PENDING_LOGO_KEY);
-    if (!raw) return;
-    localStorage.removeItem(PENDING_LOGO_KEY);
+  // Derives the retailer's logo from the company website entered at signup
+  // (stored in the auth user's metadata) via Clearbit — no file upload
+  // needed. Best-effort: a failure here shouldn't block onboarding, since
+  // the logo can always be set manually in Settings later.
+  const applyLogoFromWebsite = async () => {
     try {
-      const pending = JSON.parse(raw) as { filename: string; contentType: string; base64: string };
-      await uploadLogoFn({ data: pending });
+      const { data } = await supabase.auth.getUser();
+      const website = data.user?.user_metadata?.website as string | undefined;
+      if (!website) return;
+      await setLogoFromWebsiteFn({ data: { website } });
     } catch {
       // Non-fatal.
     }
@@ -157,7 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (rows.some((r) => r.retailer_id)) {
           navigate({ to: "/setup", replace: true });
           routedToSetup = true;
-          await uploadPendingLogo();
+          await applyLogoFromWebsite();
         }
       } catch {
         // No pending invite/metadata to provision from — leave as-is.

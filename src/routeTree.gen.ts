@@ -9,8 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as IntentGapAnalyticsRouteImport } from './routes/intent-gap-analytics'
 import { Route as IntelligenceEngineRouteImport } from './routes/intelligence-engine'
@@ -70,6 +72,11 @@ import { Route as ApiPublicHooksIntentTickRouteImport } from './routes/api/publi
 import { Route as ApiPublic01GtinRouteImport } from './routes/api/public/01.$gtin'
 import { Route as AuthenticatedAdminInventoryProductIdRouteImport } from './routes/_authenticated/admin.inventory.$productId'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
@@ -78,6 +85,11 @@ const SetupRoute = SetupRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -407,8 +419,10 @@ export interface FileRoutesByFullPath {
   '/intelligence-engine': typeof IntelligenceEngineRoute
   '/intent-gap-analytics': typeof IntentGapAnalyticsRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -468,8 +482,10 @@ export interface FileRoutesByTo {
   '/intelligence-engine': typeof IntelligenceEngineRoute
   '/intent-gap-analytics': typeof IntentGapAnalyticsRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -528,8 +544,10 @@ export interface FileRoutesById {
   '/intelligence-engine': typeof IntelligenceEngineRoute
   '/intent-gap-analytics': typeof IntentGapAnalyticsRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/terms': typeof TermsRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -591,8 +609,10 @@ export interface FileRouteTypes {
     | '/intelligence-engine'
     | '/intent-gap-analytics'
     | '/pricing'
+    | '/privacy'
     | '/reset-password'
     | '/setup'
+    | '/terms'
     | '/analytics'
     | '/customers'
     | '/dashboard'
@@ -652,8 +672,10 @@ export interface FileRouteTypes {
     | '/intelligence-engine'
     | '/intent-gap-analytics'
     | '/pricing'
+    | '/privacy'
     | '/reset-password'
     | '/setup'
+    | '/terms'
     | '/analytics'
     | '/customers'
     | '/dashboard'
@@ -711,8 +733,10 @@ export interface FileRouteTypes {
     | '/intelligence-engine'
     | '/intent-gap-analytics'
     | '/pricing'
+    | '/privacy'
     | '/reset-password'
     | '/setup'
+    | '/terms'
     | '/_authenticated/analytics'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
@@ -774,8 +798,10 @@ export interface RootRouteChildren {
   IntelligenceEngineRoute: typeof IntelligenceEngineRoute
   IntentGapAnalyticsRoute: typeof IntentGapAnalyticsRoute
   PricingRoute: typeof PricingRoute
+  PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SetupRoute: typeof SetupRoute
+  TermsRoute: typeof TermsRoute
   NMessageIdRoute: typeof NMessageIdRoute
   PDppIdRoute: typeof PDppIdRoute
   PassportGtinRoute: typeof PassportGtinRoute
@@ -793,6 +819,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/setup': {
       id: '/setup'
       path: '/setup'
@@ -805,6 +838,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -1371,8 +1411,10 @@ const rootRouteChildren: RootRouteChildren = {
   IntelligenceEngineRoute: IntelligenceEngineRoute,
   IntentGapAnalyticsRoute: IntentGapAnalyticsRoute,
   PricingRoute: PricingRoute,
+  PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SetupRoute: SetupRoute,
+  TermsRoute: TermsRoute,
   NMessageIdRoute: NMessageIdRoute,
   PDppIdRoute: PDppIdRoute,
   PassportGtinRoute: PassportGtinRoute,

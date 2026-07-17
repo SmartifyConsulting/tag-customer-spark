@@ -49,15 +49,6 @@ function GoogleIcon() {
   );
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -74,7 +65,7 @@ function AuthPage() {
   const [suCountry, setSuCountry] = useState("ZA");
   const [suProvince, setSuProvince] = useState("");
   const [suBranchName, setSuBranchName] = useState("");
-  const [suLogoFile, setSuLogoFile] = useState<File | null>(null);
+  const [suWebsite, setSuWebsite] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -112,23 +103,6 @@ function AuthPage() {
     const country = SIGNUP_COUNTRIES.find((c) => c.code === suCountry) ?? SIGNUP_COUNTRIES[0];
     const companyName = suCompany.trim() || `${suName}'s workspace`;
 
-    // Logo upload needs an authenticated session (Supabase Storage), which
-    // doesn't exist yet at signup time — especially when email confirmation
-    // is required, where the very next thing that happens is a redirect
-    // away. Stash it in localStorage and upload it the first moment
-    // AuthProvider sees a real session (see use-auth.tsx) instead.
-    if (suLogoFile) {
-      try {
-        const base64 = await fileToBase64(suLogoFile);
-        localStorage.setItem(
-          "tag_pending_logo",
-          JSON.stringify({ filename: suLogoFile.name, contentType: suLogoFile.type, base64 }),
-        );
-      } catch {
-        // Non-fatal — the logo can always be added later in Settings.
-      }
-    }
-
     const { data, error } = await supabase.auth.signUp({
       email: suEmail,
       password: suPassword,
@@ -137,6 +111,8 @@ function AuthPage() {
         // Persisted on the auth user regardless of confirmation state, so
         // `complete_signup` can still use it if it only runs later, via
         // AuthProvider's safety net, once the user actually has a session.
+        // `website` is picked up by that same safety net to derive a logo
+        // via Clearbit once a session exists — no file upload needed.
         data: {
           full_name: suName,
           company_name: companyName,
@@ -145,6 +121,7 @@ function AuthPage() {
           country_name: country.name,
           branch_name: suBranchName.trim() || undefined,
           province: suProvince.trim() || undefined,
+          website: suWebsite.trim() || undefined,
         },
       },
     });
@@ -283,7 +260,7 @@ function AuthPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="su-company">Company / workspace name</Label>
+            <Label htmlFor="su-company">Company</Label>
             <Input
               id="su-company"
               type="text"
@@ -296,21 +273,6 @@ function AuthPage() {
               If you were invited to an existing workspace, this is ignored — you'll join that one
               instead.
             </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="su-country">Country</Label>
-            <Select value={suCountry} onValueChange={setSuCountry}>
-              <SelectTrigger id="su-country">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SIGNUP_COUNTRIES.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.name} ({c.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -335,16 +297,33 @@ function AuthPage() {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="su-logo">Company logo (optional)</Label>
+            <Label htmlFor="su-country">Country</Label>
+            <Select value={suCountry} onValueChange={setSuCountry}>
+              <SelectTrigger id="su-country">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SIGNUP_COUNTRIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.name} ({c.currency})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="su-website">Company website (optional)</Label>
             <Input
-              id="su-logo"
-              type="file"
-              accept="image/png,image/webp,image/svg+xml"
-              onChange={(e) => setSuLogoFile(e.target.files?.[0] ?? null)}
+              id="su-website"
+              type="text"
+              autoComplete="url"
+              placeholder="e.g. capeunionmart.co.za"
+              value={suWebsite}
+              onChange={(e) => setSuWebsite(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              PNG, WEBP or SVG with a transparent background — you can add or replace this later
-              in Settings.
+              We'll pick up your logo from here automatically — you can replace it later in
+              Settings.
             </p>
           </div>
           <div className="space-y-1.5">
@@ -367,6 +346,17 @@ function AuthPage() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Creating account…" : "Create account"}
           </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            By creating an account, you agree to Tag's{" "}
+            <Link to="/terms" className="underline hover:text-foreground">
+              Terms and Conditions
+            </Link>{" "}
+            and{" "}
+            <Link to="/privacy" className="underline hover:text-foreground">
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </form>
       )}
 

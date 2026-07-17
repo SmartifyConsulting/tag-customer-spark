@@ -49,7 +49,18 @@ export function MarketingCta() {
 export function MarketingFooter() {
   return (
     <footer className="border-t border-border/60 py-8 text-center text-sm text-muted-foreground">
-      © {new Date().getFullYear()} Tag. Built for Retail Intelligence.
+      <p>© {new Date().getFullYear()} Tag. Built for Retail Intelligence.</p>
+      <div className="mt-2 flex items-center justify-center gap-4">
+        <Link to="/terms" className="hover:text-[color:var(--mint)] hover:underline">
+          Terms and Conditions
+        </Link>
+        <span aria-hidden className="text-border">
+          ·
+        </span>
+        <Link to="/privacy" className="hover:text-[color:var(--mint)] hover:underline">
+          Privacy Policy
+        </Link>
+      </div>
     </footer>
   );
 }
