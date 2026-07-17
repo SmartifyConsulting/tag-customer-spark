@@ -201,6 +201,22 @@ export async function resolveProductImage(input: ResolveInput): Promise<ResolveO
     }
   }
 
+  // 2b) Serper Google Images lookup — real product photos from the web.
+  {
+    const serperUrl = await lookupSerperImage({
+      gtin: input.gtin,
+      name: input.name,
+      brand: input.brand,
+    });
+    if (serperUrl) {
+      const dest = bucketPath(input.retailerId, input.gtin, input.productId, `original.jpg`);
+      const r = await downloadAndUpload(supabaseAdmin, serperUrl, dest);
+      if (r.ok) {
+        return finalize({ primary: r.url, status: "official", source: "serper" });
+      }
+    }
+  }
+
   // 3) AI suggested — gated to Growth+ plan, and only for products with no
   // GTIN. A barcode means real, manufacturer-designed packaging exists —
   // an AI image (deliberately generated without text/logo, since we can't
@@ -320,7 +336,62 @@ async function generateAiImage(input: ResolveInput): Promise<Uint8Array | null> 
   }
 }
 
+// ----- Serper (Google Images) lookup --------------------------------------
+// Uses https://serper.dev to find real product photos on the web. Requires
+// SERPER_API_KEY. Returns null silently on missing key, HTTP failure, or
+// when no result looks like a usable https image URL — the pipeline then
+// falls through to AI / brand logo / placeholder.
+
+async function lookupSerperImage(input: {
+  gtin: string | null;
+  name: string;
+  brand: string | null;
+}): Promise<string | null> {
+  const apiKey = process.env.SERPER_API_KEY;
+  if (!apiKey) return null;
+
+  const cleanGtin = input.gtin?.replace(/\D/g, "") ?? "";
+  const query = cleanGtin
+    ? `"${cleanGtin}"`
+    : [input.brand, input.name].filter(Boolean).join(" ").trim();
+  if (!query || query.length < 3) return null;
+
+  try {
+    const res = await fetch("https://google.serper.dev/images", {
+      method: "POST",
+      headers: {
+        "X-API-KEY": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ q: query, num: 10, safe: "active" }),
+    });
+    if (!res.ok) {
+      console.warn(`[serper] HTTP ${res.status} for query "${query}"`);
+      return null;
+    }
+    const json: any = await res.json();
+    const items: any[] = Array.isArray(json?.images) ? json.images : [];
+    const isImageUrl = (u: string) =>
+      u.startsWith("https://") && /\.(jpe?g|png|webp)(\?|$)/i.test(u);
+
+    for (const item of items) {
+      const link = typeof item?.imageUrl === "string" ? item.imageUrl : null;
+      if (link && isImageUrl(link)) return link;
+    }
+    // Fallback: any https imageUrl — downloadAndUpload will validate MIME.
+    for (const item of items) {
+      const link = typeof item?.imageUrl === "string" ? item.imageUrl : null;
+      if (link && link.startsWith("https://")) return link;
+    }
+    return null;
+  } catch (e: any) {
+    console.warn("[serper] fetch failed", e?.message ?? e);
+    return null;
+  }
+}
+
 // ----- Open Food Facts lookup with GTIN normalisations + search fallback --
+
 
 async function offFetch(url: string): Promise<any | null> {
   try {
