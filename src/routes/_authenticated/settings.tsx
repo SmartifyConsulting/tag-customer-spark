@@ -234,6 +234,28 @@ function Stat({ label, value }: any) {
   );
 }
 
+// Sub-400px logos come out blurry once tinted/resized across QR cards,
+// dashboard header, opt-in pages etc. — reject early with a clear reason
+// instead of silently accepting something that'll look bad everywhere it's
+// used. Vector SVGs are resolution-independent, so they skip this check.
+const MIN_LOGO_PX = 400;
+
+function checkImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Couldn't read image"));
+    };
+    img.src = url;
+  });
+}
+
 function LogoUploader({ logoUrl, onUploaded }: { logoUrl: string; onUploaded: (url: string) => void }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -258,12 +280,26 @@ function LogoUploader({ logoUrl, onUploaded }: { logoUrl: string; onUploaded: (u
     onSettled: () => setUploading(false),
   });
 
-  const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
+    e.target.value = "";
     if (!f) return;
+    if (f.type !== "image/svg+xml") {
+      try {
+        const { width, height } = await checkImageDimensions(f);
+        if (width < MIN_LOGO_PX || height < MIN_LOGO_PX) {
+          toast.error(
+            `Logo is ${width}×${height}px — needs to be at least ${MIN_LOGO_PX}×${MIN_LOGO_PX}px so it stays sharp across QR cards and the dashboard.`,
+          );
+          return;
+        }
+      } catch {
+        toast.error("Couldn't read that image — try a different file.");
+        return;
+      }
+    }
     setUploading(true);
     upload.mutate(f);
-    e.target.value = "";
   };
 
   const copy = async () => {
@@ -295,7 +331,7 @@ function LogoUploader({ logoUrl, onUploaded }: { logoUrl: string; onUploaded: (u
           <input
             ref={inputRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            accept="image/png,image/webp,image/svg+xml"
             className="hidden"
             onChange={onPick}
           />
@@ -309,7 +345,9 @@ function LogoUploader({ logoUrl, onUploaded }: { logoUrl: string; onUploaded: (u
             <Upload className="mr-2 h-4 w-4" />
             {uploading ? "Uploading…" : logoUrl ? "Replace logo" : "Upload logo"}
           </Button>
-          <p className="mt-1 text-[11px] text-muted-foreground">PNG, JPG, WEBP or SVG · max 2 MB</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            PNG, WEBP or SVG with a transparent background · at least {MIN_LOGO_PX}×{MIN_LOGO_PX}px · max 2 MB
+          </p>
         </div>
       </div>
 

@@ -226,7 +226,7 @@ function DashboardContent() {
           }
         />
         {branding.data?.logo_url && (
-          <div className="grid shrink-0 place-items-center rounded-xl border border-border bg-white p-3" style={{ width: 220, height: 220 }}>
+          <div className="grid shrink-0 place-items-center rounded-xl border border-border bg-card p-3" style={{ width: 220, height: 220 }}>
             <img
               src={branding.data.logo_url}
               alt={branding.data.name ? `${branding.data.name} logo` : "Company logo"}

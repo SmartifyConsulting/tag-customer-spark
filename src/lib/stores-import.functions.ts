@@ -6,6 +6,7 @@ const rowSchema = z.object({
   name: z.string().min(1),
   address: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
+  province: z.string().optional().nullable(),
   country: z.string().optional().nullable(),
   timezone: z.string().optional().nullable(),
   manager_name: z.string().optional().nullable(),
@@ -31,12 +32,47 @@ function normaliseRow(r: any): StoreImportRow | null {
     name,
     address: r.address ? String(r.address) : null,
     city: r.city ? String(r.city) : null,
+    province: r.province ? String(r.province) : null,
     country: r.country ? String(r.country) : null,
     timezone: r.timezone ? String(r.timezone) : null,
     manager_name: r.manager_name ? String(r.manager_name) : null,
     contact_phone: r.contact_phone ? String(r.contact_phone) : null,
   });
   return parsed.success ? parsed.data : null;
+}
+
+// ERP/POS exports frequently give one free-text address line instead of
+// separate city/province/country columns. Rather than leave those blank,
+// batch every row still missing one of those three fields through a single
+// AI call to split the address out — much cheaper than one call per row,
+// and still correct since geocoding a full address string is a one-shot
+// extraction task, not something that benefits from per-row context.
+async function fillLocationFromAddress(rows: StoreImportRow[]): Promise<StoreImportRow[]> {
+  const needsFill = rows
+    .map((r, i) => ({ r, i }))
+    .filter(({ r }) => r.address && (!r.city || !r.province || !r.country));
+  if (needsFill.length === 0) return rows;
+
+  const { callAiJson } = await import("./import.functions");
+  const result = await callAiJson(
+    `Addresses (JSON array of {i, address}): ${JSON.stringify(
+      needsFill.map(({ r, i }) => ({ i, address: r.address })),
+    )}\n\nFor each, extract city, province/state, and country. Return JSON: {"rows":[{"i": number, "city": string|null, "province": string|null, "country": string|null}]}. Use full country names (e.g. "South Africa" not "ZA"). If genuinely unclear, use null — do not guess.`,
+    "You extract city/province/country from free-text store addresses. Output only valid JSON.",
+  ).catch(() => null);
+  const extracted: any[] = Array.isArray(result?.rows) ? result.rows : [];
+  const byIndex = new Map(extracted.map((e) => [e.i, e]));
+
+  return rows.map((r, i) => {
+    const fill = byIndex.get(i);
+    if (!fill) return r;
+    return {
+      ...r,
+      city: r.city ?? fill.city ?? null,
+      province: r.province ?? fill.province ?? null,
+      country: r.country ?? fill.country ?? null,
+    };
+  });
 }
 
 // Same shape as previewProductImport: spreadsheet in, AI maps headers to a
@@ -63,7 +99,7 @@ export const previewStoreImport = createServerFn({ method: "POST" })
 
     if (isPdf) {
       const result = await callAiJson(
-        'Extract every store/branch/site from the attached document. Return JSON like {"rows":[{...}]} where each row has: name (branch/store/site/plant name or code), address, city, country, timezone (IANA tz if determinable from city/country, else null), manager_name, contact_phone.',
+        'Extract every store/branch/site from the attached document. Return JSON like {"rows":[{...}]} where each row has: name (branch/store/site/plant name or code), address, city, province (state/province/region), country, timezone (IANA tz if determinable from city/country, else null), manager_name, contact_phone.',
         "You are a retail branch-master extraction assistant. Output only valid JSON.",
         { mime: data.mime, base64: data.base64, filename: data.filename },
       );
@@ -80,7 +116,7 @@ export const previewStoreImport = createServerFn({ method: "POST" })
       headers = rawRows.length ? Object.keys(rawRows[0]) : [];
       const sample = rawRows.slice(0, 5);
       const mapping = await callAiJson(
-        `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {name, address, city, country, timezone, manager_name, contact_phone} to the best-matching source header (or null if absent). "name" covers ERP branch/site/plant/location/warehouse code or name columns (e.g. SAP plant code, Oracle inventory org, Dynamics warehouse, a POS store master column).`,
+        `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {name, address, city, province, country, timezone, manager_name, contact_phone} to the best-matching source header (or null if absent). "name" covers ERP branch/site/plant/location/warehouse code or name columns (e.g. SAP plant code, Oracle inventory org, Dynamics warehouse, a POS store master column). "province" covers state/province/region columns.`,
         "You map raw spreadsheet columns to a canonical store/branch schema. Output only valid JSON.",
       );
       const map: Record<string, string | null> = mapping?.map ?? {};
@@ -91,6 +127,7 @@ export const previewStoreImport = createServerFn({ method: "POST" })
             name: get("name"),
             address: get("address"),
             city: get("city"),
+            province: get("province"),
             country: get("country"),
             timezone: get("timezone"),
             manager_name: get("manager_name"),
@@ -99,6 +136,8 @@ export const previewStoreImport = createServerFn({ method: "POST" })
         })
         .filter((r: StoreImportRow | null): r is StoreImportRow => r !== null);
     }
+
+    mapped = await fillLocationFromAddress(mapped);
 
     return { rows: mapped, count: mapped.length, headers };
   });
@@ -131,6 +170,7 @@ export const commitStoreImport = createServerFn({ method: "POST" })
           name: row.name,
           address: row.address ?? null,
           city: row.city ?? null,
+          province: row.province ?? null,
           country: row.country ?? null,
           timezone: row.timezone ?? null,
           manager_name: row.manager_name ?? null,

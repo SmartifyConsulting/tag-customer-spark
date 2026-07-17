@@ -160,6 +160,7 @@ export function StoreImportDialog({
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>City</TableHead>
+                    <TableHead>Province</TableHead>
                     <TableHead>Country</TableHead>
                     <TableHead>Manager</TableHead>
                     <TableHead>Contact</TableHead>
@@ -170,6 +171,7 @@ export function StoreImportDialog({
                     <TableRow key={i}>
                       <TableCell className="font-medium">{r.name}</TableCell>
                       <TableCell>{r.city || "—"}</TableCell>
+                      <TableCell>{r.province || "—"}</TableCell>
                       <TableCell>{r.country || "—"}</TableCell>
                       <TableCell>{r.manager_name || "—"}</TableCell>
                       <TableCell>{r.contact_phone || "—"}</TableCell>

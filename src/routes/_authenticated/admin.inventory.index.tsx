@@ -25,6 +25,12 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/empty-state";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -41,7 +47,9 @@ import {
 } from "@/lib/products.functions";
 import { backfillStaleProductImages } from "@/lib/product-images.functions";
 import { assignMissingBarcodes } from "@/lib/barcode-assign.functions";
+import { bulkReenrichPassports } from "@/lib/passport.functions";
 import { useAuth } from "@/hooks/use-auth";
+import { Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/inventory/")({
   head: () => ({ meta: [{ title: "Inventory Admin — Tag" }] }),
@@ -59,7 +67,9 @@ function InventoryAdminPage() {
   const listIncompleteFn = useServerFn(listIncompleteDigitalIdentityIds);
   const assignBarcodesFn = useServerFn(assignMissingBarcodes);
   const bulkDeleteFn = useServerFn(bulkDeleteProducts);
+  const reenrichFn = useServerFn(bulkReenrichPassports);
   const qc = useQueryClient();
+  const [reenriching, setReenriching] = useState(false);
   const [search, setSearch] = useState("");
   const [tagged, setTagged] = useState<Tagged>("all");
   const [createOpen, setCreateOpen] = useState(false);
@@ -106,6 +116,22 @@ function InventoryAdminPage() {
   const rows = (q.data?.rows ?? []) as any[];
   const taggedCount = rows.filter((r) => r.is_tagged).length;
   const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
+
+  // Groups the list by category (the taxonomy level every product already
+  // carries) instead of one long flat list — the same pattern the main
+  // Inventory screen uses, so a large catalogue stays scannable.
+  const grouped = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const r of rows) {
+      const key = r.category?.name ?? "Uncategorised";
+      const arr = map.get(key) ?? [];
+      arr.push(r);
+      map.set(key, arr);
+    }
+    return Array.from(map.entries()).sort((a, b) =>
+      a[0] === "Uncategorised" ? 1 : b[0] === "Uncategorised" ? -1 : a[0].localeCompare(b[0]),
+    );
+  }, [rows]);
 
   const toggleSelected = (id: string) => {
     setSelected((prev) => {
@@ -218,6 +244,48 @@ function InventoryAdminPage() {
     }
   };
 
+  const handleReenrichAll = async () => {
+    if (reenriching) return;
+    if (
+      !confirm(
+        "Re-run AI enrichment for every product's Digital Product ID? This overwrites existing enrichment data.",
+      )
+    )
+      return;
+    setReenriching(true);
+    const toastId = toast.loading("Finding products to re-enrich…");
+    try {
+      const all = await listFn({ data: { search: "", status: "all", tagged: "all", pageSize: 500 } });
+      const ids = (all.rows as any[]).filter((r) => r.gtin).map((r) => r.id);
+      if (ids.length === 0) {
+        toast.success("No products with a barcode to re-enrich.", { id: toastId });
+        return;
+      }
+      const CHUNK = 10;
+      let done = 0;
+      let succeeded = 0;
+      const allErrors: Array<{ productId: string; message: string }> = [];
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const chunk = ids.slice(i, i + CHUNK);
+        toast.loading(`Re-enriching… ${done} / ${ids.length}`, { id: toastId });
+        const r = await reenrichFn({ data: { productIds: chunk } });
+        succeeded += r.succeeded;
+        allErrors.push(...r.errors);
+        done += chunk.length;
+      }
+      qc.invalidateQueries();
+      toast.success(
+        `Re-enriched ${succeeded} product${succeeded === 1 ? "" : "s"}${allErrors.length ? ` (${allErrors.length} issues)` : ""}`,
+        { id: toastId },
+      );
+      if (allErrors.length) console.warn("Re-enrich errors:", allErrors);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Re-enrich run failed", { id: toastId });
+    } finally {
+      setReenriching(false);
+    }
+  };
+
   if (!canManage) return <Navigate to="/dashboard" />;
 
   return (
@@ -255,6 +323,14 @@ function InventoryAdminPage() {
                 Tag Intelligence
               </Button>
             )}
+            <Button variant="outline" onClick={handleReenrichAll} disabled={reenriching}>
+              {reenriching ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              Re-enrich all
+            </Button>
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" /> Import
             </Button>
@@ -341,47 +417,65 @@ function InventoryAdminPage() {
               description="Try a different search or filter."
             />
           ) : (
-            <ul className="divide-y rounded-xl border">
-              {rows.map((p) => (
-                <li key={p.id} className="flex items-center gap-1 pl-3">
-                  <Checkbox
-                    checked={selected.has(p.id)}
-                    onCheckedChange={() => toggleSelected(p.id)}
-                    aria-label={`Select ${p.name}`}
-                  />
-                  <Link
-                    to="/admin/inventory/$productId"
-                    params={{ productId: p.id }}
-                    className="flex flex-1 items-center gap-3 px-2 py-2 hover:bg-muted/50"
-                  >
-                    <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted">
-                      {p.image_url ? (
-                        <img src={p.image_url} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                      )}
+            <Accordion type="multiple" defaultValue={grouped.map(([category]) => category)} className="grid gap-2">
+              {grouped.map(([category, items]) => (
+                <AccordionItem
+                  key={category}
+                  value={category}
+                  className="rounded-xl border border-border bg-card px-3"
+                >
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex flex-1 items-center gap-3 pr-3">
+                      <span className="text-sm font-semibold text-foreground">{category}</span>
+                      <Badge variant="default">{items.length}</Badge>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium">{p.name}</div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {[p.sku, p.brand, p.category?.name].filter(Boolean).join(" · ")}
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="capitalize">
-                      {p.status}
-                    </Badge>
-                    {p.is_tagged ? (
-                      <Badge className="gap-1 bg-primary text-primary-foreground">
-                        <TagIcon className="h-3 w-3" /> Tagged
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">Untagged</Badge>
-                    )}
-                    <Badge variant="outline">{p.stock_qty ?? 0} qty</Badge>
-                  </Link>
-                </li>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-1">
+                    <ul className="divide-y rounded-lg border">
+                      {items.map((p) => (
+                        <li key={p.id} className="flex items-center gap-1 pl-3">
+                          <Checkbox
+                            checked={selected.has(p.id)}
+                            onCheckedChange={() => toggleSelected(p.id)}
+                            aria-label={`Select ${p.name}`}
+                          />
+                          <Link
+                            to="/admin/inventory/$productId"
+                            params={{ productId: p.id }}
+                            className="flex flex-1 items-center gap-3 px-2 py-2 hover:bg-muted/50"
+                          >
+                            <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted">
+                              {p.image_url ? (
+                                <img src={p.image_url} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                <Package className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-medium">{p.name}</div>
+                              <div className="truncate text-xs text-muted-foreground">
+                                {[p.sku, p.brand].filter(Boolean).join(" · ")}
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="capitalize">
+                              {p.status}
+                            </Badge>
+                            {p.is_tagged ? (
+                              <Badge className="gap-1 bg-primary text-primary-foreground">
+                                <TagIcon className="h-3 w-3" /> Tagged
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary">Untagged</Badge>
+                            )}
+                            <Badge variant="outline">{p.stock_qty ?? 0} qty</Badge>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
               ))}
-            </ul>
+            </Accordion>
           )}
         </CardContent>
       </Card>

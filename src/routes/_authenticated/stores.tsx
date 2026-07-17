@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Store, Plus, MapPin, Users, ScanLine, UserRound, Phone, Upload } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Store, Plus, MapPin, Users, ScanLine, UserRound, Phone, Upload, Search } from "lucide-react";
 import { StoreImportDialog } from "@/components/stores/store-import-dialog";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,13 +28,40 @@ function money(c: number) {
   return formatMoney(c, "ZAR", { maximumFractionDigits: 0 });
 }
 
+const ALL = "__all__";
+
 function StoresPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
+  const [search, setSearch] = useState("");
+  const [province, setProvince] = useState(ALL);
+  const [country, setCountry] = useState(ALL);
 
   const stores = useQuery({ queryKey: ["stores"], queryFn: () => listStores() });
+  const allStores = (stores.data ?? []) as any[];
+
+  const provinces = useMemo(
+    () => Array.from(new Set(allStores.map((s) => s.province).filter(Boolean))).sort(),
+    [allStores],
+  );
+  const countries = useMemo(
+    () => Array.from(new Set(allStores.map((s) => s.country).filter(Boolean))).sort(),
+    [allStores],
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return allStores.filter((s) => {
+      if (q && !s.name?.toLowerCase().includes(q)) return false;
+      if (province !== ALL && s.province !== province) return false;
+      if (country !== ALL && s.country !== country) return false;
+      return true;
+    });
+  }, [allStores, search, province, country]);
+
+  const hasFilters = !!search || province !== ALL || country !== ALL;
 
   return (
     <div className="space-y-8">
@@ -55,22 +82,63 @@ function StoresPage() {
       />
       <StoreImportDialog open={importOpen} onOpenChange={setImportOpen} />
 
+      {!stores.isLoading && allStores.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[220px] flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search branch name…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={province} onValueChange={setProvince}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="All provinces / states" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>All provinces / states</SelectItem>
+              {provinces.map((p) => (
+                <SelectItem key={p} value={p}>{p}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={country} onValueChange={setCountry}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="All countries" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>All countries</SelectItem>
+              {countries.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {hasFilters && (
+            <span className="text-sm text-muted-foreground">{filtered.length} of {allStores.length}</span>
+          )}
+        </div>
+      )}
+
       {stores.isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-40 rounded-2xl" />)}
         </div>
-      ) : (stores.data ?? []).length === 0 ? (
+      ) : allStores.length === 0 ? (
         <EmptyState icon={Store} title="No stores yet" description="Add your first physical store to start assigning staff and tracking engagement." />
+      ) : filtered.length === 0 ? (
+        <EmptyState icon={Search} title="No stores match" description="Try a different search or filter." />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {(stores.data as any[]).map((s) => (
+          {filtered.map((s) => (
             <Card key={s.id} className="rounded-2xl">
               <CardContent className="space-y-4 p-5">
                 <div className="flex items-start justify-between">
                   <div className="min-w-0">
                     <h3 className="truncate text-base font-semibold">{s.name}</h3>
                     <p className="mt-1 flex items-center gap-1 truncate text-xs text-muted-foreground">
-                      <MapPin className="h-3 w-3" /> {[s.city, s.country].filter(Boolean).join(", ") || "Location not set"}
+                      <MapPin className="h-3 w-3" /> {[s.city, s.province, s.country].filter(Boolean).join(", ") || "Location not set"}
                     </p>
                   </div>
                   <Badge variant={s.status === "active" ? "default" : "outline"} className="capitalize">{s.status}</Badge>
@@ -120,6 +188,7 @@ function StoreDialog({ editing, onClose }: { editing: any; onClose: () => void }
     name: editing?.name ?? "",
     address: editing?.address ?? "",
     city: editing?.city ?? "",
+    province: editing?.province ?? "",
     country: editing?.country ?? "South Africa",
     timezone: editing?.timezone ?? "Africa/Johannesburg",
     manager_name: editing?.manager_name ?? "",
@@ -138,8 +207,9 @@ function StoreDialog({ editing, onClose }: { editing: any; onClose: () => void }
       <div className="space-y-3">
         <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
         <div><Label>Address</Label><Input value={form.address ?? ""} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div><Label>City</Label><Input value={form.city ?? ""} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
+          <div><Label>Province / State</Label><Input value={form.province ?? ""} onChange={(e) => setForm({ ...form, province: e.target.value })} /></div>
           <div><Label>Country</Label><Input value={form.country ?? ""} onChange={(e) => setForm({ ...form, country: e.target.value })} /></div>
         </div>
         <div className="grid grid-cols-2 gap-3">

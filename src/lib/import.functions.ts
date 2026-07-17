@@ -21,6 +21,7 @@ const rowSchema = z.object({
   // Optional because most single-branch retailers' exports won't have it.
   store_name: z.string().optional().nullable(),
   store_city: z.string().optional().nullable(),
+  store_province: z.string().optional().nullable(),
   store_country: z.string().optional().nullable(),
 });
 export type ImportRow = z.infer<typeof rowSchema>;
@@ -128,7 +129,7 @@ export const previewProductImport = createServerFn({ method: "POST" })
     let mapped: ImportRow[] = [];
     if (isPdf) {
       const result = await callAiJson(
-        'Extract every product from the attached PDF. Return JSON like {"rows":[{...}]} where each row has: name, sku, gtin (barcode digits only), brand, description, category_name, color, size, price (as number, ZAR), sale_price (optional), stock (integer), store_name (branch/site/plant/location this row belongs to, if the document shows one — otherwise null), store_city, store_country. If SKU is missing, use the GTIN as SKU. Preserve barcode identifiers exactly.',
+        'Extract every product from the attached PDF. Return JSON like {"rows":[{...}]} where each row has: name, sku, gtin (barcode digits only), brand, description, category_name, color, size, price (as number, ZAR), sale_price (optional), stock (integer), store_name (branch/site/plant/location this row belongs to, if the document shows one — otherwise null), store_city, store_province (state/province/region), store_country. If SKU is missing, use the GTIN as SKU. Preserve barcode identifiers exactly.',
         "You are a product-catalogue extraction assistant. Output only valid JSON.",
         { mime: data.mime, base64: data.base64, filename: data.filename },
       );
@@ -140,7 +141,7 @@ export const previewProductImport = createServerFn({ method: "POST" })
       // Ask AI to produce a header mapping
       const sample = rawRows.slice(0, 5);
       const mapping = await callAiJson(
-        `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {name, sku, gtin, brand, description, category_name, color, size, price, sale_price, stock, currency, store_name, store_city, store_country} to the best-matching source header (or null if absent). store_name covers ERP branch/site/plant/location/warehouse columns (e.g. SAP plant code, Oracle inventory org, Dynamics warehouse, a POS store master column) — map it whenever the sheet has a column identifying which physical store/branch a row belongs to.`,
+        `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {name, sku, gtin, brand, description, category_name, color, size, price, sale_price, stock, currency, store_name, store_city, store_province, store_country} to the best-matching source header (or null if absent). store_name covers ERP branch/site/plant/location/warehouse columns (e.g. SAP plant code, Oracle inventory org, Dynamics warehouse, a POS store master column) — map it whenever the sheet has a column identifying which physical store/branch a row belongs to. store_province covers state/province/region columns.`,
         "You map raw spreadsheet columns to a canonical product schema. Output only valid JSON.",
       );
       const map: Record<string, string | null> = mapping?.map ?? {};
@@ -162,6 +163,7 @@ export const previewProductImport = createServerFn({ method: "POST" })
             currency: get("currency"),
             store_name: get("store_name"),
             store_city: get("store_city"),
+            store_province: get("store_province"),
             store_country: get("store_country"),
           });
         })
@@ -194,6 +196,7 @@ function normaliseRow(r: any): ImportRow | null {
     currency: (r.currency ? String(r.currency) : "ZAR").toUpperCase().slice(0, 3),
     store_name: r.store_name ? String(r.store_name).trim() || null : null,
     store_city: r.store_city ? String(r.store_city).trim() || null : null,
+    store_province: r.store_province ? String(r.store_province).trim() || null : null,
     store_country: r.store_country ? String(r.store_country).trim() || null : null,
   });
   return parsed.success ? parsed.data : null;
@@ -224,11 +227,19 @@ export const commitProductImport = createServerFn({ method: "POST" })
     // from the row when present; existing stores are never overwritten.
     const { data: storeRows } = await supabase
       .from("stores")
-      .select("id, name, city, country")
+      .select("id, name, city, province, country")
       .eq("retailer_id", retailerId);
-    const storeByName = new Map<string, { id: string; city: string | null; country: string | null }>();
+    const storeByName = new Map<
+      string,
+      { id: string; city: string | null; province: string | null; country: string | null }
+    >();
     (storeRows ?? []).forEach((s: any) =>
-      storeByName.set(s.name.toLowerCase(), { id: s.id, city: s.city, country: s.country }),
+      storeByName.set(s.name.toLowerCase(), {
+        id: s.id,
+        city: s.city,
+        province: s.province,
+        country: s.country,
+      }),
     );
     let storesCreated = 0;
 
@@ -309,9 +320,10 @@ export const commitProductImport = createServerFn({ method: "POST" })
                 retailer_id: retailerId,
                 name: row.store_name,
                 city: row.store_city,
+                province: row.store_province,
                 country: row.store_country,
                 status: "active",
-              })
+              } as any)
               .select("id")
               .single();
             if (newStore) {
@@ -319,6 +331,7 @@ export const commitProductImport = createServerFn({ method: "POST" })
               storeByName.set(key, {
                 id: newStore.id,
                 city: row.store_city ?? null,
+                province: row.store_province ?? null,
                 country: row.store_country ?? null,
               });
               storesCreated++;

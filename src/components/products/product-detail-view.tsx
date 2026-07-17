@@ -122,13 +122,18 @@ export function ProductDetailView({
 
   return (
     <div className="grid gap-6">
-      <div>
+      <div className="flex items-center justify-between gap-3">
         <Link
           to={backTo}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-1 h-4 w-4" /> {backLabel}
         </Link>
+        {canManage && (
+          <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+            <Edit className="mr-2 h-3.5 w-3.5" /> Edit
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 rounded-xl border border-border bg-card p-5 md:grid-cols-[180px_minmax(0,1fr)]">
@@ -193,9 +198,6 @@ export function ProductDetailView({
           </div>
           {canManage && (
             <div className="flex flex-wrap gap-2 pt-1">
-              <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
-                <Edit className="mr-2 h-3.5 w-3.5" /> Edit
-              </Button>
               <Button
                 size="sm"
                 variant="outline"

@@ -128,10 +128,12 @@ export function ProductQrPanel({
             <RefreshCw className="mr-2 h-4 w-4" /> Regenerate
           </Button>
         </header>
-        <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-          <Fact label="GTIN" value={qr.gtin} mono />
-          <Fact label="Version" value={`v${qr.version}`} />
-          <Fact label="Generated" value={generatedDate} />
+        <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3 text-sm">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">GTIN · Version</p>
+          <p className="mt-0.5 break-words font-mono text-sm font-medium">
+            {qr.gtin} · v{qr.version}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Generated {generatedDate}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <Button variant="outline" onClick={() => download(qr.png_url, `qr-${qr.gtin}.png`)}>
@@ -149,7 +151,7 @@ export function ProductQrPanel({
             rel="noreferrer"
             className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
           >
-            <ExternalLink className="h-4 w-4" /> Open Digital Passport
+            <ExternalLink className="h-4 w-4" /> View Digital ID
           </a>
         </div>
         <p className="text-xs text-muted-foreground">

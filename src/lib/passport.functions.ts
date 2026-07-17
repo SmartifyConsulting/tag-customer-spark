@@ -42,6 +42,29 @@ export const enrichProductPassportFn = createServerFn({ method: "POST" })
     return result;
   });
 
+// Re-runs AI enrichment (overwrite: true) for a batch of products — used by
+// Admin > Inventory's "Re-enrich all" action, e.g. after an enrichment
+// schema/prompt fix, to refresh passports that were already enriched under
+// the old logic rather than waiting for someone to click "Re-enrich" on
+// each product individually.
+export const bulkReenrichPassports = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ productIds: z.array(z.string().uuid()).min(1).max(50) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { enrichProductPassport } = await import("./passport.server");
+    let succeeded = 0;
+    const errors: Array<{ productId: string; message: string }> = [];
+    for (const productId of data.productIds) {
+      const r = await enrichProductPassport(supabaseAdmin, productId, { overwrite: true });
+      if (r.ok) succeeded++;
+      else errors.push({ productId, message: r.error });
+    }
+    return { succeeded, errors };
+  });
+
 export const updateProductPassport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>

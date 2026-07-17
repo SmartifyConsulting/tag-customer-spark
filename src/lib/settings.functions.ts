@@ -82,7 +82,10 @@ export const listAuditLog = createServerFn({ method: "POST" })
     return data ?? [];
   });
 
-const LOGO_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]);
+// JPEG excluded deliberately — it has no alpha channel, so a JPEG logo can
+// never have a transparent background (a hard requirement for how the logo
+// gets displayed and colour-sampled across the app).
+const LOGO_MIME = new Set(["image/png", "image/webp", "image/svg+xml"]);
 const EXT_BY_MIME: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
