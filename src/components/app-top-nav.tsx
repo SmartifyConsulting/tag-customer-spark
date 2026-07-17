@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTier } from "@/hooks/use-tier";
-import { NAV, isNavActive, type NavItem } from "@/lib/nav";
+import { NAV, type NavItem } from "@/lib/nav";
 
 // Bold, left-aligned horizontal nav for the authenticated app — replaces
 // the old left sidebar so the logged-in product matches the marketing
@@ -20,11 +20,10 @@ export function AppTopNav() {
   return (
     <nav className="hidden items-center gap-6 md:flex">
       {NAV.map((item) => {
-        const active = isNavActive(item, pathname);
         const locked = item.feature ? !hasFeature(item.feature) : false;
 
         if (item.items && item.items.length > 0) {
-          return <AdminGroup key={item.url} item={item} active={active} pathname={pathname} />;
+          return <AdminGroup key={item.url} item={item} pathname={pathname} />;
         }
 
         const linkProps = locked
@@ -35,10 +34,7 @@ export function AppTopNav() {
           <Link
             key={item.url}
             {...(linkProps as any)}
-            className={[
-              "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-base font-bold transition-colors hover:bg-[color:var(--mint)] hover:text-white",
-              active && !locked ? "bg-[color:var(--mint)] text-white" : "text-foreground",
-            ].join(" ")}
+            className="flex items-center gap-1.5 rounded-full border-2 border-[color:var(--mint)] bg-[color:var(--mint)] px-3 py-1.5 text-base font-bold text-white transition-colors hover:bg-transparent hover:text-[color:var(--mint)]"
           >
             {item.title}
             {locked && <Lock className="h-3.5 w-3.5 opacity-60" />}
@@ -49,23 +45,10 @@ export function AppTopNav() {
   );
 }
 
-function AdminGroup({
-  item,
-  active,
-  pathname,
-}: {
-  item: NavItem;
-  active: boolean;
-  pathname: string;
-}) {
+function AdminGroup({ item, pathname }: { item: NavItem; pathname: string }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        className={[
-          "flex items-center gap-1 rounded-full px-3 py-1.5 text-base font-bold outline-none transition-colors hover:bg-[color:var(--mint)] hover:text-white",
-          active ? "bg-[color:var(--mint)] text-white" : "text-foreground",
-        ].join(" ")}
-      >
+      <DropdownMenuTrigger className="flex items-center gap-1 rounded-full border-2 border-[color:var(--mint)] bg-[color:var(--mint)] px-3 py-1.5 text-base font-bold text-white outline-none transition-colors hover:bg-transparent hover:text-[color:var(--mint)]">
         {item.title}
         <ChevronDown className="h-4 w-4" />
       </DropdownMenuTrigger>

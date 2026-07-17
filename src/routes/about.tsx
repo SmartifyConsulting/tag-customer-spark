@@ -39,7 +39,11 @@ function Landing() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Nav */}
       <header className="mx-auto flex max-w-7xl items-center gap-10 px-6 py-5">
-        <img src={heroLogo.url} alt="Tag" className="mt-[2cm] h-56 md:h-72 w-auto object-contain" />
+        <img
+          src={heroLogo.url}
+          alt="Tag"
+          className="mt-[2cm] h-[22.4rem] w-auto object-contain md:h-[28.8rem]"
+        />
         <MarketingNav />
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => navigate({ to: primaryHref })} className="gap-2">

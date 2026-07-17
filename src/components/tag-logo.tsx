@@ -15,12 +15,12 @@ export function TagLogo({
   if (variant === "wordmark") {
     const h =
       size === "sm"
-        ? "h-12"
+        ? "h-[4.8rem]"
         : size === "lg"
-          ? "h-20"
+          ? "h-32"
           : size === "xl"
-            ? "h-[230px]"
-            : "h-14";
+            ? "h-[368px]"
+            : "h-[5.6rem]";
     return (
       <div className={`flex items-center justify-center ${className ?? ""}`}>
         <img

@@ -34,7 +34,7 @@ export function MarketingNav({ showStartSetup = false }: { showStartSetup?: bool
           <Link
             key={l.to}
             to={l.to}
-            className="rounded-full px-3 py-1.5 transition-colors hover:bg-[color:var(--mint)] hover:text-white"
+            className="rounded-full border-2 border-[color:var(--mint)] bg-[color:var(--mint)] px-3 py-1.5 text-white transition-colors hover:bg-transparent hover:text-[color:var(--mint)]"
           >
             {l.label}
           </Link>
