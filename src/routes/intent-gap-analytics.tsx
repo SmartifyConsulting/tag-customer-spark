@@ -2,11 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowDown } from "lucide-react";
 import { MarketingHeader, MarketingCta, MarketingFooter } from "@/components/marketing-page";
 
-export const Route = createFileRoute("/interest-analytics")({
+export const Route = createFileRoute("/intent-gap-analytics")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Interest Analytics — Tag" },
+      { title: "Intent Gap Analytics — Tag" },
       {
         name: "description",
         content:
@@ -14,10 +14,10 @@ export const Route = createFileRoute("/interest-analytics")({
       },
     ],
   }),
-  component: InterestAnalyticsPage,
+  component: IntentGapAnalyticsPage,
 });
 
-function InterestAnalyticsPage() {
+function IntentGapAnalyticsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <MarketingHeader />

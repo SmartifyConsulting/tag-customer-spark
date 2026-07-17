@@ -13,6 +13,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { completeSignup } from "@/lib/signup.functions";
+import { uploadRetailerLogo } from "@/lib/settings.functions";
+
+const PENDING_LOGO_KEY = "tag_pending_logo";
 
 export type AppRole = "super_admin" | "retail_admin" | "store_manager" | "sales_assistant";
 
@@ -58,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const completeSignupFn = useServerFn(completeSignup);
+  const uploadLogoFn = useServerFn(uploadRetailerLogo);
   const provisioningAttempted = useRef(false);
 
   useEffect(() => {
@@ -95,6 +99,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Uploads a logo picked on the sign-up form, if one was stashed to
+  // localStorage there — signup can't upload it directly since Supabase
+  // Storage needs a session, which doesn't exist yet at that point
+  // (especially when email confirmation is required). Best-effort: a
+  // failure here shouldn't block onboarding, since the logo can always be
+  // added later in Settings.
+  const uploadPendingLogo = async () => {
+    const raw = localStorage.getItem(PENDING_LOGO_KEY);
+    if (!raw) return;
+    localStorage.removeItem(PENDING_LOGO_KEY);
+    try {
+      const pending = JSON.parse(raw) as { filename: string; contentType: string; base64: string };
+      await uploadLogoFn({ data: pending });
+    } catch {
+      // Non-fatal.
+    }
+  };
 
   // `isFreshSignIn` (only true on the "SIGNED_IN" event) is what decides
   // whether this call is responsible for navigating the browser onward.
@@ -135,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (rows.some((r) => r.retailer_id)) {
           navigate({ to: "/setup", replace: true });
           routedToSetup = true;
+          await uploadPendingLogo();
         }
       } catch {
         // No pending invite/metadata to provision from — leave as-is.

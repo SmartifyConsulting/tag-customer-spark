@@ -7,7 +7,7 @@ import { MarketingNav } from "@/components/marketing-nav";
 import heroLogo from "@/assets/tag-logo-clear.png.asset.json";
 
 // Shared chrome for every "sub" marketing page (Features, How it Works,
-// Intelligence Engine, Interest Analytics, Pricing) — logo + the same flat
+// Intelligence Engine, Intent Gap Analytics, Pricing) — logo + the same flat
 // nav + a Start Setup CTA, so navigating between them never loses context.
 export function MarketingHeader() {
   return (

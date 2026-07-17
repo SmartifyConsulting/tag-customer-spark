@@ -8,7 +8,7 @@ const LINKS = [
   { label: "Features", to: "/features" as const },
   { label: "How it Works", to: "/how-it-works" as const },
   { label: "Intelligence Engine", to: "/intelligence-engine" as const },
-  { label: "Interest Analytics", to: "/interest-analytics" as const },
+  { label: "Intent Gap Analytics", to: "/intent-gap-analytics" as const },
   { label: "Pricing", to: "/pricing" as const },
 ];
 

@@ -18,7 +18,7 @@ export function AuthShell({
       <div className="mx-auto flex max-w-6xl items-center py-4">
         <MarketingNav />
       </div>
-      <div className="mx-auto grid min-h-[calc(100vh-8rem)] max-w-6xl items-center gap-10 lg:grid-cols-[1fr_1fr]">
+      <div className="mx-auto grid min-h-[calc(100vh-8rem)] max-w-6xl items-end gap-10 lg:grid-cols-[1fr_1fr]">
         {/* Hero panel — hidden on small screens to keep the form the focus */}
         <div className="hidden lg:block">
           <img src={heroLogo.url} alt="Tag" className="h-48 w-auto object-contain" />
@@ -26,9 +26,9 @@ export function AuthShell({
             Your customers are interested—your products just don't know it yet.
           </h1>
           <p className="mt-5 max-w-md text-base text-muted-foreground">
-            You know exactly what sold. You don't know what almost did. Tag brings Retail
-            Intelligence to physical stores — capturing buying intent and reconnecting with
-            shoppers after they leave.
+            You know exactly what sold. You don't know what almost did. Tag brings{" "}
+            <span className="font-bold text-foreground">Retail Intelligence</span> to physical
+            stores — capturing buying intent and reconnecting with shoppers after they leave.
           </p>
           <p className="mt-3 text-base font-semibold text-primary">No more blind spots.</p>
         </div>

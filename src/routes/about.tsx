@@ -61,10 +61,11 @@ function Landing() {
             Your customers are interested—your products just don't know it yet.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            You know exactly what sold. You don't know what almost did. Tag brings Retail
-            Intelligence to physical stores, transforming ordinary products into intelligent
-            digital touchpoints that capture buying intent, reveal abandoned decisions, and
-            reconnect with shoppers after they leave.
+            You know exactly what sold. You don't know what almost did. Tag brings{" "}
+            <span className="font-bold text-foreground">Retail Intelligence</span> to physical
+            stores, transforming ordinary products into intelligent digital touchpoints that
+            capture buying intent, reveal abandoned decisions, and reconnect with shoppers after
+            they leave.
           </p>
           <p className="mt-4 text-lg font-semibold text-primary">No more blind spots.</p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">

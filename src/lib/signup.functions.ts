@@ -16,6 +16,8 @@ export const completeSignup = createServerFn({ method: "POST" })
         billingCountry: z.string().length(2).optional(),
         currency: z.string().length(3).optional(),
         countryName: z.string().trim().min(1).max(80).optional(),
+        branchName: z.string().trim().min(1).max(120).optional(),
+        province: z.string().trim().min(1).max(80).optional(),
       })
       .parse(d),
   )
@@ -32,6 +34,8 @@ export const completeSignup = createServerFn({ method: "POST" })
         data.billingCountry ?? (meta.billing_country as string | undefined) ?? null,
       p_currency: data.currency ?? (meta.currency as string | undefined) ?? null,
       p_country_name: data.countryName ?? (meta.country_name as string | undefined) ?? null,
+      p_branch_name: data.branchName ?? (meta.branch_name as string | undefined) ?? null,
+      p_province: data.province ?? (meta.province as string | undefined) ?? null,
     });
     if (error) throw new Error(error.message);
     const row = Array.isArray(rows) ? rows[0] : rows;

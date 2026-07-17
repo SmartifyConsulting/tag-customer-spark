@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PricingRouteImport } from './routes/pricing'
-import { Route as InterestAnalyticsRouteImport } from './routes/interest-analytics'
+import { Route as IntentGapAnalyticsRouteImport } from './routes/intent-gap-analytics'
 import { Route as IntelligenceEngineRouteImport } from './routes/intelligence-engine'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -85,9 +85,9 @@ const PricingRoute = PricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InterestAnalyticsRoute = InterestAnalyticsRouteImport.update({
-  id: '/interest-analytics',
-  path: '/interest-analytics',
+const IntentGapAnalyticsRoute = IntentGapAnalyticsRouteImport.update({
+  id: '/intent-gap-analytics',
+  path: '/intent-gap-analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IntelligenceEngineRoute = IntelligenceEngineRouteImport.update({
@@ -405,7 +405,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
   '/intelligence-engine': typeof IntelligenceEngineRoute
-  '/interest-analytics': typeof InterestAnalyticsRoute
+  '/intent-gap-analytics': typeof IntentGapAnalyticsRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
@@ -466,7 +466,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
   '/intelligence-engine': typeof IntelligenceEngineRoute
-  '/interest-analytics': typeof InterestAnalyticsRoute
+  '/intent-gap-analytics': typeof IntentGapAnalyticsRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
@@ -526,7 +526,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
   '/intelligence-engine': typeof IntelligenceEngineRoute
-  '/interest-analytics': typeof InterestAnalyticsRoute
+  '/intent-gap-analytics': typeof IntentGapAnalyticsRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
@@ -589,7 +589,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/how-it-works'
     | '/intelligence-engine'
-    | '/interest-analytics'
+    | '/intent-gap-analytics'
     | '/pricing'
     | '/reset-password'
     | '/setup'
@@ -650,7 +650,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/how-it-works'
     | '/intelligence-engine'
-    | '/interest-analytics'
+    | '/intent-gap-analytics'
     | '/pricing'
     | '/reset-password'
     | '/setup'
@@ -709,7 +709,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/how-it-works'
     | '/intelligence-engine'
-    | '/interest-analytics'
+    | '/intent-gap-analytics'
     | '/pricing'
     | '/reset-password'
     | '/setup'
@@ -772,7 +772,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   HowItWorksRoute: typeof HowItWorksRoute
   IntelligenceEngineRoute: typeof IntelligenceEngineRoute
-  InterestAnalyticsRoute: typeof InterestAnalyticsRoute
+  IntentGapAnalyticsRoute: typeof IntentGapAnalyticsRoute
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SetupRoute: typeof SetupRoute
@@ -814,11 +814,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/interest-analytics': {
-      id: '/interest-analytics'
-      path: '/interest-analytics'
-      fullPath: '/interest-analytics'
-      preLoaderRoute: typeof InterestAnalyticsRouteImport
+    '/intent-gap-analytics': {
+      id: '/intent-gap-analytics'
+      path: '/intent-gap-analytics'
+      fullPath: '/intent-gap-analytics'
+      preLoaderRoute: typeof IntentGapAnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/intelligence-engine': {
@@ -1369,7 +1369,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   HowItWorksRoute: HowItWorksRoute,
   IntelligenceEngineRoute: IntelligenceEngineRoute,
-  InterestAnalyticsRoute: InterestAnalyticsRoute,
+  IntentGapAnalyticsRoute: IntentGapAnalyticsRoute,
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SetupRoute: SetupRoute,

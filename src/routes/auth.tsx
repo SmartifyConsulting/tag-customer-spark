@@ -49,6 +49,15 @@ function GoogleIcon() {
   );
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -63,6 +72,9 @@ function AuthPage() {
   const [suPassword, setSuPassword] = useState("");
   const [suCompany, setSuCompany] = useState("");
   const [suCountry, setSuCountry] = useState("ZA");
+  const [suProvince, setSuProvince] = useState("");
+  const [suBranchName, setSuBranchName] = useState("");
+  const [suLogoFile, setSuLogoFile] = useState<File | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -99,6 +111,24 @@ function AuthPage() {
     setLoading(true);
     const country = SIGNUP_COUNTRIES.find((c) => c.code === suCountry) ?? SIGNUP_COUNTRIES[0];
     const companyName = suCompany.trim() || `${suName}'s workspace`;
+
+    // Logo upload needs an authenticated session (Supabase Storage), which
+    // doesn't exist yet at signup time — especially when email confirmation
+    // is required, where the very next thing that happens is a redirect
+    // away. Stash it in localStorage and upload it the first moment
+    // AuthProvider sees a real session (see use-auth.tsx) instead.
+    if (suLogoFile) {
+      try {
+        const base64 = await fileToBase64(suLogoFile);
+        localStorage.setItem(
+          "tag_pending_logo",
+          JSON.stringify({ filename: suLogoFile.name, contentType: suLogoFile.type, base64 }),
+        );
+      } catch {
+        // Non-fatal — the logo can always be added later in Settings.
+      }
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email: suEmail,
       password: suPassword,
@@ -113,6 +143,8 @@ function AuthPage() {
           billing_country: country.code,
           currency: country.currency,
           country_name: country.name,
+          branch_name: suBranchName.trim() || undefined,
+          province: suProvince.trim() || undefined,
         },
       },
     });
@@ -280,6 +312,41 @@ function AuthPage() {
               </SelectContent>
             </Select>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="su-branch">Branch name</Label>
+              <Input
+                id="su-branch"
+                type="text"
+                placeholder="e.g. Sandton City"
+                value={suBranchName}
+                onChange={(e) => setSuBranchName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="su-province">Province / State</Label>
+              <Input
+                id="su-province"
+                type="text"
+                placeholder="e.g. Gauteng"
+                value={suProvince}
+                onChange={(e) => setSuProvince(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="su-logo">Company logo (optional)</Label>
+            <Input
+              id="su-logo"
+              type="file"
+              accept="image/png,image/webp,image/svg+xml"
+              onChange={(e) => setSuLogoFile(e.target.files?.[0] ?? null)}
+            />
+            <p className="text-xs text-muted-foreground">
+              PNG, WEBP or SVG with a transparent background — you can add or replace this later
+              in Settings.
+            </p>
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="su-password">Password</Label>
             <PasswordInput
@@ -326,7 +393,7 @@ function AuthPage() {
             New to Tag?{" "}
             <button
               type="button"
-              className="font-medium text-foreground underline-offset-2 hover:underline"
+              className="font-bold text-foreground underline-offset-2 hover:underline"
               onClick={() => {
                 setInlineError(null);
                 setMode("signup");
