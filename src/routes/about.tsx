@@ -68,8 +68,9 @@ function Landing() {
         <img
           src={heroLogo}
           alt="Tag"
-          className="mt-[4cm] mr-[3cm] h-[8.064rem] w-auto object-contain md:h-[10.368rem]"
+          className="h-[10rem] w-auto object-contain md:h-[11rem]"
         />
+
         <MarketingNav />
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => navigate({ to: primaryHref })} className="gap-2">

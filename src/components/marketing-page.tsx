@@ -13,10 +13,11 @@ export function MarketingHeader() {
   return (
     <header className="mx-auto flex max-w-7xl items-center gap-10 px-6 py-5">
       <Link to="/about">
-        <img src={heroLogo} alt="Tag" className="h-[6.4rem] w-auto object-contain md:h-[8rem]" />
+        <img src={heroLogo} alt="Tag" className="h-[10rem] w-auto object-contain md:h-[11rem]" />
       </Link>
       <MarketingNav showStartSetup />
     </header>
+
   );
 }
 
