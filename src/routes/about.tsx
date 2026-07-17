@@ -1,17 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
-import {
-  ArrowRight,
-  QrCode,
-  MessageCircle,
-  TrendingUp,
-  Sparkles,
-  Bell,
-  BarChart3,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import heroLogo from "@/assets/tag-logo-clear.png.asset.json";
 
@@ -23,12 +15,101 @@ export const Route = createFileRoute("/about")({
       {
         name: "description",
         content:
-          "Tag helps retailers reconnect with in-store shoppers via WhatsApp when products go on sale, restock, or run low.",
+          "Tag transforms ordinary products into intelligent digital touchpoints that capture customer interest, reveal buying intent, and reconnect shoppers after they leave the store.",
       },
     ],
   }),
   component: Landing,
 });
+
+const FEATURES = [
+  {
+    emoji: "🏷️",
+    title: "Intelligent Product Identity",
+    body: "Transform your existing barcodes into dynamic QR experiences without changing your inventory, POS system, or product catalogue. Every product becomes a digital touchpoint that can educate, engage, and collect valuable customer insights.",
+  },
+  {
+    emoji: "💡",
+    title: "Interest Gap Detection",
+    body: "Discover which products shoppers genuinely want — even when they leave the store without purchasing. Tag captures signals of buying intent that traditional retail systems never see.",
+  },
+  {
+    emoji: "👥",
+    title: "Customer Intelligence",
+    body: "Build a richer understanding of your customers with every interaction. Learn what products they explore, what categories they prefer, and how their interests change over time.",
+  },
+  {
+    emoji: "🤖",
+    title: "AI Retail Intelligence",
+    body: "Go beyond dashboards. Tag analyses customer behaviour and product performance to uncover hidden demand, identify sales opportunities, recommend actions, and predict where revenue can be recovered.",
+  },
+  {
+    emoji: "💬",
+    title: "Smart Customer Engagement",
+    body: "Reconnect with interested shoppers through personalised WhatsApp notifications, price-drop alerts, back-in-stock updates, and targeted campaigns that bring customers back at exactly the right moment.",
+  },
+  {
+    emoji: "📊",
+    title: "Revenue & ROI Tracking",
+    body: "Measure every campaign from first scan to final purchase. Track engagement, recovered sales, campaign performance, and the real business impact of every customer interaction.",
+  },
+];
+
+const STEPS = [
+  {
+    n: "01",
+    t: "Activate Your Products",
+    d: "Tag converts your existing product barcodes into intelligent QR experiences — no need to replace your inventory or existing systems.",
+  },
+  {
+    n: "02",
+    t: "Customers Discover",
+    d: "Shoppers scan the QR code to explore richer product information, compare options, ask questions, or register their interest before making a purchase.",
+  },
+  {
+    n: "03",
+    t: "Interest Is Captured",
+    d: "Every interaction creates valuable signals. Tag records customer intent, product engagement, and behavioural insights that would otherwise be lost when a shopper leaves the store.",
+  },
+  {
+    n: "04",
+    t: "AI Reveals Hidden Opportunities",
+    d: "Tag analyses thousands of product interactions to identify trends, predict demand, highlight missed sales opportunities, and recommend actions to improve performance.",
+  },
+  {
+    n: "05",
+    t: "Reconnect at the Right Moment",
+    d: "Automatically notify interested customers when products go on sale, return to stock, become limited in quantity, or match personalised promotions.",
+  },
+  {
+    n: "06",
+    t: "Measure the Results",
+    d: "Track the complete journey — from product discovery to customer engagement and final purchase — proving exactly how Tag helps recover revenue and strengthen customer relationships.",
+  },
+];
+
+const INTELLIGENCE = [
+  {
+    title: "Understand Hidden Demand",
+    body: "See which products attract attention, which categories generate the most interest, and where customers are leaving without buying.",
+  },
+  {
+    title: "Identify the Interest Gap",
+    body: "Measure the difference between customer curiosity and completed purchases. Discover exactly where sales opportunities are being lost and which products deserve immediate attention.",
+  },
+  {
+    title: "Predict Customer Behaviour",
+    body: "AI identifies buying patterns, highlights high-intent shoppers, predicts demand, and recommends the best time to engage customers for maximum conversion.",
+  },
+  {
+    title: "Optimise Your Business",
+    body: "Use real customer intelligence to improve pricing strategies, promotions, inventory planning, merchandising decisions, and marketing campaigns — all based on actual shopper behaviour rather than assumptions.",
+  },
+  {
+    title: "Prove Your Return on Investment",
+    body: "Know exactly how many customers returned, which campaigns generated revenue, which products performed best, and how much additional revenue Tag helped recover.",
+  },
+];
 
 function Landing() {
   const navigate = useNavigate();
@@ -50,14 +131,14 @@ function Landing() {
       {/* Nav */}
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
         <img src={heroLogo.url} alt="Tag" className="mt-[2cm] h-56 md:h-72 w-auto object-contain" />
-        <nav className="hidden items-center gap-8 text-sm font-bold text-muted-foreground md:flex">
-          <a href="#features" className="hover:text-foreground">
+        <nav className="hidden items-center gap-8 text-base font-bold text-foreground md:flex">
+          <a href="#features" className="hover:text-primary">
             Features
           </a>
-          <a href="#how" className="hover:text-foreground">
+          <a href="#how" className="hover:text-primary">
             How it works
           </a>
-          <a href="#intelligence" className="hover:text-foreground">
+          <a href="#intelligence" className="hover:text-primary">
             Intelligence
           </a>
         </nav>
@@ -71,92 +152,24 @@ function Landing() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,hsl(var(--primary)/0.10),transparent_70%)]" />
-        <div className="mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-2 lg:py-28">
-          <div className="flex flex-col justify-center">
-            <span className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-border/60 bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5 text-primary" /> Retail engagement, reimagined
-            </span>
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Turn in-store curiosity into <span className="text-primary">recovered revenue.</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-              Tag lets shoppers scan a product QR, opt into WhatsApp, and get notified the moment
-              that item goes on sale, restocks, or runs low. The result: sales you used to lose at
-              the door.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button size="lg" onClick={() => navigate({ to: primaryHref })} className="gap-2">
-                {primaryLabel} <ArrowRight className="h-4 w-4" />
-              </Button>
-              <a
-                href="#features"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground"
-              >
-                See how it works →
-              </a>
-            </div>
-            <div className="mt-10 grid grid-cols-3 gap-6 border-t border-border/60 pt-6 text-sm">
-              <div>
-                <div className="text-2xl font-bold text-foreground">3.2×</div>
-                <div className="text-muted-foreground">Recovered revenue</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-foreground">42%</div>
-                <div className="text-muted-foreground">Opt-in rate</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-foreground">98%</div>
-                <div className="text-muted-foreground">WhatsApp open rate</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative flex items-center justify-center">
-            <div className="absolute inset-0 -z-10 rounded-[2rem] bg-gradient-to-br from-primary/10 to-transparent blur-2xl" />
-            <div className="w-full max-w-md rounded-3xl border border-border/60 bg-card p-6 shadow-xl">
-              <div className="flex items-center gap-3 border-b border-border/60 pb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366]">
-                  <svg
-                    viewBox="0 0 32 32"
-                    className="h-6 w-6 text-white"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path d="M19.11 17.205c-.372 0-1.088 1.39-1.518 1.39a.63.63 0 0 1-.315-.1c-.802-.402-1.504-.817-2.163-1.447-.545-.516-1.146-1.29-1.46-1.963a.426.426 0 0 1-.073-.215c0-.33.99-.945.99-1.49 0-.143-.73-2.09-.832-2.335-.14-.372-.214-.487-.6-.487-.187 0-.36-.043-.53-.043-.302 0-.53.115-.746.315-.688.645-1.032 1.318-1.06 2.264v.114c-.015.99.472 1.977 1.017 2.792 1.23 1.82 2.506 3.41 4.554 4.34.616.287 2.035.888 2.72.888.517 0 2.15-.658 2.478-1.72.187-.573.187-1.088.115-1.19-.13-.14-.302-.216-.63-.373zM16.5 5c-6.348 0-11.5 5.152-11.5 11.5 0 2.024.516 3.976 1.516 5.7L5 27l4.907-1.474a11.4 11.4 0 0 0 5.593 1.474h.005c6.348 0 11.5-5.152 11.5-11.5S22.853 5 16.505 5zm0 21.05a9.5 9.5 0 0 1-4.847-1.32l-.35-.215-3.626 1.09 1.077-3.53-.235-.363a9.5 9.5 0 1 1 8.001 4.339z" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="text-sm font-semibold">WhatsApp · Tag</div>
-                  <div className="text-xs text-muted-foreground">Notification preview</div>
-                </div>
-              </div>
-              <div className="mt-5 space-y-3">
-                <div className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-primary px-4 py-3 text-sm text-primary-foreground shadow-sm">
-                  Hi Georgia 👋 The Linen Trench you scanned at Sandton is now <b>20% off</b> until
-                  Sunday. Reserve in one tap.
-                </div>
-                <div className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-primary px-4 py-3 text-sm text-primary-foreground shadow-sm">
-                  Only 3 left in your size. Want us to hold one for you?
-                </div>
-                <div className="mr-auto max-w-[85%] rounded-2xl rounded-tl-sm bg-muted px-4 py-3 text-sm">
-                  Yes please — I'll come by tomorrow.
-                </div>
-              </div>
-              <div className="mt-6 grid grid-cols-3 gap-3 border-t border-border/60 pt-4 text-center text-xs">
-                <div className="rounded-lg bg-muted/60 py-2">
-                  <div className="font-semibold text-foreground">Scanned</div>
-                  <div className="text-muted-foreground">Today 14:02</div>
-                </div>
-                <div className="rounded-lg bg-muted/60 py-2">
-                  <div className="font-semibold text-foreground">Notified</div>
-                  <div className="text-muted-foreground">+3 days</div>
-                </div>
-                <div className="rounded-lg bg-[color:var(--mint)] py-2 shadow-sm">
-                  <div className="font-semibold text-white">Recovered</div>
-                  <div className="text-white/90">R 4,290</div>
-                </div>
-              </div>
-            </div>
+        <div className="mx-auto max-w-4xl px-6 py-20 text-center lg:py-28">
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+            Your customers are interested.
+            <br />
+            <span className="text-primary">Your products just don't know it yet.</span>
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+            Tag transforms ordinary products into intelligent digital touchpoints that capture
+            customer interest, reveal buying intent, and reconnect shoppers after they leave the
+            store — turning missed opportunities into measurable revenue.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Button size="lg" onClick={() => navigate({ to: primaryHref })} className="gap-2">
+              Book a Demo <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <a href="#features">See Tag in Action</a>
+            </Button>
           </div>
         </div>
       </section>
@@ -164,52 +177,24 @@ function Landing() {
       {/* Features */}
       <section id="features" className="mx-auto max-w-7xl px-6 py-20">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Built for modern retail floors
+          <span className="text-sm font-bold uppercase tracking-wide text-primary">Features</span>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+            Everything you need to understand customer intent and recover lost sales.
           </h2>
-          <p className="mt-3 text-muted-foreground">
-            Every scan is an opt-in. Every opt-in becomes a recoverable sale.
+          <p className="mt-4 text-muted-foreground">
+            Tag combines Product Intelligence, Customer Intelligence, AI-powered Insights, and
+            Automated Engagement into one platform — helping retailers transform every product
+            interaction into measurable business value.
           </p>
         </div>
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            {
-              icon: QrCode,
-              title: "Smart QR Tags",
-              body: "Generate, print and track unique QR codes for every product on the floor.",
-            },
-            {
-              icon: MessageCircle,
-              title: "WhatsApp Engine",
-              body: "Reach shoppers on the channel they actually read — with 98% open rates.",
-            },
-            {
-              icon: Bell,
-              title: "Restock & Sale Alerts",
-              body: "Trigger notifications when stock drops, restocks land, or promotions launch.",
-            },
-            {
-              icon: TrendingUp,
-              title: "ROI Attribution",
-              body: "See exactly how much revenue each scan and notification has recovered.",
-            },
-            {
-              icon: BarChart3,
-              title: "Intent Score",
-              body: "A 0–100 score per product based on real customer interest signals.",
-            },
-            {
-              icon: Sparkles,
-              title: "AI Retail Intelligence",
-              body: "Daily AI briefings, opportunity feeds, and campaign drafting baked in.",
-            },
-          ].map(({ icon: Icon, title, body }) => (
+          {FEATURES.map(({ emoji, title, body }) => (
             <div
               key={title}
               className="rounded-2xl border border-border/60 bg-card p-6 transition hover:border-primary/40 hover:shadow-md"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Icon className="h-5 w-5" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-xl">
+                {emoji}
               </div>
               <div className="mt-4 text-base font-semibold">{title}</div>
               <p className="mt-1.5 text-sm text-muted-foreground">{body}</p>
@@ -222,33 +207,15 @@ function Landing() {
       <section id="how" className="bg-muted/40 py-20">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              From scan to sale in four steps
+            <span className="text-sm font-bold uppercase tracking-wide text-primary">
+              How it works
+            </span>
+            <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+              From barcode to business intelligence — in six simple steps.
             </h2>
           </div>
-          <div className="mt-14 grid gap-6 md:grid-cols-4">
-            {[
-              {
-                n: "01",
-                t: "Tag your products",
-                d: "Print QR cards with your logo, product image and short message.",
-              },
-              {
-                n: "02",
-                t: "Shoppers scan",
-                d: "A mobile-first landing lets them opt into WhatsApp in seconds.",
-              },
-              {
-                n: "03",
-                t: "You notify",
-                d: "Send sale, restock, and low-stock alerts from a single composer.",
-              },
-              {
-                n: "04",
-                t: "Revenue returns",
-                d: "Track recovered sales and ROI per campaign automatically.",
-              },
-            ].map((s) => (
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {STEPS.map((s) => (
               <div key={s.n} className="rounded-2xl border border-border/60 bg-card p-6">
                 <div className="text-xs font-semibold text-primary">{s.n}</div>
                 <div className="mt-2 text-base font-semibold">{s.t}</div>
@@ -259,8 +226,35 @@ function Landing() {
         </div>
       </section>
 
+      {/* Intelligence */}
+      <section id="intelligence" className="mx-auto max-w-7xl px-6 py-20">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="text-sm font-bold uppercase tracking-wide text-primary">
+            Tag Intelligence
+          </span>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+            Your products generate more intelligence than you think.
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            Most retailers only measure completed sales.
+            <br />
+            Tag measures everything that happens before the sale.
+            <br />
+            That's where the biggest opportunities are hiding.
+          </p>
+        </div>
+        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {INTELLIGENCE.map(({ title, body }) => (
+            <div key={title} className="rounded-2xl border border-border/60 bg-card p-6">
+              <div className="text-base font-semibold">{title}</div>
+              <p className="mt-1.5 text-sm text-muted-foreground">{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* CTA */}
-      <section id="intelligence" className="mx-auto max-w-7xl px-6 py-24 text-center">
+      <section className="mx-auto max-w-7xl px-6 py-24 text-center">
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Ready to recover the sales walking out the door?
         </h2>
@@ -269,7 +263,7 @@ function Landing() {
         </p>
         <div className="mt-8 flex justify-center">
           <Button size="lg" onClick={() => navigate({ to: primaryHref })} className="gap-2">
-            {primaryLabel} <ArrowRight className="h-4 w-4" />
+            Book a Demo <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
       </section>

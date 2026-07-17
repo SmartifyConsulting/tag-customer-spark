@@ -15,14 +15,14 @@ export function AuthShell({
 }) {
   return (
     <div className="min-h-screen bg-white px-4 py-6 lg:px-10">
-      <nav className="mx-auto flex max-w-6xl items-center justify-end gap-8 py-4 text-sm font-bold text-muted-foreground">
-        <Link to="/about" hash="features" className="hover:text-foreground">
+      <nav className="mx-auto flex max-w-6xl items-center justify-end gap-8 py-4 text-base font-bold text-foreground">
+        <Link to="/about" hash="features" className="hover:text-primary">
           Features
         </Link>
-        <Link to="/about" hash="how" className="hover:text-foreground">
+        <Link to="/about" hash="how" className="hover:text-primary">
           How it works
         </Link>
-        <Link to="/about" hash="intelligence" className="hover:text-foreground">
+        <Link to="/about" hash="intelligence" className="hover:text-primary">
           Intelligence
         </Link>
       </nav>
