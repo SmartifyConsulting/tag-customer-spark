@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MarketingNav } from "@/components/marketing-nav";
 import { MarketingFooter } from "@/components/marketing-page";
+import { AuthCardFrame } from "@/components/auth-card-frame";
+import { CreateAccountCard } from "@/components/create-account-card";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import heroLogo from "@/assets/tag-logo-clear.png.asset.json";
 
@@ -27,6 +29,7 @@ export const Route = createFileRoute("/about")({
 function Landing() {
   const navigate = useNavigate();
   const [authed, setAuthed] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
@@ -34,6 +37,29 @@ function Landing() {
 
   const primaryHref = authed ? "/dashboard" : "/auth";
   const primaryLabel = authed ? "Open dashboard" : "Sign in";
+
+  if (showSignup) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10 text-foreground">
+        <button
+          type="button"
+          onClick={() => setShowSignup(false)}
+          className="mb-8 flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to Tag
+        </button>
+        <img src={heroLogo.url} alt="Tag" className="h-24 w-auto object-contain" />
+        <div className="mt-8 w-full max-w-md">
+          <AuthCardFrame
+            title="Create your Tag account"
+            subtitle="Start recovering lost sales in under a minute."
+          >
+            <CreateAccountCard />
+          </AuthCardFrame>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -50,7 +76,7 @@ function Landing() {
             {primaryLabel}
           </Button>
           {!authed && (
-            <Button onClick={() => navigate({ to: "/auth" })} className="gap-2">
+            <Button onClick={() => setShowSignup(true)} className="gap-2">
               Start Setup <ArrowRight className="h-4 w-4" />
             </Button>
           )}

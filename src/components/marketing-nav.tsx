@@ -29,7 +29,7 @@ export function MarketingNav({ showStartSetup = false }: { showStartSetup?: bool
 
   return (
     <div className="flex flex-1 items-center gap-8">
-      <nav className="hidden items-center gap-2 text-base font-bold text-foreground md:flex">
+      <nav className="hidden items-center gap-2 text-[15px] font-bold text-foreground md:flex">
         {LINKS.map((l) => (
           <Link
             key={l.to}

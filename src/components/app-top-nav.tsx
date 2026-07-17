@@ -34,7 +34,7 @@ export function AppTopNav() {
           <Link
             key={item.url}
             {...(linkProps as any)}
-            className="flex items-center gap-1.5 rounded-full border-2 border-[color:var(--mint)] bg-[color:var(--mint)] px-3 py-1.5 text-base font-bold text-white transition-colors hover:bg-transparent hover:text-[color:var(--mint)]"
+            className="flex items-center gap-1.5 rounded-full border-2 border-[color:var(--mint)] bg-[color:var(--mint)] px-3 py-1.5 text-[15px] font-bold text-white transition-colors hover:bg-transparent hover:text-[color:var(--mint)]"
           >
             {item.title}
             {locked && <Lock className="h-3.5 w-3.5 opacity-60" />}
@@ -48,7 +48,7 @@ export function AppTopNav() {
 function AdminGroup({ item, pathname }: { item: NavItem; pathname: string }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-1 rounded-full border-2 border-[color:var(--mint)] bg-[color:var(--mint)] px-3 py-1.5 text-base font-bold text-white outline-none transition-colors hover:bg-transparent hover:text-[color:var(--mint)]">
+      <DropdownMenuTrigger className="flex items-center gap-1 rounded-full border-2 border-[color:var(--mint)] bg-[color:var(--mint)] px-3 py-1.5 text-[15px] font-bold text-white outline-none transition-colors hover:bg-transparent hover:text-[color:var(--mint)]">
         {item.title}
         <ChevronDown className="h-4 w-4" />
       </DropdownMenuTrigger>
