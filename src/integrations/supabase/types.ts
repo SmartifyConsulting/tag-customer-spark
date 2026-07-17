@@ -3390,15 +3390,26 @@ export type Database = {
         Args: { _retailer_id: string; _user_id: string }
         Returns: boolean
       }
-      complete_signup: {
-        Args: {
-          p_billing_country?: string
-          p_country_name?: string
-          p_currency?: string
-          p_name?: string
-        }
-        Returns: string
-      }
+      complete_signup:
+        | {
+            Args: {
+              p_billing_country?: string
+              p_country_name?: string
+              p_currency?: string
+              p_name?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_billing_country?: string
+              p_country_name?: string
+              p_currency?: string
+              p_name?: string
+              p_user_id?: string
+            }
+            Returns: string
+          }
       enqueue_intent_recompute: {
         Args: { _product_id: string }
         Returns: undefined
