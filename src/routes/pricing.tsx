@@ -35,7 +35,7 @@ function PricingPage() {
 
       {/* Hero — one flat price per store size, Fynbos-style clarity */}
       <section className="mx-auto max-w-3xl px-6 pb-10 pt-14 text-center">
-        <span className="text-sm font-bold uppercase tracking-wide text-primary">
+        <span className="text-base font-bold uppercase tracking-wide text-[color:var(--mint)]">
           One flat fee. No surprises.
         </span>
         <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">

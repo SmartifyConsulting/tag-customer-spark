@@ -31,7 +31,7 @@ export function MarketingNav({ showStartSetup = false }: { showStartSetup?: bool
     <div className="flex flex-1 items-center gap-8">
       <nav className="hidden items-center gap-6 text-base font-bold text-foreground md:flex">
         {LINKS.map((l) => (
-          <Link key={l.to} to={l.to} className="hover:text-primary">
+          <Link key={l.to} to={l.to} className="hover:text-[color:var(--mint)]">
             {l.label}
           </Link>
         ))}

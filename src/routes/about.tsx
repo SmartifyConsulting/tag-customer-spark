@@ -41,15 +41,22 @@ function Landing() {
       <header className="mx-auto flex max-w-7xl items-center gap-10 px-6 py-5">
         <img src={heroLogo.url} alt="Tag" className="mt-[2cm] h-56 md:h-72 w-auto object-contain" />
         <MarketingNav />
-        <Button onClick={() => navigate({ to: primaryHref })} className="gap-2">
-          {primaryLabel} <ArrowRight className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate({ to: primaryHref })} className="gap-2">
+            {primaryLabel}
+          </Button>
+          {!authed && (
+            <Button onClick={() => navigate({ to: "/auth" })} className="gap-2">
+              Start Setup <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </header>
 
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,hsl(var(--primary)/0.10),transparent_70%)]" />
-        <div className="mx-auto max-w-4xl px-6 py-20 text-center lg:py-28">
+        <div className="mx-auto max-w-4xl px-6 py-14 text-center lg:py-20">
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
             Your customers are interested—your products just don't know it yet.
           </h1>

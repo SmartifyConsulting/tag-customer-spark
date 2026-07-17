@@ -21,9 +21,9 @@ function InterestAnalyticsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <MarketingHeader />
-      <section className="mx-auto max-w-5xl px-6 py-16">
+      <section className="mx-auto max-w-5xl px-6 py-10">
         <div className="text-center">
-          <span className="text-sm font-bold uppercase tracking-wide text-primary">
+          <span className="text-base font-bold uppercase tracking-wide text-[color:var(--mint)]">
             The Future of Retail Intelligence
           </span>
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">

@@ -52,16 +52,16 @@ function HowItWorksPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <MarketingHeader />
-      <section className="mx-auto max-w-7xl px-6 py-16">
+      <section className="mx-auto max-w-7xl px-6 py-10">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="text-sm font-bold uppercase tracking-wide text-primary">
+          <span className="text-base font-bold uppercase tracking-wide text-[color:var(--mint)]">
             How it works
           </span>
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
             From barcode to business intelligence — in six simple steps.
           </h1>
         </div>
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {STEPS.map((s) => (
             <div key={s.n} className="rounded-2xl border border-border/60 bg-card p-6">
               <div className="text-xs font-semibold text-primary">{s.n}</div>

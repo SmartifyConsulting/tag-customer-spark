@@ -64,13 +64,13 @@ function IntelligenceEnginePage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <MarketingHeader />
-      <section className="mx-auto max-w-7xl px-6 py-16">
+      <section className="mx-auto max-w-7xl px-6 py-10">
         <p className="mx-auto max-w-2xl text-center text-muted-foreground">
           Tag is not just a collection of features. Behind every scan, interaction, and customer
           decision is an intelligence layer that continuously learns and reveals opportunities.
         </p>
         <div className="mx-auto mt-6 max-w-2xl text-center">
-          <span className="text-sm font-bold uppercase tracking-wide text-primary">
+          <span className="text-base font-bold uppercase tracking-wide text-[color:var(--mint)]">
             The Tag Intelligence Engine™
           </span>
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
@@ -78,7 +78,7 @@ function IntelligenceEnginePage() {
           </h1>
         </div>
 
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {PILLARS.map((p) => (
             <div key={p.title} className="rounded-2xl border border-border/60 bg-card p-6">
               <div className="text-base font-semibold text-primary">{p.title}</div>
@@ -88,14 +88,14 @@ function IntelligenceEnginePage() {
         </div>
 
         {/* Intelligence Cycle — the flywheel */}
-        <div className="mt-16">
-          <p className="text-center text-sm font-bold uppercase tracking-wide text-primary">
+        <div className="mt-10">
+          <p className="text-center text-base font-bold uppercase tracking-wide text-[color:var(--mint)]">
             The Intelligence Cycle
           </p>
           <div className="mx-auto mt-6 flex max-w-4xl flex-wrap items-center justify-center gap-3">
             {CYCLE.map((node, i) => (
               <div key={`${node}-${i}`} className="flex items-center gap-3">
-                <span className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold">
+                <span className="rounded-full bg-[color:var(--mint)] px-4 py-2 text-sm font-semibold text-white">
                   {node}
                 </span>
                 {i < CYCLE.length - 1 && (
@@ -111,8 +111,8 @@ function IntelligenceEnginePage() {
         </div>
 
         {/* What the engine reveals */}
-        <div className="mt-16">
-          <p className="text-center text-sm font-bold uppercase tracking-wide text-primary">
+        <div className="mt-10">
+          <p className="text-center text-base font-bold uppercase tracking-wide text-[color:var(--mint)]">
             What the Intelligence Engine reveals
           </p>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

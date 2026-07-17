@@ -30,14 +30,14 @@ export function MarketingCta() {
   const primaryLabel = authed ? "Open dashboard" : "Start Setup";
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-24 text-center">
+    <section className="mx-auto max-w-7xl px-6 py-14 text-center">
       <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
         Ready to recover the sales walking out the door?
       </h2>
       <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
         Join retailers using Tag to turn every store visit into a long-term customer relationship.
       </p>
-      <div className="mt-8 flex justify-center">
+      <div className="mt-6 flex justify-center">
         <Button size="lg" onClick={() => navigate({ to: primaryHref })} className="gap-2">
           {primaryLabel} <ArrowRight className="h-4 w-4" />
         </Button>
