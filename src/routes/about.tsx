@@ -38,11 +38,11 @@ function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Nav */}
-      <header className="mx-auto flex max-w-7xl items-center gap-10 px-6 py-5">
+      <header className="mx-auto flex max-w-7xl items-center px-6 py-5">
         <img
           src={heroLogo.url}
           alt="Tag"
-          className="mt-[2cm] h-[22.4rem] w-auto object-contain md:h-[28.8rem]"
+          className="mt-[2cm] mr-[3cm] h-[13.44rem] w-auto object-contain md:h-[17.28rem]"
         />
         <MarketingNav />
         <div className="flex items-center gap-2">
