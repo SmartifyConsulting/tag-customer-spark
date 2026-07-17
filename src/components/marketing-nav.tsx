@@ -1,57 +1,46 @@
-import { Link } from "@tanstack/react-router";
-import { ChevronDown } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 
-// Fynbos-style horizontal nav: grouped dropdowns + a pill-highlighted
-// Pricing link, reused across every marketing/auth page so it never drifts
-// out of sync between them.
-function NavGroup({ label, items }: { label: string; items: { label: string; to: string; hash?: string }[] }) {
+const LINKS = [
+  { label: "Features", to: "/features" as const },
+  { label: "How it Works", to: "/how-it-works" as const },
+  { label: "Intelligence Engine", to: "/intelligence-engine" as const },
+  { label: "Interest Analytics", to: "/interest-analytics" as const },
+  { label: "Pricing", to: "/pricing" as const },
+];
+
+// Flat, bold, left-aligned nav shared by every marketing/auth page so it
+// never drifts out of sync between them. showStartSetup adds a trailing
+// CTA button — used on every page except the hero and the sign-in page
+// itself, which already have their own primary actions.
+export function MarketingNav({ showStartSetup = false }: { showStartSetup?: boolean }) {
+  const navigate = useNavigate();
+  const [authed, setAuthed] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
+  }, []);
+
+  const primaryHref = authed ? "/dashboard" : "/auth";
+  const primaryLabel = authed ? "Open dashboard" : "Start Setup";
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-1 text-base font-bold text-foreground outline-none hover:text-primary">
-        {label}
-        <ChevronDown className="h-4 w-4" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-48">
-        {items.map((item) => (
-          <DropdownMenuItem key={item.label} asChild>
-            <Link to={item.to} hash={item.hash} className="cursor-pointer">
-              {item.label}
-            </Link>
-          </DropdownMenuItem>
+    <div className="flex flex-1 items-center gap-8">
+      <nav className="hidden items-center gap-6 text-base font-bold text-foreground md:flex">
+        {LINKS.map((l) => (
+          <Link key={l.to} to={l.to} className="hover:text-primary">
+            {l.label}
+          </Link>
         ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-export function MarketingNav() {
-  return (
-    <nav className="hidden items-center gap-8 md:flex">
-      <NavGroup
-        label="Product"
-        items={[
-          { label: "How it works", to: "/about", hash: "how" },
-          { label: "Features", to: "/about", hash: "features" },
-          { label: "Intelligence Engine", to: "/about", hash: "intelligence" },
-          { label: "Interest Graph & Gap", to: "/about", hash: "proprietary" },
-        ]}
-      />
-      <NavGroup
-        label="Company"
-        items={[{ label: "About Tag", to: "/about" }]}
-      />
-      <Link
-        to="/pricing"
-        className="rounded-full bg-muted px-4 py-2 text-base font-bold text-foreground hover:bg-muted/70"
-      >
-        Pricing
-      </Link>
-    </nav>
+      </nav>
+      {showStartSetup && (
+        <Button onClick={() => navigate({ to: primaryHref })} className="ml-auto gap-2">
+          {primaryLabel} <ArrowRight className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
   );
 }

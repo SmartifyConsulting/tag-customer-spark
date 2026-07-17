@@ -1,11 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { Check, ArrowRight } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { MarketingNav } from "@/components/marketing-nav";
+import { MarketingHeader, MarketingCta, MarketingFooter } from "@/components/marketing-page";
 import { PLANS, SELF_SERVE_PLANS, priceCents, formatZar, formatUsd, type Cycle } from "@/lib/billing/pricing";
-import heroLogo from "@/assets/tag-logo-clear.png.asset.json";
 
 export const Route = createFileRoute("/pricing")({
   ssr: false,
@@ -26,30 +24,14 @@ const FEATURED = "growth" as const;
 
 function PricingPage() {
   const navigate = useNavigate();
-  const [authed, setAuthed] = useState(false);
   const [cycle, setCycle] = useState<Cycle>("monthly");
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
-  }, []);
-
-  const primaryHref = authed ? "/dashboard" : "/auth";
-  const primaryLabel = authed ? "Open dashboard" : "Sign in";
   const featured = PLANS[FEATURED];
   const featuredZar = priceCents(FEATURED, cycle, "ZAR");
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Nav */}
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-        <Link to="/about">
-          <img src={heroLogo.url} alt="Tag" className="mt-[2cm] h-56 md:h-72 w-auto object-contain" />
-        </Link>
-        <MarketingNav />
-        <Button onClick={() => navigate({ to: primaryHref })} className="gap-2">
-          {primaryLabel} <ArrowRight className="h-4 w-4" />
-        </Button>
-      </header>
+      <MarketingHeader />
 
       {/* Hero — one flat price per store size, Fynbos-style clarity */}
       <section className="mx-auto max-w-3xl px-6 pb-10 pt-14 text-center">
@@ -128,21 +110,8 @@ function PricingPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="mx-auto max-w-7xl px-6 py-20 text-center">
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Ready to recover the sales walking out the door?
-        </h2>
-        <div className="mt-8 flex justify-center">
-          <Button size="lg" onClick={() => navigate({ to: primaryHref })} className="gap-2">
-            {primaryLabel} <ArrowRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </section>
-
-      <footer className="border-t border-border/60 py-8 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} Tag. Built for Retail Intelligence.
-      </footer>
+      <MarketingCta />
+      <MarketingFooter />
     </div>
   );
 }

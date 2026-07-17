@@ -12,7 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as InterestAnalyticsRouteImport } from './routes/interest-analytics'
+import { Route as IntelligenceEngineRouteImport } from './routes/intelligence-engine'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -81,9 +85,29 @@ const PricingRoute = PricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InterestAnalyticsRoute = InterestAnalyticsRouteImport.update({
+  id: '/interest-analytics',
+  path: '/interest-analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IntelligenceEngineRoute = IntelligenceEngineRouteImport.update({
+  id: '/intelligence-engine',
+  path: '/intelligence-engine',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -377,7 +401,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/features': typeof FeaturesRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/intelligence-engine': typeof IntelligenceEngineRoute
+  '/interest-analytics': typeof InterestAnalyticsRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
@@ -434,7 +462,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/features': typeof FeaturesRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/intelligence-engine': typeof IntelligenceEngineRoute
+  '/interest-analytics': typeof InterestAnalyticsRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
@@ -490,7 +522,11 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/features': typeof FeaturesRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/intelligence-engine': typeof IntelligenceEngineRoute
+  '/interest-analytics': typeof InterestAnalyticsRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
@@ -549,7 +585,11 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/features'
     | '/forgot-password'
+    | '/how-it-works'
+    | '/intelligence-engine'
+    | '/interest-analytics'
     | '/pricing'
     | '/reset-password'
     | '/setup'
@@ -606,7 +646,11 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/features'
     | '/forgot-password'
+    | '/how-it-works'
+    | '/intelligence-engine'
+    | '/interest-analytics'
     | '/pricing'
     | '/reset-password'
     | '/setup'
@@ -661,7 +705,11 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/about'
     | '/auth'
+    | '/features'
     | '/forgot-password'
+    | '/how-it-works'
+    | '/intelligence-engine'
+    | '/interest-analytics'
     | '/pricing'
     | '/reset-password'
     | '/setup'
@@ -720,7 +768,11 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
+  FeaturesRoute: typeof FeaturesRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  HowItWorksRoute: typeof HowItWorksRoute
+  IntelligenceEngineRoute: typeof IntelligenceEngineRoute
+  InterestAnalyticsRoute: typeof InterestAnalyticsRoute
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SetupRoute: typeof SetupRoute
@@ -762,11 +814,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/interest-analytics': {
+      id: '/interest-analytics'
+      path: '/interest-analytics'
+      fullPath: '/interest-analytics'
+      preLoaderRoute: typeof InterestAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/intelligence-engine': {
+      id: '/intelligence-engine'
+      path: '/intelligence-engine'
+      fullPath: '/intelligence-engine'
+      preLoaderRoute: typeof IntelligenceEngineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forgot-password': {
       id: '/forgot-password'
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -1285,7 +1365,11 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
+  FeaturesRoute: FeaturesRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  HowItWorksRoute: HowItWorksRoute,
+  IntelligenceEngineRoute: IntelligenceEngineRoute,
+  InterestAnalyticsRoute: InterestAnalyticsRoute,
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SetupRoute: SetupRoute,

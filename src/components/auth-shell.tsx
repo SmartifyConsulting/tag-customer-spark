@@ -15,7 +15,7 @@ export function AuthShell({
 }) {
   return (
     <div className="min-h-screen bg-white px-4 py-6 lg:px-10">
-      <div className="mx-auto flex max-w-6xl items-center justify-end py-4">
+      <div className="mx-auto flex max-w-6xl items-center py-4">
         <MarketingNav />
       </div>
       <div className="mx-auto grid min-h-[calc(100vh-8rem)] max-w-6xl items-center gap-10 lg:grid-cols-[1fr_1fr]">
@@ -23,15 +23,14 @@ export function AuthShell({
         <div className="hidden lg:block">
           <img src={heroLogo.url} alt="Tag" className="h-48 w-auto object-contain" />
           <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight text-foreground xl:text-5xl">
-            Your customers are interested.
-            <br />
-            <span className="text-primary">Your products just don't know it yet.</span>
+            Your customers are interested—your products just don't know it yet.
           </h1>
           <p className="mt-5 max-w-md text-base text-muted-foreground">
-            Tag transforms ordinary products into intelligent digital touchpoints that capture
-            customer interest, reveal buying intent, and reconnect shoppers after they leave the
-            store — turning missed opportunities into measurable revenue.
+            You know exactly what sold. You don't know what almost did. Tag brings Retail
+            Intelligence to physical stores — capturing buying intent and reconnecting with
+            shoppers after they leave.
           </p>
+          <p className="mt-3 text-base font-semibold text-primary">No more blind spots.</p>
         </div>
 
         {/* Form column */}
