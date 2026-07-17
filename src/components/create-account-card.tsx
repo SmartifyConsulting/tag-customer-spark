@@ -19,8 +19,6 @@ import { lovable } from "@/integrations/lovable/index";
 import { mapAuthError } from "@/lib/auth-errors";
 import { SIGNUP_COUNTRIES } from "@/lib/countries";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 // The full two-step sign-up wizard, extracted so it can be dropped either
 // inside AuthShell's card (the dedicated /auth page) or inline as a
 // centered modal on the hero page — same logic, no drift between the two
@@ -49,17 +47,9 @@ export function CreateAccountCard({
   const [suBranchName, setSuBranchName] = useState("");
   const [suWebsite, setSuWebsite] = useState("");
 
-  const handleContinueToCompanyStep = () => {
+  const handleContinueToCredentialsStep = () => {
     if (!suName.trim()) {
       setInlineError("Please enter your full name.");
-      return;
-    }
-    if (!EMAIL_RE.test(suEmail)) {
-      setInlineError("Please enter a valid email address.");
-      return;
-    }
-    if (suPassword.length < 8) {
-      setInlineError("Password must be at least 8 characters.");
       return;
     }
     setInlineError(null);
@@ -168,11 +158,11 @@ export function CreateAccountCard({
       >
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
           <span className={signupStep === 1 ? "text-[color:var(--mint)]" : ""}>
-            1. Your details
+            1. About you
           </span>
           <span aria-hidden>—</span>
           <span className={signupStep === 2 ? "text-[color:var(--mint)]" : ""}>
-            2. Company information
+            2. Login credentials
           </span>
         </div>
 
@@ -189,40 +179,6 @@ export function CreateAccountCard({
                 onChange={(e) => setSuName(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="su-email">Email</Label>
-              <Input
-                id="su-email"
-                type="email"
-                autoComplete="email"
-                required
-                value={suEmail}
-                onChange={(e) => setSuEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="su-password">Password</Label>
-              <PasswordInput
-                id="su-password"
-                autoComplete="new-password"
-                required
-                minLength={8}
-                value={suPassword}
-                onChange={(e) => setSuPassword(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">At least 8 characters.</p>
-            </div>
-            {inlineError && (
-              <p className="text-sm text-destructive" aria-live="polite">
-                {inlineError}
-              </p>
-            )}
-            <Button type="button" className="w-full" onClick={handleContinueToCompanyStep}>
-              Continue
-            </Button>
-          </>
-        ) : (
-          <>
             <div className="space-y-1.5">
               <Label htmlFor="su-company">Company</Label>
               <Input
@@ -289,6 +245,40 @@ export function CreateAccountCard({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            {inlineError && (
+              <p className="text-sm text-destructive" aria-live="polite">
+                {inlineError}
+              </p>
+            )}
+            <Button type="button" className="w-full" onClick={handleContinueToCredentialsStep}>
+              Continue
+            </Button>
+          </>
+        ) : (
+          <>
+            <div className="space-y-1.5">
+              <Label htmlFor="su-email">Email</Label>
+              <Input
+                id="su-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={suEmail}
+                onChange={(e) => setSuEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="su-password">Password</Label>
+              <PasswordInput
+                id="su-password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                value={suPassword}
+                onChange={(e) => setSuPassword(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">At least 8 characters.</p>
             </div>
             {inlineError && (
               <p className="text-sm text-destructive" aria-live="polite">
