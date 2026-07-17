@@ -128,7 +128,7 @@ export function ProductQrPanel({
             <RefreshCw className="mr-2 h-4 w-4" /> Regenerate
           </Button>
         </header>
-        <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
           <Fact label="GTIN" value={qr.gtin} mono />
           <Fact label="Version" value={`v${qr.version}`} />
           <Fact label="Generated" value={generatedDate} />
@@ -186,9 +186,9 @@ export function ProductQrPanel({
 
 function Fact({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/30 p-3">
+    <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`mt-0.5 font-medium ${mono ? "font-mono text-sm" : ""}`}>{value}</p>
+      <p className={`mt-0.5 break-words font-medium ${mono ? "font-mono text-sm" : ""}`}>{value}</p>
     </div>
   );
 }

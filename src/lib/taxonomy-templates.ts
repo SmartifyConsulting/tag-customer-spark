@@ -210,6 +210,20 @@ export const TAXONOMY_TEMPLATES: TaxonomyTemplate[] = [
     ],
   },
   {
+    id: "general-merchandise",
+    name: "General Merchandise",
+    group: "Retail",
+    description:
+      "Department stores and mixed-category retailers spanning multiple sectors (electronics, groceries, appliances, toys, outdoor, etc.) — the fallback when a catalogue doesn't fit one narrow vertical.",
+    levels: [
+      { attribute_key: "department", label: "Department" },
+      { attribute_key: "category", label: "Category" },
+      { attribute_key: "subcategory", label: "Sub-category" },
+      { attribute_key: "brand", label: "Brand" },
+      { attribute_key: "product", label: "Product" },
+    ],
+  },
+  {
     id: "wholesale-cash-carry",
     name: "Wholesale / Cash & Carry",
     group: "Wholesale",

@@ -423,8 +423,13 @@ export async function autoDetectTaxonomyProfile(opts: {
     .eq("retailer_id", retailerId);
   if ((count ?? 0) > 0) return { applied: false };
 
-  const templateId = (await detectTaxonomyTemplateIdViaAI(rows)) ?? detectTaxonomyTemplateId(rows);
-  if (!templateId) return { applied: false };
+  // A confident single-sector match wins; otherwise fall back to the
+  // General Merchandise template (Department > Category > Sub-category >
+  // Brand > Product) rather than leaving the retailer with no taxonomy
+  // profile at all — the category-tree levels it uses work for any mixed
+  // or ambiguous catalogue, not just one vertical.
+  const templateId =
+    (await detectTaxonomyTemplateIdViaAI(rows)) ?? detectTaxonomyTemplateId(rows) ?? "general-merchandise";
 
   const { TAXONOMY_TEMPLATES } = await import("./taxonomy-templates");
   const template = TAXONOMY_TEMPLATES.find((t) => t.id === templateId);

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   ArrowRight,
   Barcode,
+  Check,
   Loader2,
   Package,
   Plus,
@@ -74,6 +75,15 @@ function InventoryAdminPage() {
     queryKey: ["admin-inventory", params],
     queryFn: () => listFn({ data: params }),
   });
+
+  // Drives the Tag Intelligence chip: once nothing is left incomplete, show
+  // a success badge instead of an action button re-inviting a click.
+  const tagStatusQ = useQuery({
+    queryKey: ["tag-intelligence-status"],
+    queryFn: () => listIncompleteFn(),
+  });
+  const tagIntelligenceComplete =
+    !tagStatusQ.isLoading && (tagStatusQ.data?.ids?.length ?? 1) === 0;
 
   // Silently retry image resolution for a few products still stuck on a
   // fallback image each time this page loads — no button, no loading state;
@@ -217,22 +227,34 @@ function InventoryAdminPage() {
         description="Every uploaded product, tagged or not. The main Inventory screen only shows tagged items — review and tag the rest here."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={handleTagIntelligence}
-              disabled={runningTagIntelligence}
-            >
-              {runningTagIntelligence ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <span className="mr-2 inline-flex items-center gap-1">
-                  <Barcode className="h-4 w-4" />
-                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                  <QrCode className="h-4 w-4" />
-                </span>
-              )}
-              Tag Intelligence
-            </Button>
+            {tagIntelligenceComplete && !runningTagIntelligence ? (
+              <button
+                type="button"
+                onClick={handleTagIntelligence}
+                title="Everything has a barcode, QR code and digital identity. Click to re-check."
+              >
+                <Badge className="gap-1.5 bg-emerald-600 px-3 py-1.5 text-sm text-white hover:bg-emerald-600">
+                  <Check className="h-3.5 w-3.5" /> Tag Intelligence complete
+                </Badge>
+              </button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={handleTagIntelligence}
+                disabled={runningTagIntelligence}
+              >
+                {runningTagIntelligence ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <span className="mr-2 inline-flex items-center gap-1">
+                    <Barcode className="h-4 w-4" />
+                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                    <QrCode className="h-4 w-4" />
+                  </span>
+                )}
+                Tag Intelligence
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" /> Import
             </Button>
