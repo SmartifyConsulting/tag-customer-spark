@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Check, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { MarketingNav } from "@/components/marketing-nav";
 import { PLANS, SELF_SERVE_PLANS, priceCents, formatZar, formatUsd, type Cycle } from "@/lib/billing/pricing";
 import heroLogo from "@/assets/tag-logo-clear.png.asset.json";
 
@@ -44,18 +45,7 @@ function PricingPage() {
         <Link to="/about">
           <img src={heroLogo.url} alt="Tag" className="mt-[2cm] h-56 md:h-72 w-auto object-contain" />
         </Link>
-        <nav className="hidden items-center gap-8 text-base font-bold text-foreground md:flex">
-          <Link to="/about" hash="how" className="hover:text-primary">
-            How it works
-          </Link>
-          <Link to="/about" hash="features" className="hover:text-primary">
-            Features
-          </Link>
-          <Link to="/about" hash="intelligence" className="hover:text-primary">
-            Intelligence
-          </Link>
-          <span className="text-primary">Pricing</span>
-        </nav>
+        <MarketingNav />
         <Button onClick={() => navigate({ to: primaryHref })} className="gap-2">
           {primaryLabel} <ArrowRight className="h-4 w-4" />
         </Button>
@@ -151,7 +141,7 @@ function PricingPage() {
       </section>
 
       <footer className="border-t border-border/60 py-8 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} Tag. Built for South African retail and beyond.
+        © {new Date().getFullYear()} Tag. Built for Retail Intelligence.
       </footer>
     </div>
   );

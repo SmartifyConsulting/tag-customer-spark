@@ -1,7 +1,8 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { MarketingNav } from "@/components/marketing-nav";
 
 import { ArrowRight, ArrowDown } from "lucide-react";
 
@@ -152,20 +153,7 @@ function Landing() {
       {/* Nav */}
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
         <img src={heroLogo.url} alt="Tag" className="mt-[2cm] h-56 md:h-72 w-auto object-contain" />
-        <nav className="hidden items-center gap-8 text-base font-bold text-foreground md:flex">
-          <a href="#how" className="hover:text-primary">
-            How it works
-          </a>
-          <a href="#features" className="hover:text-primary">
-            Features
-          </a>
-          <a href="#intelligence" className="hover:text-primary">
-            Intelligence
-          </a>
-          <Link to="/pricing" className="hover:text-primary">
-            Pricing
-          </Link>
-        </nav>
+        <MarketingNav />
         <div className="flex items-center gap-2">
           <Button onClick={() => navigate({ to: primaryHref })} className="gap-2">
             {primaryLabel} <ArrowRight className="h-4 w-4" />
@@ -279,9 +267,8 @@ function Landing() {
       <section id="intelligence" className="bg-muted/40 py-20">
         <div className="mx-auto max-w-7xl px-6">
           <p className="mx-auto max-w-2xl text-center text-muted-foreground">
-            But Tag is not just a collection of features. Behind every scan, interaction, and
-            customer decision is an intelligence layer that continuously learns and reveals
-            opportunities.
+            Tag is not just a collection of features. Behind every scan, interaction, and customer
+            decision is an intelligence layer that continuously learns and reveals opportunities.
           </p>
           <div className="mx-auto mt-6 max-w-2xl text-center">
             <span className="text-sm font-bold uppercase tracking-wide text-primary">
@@ -447,7 +434,7 @@ function Landing() {
       </section>
 
       <footer className="border-t border-border/60 py-8 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} Tag. Built for South African retail and beyond.
+        © {new Date().getFullYear()} Tag. Built for Retail Intelligence.
       </footer>
     </div>
   );
