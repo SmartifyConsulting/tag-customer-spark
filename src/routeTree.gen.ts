@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
@@ -50,6 +51,7 @@ import { Route as AuthenticatedCommerceFunnelRouteImport } from './routes/_authe
 import { Route as AuthenticatedAnalyticsReportsRouteImport } from './routes/_authenticated/analytics.reports'
 import { Route as AuthenticatedAnalyticsHistoryRouteImport } from './routes/_authenticated/analytics.history'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
+import { Route as AuthenticatedAdminPricingRouteImport } from './routes/_authenticated/admin.pricing'
 import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authenticated/admin.inventory'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin.categories'
 import { Route as AuthenticatedAdminInventoryIndexRouteImport } from './routes/_authenticated/admin.inventory.index'
@@ -72,6 +74,11 @@ const SetupRoute = SetupRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -285,6 +292,12 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminPricingRoute =
+  AuthenticatedAdminPricingRouteImport.update({
+    id: '/admin/pricing',
+    path: '/admin/pricing',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminInventoryRoute =
   AuthenticatedAdminInventoryRouteImport.update({
     id: '/admin/inventory',
@@ -365,6 +378,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
@@ -386,6 +400,7 @@ export interface FileRoutesByFullPath {
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRouteWithChildren
+  '/admin/pricing': typeof AuthenticatedAdminPricingRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -420,6 +435,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
@@ -438,6 +454,7 @@ export interface FileRoutesByTo {
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
+  '/admin/pricing': typeof AuthenticatedAdminPricingRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -474,6 +491,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
@@ -495,6 +513,7 @@ export interface FileRoutesById {
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRouteWithChildren
+  '/_authenticated/admin/pricing': typeof AuthenticatedAdminPricingRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/_authenticated/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -531,6 +550,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/forgot-password'
+    | '/pricing'
     | '/reset-password'
     | '/setup'
     | '/analytics'
@@ -552,6 +572,7 @@ export interface FileRouteTypes {
     | '/scan/$shortCode'
     | '/admin/categories'
     | '/admin/inventory'
+    | '/admin/pricing'
     | '/admin/users'
     | '/analytics/history'
     | '/analytics/reports'
@@ -586,6 +607,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/forgot-password'
+    | '/pricing'
     | '/reset-password'
     | '/setup'
     | '/analytics'
@@ -604,6 +626,7 @@ export interface FileRouteTypes {
     | '/passport/$gtin'
     | '/scan/$shortCode'
     | '/admin/categories'
+    | '/admin/pricing'
     | '/admin/users'
     | '/analytics/history'
     | '/analytics/reports'
@@ -639,6 +662,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/forgot-password'
+    | '/pricing'
     | '/reset-password'
     | '/setup'
     | '/_authenticated/analytics'
@@ -660,6 +684,7 @@ export interface FileRouteTypes {
     | '/scan/$shortCode'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/inventory'
+    | '/_authenticated/admin/pricing'
     | '/_authenticated/admin/users'
     | '/_authenticated/analytics/history'
     | '/_authenticated/analytics/reports'
@@ -696,6 +721,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SetupRoute: typeof SetupRoute
   NMessageIdRoute: typeof NMessageIdRoute
@@ -727,6 +753,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -1002,6 +1035,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/pricing': {
+      id: '/_authenticated/admin/pricing'
+      path: '/admin/pricing'
+      fullPath: '/admin/pricing'
+      preLoaderRoute: typeof AuthenticatedAdminPricingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/inventory': {
       id: '/_authenticated/admin/inventory'
       path: '/admin/inventory'
@@ -1204,6 +1244,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedWatchlistsRoute: typeof AuthenticatedWatchlistsRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminInventoryRoute: typeof AuthenticatedAdminInventoryRouteWithChildren
+  AuthenticatedAdminPricingRoute: typeof AuthenticatedAdminPricingRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedCommerceFunnelRoute: typeof AuthenticatedCommerceFunnelRoute
   AuthenticatedCommercePricingRoute: typeof AuthenticatedCommercePricingRoute
@@ -1228,6 +1269,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminInventoryRoute:
     AuthenticatedAdminInventoryRouteWithChildren,
+  AuthenticatedAdminPricingRoute: AuthenticatedAdminPricingRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedCommerceFunnelRoute: AuthenticatedCommerceFunnelRoute,
   AuthenticatedCommercePricingRoute: AuthenticatedCommercePricingRoute,
@@ -1244,6 +1286,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SetupRoute: SetupRoute,
   NMessageIdRoute: NMessageIdRoute,

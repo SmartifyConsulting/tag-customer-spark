@@ -66,6 +66,7 @@ export const NAV: readonly NavItem[] = [
       { title: "Taxonomy", url: "/admin/categories", match: ["/admin/categories"] },
       { title: "Stores", url: "/stores", match: ["/stores"] },
       { title: "Users", url: "/admin/users", match: ["/admin/users"] },
+      { title: "Pricing", url: "/admin/pricing", match: ["/admin/pricing"] },
     ],
   },
   {
