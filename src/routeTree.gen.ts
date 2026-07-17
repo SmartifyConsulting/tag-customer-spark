@@ -60,6 +60,7 @@ import { Route as ApiPublicHooksPassportTickRouteImport } from './routes/api/pub
 import { Route as ApiPublicHooksNotificationsTickRouteImport } from './routes/api/public/hooks.notifications-tick'
 import { Route as ApiPublicHooksIntentTickRouteImport } from './routes/api/public/hooks.intent-tick'
 import { Route as ApiPublic01GtinRouteImport } from './routes/api/public/01.$gtin'
+import { Route as AuthenticatedAdminInventoryProductIdRouteImport } from './routes/_authenticated/admin.inventory.$productId'
 
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
@@ -339,6 +340,12 @@ const ApiPublic01GtinRoute = ApiPublic01GtinRouteImport.update({
   path: '/api/public/01/$gtin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminInventoryProductIdRoute =
+  AuthenticatedAdminInventoryProductIdRouteImport.update({
+    id: '/$productId',
+    path: '/$productId',
+    getParentRoute: () => AuthenticatedAdminInventoryRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -364,7 +371,7 @@ export interface FileRoutesByFullPath {
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
-  '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
+  '/admin/inventory': typeof AuthenticatedAdminInventoryRouteWithChildren
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -382,6 +389,7 @@ export interface FileRoutesByFullPath {
   '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
+  '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
@@ -414,7 +422,7 @@ export interface FileRoutesByTo {
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
-  '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
+  '/admin/inventory': typeof AuthenticatedAdminInventoryRouteWithChildren
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -432,6 +440,7 @@ export interface FileRoutesByTo {
   '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/intelligence': typeof AuthenticatedIntelligenceIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
+  '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
@@ -468,7 +477,7 @@ export interface FileRoutesById {
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
-  '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRoute
+  '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRouteWithChildren
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/_authenticated/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -486,6 +495,7 @@ export interface FileRoutesById {
   '/_authenticated/products/compare': typeof AuthenticatedProductsCompareRoute
   '/_authenticated/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
+  '/_authenticated/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
@@ -540,6 +550,7 @@ export interface FileRouteTypes {
     | '/products/compare'
     | '/intelligence/'
     | '/products/'
+    | '/admin/inventory/$productId'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
@@ -590,6 +601,7 @@ export interface FileRouteTypes {
     | '/products/compare'
     | '/intelligence'
     | '/products'
+    | '/admin/inventory/$productId'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
@@ -643,6 +655,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products/compare'
     | '/_authenticated/intelligence/'
     | '/_authenticated/products/'
+    | '/_authenticated/admin/inventory/$productId'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
@@ -1035,6 +1048,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublic01GtinRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/inventory/$productId': {
+      id: '/_authenticated/admin/inventory/$productId'
+      path: '/$productId'
+      fullPath: '/admin/inventory/$productId'
+      preLoaderRoute: typeof AuthenticatedAdminInventoryProductIdRouteImport
+      parentRoute: typeof AuthenticatedAdminInventoryRoute
+    }
   }
 }
 
@@ -1112,6 +1132,21 @@ const AuthenticatedProductsRouteWithChildren =
     AuthenticatedProductsRouteChildren,
   )
 
+interface AuthenticatedAdminInventoryRouteChildren {
+  AuthenticatedAdminInventoryProductIdRoute: typeof AuthenticatedAdminInventoryProductIdRoute
+}
+
+const AuthenticatedAdminInventoryRouteChildren: AuthenticatedAdminInventoryRouteChildren =
+  {
+    AuthenticatedAdminInventoryProductIdRoute:
+      AuthenticatedAdminInventoryProductIdRoute,
+  }
+
+const AuthenticatedAdminInventoryRouteWithChildren =
+  AuthenticatedAdminInventoryRoute._addFileChildren(
+    AuthenticatedAdminInventoryRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRouteWithChildren
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
@@ -1127,7 +1162,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedWatchlistsRoute: typeof AuthenticatedWatchlistsRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
-  AuthenticatedAdminInventoryRoute: typeof AuthenticatedAdminInventoryRoute
+  AuthenticatedAdminInventoryRoute: typeof AuthenticatedAdminInventoryRouteWithChildren
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedCommerceFunnelRoute: typeof AuthenticatedCommerceFunnelRoute
   AuthenticatedCommercePricingRoute: typeof AuthenticatedCommercePricingRoute
@@ -1150,7 +1185,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedWatchlistsRoute: AuthenticatedWatchlistsRoute,
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
-  AuthenticatedAdminInventoryRoute: AuthenticatedAdminInventoryRoute,
+  AuthenticatedAdminInventoryRoute:
+    AuthenticatedAdminInventoryRouteWithChildren,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedCommerceFunnelRoute: AuthenticatedCommerceFunnelRoute,
   AuthenticatedCommercePricingRoute: AuthenticatedCommercePricingRoute,

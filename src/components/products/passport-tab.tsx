@@ -39,7 +39,7 @@ export function PassportTab({ productId, dppId }: { productId: string; dppId?: s
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold">Digital Product Passport</h3>
+            <h3 className="font-semibold">Digital Product Identity</h3>
             <Badge variant={status === "enriched" || status === "manual" ? "default" : "secondary"}>
               {status}
             </Badge>

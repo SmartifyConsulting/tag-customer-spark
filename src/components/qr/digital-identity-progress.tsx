@@ -61,7 +61,7 @@ export function DigitalIdentityProgress({ product, qr, passport }: Props) {
   return (
     <div className="rounded-2xl border bg-card p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Digital identity</h3>
+        <h3 className="text-sm font-semibold">Digital Identity Build</h3>
         <span className="text-xs text-muted-foreground">{completed} / {steps.length} complete</span>
       </div>
       <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-muted">

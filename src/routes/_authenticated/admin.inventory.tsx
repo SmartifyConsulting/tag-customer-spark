@@ -328,7 +328,7 @@ function InventoryAdminPage() {
                     aria-label={`Select ${p.name}`}
                   />
                   <Link
-                    to="/products/$productId"
+                    to="/admin/inventory/$productId"
                     params={{ productId: p.id }}
                     className="flex flex-1 items-center gap-3 px-2 py-2 hover:bg-muted/50"
                   >

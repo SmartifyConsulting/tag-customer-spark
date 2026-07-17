@@ -351,6 +351,11 @@ async function generateAiImage(input: ResolveInput): Promise<Uint8Array | null> 
 // when no result looks like a usable https image URL — the pipeline then
 // falls through to AI / brand logo / placeholder.
 
+// Minimum pixel dimensions before a result is treated as "good enough" —
+// below this, thumbnails/icons routinely outrank the actual product photo
+// and previously got picked simply for being first in the results.
+const MIN_QUALITY_PX = 500;
+
 async function serperImageSearch(apiKey: string, query: string): Promise<string | null> {
   try {
     const res = await fetch("https://google.serper.dev/images", {
@@ -359,7 +364,9 @@ async function serperImageSearch(apiKey: string, query: string): Promise<string 
         "X-API-KEY": apiKey,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ q: query, num: 10, safe: "active" }),
+      // imgSize biases Google toward higher-resolution results up front;
+      // num:20 gives the width/height ranking below more to choose from.
+      body: JSON.stringify({ q: query, num: 20, safe: "active", imgSize: "large" }),
     });
     if (!res.ok) {
       console.warn(`[serper] HTTP ${res.status} for query "${query}"`);
@@ -370,16 +377,32 @@ async function serperImageSearch(apiKey: string, query: string): Promise<string 
     const isImageUrl = (u: string) =>
       u.startsWith("https://") && /\.(jpe?g|png|webp)(\?|$)/i.test(u);
 
-    for (const item of items) {
-      const link = typeof item?.imageUrl === "string" ? item.imageUrl : null;
-      if (link && isImageUrl(link)) return link;
-    }
-    // Fallback: any https imageUrl — downloadAndUpload will validate MIME.
-    for (const item of items) {
-      const link = typeof item?.imageUrl === "string" ? item.imageUrl : null;
-      if (link && link.startsWith("https://")) return link;
-    }
-    return null;
+    const candidates = items
+      .map((item) => ({
+        link: typeof item?.imageUrl === "string" ? item.imageUrl : null,
+        width: Number(item?.imageWidth) || 0,
+        height: Number(item?.imageHeight) || 0,
+      }))
+      .filter((c) => c.link && c.link.startsWith("https://"));
+
+    // Prefer the largest real image (by pixel area) that clears the quality
+    // floor, so a small icon/thumbnail Google ranked first doesn't win just
+    // because it appeared first — genuine product photos are usually the
+    // biggest images returned, not the earliest.
+    const goodQuality = candidates
+      .filter((c) => c.link && isImageUrl(c.link) && c.width >= MIN_QUALITY_PX && c.height >= MIN_QUALITY_PX)
+      .sort((a, b) => b.width * b.height - a.width * a.height);
+    if (goodQuality[0]?.link) return goodQuality[0].link;
+
+    // Nothing cleared the quality floor — fall back to the largest
+    // recognised-extension image regardless of size.
+    const anySizedImage = candidates
+      .filter((c) => c.link && isImageUrl(c.link))
+      .sort((a, b) => b.width * b.height - a.width * a.height);
+    if (anySizedImage[0]?.link) return anySizedImage[0].link;
+
+    // Last resort: any https URL at all — downloadAndUpload validates MIME.
+    return candidates[0]?.link ?? null;
   } catch (e: any) {
     console.warn("[serper] fetch failed", e?.message ?? e);
     return null;

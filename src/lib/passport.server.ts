@@ -1,66 +1,61 @@
 // Server-only helpers for Digital Product Passport enrichment.
 import { z } from "zod";
 
+// NOTE: every field here is `.nullable()` rather than `.optional()`, and no
+// field or nested object uses `.default()`. OpenAI's strict structured-output
+// mode requires the JSON schema `required` array to list every key in
+// `properties` — zod-to-json-schema drops `.optional()`/`.default()` fields
+// from `required`, which strict mode then rejects (e.g. "Missing
+// 'height_mm'"). `.nullable()` keeps the key required while still letting
+// the model return null for anything it can't ground.
 const passportSchema = z.object({
-  brand: z.string().nullable().optional(),
-  manufacturer: z.string().nullable().optional(),
-  country_of_origin: z.string().nullable().optional(),
-  category_path: z.string().nullable().optional(),
-  short_description: z.string().nullable().optional(),
-  marketing_description: z.string().nullable().optional(),
-  product_summary: z.string().nullable().optional(),
-  consumer_faqs: z
-    .array(z.object({ question: z.string(), answer: z.string() }))
-    .default([]),
-  ingredients: z.array(z.string()).default([]),
-  nutrition: z
-    .object({
-      serving_size: z.string().nullable().optional(),
-      calories_kcal: z.number().nullable().optional(),
-      protein_g: z.number().nullable().optional(),
-      carbs_g: z.number().nullable().optional(),
-      sugar_g: z.number().nullable().optional(),
-      fat_g: z.number().nullable().optional(),
-      saturated_fat_g: z.number().nullable().optional(),
-      salt_g: z.number().nullable().optional(),
-      fibre_g: z.number().nullable().optional(),
-    })
-    .default({}),
-  allergens: z.array(z.string()).default([]),
-  dimensions: z
-    .object({
-      length_mm: z.number().nullable().optional(),
-      width_mm: z.number().nullable().optional(),
-      height_mm: z.number().nullable().optional(),
-      weight_g: z.number().nullable().optional(),
-    })
-    .default({}),
-  materials: z.array(z.string()).default([]),
-  warranty: z
-    .object({
-      duration_months: z.number().nullable().optional(),
-      terms: z.string().nullable().optional(),
-    })
-    .default({}),
-  sustainability: z
-    .object({
-      recyclable: z.boolean().nullable().optional(),
-      certifications: z.array(z.string()).default([]),
-      packaging: z.string().nullable().optional(),
-      notes: z.string().nullable().optional(),
-    })
-    .default({}),
-  images: z
-    .array(
-      z.object({
-        url: z.string().url(),
-        role: z.string().default("gallery"),
-        source: z.string().nullable().optional(),
-        license: z.string().nullable().optional(),
-      }),
-    )
-    .default([]),
-  field_confidence: z.record(z.string(), z.number().min(0).max(1)).default({}),
+  brand: z.string().nullable(),
+  manufacturer: z.string().nullable(),
+  country_of_origin: z.string().nullable(),
+  category_path: z.string().nullable(),
+  short_description: z.string().nullable(),
+  marketing_description: z.string().nullable(),
+  product_summary: z.string().nullable(),
+  consumer_faqs: z.array(z.object({ question: z.string(), answer: z.string() })),
+  ingredients: z.array(z.string()),
+  nutrition: z.object({
+    serving_size: z.string().nullable(),
+    calories_kcal: z.number().nullable(),
+    protein_g: z.number().nullable(),
+    carbs_g: z.number().nullable(),
+    sugar_g: z.number().nullable(),
+    fat_g: z.number().nullable(),
+    saturated_fat_g: z.number().nullable(),
+    salt_g: z.number().nullable(),
+    fibre_g: z.number().nullable(),
+  }),
+  allergens: z.array(z.string()),
+  dimensions: z.object({
+    length_mm: z.number().nullable(),
+    width_mm: z.number().nullable(),
+    height_mm: z.number().nullable(),
+    weight_g: z.number().nullable(),
+  }),
+  materials: z.array(z.string()),
+  warranty: z.object({
+    duration_months: z.number().nullable(),
+    terms: z.string().nullable(),
+  }),
+  sustainability: z.object({
+    recyclable: z.boolean().nullable(),
+    certifications: z.array(z.string()),
+    packaging: z.string().nullable(),
+    notes: z.string().nullable(),
+  }),
+  images: z.array(
+    z.object({
+      url: z.string().url(),
+      role: z.string(),
+      source: z.string().nullable(),
+      license: z.string().nullable(),
+    }),
+  ),
+  field_confidence: z.record(z.string(), z.number().min(0).max(1)),
 });
 
 export type EnrichedPassport = z.infer<typeof passportSchema>;
@@ -106,6 +101,35 @@ async function fetchOpenFoodFacts(gtin: string | null): Promise<{
   }
 }
 
+// --- Web search grounding (Serper) ---------------------------------------
+// Open Food Facts only covers groceries, so anything outside that (most
+// non-food retail: appliances, toys, tools, electronics) previously had
+// nothing but the AI's own unaided knowledge to work from. A handful of web
+// search snippets gives the model real, current text to ground dimensions,
+// materials, warranty and country-of-origin claims in — same Serper key the
+// image resolver already uses.
+async function fetchSerperWebResults(query: string): Promise<Array<{ title: string; snippet: string; link: string }>> {
+  const apiKey = process.env.SERPER_API_KEY;
+  if (!apiKey || query.length < 3) return [];
+  try {
+    const res = await fetch("https://google.serper.dev/search", {
+      method: "POST",
+      headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ q: query, num: 5 }),
+    });
+    if (!res.ok) return [];
+    const json: any = await res.json();
+    const organic: any[] = Array.isArray(json?.organic) ? json.organic : [];
+    return organic.slice(0, 5).map((r) => ({
+      title: String(r?.title ?? ""),
+      snippet: String(r?.snippet ?? ""),
+      link: String(r?.link ?? ""),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 // --- AI enrichment -------------------------------------------------------
 async function callEnrichmentAI(input: {
   name: string;
@@ -114,6 +138,7 @@ async function callEnrichmentAI(input: {
   description?: string | null;
   category?: string | null;
   lookup: any | null;
+  webResults: Array<{ title: string; snippet: string; link: string }>;
 }): Promise<EnrichedPassport> {
   const { generateObject } = await import("ai");
   const { getGatewayFromEnv } = await import("./ai-gateway.server");
@@ -121,7 +146,7 @@ async function callEnrichmentAI(input: {
   const model = gateway("openai/gpt-5.5");
 
   const prompt = `Enrich the following product into a Digital Product Passport.
-Use the lookup data as ground truth when present. For any field you cannot ground in the lookup or common, verifiable public knowledge about this exact GTIN/brand/product, return null and DO NOT invent.
+Use the lookup data and web search results as ground truth when present. For any field you cannot ground in the lookup, the web search snippets, or common, verifiable public knowledge about this exact GTIN/brand/product, return null and DO NOT invent.
 
 Product:
 - Name: ${input.name}
@@ -133,8 +158,12 @@ Product:
 Lookup data (Open Food Facts, may be null):
 ${input.lookup ? JSON.stringify(input.lookup).slice(0, 4000) : "none"}
 
+Web search results (title / snippet / source URL, may be empty):
+${input.webResults.length ? input.webResults.map((r) => `- ${r.title}: ${r.snippet} (${r.link})`).join("\n").slice(0, 4000) : "none"}
+
 Rules:
 - Only populate nutrition / ingredients / allergens for consumable products.
+- Use the web search snippets primarily for: dimensions, weight, materials, country of origin, warranty terms, sustainability/certifications — fields Open Food Facts never covers.
 - consumer_faqs: 3-5 short shopper questions with concise answers.
 - marketing_description: 1 paragraph, evocative but truthful.
 - product_summary: 1-2 sentence factual summary.
@@ -206,6 +235,8 @@ export async function enrichProductPassport(
       );
 
     const { hit: lookup, source: lookupSource } = await fetchOpenFoodFacts(product.gtin);
+    const webQuery = [product.brand, product.name, product.gtin].filter(Boolean).join(" ").trim();
+    const webResults = await fetchSerperWebResults(webQuery);
     const enriched = await callEnrichmentAI({
       name: product.name,
       brand: product.brand,
@@ -213,10 +244,14 @@ export async function enrichProductPassport(
       description: product.description,
       category: product.category?.name,
       lookup,
+      webResults,
     });
 
     const sources = [
       ...(lookupSource ? [lookupSource] : []),
+      ...(webResults.length
+        ? [{ provider: "serper-web", query: webQuery, fetched_at: new Date().toISOString() }]
+        : []),
       { provider: "lovable-ai", model: "openai/gpt-5.5", generated_at: new Date().toISOString() },
     ];
 
