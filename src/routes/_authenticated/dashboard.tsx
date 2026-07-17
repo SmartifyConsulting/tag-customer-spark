@@ -17,6 +17,8 @@ import {
 import * as XLSX from "xlsx";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { PageHeader } from "@/components/page-header";
+import { useServerFn } from "@tanstack/react-start";
+import { getRetailerBranding } from "@/lib/branding.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -118,6 +120,8 @@ function DashboardContent() {
   const analyticsQuery = useQuery(advancedAnalyticsQueryOptions(days));
   const analytics = analyticsQuery.data;
   const { profile, user } = useAuth();
+  const brandingFn = useServerFn(getRetailerBranding);
+  const branding = useQuery({ queryKey: ["branding"], queryFn: () => brandingFn(), staleTime: 5 * 60_000 });
   const k = data.kpis;
 
   const dailySpark = data.scansDaily.slice(-7).map((d) => ({ v: d.count }));
@@ -171,11 +175,11 @@ function DashboardContent() {
     const lines = [
       `Total scans: ${t.totalScans}`,
       `Unique customers: ${t.uniqueCustomers}`,
-      `Returning customers: ${t.returningCustomers}`,
+      `Returning customer scans: ${t.returningCustomers}`,
       `Recovered revenue: ${currencyFmt(t.recoveredCents, t.currency)}`,
       `Avg recovery time: ${t.avgRecoveryHours.toFixed(1)} h`,
       `WhatsApp CTR: ${t.overallCtr}%`,
-      `Total customers: ${t.customersTotal}`,
+      `Total customers % increase: ${t.customersPctChange >= 0 ? "+" : ""}${t.customersPctChange.toFixed(1)}%`,
     ];
     for (const l of lines) {
       page.drawText(l, { x: 40, y, size: 12, font });
@@ -189,36 +193,48 @@ function DashboardContent() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title={`Good ${partOfDay}, ${firstName} 👋`}
-        description={`${today} · Here's what's happening across your stores today.`}
-        actions={
-          <div className="flex items-center gap-2">
-            <Tabs value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-              <TabsList>
-                <TabsTrigger value="7">7d</TabsTrigger>
-                <TabsTrigger value="30">30d</TabsTrigger>
-                <TabsTrigger value="90">90d</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Download className="mr-2 h-4 w-4" />Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={exportXLSX}>
-                  <FileSpreadsheet className="mr-2 h-4 w-4" />Excel (.xlsx)
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={exportPDF}>
-                  <FileText className="mr-2 h-4 w-4" />PDF report
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <PageHeader
+          className="min-w-0 flex-1"
+          title={`Good ${partOfDay}, ${firstName} 👋`}
+          description={`${today} · Here's what's happening across your stores today.`}
+          actions={
+            <div className="flex items-center gap-2">
+              <Tabs value={String(days)} onValueChange={(v) => setDays(Number(v))}>
+                <TabsList>
+                  <TabsTrigger value="7">7d</TabsTrigger>
+                  <TabsTrigger value="30">30d</TabsTrigger>
+                  <TabsTrigger value="90">90d</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Download className="mr-2 h-4 w-4" />Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={exportXLSX}>
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />Excel (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={exportPDF}>
+                    <FileText className="mr-2 h-4 w-4" />PDF report
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          }
+        />
+        {branding.data?.logo_url && (
+          <div className="grid shrink-0 place-items-center rounded-xl border border-border bg-white p-3" style={{ width: 220, height: 220 }}>
+            <img
+              src={branding.data.logo_url}
+              alt={branding.data.name ? `${branding.data.name} logo` : "Company logo"}
+              className="max-h-full max-w-full object-contain"
+            />
           </div>
-        }
-      />
+        )}
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
@@ -265,7 +281,7 @@ function DashboardContent() {
             />
             <KpiCard
               index={6}
-              label="Returning customers"
+              label="Returning customer scans"
               value={analytics.totals.returningCustomers}
               icon={UserCheck}
             />
@@ -278,8 +294,9 @@ function DashboardContent() {
             />
             <KpiCard
               index={8}
-              label="Total customers"
-              value={analytics.totals.customersTotal}
+              label="Total customers % increase"
+              value={analytics.totals.customersPctChange}
+              formatted={`${analytics.totals.customersPctChange >= 0 ? "+" : ""}${analytics.totals.customersPctChange.toFixed(1)}%`}
               icon={UsersRound}
             />
           </>

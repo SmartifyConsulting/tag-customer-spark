@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Store, Plus, MapPin, Users, ScanLine, UserRound, Phone } from "lucide-react";
+import { Store, Plus, MapPin, Users, ScanLine, UserRound, Phone, Upload } from "lucide-react";
+import { StoreImportDialog } from "@/components/stores/store-import-dialog";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ function money(c: number) {
 function StoresPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
 
   const stores = useQuery({ queryKey: ["stores"], queryFn: () => listStores() });
@@ -40,12 +42,18 @@ function StoresPage() {
         title="Stores"
         description="Every physical retail location using Tag."
         actions={
-          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
-            <DialogTrigger asChild><Button><Plus className="mr-1 h-4 w-4" /> Add store</Button></DialogTrigger>
-            <StoreDialog editing={editing} onClose={() => { setOpen(false); setEditing(null); qc.invalidateQueries({ queryKey: ["stores"] }); }} />
-          </Dialog>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload className="mr-1 h-4 w-4" /> Upload stores
+            </Button>
+            <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
+              <DialogTrigger asChild><Button><Plus className="mr-1 h-4 w-4" /> Add store</Button></DialogTrigger>
+              <StoreDialog editing={editing} onClose={() => { setOpen(false); setEditing(null); qc.invalidateQueries({ queryKey: ["stores"] }); }} />
+            </Dialog>
+          </div>
         }
       />
+      <StoreImportDialog open={importOpen} onOpenChange={setImportOpen} />
 
       {stores.isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

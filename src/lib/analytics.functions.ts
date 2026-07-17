@@ -176,6 +176,18 @@ export const getAdvancedAnalytics = createServerFn({ method: "POST" })
       heatmap[d.getDay()][d.getHours()] += 1;
     });
 
+    // % change in the total customer base across the selected window —
+    // customerGrowth[i].total is already a running cumulative count, so the
+    // first and last entries bookend the range without a second query.
+    const customersTotal = customers?.length ?? 0;
+    const rangeStartTotal = customerGrowth[0]?.total ?? 0;
+    const customersPctChange =
+      rangeStartTotal > 0
+        ? ((customersTotal - rangeStartTotal) / rangeStartTotal) * 100
+        : customersTotal > 0
+          ? 100
+          : 0;
+
     return {
       range: { days: data.days, since: sinceIso },
       totals: {
@@ -186,7 +198,8 @@ export const getAdvancedAnalytics = createServerFn({ method: "POST" })
         currency,
         avgRecoveryHours: avgRecoveryMs / 3_600_000,
         overallCtr,
-        customersTotal: customers?.length ?? 0,
+        customersTotal,
+        customersPctChange,
       },
       popularProducts,
       popularStores,

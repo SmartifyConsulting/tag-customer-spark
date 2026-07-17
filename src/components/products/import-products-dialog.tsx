@@ -96,6 +96,7 @@ export function ImportProductsDialog({
       let taxonomyApplied = false;
       let taxonomyName: string | null = null;
       let storesCreated = 0;
+      let brandsCreated = 0;
 
       setProgress(2);
       for (let i = 0; i < rows.length; i += IMPORT_CHUNK) {
@@ -112,12 +113,14 @@ export function ImportProductsDialog({
           taxonomyName = res.taxonomyProfileName ?? null;
         }
         storesCreated += res.storesCreated ?? 0;
+        brandsCreated += res.brandsCreated ?? 0;
         setProgress(2 + Math.round((done / rows.length) * 43));
       }
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["admin-inventory"] });
       if (taxonomyApplied) qc.invalidateQueries({ queryKey: ["taxonomy-active"] });
       if (storesCreated > 0) qc.invalidateQueries({ queryKey: ["stores"] });
+      if (brandsCreated > 0) qc.invalidateQueries({ queryKey: ["brands"] });
 
       setProgress(50);
       setLabel("Assigning missing barcodes…");
@@ -153,6 +156,9 @@ export function ImportProductsDialog({
         toast.success(
           `${storesCreated} store${storesCreated === 1 ? "" : "s"} added from the import — check Stores.`,
         );
+      }
+      if (brandsCreated > 0) {
+        toast.success(`${brandsCreated} brand${brandsCreated === 1 ? "" : "s"} added, logos fetched where possible.`);
       }
       if (errors.length) console.warn("Import errors:", errors);
 

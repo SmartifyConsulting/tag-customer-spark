@@ -1,4 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -8,6 +10,8 @@ import { Separator } from "@/components/ui/separator";
 import { CommandPalette } from "@/components/command-palette";
 import { Command as CommandIcon } from "lucide-react";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { getRetailerBranding } from "@/lib/branding.functions";
+import { useBrandTheme } from "@/hooks/use-brand-theme";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -20,9 +24,18 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
+  const brandingFn = useServerFn(getRetailerBranding);
+  const branding = useQuery({ queryKey: ["branding"], queryFn: () => brandingFn(), staleTime: 5 * 60_000 });
+  const brandTheme = useBrandTheme(branding.data?.logo_url);
+
+  const themeStyle: Record<string, string> = {};
+  if (brandTheme?.background) themeStyle["--background"] = brandTheme.background;
+  if (brandTheme?.primary) themeStyle["--primary"] = brandTheme.primary;
+  if (brandTheme?.primaryForeground) themeStyle["--primary-foreground"] = brandTheme.primaryForeground;
+
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
+      <div className="flex min-h-screen w-full bg-background" style={themeStyle as any}>
         <AppSidebar />
         <SidebarInset className="flex flex-1 flex-col">
           <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md sm:px-6">

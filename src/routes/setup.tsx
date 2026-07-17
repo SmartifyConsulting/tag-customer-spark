@@ -27,6 +27,11 @@ import {
   commitCustomerImport,
   type CustomerImportRow,
 } from "@/lib/customer-import.functions";
+import {
+  previewStoreImport,
+  commitStoreImport,
+  type StoreImportRow,
+} from "@/lib/stores-import.functions";
 import { saveRetailerPosSystem } from "@/lib/settings.functions";
 import heroLogo from "@/assets/tag-logo-clear.png.asset.json";
 
@@ -89,6 +94,8 @@ type Step =
   | "importing"
   | "customerFile"
   | "customerImporting"
+  | "storeFile"
+  | "storeImporting"
   | "done";
 
 function SetupWizard() {
@@ -112,6 +119,13 @@ function SetupWizard() {
   const [customerImportProgress, setCustomerImportProgress] = useState(0);
   const customerInputRef = useRef<HTMLInputElement>(null);
 
+  const [storeFile, setStoreFile] = useState<File | null>(null);
+  const [storeRows, setStoreRows] = useState<StoreImportRow[]>([]);
+  const [storeResult, setStoreResult] = useState<{ created: number; updated: number } | null>(null);
+  const [storeImportLabel, setStoreImportLabel] = useState("");
+  const [storeImportProgress, setStoreImportProgress] = useState(0);
+  const storeInputRef = useRef<HTMLInputElement>(null);
+
   const savePosFn = useServerFn(saveRetailerPosSystem);
   const previewFn = useServerFn(previewProductImport);
   const commitFn = useServerFn(commitProductImport);
@@ -120,6 +134,8 @@ function SetupWizard() {
   const bulkCompleteFn = useServerFn(bulkCompleteDigitalIdentity);
   const customerPreviewFn = useServerFn(previewCustomerImport);
   const customerCommitFn = useServerFn(commitCustomerImport);
+  const storePreviewFn = useServerFn(previewStoreImport);
+  const storeCommitFn = useServerFn(commitStoreImport);
 
   const preview = useMutation({
     mutationFn: async (f: File) => {
@@ -153,6 +169,24 @@ function SetupWizard() {
       }
       setCustomerRows(res.rows);
       setStep("customerImporting");
+    },
+    onError: () => toast.error("That file didn't come through — please try another export."),
+  });
+
+  const storePreview = useMutation({
+    mutationFn: async (f: File) => {
+      const base64 = await fileToBase64(f);
+      return storePreviewFn({
+        data: { filename: f.name, mime: f.type || "application/octet-stream", base64 },
+      });
+    },
+    onSuccess: (res) => {
+      if (!res.rows.length) {
+        toast.warning("We couldn't find any stores/branches in that file.");
+        return;
+      }
+      setStoreRows(res.rows);
+      setStep("storeImporting");
     },
     onError: () => toast.error("That file didn't come through — please try another export."),
   });
@@ -263,7 +297,7 @@ function SetupWizard() {
         setCustomerImportLabel("All done — your customers are ready.");
         setCustomerResult({ created: res.created, updated: res.updated });
         await sleep(500);
-        if (!cancelled) setStep("done");
+        if (!cancelled) setStep("storeFile");
       } catch {
         if (!cancelled) toast.error("We hit a snag importing your customers — please try again.");
       }
@@ -274,6 +308,35 @@ function SetupWizard() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, customerRows]);
+
+  // Same real-progress approach as the product/customer imports above.
+  useEffect(() => {
+    if (step !== "storeImporting" || storeRows.length === 0) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setStoreImportProgress(20);
+        setStoreImportLabel(
+          `Importing ${storeRows.length} store${storeRows.length === 1 ? "" : "s"}…`,
+        );
+        const res = await storeCommitFn({ data: { rows: storeRows } });
+        if (cancelled) return;
+        setStoreImportProgress(100);
+        setStoreImportLabel("All done — your stores are ready.");
+        setStoreResult({ created: res.created, updated: res.updated });
+        await sleep(500);
+        if (!cancelled) setStep("done");
+      } catch {
+        if (!cancelled) toast.error("We hit a snag importing your stores — please try again.");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, storeRows]);
 
   const handlePickSystem = (system: string) => {
     setPosSystem(system);
@@ -291,8 +354,14 @@ function SetupWizard() {
     customerPreview.mutate(f);
   };
 
+  const handleStoreFile = (f: File) => {
+    setStoreFile(f);
+    storePreview.mutate(f);
+  };
+
   const totalProducts = (result?.created ?? 0) + (result?.updated ?? 0);
   const totalCustomers = (customerResult?.created ?? 0) + (customerResult?.updated ?? 0);
+  const totalStores = (storeResult?.created ?? 0) + (storeResult?.updated ?? 0);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-10">
@@ -320,7 +389,7 @@ function SetupWizard() {
               loading={customerPreview.isPending}
               posSystem={posSystem}
               onFile={handleCustomerFile}
-              onSkip={() => setStep("done")}
+              onSkip={() => setStep("storeFile")}
             />
           )}
           {step === "customerImporting" && (
@@ -330,10 +399,28 @@ function SetupWizard() {
               progress={customerImportProgress}
             />
           )}
+          {step === "storeFile" && (
+            <StoreFileStep
+              inputRef={storeInputRef}
+              file={storeFile}
+              loading={storePreview.isPending}
+              posSystem={posSystem}
+              onFile={handleStoreFile}
+              onSkip={() => setStep("done")}
+            />
+          )}
+          {step === "storeImporting" && (
+            <ImportingStep
+              title="Getting your stores ready…"
+              label={storeImportLabel}
+              progress={storeImportProgress}
+            />
+          )}
           {step === "done" && (
             <DoneStep
               productCount={totalProducts}
               customerCount={totalCustomers}
+              storeCount={totalStores}
               onGoToDashboard={() => navigate({ to: "/dashboard" })}
             />
           )}
@@ -493,6 +580,54 @@ function CustomerFileStep({
   );
 }
 
+function StoreFileStep({
+  inputRef,
+  file,
+  loading,
+  posSystem,
+  onFile,
+  onSkip,
+}: {
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  file: File | null;
+  loading: boolean;
+  posSystem: string | null;
+  onFile: (f: File) => void;
+  onSkip: () => void;
+}) {
+  return (
+    <div className="space-y-5 text-center">
+      <div>
+        <h1 className="text-xl font-bold tracking-tight">Add your store branches</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {posSystem
+            ? `If ${posSystem} manages more than one branch, export your store/branch list and upload it here.`
+            : "If you have more than one branch, upload your store/branch list — we'll map the columns automatically."}
+        </p>
+      </div>
+      <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 p-10 hover:bg-muted/50">
+        <FileUp className="mb-3 h-8 w-8 text-muted-foreground" />
+        <span className="font-medium">Choose your store file</span>
+        <span className="mt-1 text-xs text-muted-foreground">XLSX, CSV, or PDF</span>
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".xlsx,.xls,.csv,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onFile(f);
+          }}
+        />
+      </label>
+      {loading && <p className="text-sm text-muted-foreground">Reading {file?.name}…</p>}
+      <Button variant="ghost" className="w-full" onClick={onSkip} disabled={loading}>
+        Skip for now
+      </Button>
+    </div>
+  );
+}
+
 function ImportingStep({
   label,
   progress,
@@ -535,10 +670,12 @@ function ProgressLine({ label, done, active }: { label: string; done: boolean; a
 function DoneStep({
   productCount,
   customerCount,
+  storeCount,
   onGoToDashboard,
 }: {
   productCount: number;
   customerCount: number;
+  storeCount: number;
   onGoToDashboard: () => void;
 }) {
   return (
@@ -556,6 +693,13 @@ function DoneStep({
               {" "}
               {customerCount.toLocaleString()} customer{customerCount === 1 ? "" : "s"}{" "}
               {customerCount === 1 ? "was" : "were"} imported too.
+            </>
+          )}
+          {storeCount > 0 && (
+            <>
+              {" "}
+              {storeCount.toLocaleString()} store{storeCount === 1 ? "" : "s"}{" "}
+              {storeCount === 1 ? "was" : "were"} set up too.
             </>
           )}
         </p>

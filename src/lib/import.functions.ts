@@ -409,6 +409,20 @@ export const commitProductImport = createServerFn({ method: "POST" })
       rows: data.rows,
     });
 
+    // Brands previously only got created/linked when someone manually
+    // clicked "Auto-link & fetch logos" in Brand admin, so a fresh import
+    // showed "0 brands" no matter how many products carried a brand name.
+    let brandsCreated = 0;
+    let brandLogosFetched = 0;
+    try {
+      const { linkProductsToBrandsForRetailer } = await import("./brands.functions");
+      const brandRes = await linkProductsToBrandsForRetailer(supabase, retailerId);
+      brandsCreated = brandRes.created;
+      brandLogosFetched = brandRes.logos;
+    } catch {
+      // Non-fatal — the manual "Auto-link & fetch logos" button still works.
+    }
+
     return {
       created,
       updated,
@@ -417,5 +431,7 @@ export const commitProductImport = createServerFn({ method: "POST" })
       taxonomyProfileApplied: taxonomy.applied,
       taxonomyProfileName: taxonomy.templateName ?? null,
       storesCreated,
+      brandsCreated,
+      brandLogosFetched,
     };
   });

@@ -215,12 +215,14 @@ export const resolveBrandLogo = createServerFn({ method: "POST" })
 
 // ---------- Link products to brands ----------
 
-export const linkProductsToBrands = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { supabase, userId } = context;
-    const retailerId = await resolveRetailerId(supabase, userId);
-    if (!retailerId) throw new Error("No retailer");
+// Plain function so other server-side flows (e.g. commitProductImport) can
+// call it directly without going through createServerFn's client-invocation
+// wrapper. The exported createServerFn below is a thin wrapper for the
+// manual "Auto-link & fetch logos" button.
+export async function linkProductsToBrandsForRetailer(
+  supabase: any,
+  retailerId: string,
+): Promise<{ linked: number; created: number; logos: number }> {
     const { data: prods } = await supabase
       .from("products")
       .select("id, brand, normalised_brand, brand_id")
@@ -268,6 +270,10 @@ export const linkProductsToBrands = createServerFn({ method: "POST" })
     }
 
     // Auto-fetch logos for any brand missing one (existing + newly created).
+    // Uses ensureBrandLogo (Clearbit by website, then AI as a fallback) so a
+    // brand with no known website — the common case straight after an
+    // import, since imports never carry a brand website — still gets a
+    // real logo instead of staying blank until someone visits Brand admin.
     const missingLogo = [
       ...newlyCreated,
       ...(Array.from(bySlug.values())
@@ -280,28 +286,22 @@ export const linkProductsToBrands = createServerFn({ method: "POST" })
     ];
     const seen = new Set<string>();
     let logos = 0;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     for (const b of missingLogo) {
       if (seen.has(b.id)) continue;
       seen.add(b.id);
-      const payload = await tryClearbit(b.website);
-      if (!payload) continue;
-      const path = `${b.id}/logo-${Date.now()}.png`;
-      const { error: upErr } = await supabaseAdmin.storage
-        .from("brand-logos")
-        .upload(path, payload.bytes, {
-          contentType: payload.contentType,
-          upsert: true,
-        });
-      if (upErr) continue;
-      const { data: pub } = supabaseAdmin.storage.from("brand-logos").getPublicUrl(path);
-      await supabase
-        .from("brands")
-        .update({ logo_path: path, logo_url: pub.publicUrl })
-        .eq("id", b.id);
-      logos++;
+      const url = await ensureBrandLogo(supabase, { id: b.id, name: b.name, website: b.website });
+      if (url) logos++;
     }
     return { linked, created, logos };
+}
+
+export const linkProductsToBrands = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) throw new Error("No retailer");
+    return linkProductsToBrandsForRetailer(supabase, retailerId);
   });
 
 // ---------- Merge brands (admin picks target + sources manually) ----------
