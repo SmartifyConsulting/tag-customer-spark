@@ -33,10 +33,14 @@ export const completeSignup = createServerFn({ method: "POST" })
         data.billingCountry ?? (meta.billing_country as string | undefined) ?? null,
       p_currency: data.currency ?? (meta.currency as string | undefined) ?? null,
       p_country_name: data.countryName ?? (meta.country_name as string | undefined) ?? null,
+      p_branch_name: data.branchName ?? (meta.branch_name as string | undefined) ?? null,
+      p_province: data.province ?? (meta.province as string | undefined) ?? null,
       p_user_id: context.userId,
     });
     if (error) throw new Error(error.message);
-    const row = Array.isArray(rows) ? rows[0] : rows;
-    return { retailerId: row?.retailer_id, isNew: !!row?.provisioned_new_retailer };
+    // complete_signup now returns a plain uuid (not a row set) — the
+    // caller re-queries user_roles afterwards anyway, so this is
+    // informational only.
+    return { retailerId: rows as string | null };
   });
 
