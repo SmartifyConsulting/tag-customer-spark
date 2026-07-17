@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
-import { MarketingNav } from "@/components/marketing-nav";
-import heroLogo from "@/assets/GreenTag.png.asset.png";
+import { MarketingHeader } from "@/components/marketing-page";
 
 export function AuthShell({
   title,
@@ -15,10 +14,8 @@ export function AuthShell({
 }) {
   return (
     <div className="min-h-screen bg-white px-4 py-6 lg:px-10">
-      <div className="mx-auto flex max-w-6xl items-center gap-8 py-5">
-        <img src={heroLogo} alt="Tag" className="h-[10rem] w-auto object-contain" />
-        <MarketingNav />
-      </div>
+      <MarketingHeader right={null} />
+
       <div className="mx-auto grid max-w-6xl items-start gap-10 lg:grid-cols-[1fr_1fr]">
         {/* Hero copy column */}
         <div className="hidden lg:block">
