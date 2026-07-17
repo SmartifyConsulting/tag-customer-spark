@@ -658,6 +658,7 @@ export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
     const { resolveAndSyncProductImage } = await import("./product-images.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { enrichProductPassport } = await import("./passport.server");
+    const { normaliseAndPersist } = await import("./normalisation.functions");
 
     const results = {
       succeeded: 0,
@@ -670,7 +671,7 @@ export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
       try {
         const { data: p } = await supabase
           .from("products")
-          .select("id, gtin, image_status")
+          .select("id, gtin, image_status, normalised_at")
           .eq("id", pid)
           .maybeSingle();
         if (!p) {
@@ -682,6 +683,21 @@ export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
           results.skipped++;
           results.errors.push({ productId: pid, step: "gtin", message: "Missing or invalid GTIN" });
           return;
+        }
+
+        // 0. Normalise — only ever previously ran as a side-effect of
+        // auto-categorising uncategorised products, so anything already
+        // categorised (the common case) stayed stuck on "pending" forever.
+        if (!p.normalised_at) {
+          try {
+            await normaliseAndPersist({ supabase, productId: pid });
+          } catch (e: any) {
+            results.errors.push({
+              productId: pid,
+              step: "normalise",
+              message: e?.message ?? "Normalisation failed",
+            });
+          }
         }
 
         // 1. QR + shell passport + image (generateForProduct handles all three)
@@ -741,7 +757,7 @@ export const listIncompleteDigitalIdentityIds = createServerFn({ method: "GET" }
     if (!retailerId) return { ids: [] as string[] };
     const { data: prods } = await supabase
       .from("products")
-      .select("id, gtin, image_status, qr_status")
+      .select("id, gtin, image_status, qr_status, normalised_at")
       .eq("retailer_id", retailerId)
       .eq("status", "active");
     const { data: passports } = await supabase
@@ -754,10 +770,11 @@ export const listIncompleteDigitalIdentityIds = createServerFn({ method: "GET" }
     for (const p of prods ?? []) {
       const gtin = String(p.gtin ?? "").trim();
       if (!gtin) continue; // can't complete without GTIN
+      const needsNormalise = !p.normalised_at;
       const needsImg = !p.image_status || p.image_status === "pending";
       const needsQr = p.qr_status !== "active";
       const needsEnrich = (enrichMap.get(p.id) ?? "pending") !== "complete";
-      if (needsImg || needsQr || needsEnrich) ids.push(p.id);
+      if (needsNormalise || needsImg || needsQr || needsEnrich) ids.push(p.id);
     }
     return { ids };
   });
