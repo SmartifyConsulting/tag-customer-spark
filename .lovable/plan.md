@@ -1,37 +1,58 @@
-Match the /auth page (and share the same header treatment on other marketing pages) to the two reference screenshots.
+Unify the header across /about (hero), /auth, and every marketing sub-page so the logo and nav don't shift between pages.
 
-## Reference reading
+## Target layout (all three page types)
 
-- **image-33** (`/auth`): Big Tag logo pinned top-left, nav pills immediately to its right on the same row, form card ("Welcome back") on the right. No "Start Setup" button in the header (the form itself is the CTA). Left column below the header shows the hero headline + supporting copy.
-- **image-34** (marketing sub-page): Same header layout — big top-left logo, nav pills, plus a black "Start Setup →" pill pushed to the far right.
+Three-column header row, top-aligned:
 
-Key layout facts from the references:
-- Logo is ~150–170px tall, flush top-left, not indented, not shifted down.
-- Nav pill row is vertically centered against the logo.
-- On `/auth`, the right column contains only the sign-in card (no extra header CTA).
-- On marketing sub-pages, header ends with the Start Setup button.
+```text
+[ Logo top-left ]      [ Nav pills — centered ]      [ Right slot ]
+```
 
-## Changes
+- **Logo**: fixed size across every page. Take the current Features logo (`h-[10rem] md:h-[11rem]`) and scale +20% → `h-[12rem] md:h-[13.2rem]`. Same size on `/about`, `/auth`, and every marketing sub-page.
+- **Nav pills**: centered in the header row on every page (not left-hugged), same pill styling.
+- **Vertical alignment**: header uses `items-start` so the top edge of the Tag logo lines up with the top edge of the nav pill buttons. No `mt-*` offsets on the logo.
+- **Right slot** varies by page:
+  - Marketing sub-pages (Features, How it Works, Intelligence Engine, Intent Gap Analytics, Pricing): "Start Setup →" button.
+  - `/about` hero: existing Sign in + Start Setup buttons.
+  - `/auth`: empty (no right-side CTA) — but the center column still holds the nav in the same absolute position.
 
-### 1. `src/components/auth-shell.tsx`
-- Remove the current `MarketingNav`-only header row and the in-column hero logo (`mt-[2cm] h-[11.52rem]`).
-- New header row (max-w-6xl, items-center, gap-8, py-5): `<img heroLogo class="h-[10rem] w-auto object-contain" />` + `<MarketingNav />` (no `showStartSetup`).
-- Two-column body below header stays: left column keeps the headline + paragraphs (no logo inside it anymore); right column keeps the form card.
-- Delete the mobile-only logo block inside the form column (logo now lives in the shared header, visible on all breakpoints).
-- Change grid alignment from `items-end` to `items-start` so the form card sits at the top of the right column, matching image-33.
+## Implementation
 
-### 2. `src/components/marketing-page.tsx` (`MarketingHeader`)
-- Bump logo size to match image-34: `h-[10rem] md:h-[11rem]` (currently `h-[6.4rem] md:h-[8rem]`).
-- Keep `MarketingNav showStartSetup` as-is.
-- Ensures the sub-pages (Features, How it Works, Intelligence Engine, Intent Gap Analytics, Pricing) match image-34.
+### 1. `src/components/marketing-nav.tsx`
+- Restructure to remove the current `flex-1 items-center gap-8` wrapper.
+- Return just the nav pill row (no wrapper, no Start Setup slot). Consumers decide where to place it and what right-side content to render.
+- Move the Start Setup button out of `MarketingNav` — it becomes a separate `<MarketingCtaButton />` export in the same file so page headers can drop it into the right slot when needed.
 
-### 3. `src/routes/about.tsx` (hero page header)
-- Current header has custom logo sizing (`mt-[4cm] mr-[3cm] h-[8.064rem] md:h-[10.368rem]`) plus its own Sign-in / Start Setup buttons.
-- Reset to the shared pattern: `mt-0 mr-0 h-[10rem] md:h-[11rem]`, drop the extra margins so the logo sits flush top-left like the references. Leave the Sign in / Start Setup buttons on this page (hero has its own CTAs, distinct from image-34's single Start Setup, but that's out of scope for this change unless you want it aligned too).
+### 2. New shared header primitive in `src/components/marketing-page.tsx` (`MarketingHeader`)
+Rewrite to a 3-column grid:
+
+```tsx
+<header className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-start gap-8 px-6 py-5">
+  <Link to="/about">
+    <img src={heroLogo} className="h-[12rem] md:h-[13.2rem] w-auto object-contain" />
+  </Link>
+  <div className="flex justify-center pt-4"><MarketingNav /></div>
+  <div className="flex items-start pt-4">{right}</div>
+</header>
+```
+
+- `pt-4` on the nav/right columns pushes the pill row down enough that the top of the pills sits roughly at the top of the Tag logo icon — matches "top of the tag aligned with top of the buttons".
+- Accept an optional `right?: ReactNode` prop; default = `<MarketingCtaButton />`.
+
+### 3. `src/components/auth-shell.tsx`
+- Replace the current header row with `<MarketingHeader right={null} />` so `/auth` uses the exact same logo size, nav position, and top alignment as every other page.
+- Rest of the two-column body (hero copy + form card) unchanged.
+
+### 4. `src/routes/about.tsx`
+- Replace the hand-rolled `<header>` with `<MarketingHeader right={<>Sign in / Start Setup buttons</>} />`, preserving the existing Sign in + Start Setup behaviour but inside the shared header shell.
+- Drop the custom `mt-[4cm] mr-[3cm]` / `h-[8.064rem] md:h-[10.368rem]` classes — logo now inherits the shared fixed size.
+
+## Result
+- Same logo size (`h-[12rem] md:h-[13.2rem]`) and same left position on hero, auth, and all sub-pages — no jump when navigating between them.
+- Nav pills always centered in the header row.
+- Logo top edge aligns with the top of the nav pill row.
+- Right slot swaps per page without affecting logo or nav position.
 
 ## Out of scope
-- No copy changes.
-- No changes to the form card, nav link list, or color tokens.
-- No mobile-nav restructuring beyond removing the now-duplicate mobile logo in `auth-shell`.
-
-Confirm and I'll apply.
+- No changes to nav link list, pill colors, or form card.
+- No changes to body content below the header.
