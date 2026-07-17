@@ -77,6 +77,20 @@ export function TaxonomyEngineTab() {
   const [name, setName] = useState("");
   const [levels, setLevels] = useState<Level[]>([]);
 
+  // Auto-select whichever profile is live (published, else default, else the
+  // first one) as soon as the list loads, so the taxonomy that was actually
+  // detected/applied on import shows up ready to edit instead of an empty
+  // "Select or create a profile" state the user has to click through.
+  useEffect(() => {
+    if (selectedId || profiles.length === 0) return;
+    const pick =
+      profiles.find((p: any) => p.is_published) ??
+      profiles.find((p: any) => p.is_default) ??
+      profiles[0];
+    if (pick) setSelectedId(pick.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profiles]);
+
   // Load selected profile
   const profileQ = useQuery({
     queryKey: ["taxonomy-profile", selectedId],

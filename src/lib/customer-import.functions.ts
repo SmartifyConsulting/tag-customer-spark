@@ -21,23 +21,50 @@ async function resolveRetailerId(supabase: any, userId: string) {
   return data?.retailer_id as string | null;
 }
 
-// Best-effort normalisation only — an ERP/CRM export's phone column can be
-// in almost any local format. We don't guess a country code; a number that
-// doesn't already look like international format (leading +) is rejected
-// rather than silently mis-tagged with the wrong country.
-function normalisePhone(raw: unknown): string | null {
+// Best-effort normalisation for a phone number that may already include a
+// country code, or may need one supplied separately (either from its own
+// "country code" column, e.g. "27", or a dial-code hint like "+27").
+// Handles the common ERP/POS export shapes:
+//   - already E.164: "+27821234567" -> unchanged
+//   - digits only, code included: "27821234567" -> "+27821234567"
+//   - local format + separate code column: "0821234567" + "27" -> "+27821234567"
+//     (leading 0 is the trunk prefix, dropped when a country code is supplied)
+function normalisePhone(raw: unknown, countryCodeHint?: unknown): string | null {
   const s = String(raw ?? "").trim();
   if (!s) return null;
-  const hasPlus = s.startsWith("+");
-  const digits = s.replace(/\D/g, "");
+  let digits = s.replace(/\D/g, "");
   if (!digits) return null;
-  const withPlus = hasPlus ? `+${digits}` : `+${digits}`;
-  return /^\+[1-9]\d{7,14}$/.test(withPlus) ? withPlus : null;
+
+  const hint = String(countryCodeHint ?? "").replace(/\D/g, "");
+
+  if (s.startsWith("+")) {
+    return /^\+[1-9]\d{7,14}$/.test(`+${digits}`) ? `+${digits}` : null;
+  }
+
+  if (hint) {
+    // Number already carries the same code it was exported with once
+    // (e.g. phone "0821234567", code "27") — strip the local trunk "0"
+    // and prepend the code, rather than concatenating a duplicate.
+    const local = digits.startsWith("0") ? digits.slice(1) : digits;
+    const combined = digits.startsWith(hint) ? digits : `${hint}${local}`;
+    return /^\+[1-9]\d{7,14}$/.test(`+${combined}`) ? `+${combined}` : null;
+  }
+
+  // No explicit country code anywhere. A number already 10+ digits is
+  // plausibly a full international number missing only its "+"; a shorter
+  // local number (e.g. "0821234567") is genuinely ambiguous without a
+  // country hint, so it's rejected rather than guessed.
+  if (digits.length >= 10) {
+    return /^\+[1-9]\d{7,14}$/.test(`+${digits}`) ? `+${digits}` : null;
+  }
+  return null;
 }
 
 function normaliseRow(r: any): CustomerImportRow | null {
-  const name = (r.full_name ?? "").toString().trim();
-  const phone = normalisePhone(r.phone);
+  const name =
+    (r.full_name ?? "").toString().trim() ||
+    [r.first_name, r.last_name].filter(Boolean).map((s: any) => String(s).trim()).join(" ").trim();
+  const phone = normalisePhone(r.phone, r.phone_country_code);
   if (!name || !phone) return null;
   const parsed = customerRowSchema.safeParse({
     full_name: name,
@@ -73,8 +100,13 @@ export const previewCustomerImport = createServerFn({ method: "POST" })
 
     const sample = rawRows.slice(0, 5);
     const mapping = await callAiJson(
-      `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {full_name, phone, email} to the best-matching source header (or null if absent). "phone" should match a mobile/cellphone/WhatsApp number column, not a landline.`,
-      "You map raw spreadsheet columns from a customer/CRM/ERP export to a canonical schema. Output only valid JSON.",
+      `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {full_name, first_name, last_name, phone, phone_country_code, email} to the best-matching source header (or null if absent).
+Rules:
+- If the sheet has one combined name column, map it to full_name.
+- If the sheet has separate first/last name columns instead, map those to first_name and last_name (leave full_name null) — do not skip the row for lacking a single full_name column.
+- "phone" should match a mobile/cellphone/WhatsApp number column, not a landline.
+- If country/dial code is a SEPARATE column from the phone number (e.g. a "27" or "+27" or "Country Code" column), map it to phone_country_code so it can be combined with the local number.`,
+      "You map raw spreadsheet columns from a customer/CRM/ERP export to a canonical schema, intelligently handling split name and phone/country-code columns rather than discarding rows that lack a single matching column. Output only valid JSON.",
     );
     const map: Record<string, string | null> = mapping?.map ?? {};
     const get = (row: Record<string, any>, k: string) =>
@@ -83,7 +115,10 @@ export const previewCustomerImport = createServerFn({ method: "POST" })
       .map((row) =>
         normaliseRow({
           full_name: get(row, "full_name"),
+          first_name: get(row, "first_name"),
+          last_name: get(row, "last_name"),
           phone: get(row, "phone"),
+          phone_country_code: get(row, "phone_country_code"),
           email: get(row, "email"),
         }),
       )

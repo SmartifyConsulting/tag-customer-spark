@@ -215,6 +215,14 @@ export const resolveBrandLogo = createServerFn({ method: "POST" })
 
 // ---------- Link products to brands ----------
 
+// Logo fetching (Clearbit, then AI image generation as a fallback) is slow
+// — each AI call can take several seconds, and a fresh import commonly
+// introduces a dozen-plus distinct brands in one go. Capping how many logos
+// a single call fetches keeps this from ever blocking a request for minutes
+// (this previously made the setup wizard's import step look permanently
+// hung, since commitProductImport awaited the whole thing synchronously).
+const LOGO_FETCH_BATCH = 5;
+
 // Plain function so other server-side flows (e.g. commitProductImport) can
 // call it directly without going through createServerFn's client-invocation
 // wrapper. The exported createServerFn below is a thin wrapper for the
@@ -222,6 +230,7 @@ export const resolveBrandLogo = createServerFn({ method: "POST" })
 export async function linkProductsToBrandsForRetailer(
   supabase: any,
   retailerId: string,
+  opts: { fetchLogos?: boolean } = {},
 ): Promise<{ linked: number; created: number; logos: number }> {
     const { data: prods } = await supabase
       .from("products")
@@ -274,23 +283,27 @@ export async function linkProductsToBrandsForRetailer(
     // brand with no known website — the common case straight after an
     // import, since imports never carry a brand website — still gets a
     // real logo instead of staying blank until someone visits Brand admin.
-    const missingLogo = [
-      ...newlyCreated,
-      ...(Array.from(bySlug.values())
-        .filter((b) => !b.logo_url)
-        .map((b) => {
-          const row = (brands ?? []).find((x: any) => x.id === b.id);
-          return row ? { id: row.id, name: row.name, website: row.website } : null;
-        })
-        .filter(Boolean) as { id: string; name: string; website: string | null }[]),
-    ];
-    const seen = new Set<string>();
+    // Bounded to LOGO_FETCH_BATCH per call (see comment above); callers that
+    // want more just call this again — e.g. the opportunistic backfill.
     let logos = 0;
-    for (const b of missingLogo) {
-      if (seen.has(b.id)) continue;
-      seen.add(b.id);
-      const url = await ensureBrandLogo(supabase, { id: b.id, name: b.name, website: b.website });
-      if (url) logos++;
+    if (opts.fetchLogos !== false) {
+      const missingLogo = [
+        ...newlyCreated,
+        ...(Array.from(bySlug.values())
+          .filter((b) => !b.logo_url)
+          .map((b) => {
+            const row = (brands ?? []).find((x: any) => x.id === b.id);
+            return row ? { id: row.id, name: row.name, website: row.website } : null;
+          })
+          .filter(Boolean) as { id: string; name: string; website: string | null }[]),
+      ].slice(0, LOGO_FETCH_BATCH);
+      const seen = new Set<string>();
+      for (const b of missingLogo) {
+        if (seen.has(b.id)) continue;
+        seen.add(b.id);
+        const url = await ensureBrandLogo(supabase, { id: b.id, name: b.name, website: b.website });
+        if (url) logos++;
+      }
     }
     return { linked, created, logos };
 }
@@ -302,6 +315,32 @@ export const linkProductsToBrands = createServerFn({ method: "POST" })
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer");
     return linkProductsToBrandsForRetailer(supabase, retailerId);
+  });
+
+// Silently fetches a small batch of missing brand logos — no UI trigger,
+// meant to be called opportunistically (e.g. on Brand admin load) so an
+// import's brands (created without logos, see fetchLogos: false above)
+// fill in gradually over a few page visits instead of needing the manual
+// "Auto-link & fetch logos" button. Mirrors backfillStaleProductImages'
+// pattern in product-images.functions.ts.
+export const backfillBrandLogos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) return { processed: 0, logos: 0 };
+    const { data: rows } = await supabase
+      .from("brands")
+      .select("id, name, website")
+      .eq("retailer_id", retailerId)
+      .is("logo_url", null)
+      .limit(LOGO_FETCH_BATCH);
+    let logos = 0;
+    for (const b of rows ?? []) {
+      const url = await ensureBrandLogo(supabase, { id: b.id, name: b.name, website: b.website });
+      if (url) logos++;
+    }
+    return { processed: (rows ?? []).length, logos };
   });
 
 // ---------- Merge brands (admin picks target + sources manually) ----------

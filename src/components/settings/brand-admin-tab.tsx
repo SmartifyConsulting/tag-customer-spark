@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -20,7 +20,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/empty-state";
-import { listBrands, upsertBrand, deleteBrand, linkProductsToBrands, mergeBrands } from "@/lib/brands.functions";
+import {
+  listBrands,
+  upsertBrand,
+  deleteBrand,
+  linkProductsToBrands,
+  mergeBrands,
+  backfillBrandLogos,
+} from "@/lib/brands.functions";
 import { listProducts } from "@/lib/products.functions";
 
 type Brand = {
@@ -34,6 +41,26 @@ export function BrandAdminTab() {
   const upsertFn = useServerFn(upsertBrand);
   const deleteFn = useServerFn(deleteBrand);
   const linkFn = useServerFn(linkProductsToBrands);
+  const backfillLogosFn = useServerFn(backfillBrandLogos);
+
+  // Silently retry a few missing brand logos each time this tab loads — a
+  // fresh import creates brands without logos (fetching them synchronously
+  // during import made the setup wizard hang), so this fills them in over a
+  // few visits instead. Same pattern as Admin > Inventory's image backfill.
+  const logoBackfillRan = useRef(false);
+  useEffect(() => {
+    if (logoBackfillRan.current) return;
+    logoBackfillRan.current = true;
+    (async () => {
+      for (let i = 0; i < 5; i++) {
+        const res = await backfillLogosFn().catch(() => null);
+        if (!res || res.processed === 0) break;
+        if (res.logos > 0) qc.invalidateQueries({ queryKey: ["brands"] });
+        if (res.processed < 5) break;
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [name, setName] = useState("");
   const [website, setWebsite] = useState("");

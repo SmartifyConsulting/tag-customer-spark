@@ -98,9 +98,33 @@ type Step =
   | "storeImporting"
   | "done";
 
+// Steps a person can land the Back button on — i.e. every real screen
+// they actively looked at. Ephemeral/auto-advancing steps (connecting,
+// *Importing) are excluded from the history push below, so Back always
+// lands on the last screen the person actually chose, not mid-animation.
+const EPHEMERAL_STEPS: Step[] = ["connecting", "importing", "customerImporting", "storeImporting"];
+const BACK_BUTTON_STEPS: Step[] = ["system", "file", "customerFile", "storeFile"];
+
 function SetupWizard() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("welcome");
+  const [history, setHistory] = useState<Step[]>([]);
+
+  // Wraps setStep so leaving a real (non-ephemeral) screen remembers it,
+  // enabling a real Back button instead of browser history hacks.
+  const goTo = (next: Step) => {
+    setHistory((h) => (EPHEMERAL_STEPS.includes(step) ? h : [...h, step]));
+    setStep(next);
+  };
+  const goBack = () => {
+    setHistory((h) => {
+      if (h.length === 0) return h;
+      const prev = h[h.length - 1];
+      setStep(prev);
+      return h.slice(0, -1);
+    });
+  };
+  const canGoBack = BACK_BUTTON_STEPS.includes(step) && history.length > 0;
   const [posSystem, setPosSystem] = useState<string | null>(null);
   const [connectingIdx, setConnectingIdx] = useState(0);
   const [file, setFile] = useState<File | null>(null);
@@ -150,7 +174,7 @@ function SetupWizard() {
         return;
       }
       setRows(res.rows);
-      setStep("importing");
+      goTo("importing");
     },
     onError: () => toast.error("That file didn't come through — please try another export."),
   });
@@ -168,7 +192,7 @@ function SetupWizard() {
         return;
       }
       setCustomerRows(res.rows);
-      setStep("customerImporting");
+      goTo("customerImporting");
     },
     onError: () => toast.error("That file didn't come through — please try another export."),
   });
@@ -186,7 +210,7 @@ function SetupWizard() {
         return;
       }
       setStoreRows(res.rows);
-      setStep("storeImporting");
+      goTo("storeImporting");
     },
     onError: () => toast.error("That file didn't come through — please try another export."),
   });
@@ -204,7 +228,7 @@ function SetupWizard() {
         setConnectingIdx(i + 1);
       }
       await sleep(500);
-      if (!cancelled) setStep("file");
+      if (!cancelled) goTo("file");
     })();
     return () => {
       cancelled = true;
@@ -267,7 +291,7 @@ function SetupWizard() {
         setImportLabel("All done — your products are ready.");
         setResult({ created, updated });
         await sleep(500);
-        if (!cancelled) setStep("customerFile");
+        if (!cancelled) goTo("customerFile");
       } catch {
         if (!cancelled)
           toast.error("We hit a snag getting your products ready — please try again.");
@@ -297,7 +321,7 @@ function SetupWizard() {
         setCustomerImportLabel("All done — your customers are ready.");
         setCustomerResult({ created: res.created, updated: res.updated });
         await sleep(500);
-        if (!cancelled) setStep("storeFile");
+        if (!cancelled) goTo("storeFile");
       } catch {
         if (!cancelled) toast.error("We hit a snag importing your customers — please try again.");
       }
@@ -323,10 +347,22 @@ function SetupWizard() {
         const res = await storeCommitFn({ data: { rows: storeRows } });
         if (cancelled) return;
         setStoreImportProgress(100);
+        const total = res.created + res.updated;
+        if (total === 0 && res.errors.length > 0) {
+          // Every row failed — surface it instead of quietly moving on
+          // (e.g. a schema column the file needs isn't deployed yet).
+          console.warn("Store import errors:", res.errors);
+          toast.error(
+            `None of your ${storeRows.length} stores could be saved — ${res.errors[0]}${res.errors.length > 1 ? ` (+${res.errors.length - 1} more)` : ""}`,
+          );
+        } else if (res.errors.length > 0) {
+          console.warn("Store import errors:", res.errors);
+          toast.warning(`${total} store${total === 1 ? "" : "s"} saved, ${res.errors.length} had issues.`);
+        }
         setStoreImportLabel("All done — your stores are ready.");
         setStoreResult({ created: res.created, updated: res.updated });
         await sleep(500);
-        if (!cancelled) setStep("done");
+        if (!cancelled) goTo("done");
       } catch {
         if (!cancelled) toast.error("We hit a snag importing your stores — please try again.");
       }
@@ -341,7 +377,7 @@ function SetupWizard() {
   const handlePickSystem = (system: string) => {
     setPosSystem(system);
     savePosFn({ data: { posSystem: system } }).catch(() => {});
-    setStep("connecting");
+    goTo("connecting");
   };
 
   const handleFile = (f: File) => {
@@ -370,7 +406,16 @@ function SetupWizard() {
           <img src={heroLogo.url} alt="Tag" className="h-[9.6rem] w-auto object-contain" />
         </div>
         <Card className="rounded-2xl border-border/60 p-8 shadow-sm">
-          {step === "welcome" && <WelcomeStep onNext={() => setStep("system")} />}
+          {canGoBack && (
+            <button
+              type="button"
+              onClick={goBack}
+              className="mb-4 inline-flex items-center text-xs text-muted-foreground hover:text-foreground"
+            >
+              ← Back
+            </button>
+          )}
+          {step === "welcome" && <WelcomeStep onNext={() => goTo("system")} />}
           {step === "system" && <SystemStep onPick={handlePickSystem} />}
           {step === "connecting" && <ConnectingStep activeIdx={connectingIdx} />}
           {step === "file" && (
@@ -389,7 +434,7 @@ function SetupWizard() {
               loading={customerPreview.isPending}
               posSystem={posSystem}
               onFile={handleCustomerFile}
-              onSkip={() => setStep("storeFile")}
+              onSkip={() => goTo("storeFile")}
             />
           )}
           {step === "customerImporting" && (
@@ -406,7 +451,7 @@ function SetupWizard() {
               loading={storePreview.isPending}
               posSystem={posSystem}
               onFile={handleStoreFile}
-              onSkip={() => setStep("done")}
+              onSkip={() => goTo("done")}
             />
           )}
           {step === "storeImporting" && (

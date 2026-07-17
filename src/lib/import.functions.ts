@@ -429,7 +429,14 @@ export const commitProductImport = createServerFn({ method: "POST" })
     let brandLogosFetched = 0;
     try {
       const { linkProductsToBrandsForRetailer } = await import("./brands.functions");
-      const brandRes = await linkProductsToBrandsForRetailer(supabase, retailerId);
+      // fetchLogos: false — logo fetching is slow (Clearbit + AI fallback
+      // per brand) and a fresh import can introduce a dozen-plus distinct
+      // brands at once; doing that synchronously here previously made the
+      // whole import request (and the setup wizard's progress bar) hang for
+      // minutes. Brand admin's opportunistic backfill picks up logos after.
+      const brandRes = await linkProductsToBrandsForRetailer(supabase, retailerId, {
+        fetchLogos: false,
+      });
       brandsCreated = brandRes.created;
       brandLogosFetched = brandRes.logos;
     } catch {

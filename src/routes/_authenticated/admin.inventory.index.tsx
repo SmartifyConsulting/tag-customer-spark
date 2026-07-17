@@ -4,17 +4,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
-  ArrowRight,
   Barcode,
   Check,
   Loader2,
   Package,
   Plus,
-  QrCode,
   Search,
   Tag as TagIcon,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -181,6 +180,7 @@ function InventoryAdminPage() {
   // always assigns missing barcodes first, then completes digital identity
   // for whatever still needs it.
   const [runningTagIntelligence, setRunningTagIntelligence] = useState(false);
+  const [tagRunStatus, setTagRunStatus] = useState<"idle" | "success" | "failed">("idle");
   const handleTagIntelligence = async () => {
     if (runningTagIntelligence) return;
     if (
@@ -203,6 +203,7 @@ function InventoryAdminPage() {
           : "";
 
       if (ids.length === 0) {
+        setTagRunStatus("success");
         toast.success(
           [barcodeText, "all products already have a complete digital identity"]
             .filter(Boolean)
@@ -228,6 +229,7 @@ function InventoryAdminPage() {
       }
       await qc.invalidateQueries();
       const errText = allErrors.length ? ` (${allErrors.length} issues)` : "";
+      setTagRunStatus(allErrors.length > 0 ? "failed" : "success");
       toast.success(
         [
           barcodeText,
@@ -238,6 +240,7 @@ function InventoryAdminPage() {
         { id: toastId },
       );
     } catch (e: any) {
+      setTagRunStatus("failed");
       toast.error(e?.message ?? "Tag intelligence run failed", { id: toastId });
     } finally {
       setRunningTagIntelligence(false);
@@ -295,34 +298,49 @@ function InventoryAdminPage() {
         description="Every uploaded product, tagged or not. The main Inventory screen only shows tagged items — review and tag the rest here."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {tagIntelligenceComplete && !runningTagIntelligence ? (
-              <button
-                type="button"
-                onClick={handleTagIntelligence}
-                title="Everything has a barcode, QR code and digital identity. Click to re-check."
-              >
-                <Badge className="gap-1.5 bg-emerald-600 px-3 py-1.5 text-sm text-white hover:bg-emerald-600">
-                  <Check className="h-3.5 w-3.5" /> Tag Intelligence complete
-                </Badge>
-              </button>
-            ) : (
-              <Button
-                variant="outline"
-                onClick={handleTagIntelligence}
-                disabled={runningTagIntelligence}
-              >
+            <button
+              type="button"
+              onClick={handleTagIntelligence}
+              disabled={runningTagIntelligence}
+              title="Click to (re-)run: assigns missing barcodes, then generates QR codes and digital identities."
+              className="flex min-w-[168px] items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-left hover:bg-muted/50 disabled:cursor-wait"
+            >
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-background">
                 {runningTagIntelligence ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                ) : tagRunStatus === "failed" ? (
+                  <X className="h-4 w-4 text-destructive" />
+                ) : tagIntelligenceComplete ? (
+                  <Check className="h-4 w-4 text-emerald-600" />
                 ) : (
-                  <span className="mr-2 inline-flex items-center gap-1">
-                    <Barcode className="h-4 w-4" />
-                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                    <QrCode className="h-4 w-4" />
-                  </span>
+                  <Barcode className="h-4 w-4 text-muted-foreground" />
                 )}
-                Tag Intelligence
-              </Button>
-            )}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Tag Intelligence
+                </span>
+                <span
+                  className={`block text-sm font-medium ${
+                    runningTagIntelligence
+                      ? "text-muted-foreground"
+                      : tagRunStatus === "failed"
+                        ? "text-destructive"
+                        : tagIntelligenceComplete
+                          ? "text-emerald-600"
+                          : "text-muted-foreground"
+                  }`}
+                >
+                  {runningTagIntelligence
+                    ? "Running…"
+                    : tagRunStatus === "failed"
+                      ? "Failed"
+                      : tagIntelligenceComplete
+                        ? "Successful"
+                        : "Incomplete"}
+                </span>
+              </span>
+            </button>
             <Button variant="outline" onClick={handleReenrichAll} disabled={reenriching}>
               {reenriching ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
