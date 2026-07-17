@@ -23,6 +23,7 @@ import { ProductsTable, type ProductRow } from "@/components/products/products-t
 import { ProductsPagination } from "@/components/products/products-pagination";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { BulkQrDialog } from "@/components/qr/bulk-qr-dialog";
+import { OnboardingTour } from "@/components/onboarding-tour";
 
 import {
   archiveProduct,
@@ -52,7 +53,7 @@ export const Route = createFileRoute("/_authenticated/products/")({
 function ProductsListPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/products" });
-  const { hasRole } = useAuth();
+  const { hasRole, user } = useAuth();
   const canManage = hasRole("super_admin") || hasRole("retail_admin") || hasRole("store_manager");
   const isSuperAdmin = hasRole("super_admin");
 
@@ -335,6 +336,25 @@ function ProductsListPage() {
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Working…
         </div>
       ) : null}
+
+      <OnboardingTour
+        userId={user?.id}
+        tourKey="inventory"
+        steps={[
+          {
+            title: "Welcome to Inventory",
+            body: "Every product you tag lives here — stock levels, pricing, and QR tags all in one place.",
+          },
+          {
+            title: "List or Browse",
+            body: "Switch to Browse to explore your catalogue the way customers do — by category, brand, and attribute.",
+          },
+          {
+            title: "Bulk QR tags",
+            body: "Select products with the checkboxes, then use Bulk QR PDF to print tags for a whole batch at once.",
+          },
+        ]}
+      />
     </div>
   );
 }

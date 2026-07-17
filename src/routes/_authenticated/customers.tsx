@@ -43,6 +43,8 @@ import {
 } from "@/lib/customers.functions";
 import { CustomerFormDialog } from "@/components/customers/customer-form-dialog";
 import { ImportCustomersDialog } from "@/components/customers/import-customers-dialog";
+import { OnboardingTour } from "@/components/onboarding-tour";
+import { useAuth } from "@/hooks/use-auth";
 import { formatMoney } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/customers")({
@@ -57,6 +59,7 @@ function money(c?: number | null) {
 const LETTERS = ["all", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""), "#"] as const;
 
 function CustomersPage() {
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [segment, setSegment] = useState<"all" | "registered" | "subscribed" | "vip" | "dormant">(
     "all",
@@ -308,6 +311,25 @@ function CustomersPage() {
           initial={editRow}
         />
       )}
+
+      <OnboardingTour
+        userId={user?.id}
+        tourKey="customers"
+        steps={[
+          {
+            title: "This is your Customers list",
+            body: "Shoppers who opted in to WhatsApp updates via your QR tags land here, with their scan and interest history.",
+          },
+          {
+            title: "Filter and search fast",
+            body: "Use the A–Z bar or the search box to jump straight to a customer, or filter by segment (subscribed, VIP, dormant).",
+          },
+          {
+            title: "Import your existing list",
+            body: "Already have a customer list elsewhere? Use Import to bring it in rather than adding people one by one.",
+          },
+        ]}
+      />
     </div>
   );
 }

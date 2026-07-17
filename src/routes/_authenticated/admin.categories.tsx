@@ -9,6 +9,7 @@ import { TaxonomyEngineTab } from "@/components/settings/taxonomy-engine-tab";
 import { AttributeAdminTab } from "@/components/settings/attribute-admin-tab";
 import { TaxonomyPreviewTab } from "@/components/settings/taxonomy-preview-tab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OnboardingTour } from "@/components/onboarding-tour";
 import { useAuth } from "@/hooks/use-auth";
 import { getActiveProfile } from "@/lib/taxonomy.functions";
 
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/admin/categories")({
 const FIXED_KEYS = new Set(["brand", "category", "subcategory", "department", "product"]);
 
 function TaxonomyAdminPage() {
-  const { hasRole, loading: authLoading } = useAuth();
+  const { hasRole, loading: authLoading, user } = useAuth();
   const canManage =
     hasRole("super_admin") || hasRole("retail_admin") || hasRole("store_manager");
 
@@ -78,6 +79,25 @@ function TaxonomyAdminPage() {
           <TaxonomyPreviewTab />
         </TabsContent>
       </Tabs>
+
+      <OnboardingTour
+        userId={user?.id}
+        tourKey="taxonomy"
+        steps={[
+          {
+            title: "This is your Taxonomy",
+            body: "The Taxonomy Engine defines the category hierarchy customers browse by — Brands and Categories are the source attributes that feed it.",
+          },
+          {
+            title: "Brand and Category tabs",
+            body: "Manage, merge, and reorganise your brand and category lists here — changes apply across your whole catalogue.",
+          },
+          {
+            title: "Preview before you publish",
+            body: "Use the Preview tab to see exactly how your taxonomy will look to shoppers before you commit to changes.",
+          },
+        ]}
+      />
     </div>
   );
 }
