@@ -351,20 +351,7 @@ async function generateAiImage(input: ResolveInput): Promise<Uint8Array | null> 
 // when no result looks like a usable https image URL — the pipeline then
 // falls through to AI / brand logo / placeholder.
 
-async function lookupSerperImage(input: {
-  gtin: string | null;
-  name: string;
-  brand: string | null;
-}): Promise<string | null> {
-  const apiKey = process.env.SERPER_API_KEY;
-  if (!apiKey) return null;
-
-  const cleanGtin = input.gtin?.replace(/\D/g, "") ?? "";
-  const query = cleanGtin
-    ? `"${cleanGtin}"`
-    : [input.brand, input.name].filter(Boolean).join(" ").trim();
-  if (!query || query.length < 3) return null;
-
+async function serperImageSearch(apiKey: string, query: string): Promise<string | null> {
   try {
     const res = await fetch("https://google.serper.dev/images", {
       method: "POST",
@@ -397,6 +384,32 @@ async function lookupSerperImage(input: {
     console.warn("[serper] fetch failed", e?.message ?? e);
     return null;
   }
+}
+
+async function lookupSerperImage(input: {
+  gtin: string | null;
+  name: string;
+  brand: string | null;
+}): Promise<string | null> {
+  const apiKey = process.env.SERPER_API_KEY;
+  if (!apiKey) return null;
+
+  const nameQuery = [input.brand, input.name].filter(Boolean).join(" ").trim();
+  const cleanGtin = input.gtin?.replace(/\D/g, "") ?? "";
+
+  // A barcode is only useful to search if a real manufacturer actually
+  // registered it online — many demo/import GTINs are synthetic and will
+  // never match, so always fall back to a brand+name search rather than
+  // giving up (this previously left barcoded products stuck on placeholder
+  // forever, even across repeated backfill attempts).
+  if (cleanGtin) {
+    const byGtin = await serperImageSearch(apiKey, `"${cleanGtin}"`);
+    if (byGtin) return byGtin;
+  }
+  if (nameQuery.length >= 3) {
+    return serperImageSearch(apiKey, nameQuery);
+  }
+  return null;
 }
 
 // ----- Open Food Facts lookup with GTIN normalisations + search fallback --
