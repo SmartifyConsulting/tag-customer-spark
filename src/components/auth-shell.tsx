@@ -14,8 +14,19 @@ export function AuthShell({
   footer?: ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-muted/40 px-4 py-10 lg:px-10">
-      <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-6xl items-center gap-10 lg:grid-cols-[1fr_1fr]">
+    <div className="min-h-screen bg-white px-4 py-6 lg:px-10">
+      <nav className="mx-auto flex max-w-6xl items-center justify-end gap-8 py-4 text-sm font-bold text-muted-foreground">
+        <Link to="/about" hash="features" className="hover:text-foreground">
+          Features
+        </Link>
+        <Link to="/about" hash="how" className="hover:text-foreground">
+          How it works
+        </Link>
+        <Link to="/about" hash="intelligence" className="hover:text-foreground">
+          Intelligence
+        </Link>
+      </nav>
+      <div className="mx-auto grid min-h-[calc(100vh-8rem)] max-w-6xl items-center gap-10 lg:grid-cols-[1fr_1fr]">
         {/* Hero panel — hidden on small screens to keep the form the focus */}
         <div className="hidden lg:block">
           <img src={heroLogo.url} alt="Tag" className="h-48 w-auto object-contain" />
@@ -34,14 +45,6 @@ export function AuthShell({
         <div className="mx-auto w-full max-w-md space-y-4">
           <div className="flex justify-center lg:hidden">
             <img src={heroLogo.url} alt="Tag" className="h-32 w-auto object-contain" />
-          </div>
-          <div className="flex justify-end">
-            <Link
-              to="/about"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground hover:underline"
-            >
-              About Tag
-            </Link>
           </div>
           <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
             <div className="mb-6 space-y-1 text-center">
