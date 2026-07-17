@@ -3396,6 +3396,7 @@ export type Database = {
           p_country_name?: string
           p_currency?: string
           p_name?: string
+          p_user_id?: string
         }
         Returns: string
       }
