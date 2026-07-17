@@ -34,7 +34,7 @@ import {
   type StoreImportRow,
 } from "@/lib/stores-import.functions";
 import { saveRetailerPosSystem } from "@/lib/settings.functions";
-import heroLogo from "@/assets/tag-logo-clear.png.asset.json";
+import heroLogo from "@/assets/GreenTag.png.asset.png";
 
 export const Route = createFileRoute("/setup")({
   ssr: false,
@@ -428,7 +428,7 @@ function SetupWizard() {
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-10">
       <div className="w-full max-w-lg space-y-6">
         <div className="flex justify-center">
-          <img src={heroLogo.url} alt="Tag" className="h-[9.6rem] w-auto object-contain" />
+          <img src={heroLogo} alt="Tag" className="h-[9.6rem] w-auto object-contain" />
         </div>
         <Card className="rounded-2xl border-border/60 p-8 shadow-sm">
           {canGoBack && (

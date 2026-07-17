@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MarketingNav } from "@/components/marketing-nav";
-import heroLogo from "@/assets/tag-logo-clear.png.asset.json";
+import heroLogo from "@/assets/GreenTag.png.asset.png";
 
 // Shared chrome for every "sub" marketing page (Features, How it Works,
 // Intelligence Engine, Intent Gap Analytics, Pricing) — logo + the same flat
@@ -13,7 +13,7 @@ export function MarketingHeader() {
   return (
     <header className="mx-auto flex max-w-7xl items-center gap-10 px-6 py-5">
       <Link to="/about">
-        <img src={heroLogo.url} alt="Tag" className="h-[6.4rem] w-auto object-contain md:h-[8rem]" />
+        <img src={heroLogo} alt="Tag" className="h-[6.4rem] w-auto object-contain md:h-[8rem]" />
       </Link>
       <MarketingNav showStartSetup />
     </header>

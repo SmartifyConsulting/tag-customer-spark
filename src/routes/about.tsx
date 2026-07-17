@@ -9,7 +9,7 @@ import { CreateAccountCard } from "@/components/create-account-card";
 
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
-import heroLogo from "@/assets/tag-logo-clear.png.asset.json";
+import heroLogo from "@/assets/GreenTag.png.asset.png";
 
 export const Route = createFileRoute("/about")({
   ssr: false,
@@ -48,7 +48,7 @@ function Landing() {
         >
           <ArrowLeft className="h-4 w-4" /> Back to Tag
         </button>
-        <img src={heroLogo.url} alt="Tag" className="h-24 w-auto object-contain" />
+        <img src={heroLogo} alt="Tag" className="h-24 w-auto object-contain" />
         <div className="mt-8 w-full max-w-md">
           <AuthCardFrame
             title="Create your Tag account"
@@ -66,7 +66,7 @@ function Landing() {
       {/* Nav */}
       <header className="mx-auto flex max-w-7xl items-center px-6 py-5">
         <img
-          src={heroLogo.url}
+          src={heroLogo}
           alt="Tag"
           className="mt-[2cm] mr-[3cm] h-[13.44rem] w-auto object-contain md:h-[17.28rem]"
         />

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { MarketingNav } from "@/components/marketing-nav";
-import heroLogo from "@/assets/tag-logo-clear.png.asset.json";
+import heroLogo from "@/assets/GreenTag.png.asset.png";
 
 export function AuthShell({
   title,
@@ -21,7 +21,7 @@ export function AuthShell({
       <div className="mx-auto grid max-w-6xl items-end gap-10 lg:grid-cols-[1fr_1fr]">
         {/* Hero panel — hidden on small screens to keep the form the focus */}
         <div className="hidden lg:block">
-          <img src={heroLogo.url} alt="Tag" className="h-[19.2rem] w-auto object-contain" />
+          <img src={heroLogo} alt="Tag" className="h-[19.2rem] w-auto object-contain" />
           <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight text-foreground xl:text-5xl">
             Your customers are interested—your products just don't know it yet.
           </h1>
@@ -36,7 +36,7 @@ export function AuthShell({
         {/* Form column */}
         <div className="mx-auto w-full max-w-md space-y-4">
           <div className="flex justify-center lg:hidden">
-            <img src={heroLogo.url} alt="Tag" className="h-[12.8rem] w-auto object-contain" />
+            <img src={heroLogo} alt="Tag" className="h-[12.8rem] w-auto object-contain" />
           </div>
           <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
             <div className="mb-6 space-y-1 text-center">

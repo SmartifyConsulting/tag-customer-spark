@@ -1,5 +1,4 @@
-import iconAsset from "@/assets/tag-logo-clear.png.asset.json";
-import wordmarkAsset from "@/assets/tag-logo-clear.png.asset.json";
+import tagLogo from "@/assets/GreenTag.png.asset.png";
 
 export function TagLogo({
   className,
@@ -24,7 +23,7 @@ export function TagLogo({
     return (
       <div className={`flex items-center justify-center ${className ?? ""}`}>
         <img
-          src={wordmarkAsset.url}
+          src={tagLogo}
           alt="Tag"
           className={`${h} w-auto object-contain`}
         />
@@ -37,7 +36,7 @@ export function TagLogo({
   return (
     <div className={`flex items-center justify-center ${className ?? ""}`}>
       <img
-        src={iconAsset.url}
+        src={tagLogo}
         alt="Tag"
         className={`${dim} object-contain`}
       />
