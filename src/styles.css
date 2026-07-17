@@ -64,9 +64,9 @@
 :root {
   --radius: 0.9rem;
 
-  /* Tag — Cream + Ink base, orange & crimson as decorative accents */
-  --background: oklch(0.955 0.012 82);           /* Cream #F5F1EA */
-  --foreground: oklch(0.16 0.005 60);            /* Ink #0d0d0d */
+  /* Tag — Black + White base, WhatsApp green as the single accent */
+  --background: oklch(1 0 0);                    /* White */
+  --foreground: oklch(0.16 0.005 60);             /* Ink #0d0d0d */
 
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.16 0.005 60);
@@ -74,48 +74,48 @@
   --popover-foreground: oklch(0.16 0.005 60);
 
   --primary: oklch(0.16 0.005 60);               /* Ink black */
-  --primary-foreground: oklch(0.955 0.012 82);   /* Cream */
+  --primary-foreground: oklch(1 0 0);            /* White */
 
-  --secondary: oklch(0.93 0.014 82);
+  --secondary: oklch(0.96 0 0);                  /* Neutral light grey */
   --secondary-foreground: oklch(0.16 0.005 60);
 
-  --muted: oklch(0.93 0.014 82);
-  --muted-foreground: oklch(0.44 0.02 60);
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.46 0 0);
 
-  --accent: oklch(0.65 0.14 55);                 /* Orange #d4842a — decorative */
-  --accent-foreground: oklch(0.99 0 0);
+  --accent: #25D366;                             /* WhatsApp green */
+  --accent-foreground: oklch(1 0 0);
 
-  --destructive: oklch(0.45 0.14 40);            /* Crimson #9b4423 — third accent + destructive */
+  --destructive: oklch(0.45 0.14 40);            /* Crimson — errors only */
   --destructive-foreground: oklch(0.99 0 0);
 
-  --success: oklch(0.72 0.14 78);                /* Warm gold (positive, no green) */
-  --success-foreground: oklch(0.20 0.03 60);
+  --success: #25D366;                            /* WhatsApp green */
+  --success-foreground: oklch(1 0 0);
 
-  --mint: oklch(0.72 0.14 78);                   /* Alias — warm gold, no green */
-  --mint-foreground: oklch(0.20 0.03 60);
+  --mint: #25D366;                               /* Alias — WhatsApp green */
+  --mint-foreground: oklch(1 0 0);
 
   --warning: oklch(0.80 0.14 78);                /* Amber #e8b84a */
   --warning-foreground: oklch(0.20 0.03 60);
 
-  --border: oklch(0.88 0.014 80);                /* Warm off-white #e8e4dd */
-  --input: oklch(0.88 0.014 80);
+  --border: oklch(0.90 0 0);                     /* Neutral light grey */
+  --input: oklch(0.90 0 0);
   --ring: oklch(0.16 0.005 60);
 
-  --chart-1: oklch(0.16 0.005 60);               /* Ink */
-  --chart-2: oklch(0.65 0.14 55);                /* Orange */
+  --chart-1: oklch(0.16 0.005 60);               /* Black */
+  --chart-2: #25D366;                            /* WhatsApp green */
   --chart-3: oklch(0.45 0.14 40);                /* Crimson */
   --chart-4: oklch(0.80 0.14 78);                /* Amber */
-  --chart-5: oklch(0.72 0.14 78);                /* Gold (no emerald) */
+  --chart-5: oklch(0.60 0 0);                    /* Neutral grey */
 
 
-  /* Sidebar — cream surface, black-on-cream active pill */
-  --sidebar: oklch(0.955 0.012 82);              /* Cream */
+  /* Sidebar — white surface, black active pill */
+  --sidebar: oklch(1 0 0);                       /* White */
   --sidebar-foreground: oklch(0.16 0.005 60);    /* Ink */
   --sidebar-primary: oklch(0.16 0.005 60);       /* Ink pill */
-  --sidebar-primary-foreground: oklch(0.955 0.012 82);
+  --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.16 0.005 60);        /* Ink selection */
-  --sidebar-accent-foreground: oklch(0.955 0.012 82);
-  --sidebar-border: oklch(0.88 0.014 80);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(0.90 0 0);
   --sidebar-ring: oklch(0.16 0.005 60);
 }
 
