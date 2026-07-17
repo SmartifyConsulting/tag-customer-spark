@@ -18,7 +18,7 @@ export function AuthShell({
       <div className="mx-auto flex max-w-6xl items-center py-4">
         <MarketingNav />
       </div>
-      <div className="mx-auto grid min-h-[calc(100vh-8rem)] max-w-6xl items-end gap-10 lg:grid-cols-[1fr_1fr]">
+      <div className="mx-auto grid max-w-6xl items-end gap-10 lg:grid-cols-[1fr_1fr]">
         {/* Hero panel — hidden on small screens to keep the form the focus */}
         <div className="hidden lg:block">
           <img src={heroLogo.url} alt="Tag" className="h-48 w-auto object-contain" />
