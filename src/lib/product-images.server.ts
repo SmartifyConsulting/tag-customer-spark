@@ -201,6 +201,22 @@ export async function resolveProductImage(input: ResolveInput): Promise<ResolveO
     }
   }
 
+  // 2b) Serper Google Images lookup — real product photos from the web.
+  {
+    const serperUrl = await lookupSerperImage({
+      gtin: input.gtin,
+      name: input.name,
+      brand: input.brand,
+    });
+    if (serperUrl) {
+      const dest = bucketPath(input.retailerId, input.gtin, input.productId, `original.jpg`);
+      const r = await downloadAndUpload(supabaseAdmin, serperUrl, dest);
+      if (r.ok) {
+        return finalize({ primary: r.url, status: "official", source: "serper" });
+      }
+    }
+  }
+
   // 3) AI suggested — gated to Growth+ plan, and only for products with no
   // GTIN. A barcode means real, manufacturer-designed packaging exists —
   // an AI image (deliberately generated without text/logo, since we can't
