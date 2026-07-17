@@ -95,6 +95,7 @@ export function ImportProductsDialog({
       const errors: string[] = [];
       let taxonomyApplied = false;
       let taxonomyName: string | null = null;
+      let storesCreated = 0;
 
       setProgress(2);
       for (let i = 0; i < rows.length; i += IMPORT_CHUNK) {
@@ -110,11 +111,13 @@ export function ImportProductsDialog({
           taxonomyApplied = true;
           taxonomyName = res.taxonomyProfileName ?? null;
         }
+        storesCreated += res.storesCreated ?? 0;
         setProgress(2 + Math.round((done / rows.length) * 43));
       }
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["admin-inventory"] });
       if (taxonomyApplied) qc.invalidateQueries({ queryKey: ["taxonomy-active"] });
+      if (storesCreated > 0) qc.invalidateQueries({ queryKey: ["stores"] });
 
       setProgress(50);
       setLabel("Assigning missing barcodes…");
@@ -145,6 +148,11 @@ export function ImportProductsDialog({
       );
       if (taxonomyApplied && taxonomyName) {
         toast.success(`Detected "${taxonomyName}" taxonomy — set up automatically.`);
+      }
+      if (storesCreated > 0) {
+        toast.success(
+          `${storesCreated} store${storesCreated === 1 ? "" : "s"} added from the import — check Stores.`,
+        );
       }
       if (errors.length) console.warn("Import errors:", errors);
 
