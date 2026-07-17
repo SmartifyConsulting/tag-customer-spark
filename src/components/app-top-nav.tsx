@@ -36,8 +36,8 @@ export function AppTopNav() {
             key={item.url}
             {...(linkProps as any)}
             className={[
-              "flex items-center gap-1.5 text-base font-bold transition-colors hover:text-[color:var(--mint)]",
-              active && !locked ? "text-[color:var(--mint)]" : "text-foreground",
+              "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-base font-bold transition-colors hover:bg-[color:var(--mint)] hover:text-white",
+              active && !locked ? "bg-[color:var(--mint)] text-white" : "text-foreground",
             ].join(" ")}
           >
             {item.title}
@@ -62,8 +62,8 @@ function AdminGroup({
     <DropdownMenu>
       <DropdownMenuTrigger
         className={[
-          "flex items-center gap-1 text-base font-bold outline-none transition-colors hover:text-[color:var(--mint)]",
-          active ? "text-[color:var(--mint)]" : "text-foreground",
+          "flex items-center gap-1 rounded-full px-3 py-1.5 text-base font-bold outline-none transition-colors hover:bg-[color:var(--mint)] hover:text-white",
+          active ? "bg-[color:var(--mint)] text-white" : "text-foreground",
         ].join(" ")}
       >
         {item.title}

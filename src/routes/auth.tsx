@@ -248,95 +248,106 @@ function AuthPage() {
               onChange={(e) => setSuName(e.target.value)}
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="su-email">Email</Label>
-            <Input
-              id="su-email"
-              type="email"
-              autoComplete="email"
-              required
-              value={suEmail}
-              onChange={(e) => setSuEmail(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="su-company">Company</Label>
-            <Input
-              id="su-company"
-              type="text"
-              autoComplete="organization"
-              placeholder="e.g. Cape Union Mart"
-              value={suCompany}
-              onChange={(e) => setSuCompany(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              If you were invited to an existing workspace, this is ignored — you'll join that one
-              instead.
+          <div className="space-y-4 border-t border-border/60 pt-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Company Information
             </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="su-branch">Branch name</Label>
+              <Label htmlFor="su-company">Company</Label>
               <Input
-                id="su-branch"
+                id="su-company"
                 type="text"
-                placeholder="e.g. Sandton City"
-                value={suBranchName}
-                onChange={(e) => setSuBranchName(e.target.value)}
+                autoComplete="organization"
+                placeholder="e.g. Cape Union Mart"
+                value={suCompany}
+                onChange={(e) => setSuCompany(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                If you were invited to an existing workspace, this is ignored — you'll join that
+                one instead.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="su-website">Company website (optional)</Label>
+              <Input
+                id="su-website"
+                type="text"
+                autoComplete="url"
+                placeholder="e.g. capeunionmart.co.za"
+                value={suWebsite}
+                onChange={(e) => setSuWebsite(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                We'll pick up your logo from here automatically — you can replace it later in
+                Settings.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="su-branch">Branch name</Label>
+                <Input
+                  id="su-branch"
+                  type="text"
+                  placeholder="e.g. Sandton City"
+                  value={suBranchName}
+                  onChange={(e) => setSuBranchName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="su-province">Province / State</Label>
+                <Input
+                  id="su-province"
+                  type="text"
+                  placeholder="e.g. Gauteng"
+                  value={suProvince}
+                  onChange={(e) => setSuProvince(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="su-country">Country</Label>
+              <Select value={suCountry} onValueChange={setSuCountry}>
+                <SelectTrigger id="su-country">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SIGNUP_COUNTRIES.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
+                      {c.name} ({c.currency})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-4 border-t border-border/60 pt-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Login Credentials
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="su-email">Email</Label>
+              <Input
+                id="su-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={suEmail}
+                onChange={(e) => setSuEmail(e.target.value)}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="su-province">Province / State</Label>
-              <Input
-                id="su-province"
-                type="text"
-                placeholder="e.g. Gauteng"
-                value={suProvince}
-                onChange={(e) => setSuProvince(e.target.value)}
+              <Label htmlFor="su-password">Password</Label>
+              <PasswordInput
+                id="su-password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                value={suPassword}
+                onChange={(e) => setSuPassword(e.target.value)}
               />
+              <p className="text-xs text-muted-foreground">At least 8 characters.</p>
             </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="su-country">Country</Label>
-            <Select value={suCountry} onValueChange={setSuCountry}>
-              <SelectTrigger id="su-country">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SIGNUP_COUNTRIES.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.name} ({c.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="su-website">Company website (optional)</Label>
-            <Input
-              id="su-website"
-              type="text"
-              autoComplete="url"
-              placeholder="e.g. capeunionmart.co.za"
-              value={suWebsite}
-              onChange={(e) => setSuWebsite(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              We'll pick up your logo from here automatically — you can replace it later in
-              Settings.
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="su-password">Password</Label>
-            <PasswordInput
-              id="su-password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              value={suPassword}
-              onChange={(e) => setSuPassword(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">At least 8 characters.</p>
           </div>
           {inlineError && (
             <p className="text-sm text-destructive" aria-live="polite">
