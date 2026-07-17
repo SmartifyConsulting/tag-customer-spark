@@ -2,8 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { MarketingNav } from "@/components/marketing-nav";
-import { MarketingFooter } from "@/components/marketing-page";
+import { MarketingFooter, MarketingHeader } from "@/components/marketing-page";
+
 import { AuthCardFrame } from "@/components/auth-card-frame";
 import { CreateAccountCard } from "@/components/create-account-card";
 
