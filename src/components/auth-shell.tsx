@@ -21,7 +21,7 @@ export function AuthShell({
       <div className="mx-auto grid max-w-6xl items-end gap-10 lg:grid-cols-[1fr_1fr]">
         {/* Hero panel — hidden on small screens to keep the form the focus */}
         <div className="hidden lg:block">
-          <img src={heroLogo} alt="Tag" className="h-[19.2rem] w-auto object-contain" />
+          <img src={heroLogo} alt="Tag" className="mt-[2cm] h-[11.52rem] w-auto object-contain" />
           <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight text-foreground xl:text-5xl">
             Your customers are interested—your products just don't know it yet.
           </h1>
