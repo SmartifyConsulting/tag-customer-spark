@@ -748,6 +748,83 @@ export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
     return results;
   });
 
+// Same as bulkCompleteDigitalIdentity's normalise+QR+image steps, without
+// the passport-enrichment step — used by the setup wizard so "Converting to
+// QR codes" and "Enhancing intelligence" can be shown as distinct phases
+// with their own progress bar instead of one opaque combined step.
+export const bulkGenerateQrAndImages = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ productIds: z.array(z.string().uuid()).min(1).max(50) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { generateForProduct, isValidGtin } = await import("./qr.functions");
+    const { resolveAndSyncProductImage } = await import("./product-images.server");
+    const { normaliseAndPersist } = await import("./normalisation.functions");
+
+    const results = {
+      succeeded: 0,
+      skipped: 0,
+      errors: [] as Array<{ productId: string; step: string; message: string }>,
+    };
+
+    const runOne = async (pid: string) => {
+      try {
+        const { data: p } = await supabase
+          .from("products")
+          .select("id, gtin, normalised_at")
+          .eq("id", pid)
+          .maybeSingle();
+        if (!p) {
+          results.skipped++;
+          return;
+        }
+        const gtin = String(p.gtin ?? "").trim();
+        if (!gtin || !isValidGtin(gtin)) {
+          results.skipped++;
+          results.errors.push({ productId: pid, step: "gtin", message: "Missing or invalid GTIN" });
+          return;
+        }
+
+        if (!p.normalised_at) {
+          try {
+            await normaliseAndPersist({ supabase, productId: pid });
+          } catch (e: any) {
+            results.errors.push({
+              productId: pid,
+              step: "normalise",
+              message: e?.message ?? "Normalisation failed",
+            });
+          }
+        }
+
+        try {
+          await generateForProduct(supabase, userId, pid, false);
+        } catch (e: any) {
+          results.errors.push({ productId: pid, step: "qr", message: e?.message ?? "QR failed" });
+        }
+
+        try {
+          await resolveAndSyncProductImage({ supabase, productId: pid });
+        } catch (e: any) {
+          results.errors.push({ productId: pid, step: "image", message: e?.message ?? "Image failed" });
+        }
+
+        results.succeeded++;
+      } catch (e: any) {
+        results.errors.push({ productId: pid, step: "unknown", message: e?.message ?? "Failed" });
+      }
+    };
+
+    const BATCH = 4;
+    for (let i = 0; i < data.productIds.length; i += BATCH) {
+      const chunk = data.productIds.slice(i, i + BATCH);
+      await Promise.all(chunk.map(runOne));
+    }
+    return results;
+  });
+
 // Returns the caller's incomplete product IDs (missing QR, image, or enrichment).
 export const listIncompleteDigitalIdentityIds = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

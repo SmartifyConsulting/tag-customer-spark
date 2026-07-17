@@ -210,9 +210,6 @@ export const commitProductImport = createServerFn({ method: "POST" })
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer assigned");
 
-    const { generateForProduct } = await import("./qr.functions");
-    const { resolveAndSyncProductImage } = await import("./product-images.server");
-
     // Preload categories
     const { data: cats } = await supabase
       .from("product_categories")
@@ -389,24 +386,15 @@ export const commitProductImport = createServerFn({ method: "POST" })
           created++;
         }
 
-        // Resolve product image first so the shell passport can seed hero_image.
-        try {
-          await resolveAndSyncProductImage({ supabase, productId });
-        } catch (imgErr: any) {
-          errors.push(`${row.sku}: image resolve failed — ${imgErr?.message ?? "unknown"}`);
-        }
-
-        // Generate GS1 QR — this also seeds a published shell passport and
-        // enqueues enrichment. Skip cleanly when the barcode is missing or
-        // invalid; the product row is still saved so the retailer can fix it.
-        if (row.gtin) {
-          try {
-            await generateForProduct(supabase, userId, productId, false);
-          } catch (qrErr: any) {
-            errors.push(`${row.sku}: ${qrErr?.message ?? "QR generation failed"}`);
-          }
-        } else {
-          errors.push(`${row.sku}: Invalid Barcode — no QR generated.`);
+        // Image resolution and QR generation deliberately do NOT happen here
+        // — each is a real network/AI-bound cost per product (Open Food
+        // Facts + Serper lookups, QR render, storage uploads), and running
+        // them inline for every row made this request take minutes for a
+        // full import, appearing to hang since the progress bar only moves
+        // once per chunk. Callers run them as a separate phase afterwards
+        // (see bulkGenerateQrAndImages) so progress stays visible.
+        if (!row.gtin) {
+          errors.push(`${row.sku}: Invalid Barcode — no QR will be generated.`);
         }
       } catch (e: any) {
         failed++;

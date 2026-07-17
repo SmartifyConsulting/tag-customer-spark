@@ -18,9 +18,10 @@ import {
 } from "@/components/ui/command";
 import { previewProductImport, commitProductImport, type ImportRow } from "@/lib/import.functions";
 import {
-  bulkCompleteDigitalIdentity,
+  bulkGenerateQrAndImages,
   listIncompleteDigitalIdentityIds,
 } from "@/lib/products.functions";
+import { bulkReenrichPassports } from "@/lib/passport.functions";
 import { assignMissingBarcodes } from "@/lib/barcode-assign.functions";
 import {
   previewCustomerImport,
@@ -155,7 +156,8 @@ function SetupWizard() {
   const commitFn = useServerFn(commitProductImport);
   const assignBarcodesFn = useServerFn(assignMissingBarcodes);
   const listIncompleteFn = useServerFn(listIncompleteDigitalIdentityIds);
-  const bulkCompleteFn = useServerFn(bulkCompleteDigitalIdentity);
+  const bulkQrImagesFn = useServerFn(bulkGenerateQrAndImages);
+  const bulkEnrichFn = useServerFn(bulkReenrichPassports);
   const customerPreviewFn = useServerFn(previewCustomerImport);
   const customerCommitFn = useServerFn(commitCustomerImport);
   const storePreviewFn = useServerFn(previewStoreImport);
@@ -244,44 +246,67 @@ function SetupWizard() {
     if (step !== "importing" || rows.length === 0) return;
     let cancelled = false;
 
+    // Four honest, distinct phases instead of one opaque "importing" step —
+    // each does genuinely different (and separately network/AI-bound) work,
+    // so labelling them separately both tells the truth about what's
+    // happening and gives the progress bar something to visibly move on
+    // every few products instead of appearing frozen for minutes on a
+    // single big request.
     (async () => {
       try {
         let created = 0;
         let updated = 0;
-        const IMPORT_CHUNK = 25;
+        const DESC_CHUNK = 5;
         setImportProgress(2);
-        for (let i = 0; i < rows.length; i += IMPORT_CHUNK) {
+        for (let i = 0; i < rows.length; i += DESC_CHUNK) {
           if (cancelled) return;
-          const chunk = rows.slice(i, i + IMPORT_CHUNK);
+          const chunk = rows.slice(i, i + DESC_CHUNK);
           const done = Math.min(i + chunk.length, rows.length);
-          setImportLabel(`Importing products… ${done} / ${rows.length}`);
+          setImportLabel(`Importing product descriptions… ${done} / ${rows.length}`);
           const res = await commitFn({ data: { rows: chunk } });
           created += res.created;
           updated += res.updated;
-          setImportProgress(2 + Math.round((done / rows.length) * 33));
+          setImportProgress(2 + Math.round((done / rows.length) * 20));
         }
         if (cancelled) return;
-        setImportProgress(35);
+        setImportProgress(22);
 
-        setImportLabel("Assigning missing barcodes…");
+        setImportLabel("Importing barcodes…");
         await assignBarcodesFn();
         if (cancelled) return;
-        setImportProgress(45);
+        setImportProgress(30);
 
-        setImportLabel("Finding products that still need a QR code…");
         const { ids } = await listIncompleteFn();
         if (cancelled) return;
 
         if (ids.length > 0) {
-          const CHUNK = 10;
+          const CHUNK = 5;
           let done = 0;
           for (let i = 0; i < ids.length; i += CHUNK) {
             if (cancelled) return;
             const chunk = ids.slice(i, i + CHUNK);
-            setImportLabel(`Generating QR codes… ${done} / ${ids.length}`);
-            await bulkCompleteFn({ data: { productIds: chunk } });
+            setImportLabel(`Converting to QR codes… ${done} / ${ids.length}`);
+            await bulkQrImagesFn({ data: { productIds: chunk } });
             done += chunk.length;
-            setImportProgress(45 + Math.round((done / ids.length) * 55));
+            setImportProgress(30 + Math.round((done / ids.length) * 40));
+          }
+        }
+        if (cancelled) return;
+        setImportProgress(70);
+
+        const { ids: needEnrich } = await listIncompleteFn();
+        if (cancelled) return;
+
+        if (needEnrich.length > 0) {
+          const CHUNK = 5;
+          let done = 0;
+          for (let i = 0; i < needEnrich.length; i += CHUNK) {
+            if (cancelled) return;
+            const chunk = needEnrich.slice(i, i + CHUNK);
+            setImportLabel(`Enhancing intelligence… ${done} / ${needEnrich.length}`);
+            await bulkEnrichFn({ data: { productIds: chunk } });
+            done += chunk.length;
+            setImportProgress(70 + Math.round((done / needEnrich.length) * 30));
           }
         } else {
           setImportProgress(100);

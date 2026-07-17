@@ -170,6 +170,11 @@ function AuthPage() {
           ? "Reconnect with in-store shoppers and recover lost sales."
           : "Start recovering lost sales in under a minute."
       }
+      footer={
+        <Link to="/about" className="hover:text-foreground hover:underline">
+          About Tag
+        </Link>
+      }
     >
       {mode === "signin" ? (
         <form onSubmit={handleSignIn} className="space-y-4">
