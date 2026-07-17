@@ -22,26 +22,21 @@ export const completeSignup = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const supabase = context.supabase as any;
-    // Any field left unset falls back to the signup-time metadata stored on
-    // the auth user (see auth.tsx's `options.data` on signUp) — needed since
-    // this often runs well after signUp, from AuthProvider's generic safety
-    // net (no form data available there) rather than the signup form itself.
+    // complete_signup is SECURITY DEFINER and no longer callable by
+    // `authenticated`. Run it through the admin client and pass the caller's
+    // id explicitly (verified by requireSupabaseAuth middleware).
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const meta = ((context as any).claims?.user_metadata ?? {}) as Record<string, unknown>;
-    const { data: rows, error } = await supabase.rpc("complete_signup", {
+    const { data: rows, error } = await (supabaseAdmin as any).rpc("complete_signup", {
       p_name: data.name ?? (meta.company_name as string | undefined) ?? null,
       p_billing_country:
         data.billingCountry ?? (meta.billing_country as string | undefined) ?? null,
       p_currency: data.currency ?? (meta.currency as string | undefined) ?? null,
       p_country_name: data.countryName ?? (meta.country_name as string | undefined) ?? null,
-      p_branch_name: data.branchName ?? (meta.branch_name as string | undefined) ?? null,
-      p_province: data.province ?? (meta.province as string | undefined) ?? null,
+      p_user_id: context.userId,
     });
     if (error) throw new Error(error.message);
     const row = Array.isArray(rows) ? rows[0] : rows;
-    // `isNew` tells the caller whether this call provisioned a brand-new
-    // retailer (the owner's first-ever signup) — not just any first
-    // attachment, so a staff member accepting an invite doesn't also get
-    // routed into TAG Setup. Used to route only that case into the wizard.
     return { retailerId: row?.retailer_id, isNew: !!row?.provisioned_new_retailer };
   });
+
