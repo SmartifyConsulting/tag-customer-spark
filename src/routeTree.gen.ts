@@ -51,6 +51,7 @@ import { Route as AuthenticatedAnalyticsHistoryRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authenticated/admin.inventory'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin.categories'
+import { Route as AuthenticatedAdminInventoryIndexRouteImport } from './routes/_authenticated/admin.inventory.index'
 import { Route as ApiPublicWebhooksTwilioInboundRouteImport } from './routes/api/public/webhooks/twilio-inbound'
 import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public/webhooks/paypal'
 import { Route as ApiPublicWebhooksPayfastItnRouteImport } from './routes/api/public/webhooks/payfast-itn'
@@ -290,6 +291,12 @@ const AuthenticatedAdminCategoriesRoute =
     path: '/admin/categories',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminInventoryIndexRoute =
+  AuthenticatedAdminInventoryIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAdminInventoryRoute,
+  } as any)
 const ApiPublicWebhooksTwilioInboundRoute =
   ApiPublicWebhooksTwilioInboundRouteImport.update({
     id: '/api/public/webhooks/twilio-inbound',
@@ -399,6 +406,7 @@ export interface FileRoutesByFullPath {
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
   '/api/public/webhooks/twilio-inbound': typeof ApiPublicWebhooksTwilioInboundRoute
+  '/admin/inventory/': typeof AuthenticatedAdminInventoryIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -422,7 +430,6 @@ export interface FileRoutesByTo {
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
-  '/admin/inventory': typeof AuthenticatedAdminInventoryRouteWithChildren
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -450,6 +457,7 @@ export interface FileRoutesByTo {
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
   '/api/public/webhooks/twilio-inbound': typeof ApiPublicWebhooksTwilioInboundRoute
+  '/admin/inventory': typeof AuthenticatedAdminInventoryIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -505,6 +513,7 @@ export interface FileRoutesById {
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
   '/api/public/webhooks/twilio-inbound': typeof ApiPublicWebhooksTwilioInboundRoute
+  '/_authenticated/admin/inventory/': typeof AuthenticatedAdminInventoryIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -560,6 +569,7 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
     | '/api/public/webhooks/twilio-inbound'
+    | '/admin/inventory/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -583,7 +593,6 @@ export interface FileRouteTypes {
     | '/passport/$gtin'
     | '/scan/$shortCode'
     | '/admin/categories'
-    | '/admin/inventory'
     | '/admin/users'
     | '/analytics/history'
     | '/analytics/reports'
@@ -611,6 +620,7 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
     | '/api/public/webhooks/twilio-inbound'
+    | '/admin/inventory'
   id:
     | '__root__'
     | '/'
@@ -665,6 +675,7 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
     | '/api/public/webhooks/twilio-inbound'
+    | '/_authenticated/admin/inventory/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -985,6 +996,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/inventory/': {
+      id: '/_authenticated/admin/inventory/'
+      path: '/'
+      fullPath: '/admin/inventory/'
+      preLoaderRoute: typeof AuthenticatedAdminInventoryIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminInventoryRoute
+    }
     '/api/public/webhooks/twilio-inbound': {
       id: '/api/public/webhooks/twilio-inbound'
       path: '/api/public/webhooks/twilio-inbound'
@@ -1134,12 +1152,15 @@ const AuthenticatedProductsRouteWithChildren =
 
 interface AuthenticatedAdminInventoryRouteChildren {
   AuthenticatedAdminInventoryProductIdRoute: typeof AuthenticatedAdminInventoryProductIdRoute
+  AuthenticatedAdminInventoryIndexRoute: typeof AuthenticatedAdminInventoryIndexRoute
 }
 
 const AuthenticatedAdminInventoryRouteChildren: AuthenticatedAdminInventoryRouteChildren =
   {
     AuthenticatedAdminInventoryProductIdRoute:
       AuthenticatedAdminInventoryProductIdRoute,
+    AuthenticatedAdminInventoryIndexRoute:
+      AuthenticatedAdminInventoryIndexRoute,
   }
 
 const AuthenticatedAdminInventoryRouteWithChildren =
