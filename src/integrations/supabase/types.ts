@@ -2888,6 +2888,7 @@ export type Database = {
           id: string
           manager_name: string | null
           name: string
+          province: string | null
           retailer_id: string
           status: Database["public"]["Enums"]["store_status"]
           timezone: string
@@ -2903,6 +2904,7 @@ export type Database = {
           id?: string
           manager_name?: string | null
           name: string
+          province?: string | null
           retailer_id: string
           status?: Database["public"]["Enums"]["store_status"]
           timezone?: string
@@ -2918,6 +2920,7 @@ export type Database = {
           id?: string
           manager_name?: string | null
           name?: string
+          province?: string | null
           retailer_id?: string
           status?: Database["public"]["Enums"]["store_status"]
           timezone?: string
