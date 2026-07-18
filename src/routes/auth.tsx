@@ -85,7 +85,9 @@ function AuthPage() {
   if (mode === "signup") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10 text-foreground">
-        <TagLogo variant="wordmark" size="lg" className="mb-8" />
+        <Link to="/about" className="mb-8">
+          <TagLogo variant="wordmark" size="lg" />
+        </Link>
         <div className="w-full max-w-md">
           <AuthCardFrame
             title="Create your Tag account"
