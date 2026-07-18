@@ -38,8 +38,11 @@ export function MarketingCta() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
   }, []);
-  const primaryHref = authed ? "/dashboard" : "/auth";
   const primaryLabel = authed ? "Open dashboard" : "Start Setup";
+  const handleClick = () =>
+    authed
+      ? navigate({ to: "/dashboard" })
+      : navigate({ to: "/auth", search: { mode: "signup" } });
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-14 text-center">
@@ -50,7 +53,7 @@ export function MarketingCta() {
         Join retailers using Tag to turn every store visit into a long-term customer relationship.
       </p>
       <div className="mt-6 flex justify-center">
-        <Button size="lg" onClick={() => navigate({ to: primaryHref })} className="gap-2">
+        <Button size="lg" onClick={handleClick} className="gap-2">
           {primaryLabel} <ArrowRight className="h-4 w-4" />
         </Button>
       </div>

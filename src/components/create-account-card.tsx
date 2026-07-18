@@ -156,7 +156,7 @@ export function CreateAccountCard({
         onSubmit={signupStep === 1 ? (e) => e.preventDefault() : handleSignUp}
         className="space-y-4"
       >
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
           <span className={signupStep === 1 ? "text-[color:var(--mint)]" : ""}>
             1. About you
           </span>
@@ -185,7 +185,6 @@ export function CreateAccountCard({
                 id="su-company"
                 type="text"
                 autoComplete="organization"
-                placeholder="e.g. Cape Union Mart"
                 value={suCompany}
                 onChange={(e) => setSuCompany(e.target.value)}
               />
@@ -196,7 +195,6 @@ export function CreateAccountCard({
                 id="su-website"
                 type="text"
                 autoComplete="url"
-                placeholder="e.g. capeunionmart.co.za"
                 value={suWebsite}
                 onChange={(e) => setSuWebsite(e.target.value)}
               />
@@ -207,7 +205,6 @@ export function CreateAccountCard({
                 <Input
                   id="su-branch"
                   type="text"
-                  placeholder="e.g. Sandton City"
                   value={suBranchName}
                   onChange={(e) => setSuBranchName(e.target.value)}
                 />
@@ -217,7 +214,6 @@ export function CreateAccountCard({
                 <Input
                   id="su-province"
                   type="text"
-                  placeholder="e.g. Gauteng"
                   value={suProvince}
                   onChange={(e) => setSuProvince(e.target.value)}
                 />
@@ -243,7 +239,7 @@ export function CreateAccountCard({
                 {inlineError}
               </p>
             )}
-            <Button type="button" className="w-full" onClick={handleContinueToCredentialsStep}>
+            <Button type="button" className="w-full mb-2" onClick={handleContinueToCredentialsStep}>
               Continue
             </Button>
           </>

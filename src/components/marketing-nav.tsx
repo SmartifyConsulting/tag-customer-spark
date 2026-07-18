@@ -30,24 +30,10 @@ export function MarketingNav() {
   );
 }
 
-// Default right-slot CTA for marketing sub-pages.
-export function MarketingCtaButton() {
-  const navigate = useNavigate();
-  const [authed, setAuthed] = useState(false);
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
-  }, []);
-  const primaryHref = authed ? "/dashboard" : "/auth";
-  const primaryLabel = authed ? "Open dashboard" : "Start Setup";
-  return (
-    <Button onClick={() => navigate({ to: primaryHref })} className="gap-2">
-      {primaryLabel} <ArrowRight className="h-4 w-4" />
-    </Button>
-  );
-}
-
 // Sign in + Start Setup, shown together in the header on every marketing
 // page (not just the hero) so the entry points are always consistent.
+// Start Setup always lands on the minimal, centered "Create your Tag
+// account" view (/auth?mode=signup) — never the split sign-in layout.
 export function MarketingCtaGroup() {
   const navigate = useNavigate();
   const [authed, setAuthed] = useState(false);
@@ -65,7 +51,11 @@ export function MarketingCtaGroup() {
 
   return (
     <>
-      <Button variant="outline" onClick={() => navigate({ to: "/auth" })} className="gap-2">
+      <Button
+        variant="outline"
+        onClick={() => navigate({ to: "/auth" })}
+        className="gap-2 hover:!bg-[#D6B326] hover:!text-white hover:!border-[#D6B326]"
+      >
         Sign in
       </Button>
       <Button
