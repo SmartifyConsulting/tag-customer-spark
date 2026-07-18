@@ -54,7 +54,7 @@ export function MarketingCtaGroup() {
       <Button
         variant="outline"
         onClick={() => navigate({ to: "/auth" })}
-        className="gap-2 hover:!bg-[#D6B326] hover:!text-white hover:!border-[#D6B326]"
+        className="gap-2 hover:!bg-[#3F3F46] hover:!text-white hover:!border-[#3F3F46]"
       >
         Sign in
       </Button>
