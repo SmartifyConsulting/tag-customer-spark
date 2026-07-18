@@ -8,8 +8,8 @@ import { MarketingNav, MarketingCtaButton } from "@/components/marketing-nav";
 import { TagLogo } from "@/components/tag-logo";
 
 // Shared header used by every top-level page (hero, auth, marketing subs).
-// 3-column grid keeps the logo pinned top-left and the nav pills centered
-// regardless of what sits in the right slot, so nothing jumps between pages.
+// Nav pills sit left, CTA and logo sit right with the logo as the
+// right-most element, so nothing jumps between pages.
 export function MarketingHeader({
   right,
 }: {
@@ -17,14 +17,16 @@ export function MarketingHeader({
 }) {
   const rightSlot = right === undefined ? <MarketingCtaButton /> : right;
   return (
-    <header className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-8 px-6 py-5">
-      <Link to="/about" className="shrink-0">
-        <TagLogo variant="wordmark" size="lg" className="h-[20rem]" />
-      </Link>
-      <div className="flex justify-center">
+    <header className="mx-auto flex max-w-7xl items-center justify-between gap-8 px-6 py-5">
+      <div className="flex items-center">
         <MarketingNav />
       </div>
-      <div className="flex items-center gap-2">{rightSlot}</div>
+      <div className="flex items-center gap-4">
+        {rightSlot}
+        <Link to="/about" className="shrink-0">
+          <TagLogo variant="wordmark" size="lg" className="h-[24rem]" />
+        </Link>
+      </div>
     </header>
   );
 }
