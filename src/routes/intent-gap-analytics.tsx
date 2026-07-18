@@ -38,7 +38,7 @@ function IntentGapAnalyticsPage() {
             </p>
             <p className="mt-4 text-lg font-semibold">Customer → Purchase</p>
           </div>
-          <div className="rounded-2xl border border-primary bg-primary p-6 text-center text-primary-foreground">
+          <div className="rounded-2xl border border-[color:var(--mint)] bg-card p-6 text-center text-foreground">
             <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--mint)]">
               Tag sees
             </p>

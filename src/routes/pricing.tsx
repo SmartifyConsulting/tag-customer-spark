@@ -154,15 +154,15 @@ function PlanTile({
 function EnterpriseTile() {
   const p = PLANS.enterprise;
   return (
-    <div className="flex flex-col rounded-2xl bg-primary p-5 text-primary-foreground">
+    <div className="flex flex-col rounded-2xl border border-border p-5">
       <div className="text-sm font-semibold">{p.name}</div>
-      <p className="mt-1 text-xs opacity-80">{p.tagline}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{p.tagline}</p>
       <p className="mt-4 text-2xl font-bold tracking-tight">
-        Custom<span className="text-xs font-normal opacity-80">/branch</span>
+        Custom<span className="text-xs font-normal text-muted-foreground">/branch</span>
       </p>
       <Button
         size="sm"
-        variant="secondary"
+        variant="outline"
         className="mt-4 w-fit"
         asChild
       >

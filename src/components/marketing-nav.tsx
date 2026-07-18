@@ -21,7 +21,7 @@ export function MarketingNav() {
         <Link
           key={l.to}
           to={l.to}
-          className="rounded-md bg-[color:var(--mint)] px-4 py-2 text-white transition-colors hover:bg-[#A6446B]"
+          className="rounded-md bg-[color:var(--mint)] px-4 py-2 text-white transition-colors hover:bg-gray-200 hover:text-[#A6446B]"
         >
           {l.label}
         </Link>
