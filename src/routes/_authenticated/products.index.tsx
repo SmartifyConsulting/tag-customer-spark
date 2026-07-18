@@ -155,7 +155,7 @@ function ProductsListPage() {
         description="Manage products, stock levels, and QR tags in one place."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex overflow-hidden rounded-md border">
+            <div id="tour-inventory-view-toggle" className="inline-flex overflow-hidden rounded-md border">
               <Button
                 size="sm"
                 variant={viewMode === "list" ? "default" : "ghost"}
@@ -186,7 +186,7 @@ function ProductsListPage() {
       {viewMode === "browse" ? (
         <DynamicTaxonomyBrowser />
       ) : (
-        <>
+        <div id="tour-inventory-toolbar">
           <ProductsToolbar
             value={{
               search: searchTerm,
@@ -313,7 +313,7 @@ function ProductsListPage() {
             total={data?.total ?? 0}
             onPage={(p) => navigate({ search: (s: any) => ({ ...s, page: p }) })}
           />
-        </>
+        </div>
       )}
 
       {canManage && editing && (
@@ -348,10 +348,12 @@ function ProductsListPage() {
           {
             title: "List or Browse",
             body: "Switch to Browse to explore your catalogue the way customers do — by category, brand, and attribute.",
+            targetId: "tour-inventory-view-toggle",
           },
           {
             title: "Bulk QR tags",
             body: "Select products with the checkboxes, then use Bulk QR PDF to print tags for a whole batch at once.",
+            targetId: "tour-inventory-toolbar",
           },
         ]}
       />

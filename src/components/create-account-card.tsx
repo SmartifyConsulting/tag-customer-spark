@@ -309,7 +309,7 @@ export function CreateAccountCard({
             <Button
               type="button"
               variant="outline"
-              className="w-full gap-2 hover:!bg-[#3F3F46] hover:!text-white hover:!border-[#3F3F46]"
+              className="w-full gap-2 hover:!bg-gray-200 hover:!text-foreground hover:!border-gray-200"
               onClick={handleGoogle}
               disabled={googleLoading}
             >

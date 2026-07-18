@@ -132,7 +132,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // once. Idempotent server-side. Covers every entry path uniformly
     // (confirmation link, magic link, OAuth, manual sign-in/sign-up), so
     // it's also where "send a brand-new owner into TAG Setup" has to live.
-    if (!provisioningAttempted.current && rows.length > 0 && rows.every((r) => !r.retailer_id)) {
+    //
+    // The `rows.length === 0` branch (only on a fresh sign-in) closes a
+    // race that made this inconsistent: handle_new_user's default
+    // user_roles row is inserted by a DB trigger, and this query can
+    // sometimes run before that row is visible yet. Previously that made
+    // `rows.length > 0` false, so provisioning was skipped entirely and
+    // the user landed on /dashboard instead of the Setup Wizard.
+    // complete_signup() is written to handle either case safely.
+    const noRetailerYet =
+      (rows.length > 0 && rows.every((r) => !r.retailer_id)) ||
+      (isFreshSignIn && rows.length === 0);
+    if (!provisioningAttempted.current && noRetailerYet) {
       provisioningAttempted.current = true;
       try {
         await completeSignupFn({ data: {} });

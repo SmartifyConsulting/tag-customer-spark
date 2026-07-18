@@ -109,7 +109,7 @@ function CustomersPage() {
         description="Shoppers who opted in to WhatsApp updates via your QR tags."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Button id="tour-customers-import" variant="outline" onClick={() => setImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" /> Import
             </Button>
             <Button onClick={() => setCreateOpen(true)}>
@@ -119,7 +119,7 @@ function CustomersPage() {
         }
       />
 
-      <div className="flex flex-wrap gap-1.5">
+      <div id="tour-customers-filter" className="flex flex-wrap gap-1.5">
         {LETTERS.map((L) => (
           <button
             key={L}
@@ -141,7 +141,7 @@ function CustomersPage() {
         ))}
       </div>
 
-      <Card className="rounded-2xl">
+      <Card id="tour-customers-list" className="rounded-2xl">
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs
             value={segment}
@@ -319,14 +319,17 @@ function CustomersPage() {
           {
             title: "This is your Customers list",
             body: "Shoppers who opted in to WhatsApp updates via your QR tags land here, with their scan and interest history.",
+            targetId: "tour-customers-list",
           },
           {
             title: "Filter and search fast",
             body: "Use the A–Z bar or the search box to jump straight to a customer, or filter by segment (subscribed, VIP, dormant).",
+            targetId: "tour-customers-filter",
           },
           {
             title: "Import your existing list",
             body: "Already have a customer list elsewhere? Use Import to bring it in rather than adding people one by one.",
+            targetId: "tour-customers-import",
           },
         ]}
       />

@@ -52,9 +52,11 @@ function TaxonomyAdminPage() {
         title="Taxonomy"
         description="Configure how products are grouped. The Taxonomy Engine defines the dynamic browser hierarchy; Brands and Categories are the source attributes."
       />
-      <TaxonomyEngineTab />
+      <div id="tour-taxonomy-engine">
+        <TaxonomyEngineTab />
+      </div>
       <Tabs defaultValue="brand">
-        <TabsList className="flex-wrap">
+        <TabsList id="tour-taxonomy-tabs" className="flex-wrap">
           <TabsTrigger value="brand">Brand</TabsTrigger>
           <TabsTrigger value="category">Category</TabsTrigger>
           {dynamicLevels.map((l) => (
@@ -62,7 +64,7 @@ function TaxonomyAdminPage() {
               {l.label}
             </TabsTrigger>
           ))}
-          <TabsTrigger value="preview">Preview</TabsTrigger>
+          <TabsTrigger id="tour-taxonomy-preview" value="preview">Preview</TabsTrigger>
         </TabsList>
         <TabsContent value="brand">
           <BrandAdminTab />
@@ -87,14 +89,17 @@ function TaxonomyAdminPage() {
           {
             title: "This is your Taxonomy",
             body: "The Taxonomy Engine defines the category hierarchy customers browse by — Brands and Categories are the source attributes that feed it.",
+            targetId: "tour-taxonomy-engine",
           },
           {
             title: "Brand and Category tabs",
             body: "Manage, merge, and reorganise your brand and category lists here — changes apply across your whole catalogue.",
+            targetId: "tour-taxonomy-tabs",
           },
           {
             title: "Preview before you publish",
             body: "Use the Preview tab to see exactly how your taxonomy will look to shoppers before you commit to changes.",
+            targetId: "tour-taxonomy-preview",
           },
         ]}
       />
