@@ -169,7 +169,7 @@ export function CreateAccountCard({
         {signupStep === 1 ? (
           <>
             <div className="space-y-1.5">
-              <Label htmlFor="su-name">Full name</Label>
+              <Label htmlFor="su-name">Full name *</Label>
               <Input
                 id="su-name"
                 type="text"
@@ -180,7 +180,7 @@ export function CreateAccountCard({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="su-company">Company</Label>
+              <Label htmlFor="su-company">Company *</Label>
               <Input
                 id="su-company"
                 type="text"
@@ -191,7 +191,7 @@ export function CreateAccountCard({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="su-website">Company website (optional)</Label>
+              <Label htmlFor="su-website">Company website</Label>
               <Input
                 id="su-website"
                 type="text"
@@ -224,7 +224,7 @@ export function CreateAccountCard({
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="su-country">Country</Label>
+              <Label htmlFor="su-country">Country *</Label>
               <Select value={suCountry} onValueChange={setSuCountry}>
                 <SelectTrigger id="su-country">
                   <SelectValue />
@@ -303,44 +303,42 @@ export function CreateAccountCard({
               </Link>
               .
             </p>
+
+            <div className="my-5 flex items-center gap-3">
+              <Separator className="flex-1" />
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">or</span>
+              <Separator className="flex-1" />
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-2"
+              onClick={handleGoogle}
+              disabled={googleLoading}
+            >
+              <GoogleIcon />
+              {googleLoading ? "Connecting…" : "Continue with Google"}
+            </Button>
           </>
         )}
       </form>
 
       {signupStep === 1 && (
-        <>
-          <div className="my-5 flex items-center gap-3">
-            <Separator className="flex-1" />
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">or</span>
-            <Separator className="flex-1" />
-          </div>
-
-          <Button
+        <p className="text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <button
             type="button"
-            variant="outline"
-            className="w-full gap-2"
-            onClick={handleGoogle}
-            disabled={googleLoading}
+            className="font-medium text-foreground underline-offset-2 hover:underline"
+            onClick={() => {
+              setInlineError(null);
+              if (onSwitchToSignIn) onSwitchToSignIn();
+              else navigate({ to: "/auth" });
+            }}
           >
-            <GoogleIcon />
-            {googleLoading ? "Connecting…" : "Continue with Google"}
-          </Button>
-
-          <p className="mt-5 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <button
-              type="button"
-              className="font-medium text-foreground underline-offset-2 hover:underline"
-              onClick={() => {
-                setInlineError(null);
-                if (onSwitchToSignIn) onSwitchToSignIn();
-                else navigate({ to: "/auth" });
-              }}
-            >
-              Sign in
-            </button>
-          </p>
-        </>
+            Sign in
+          </button>
+        </p>
       )}
     </>
   );
