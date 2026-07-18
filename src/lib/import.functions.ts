@@ -61,6 +61,85 @@ function priceToCents(v: unknown): number {
   return Math.round(n * 100);
 }
 
+// Deterministic column → canonical-field mapping. Runs BEFORE (and as a
+// safety net around) the AI mapping so a normal spreadsheet with sensible
+// headers always imports, even if the AI call fails, times out, or guesses
+// wrong. Header synonyms are matched case/punctuation-insensitively; a
+// "Barcode (EAN-13)" header normalises to "barcode", "City/Province" to
+// "city province", etc. Fields are resolved in priority order so a source
+// column is never claimed by two canonical fields.
+const HEADER_SYNONYMS: Record<string, string[]> = {
+  // name is resolved before description so a dedicated "Name" column wins,
+  // but a sheet whose only descriptive column is "Description" still maps
+  // that to name (products require a name).
+  name: ["name", "product name", "item name", "product title", "title", "product", "item", "description", "product description", "item description"],
+  sku: ["sku", "product id", "productid", "item id", "item code", "product code", "stock code", "article", "article number", "article no", "style", "style code", "code", "ref", "reference"],
+  gtin: ["barcode", "bar code", "ean", "ean13", "upc", "gtin", "global trade item number"],
+  brand: ["brand", "manufacturer", "make", "vendor", "supplier"],
+  category_name: ["category", "department", "product category", "category name", "group", "product group", "class", "subcategory", "sub category", "product type", "type"],
+  color: ["color", "colour"],
+  size: ["size"],
+  price: ["price", "unit price", "retail price", "selling price", "sell price", "rrp", "list price", "amount"],
+  sale_price: ["sale price", "promo price", "promotional price", "discount price", "special price", "special"],
+  stock: ["stock", "qty", "quantity", "stock qty", "on hand", "onhand", "soh", "stock on hand", "available", "available qty"],
+  currency: ["currency", "curr", "ccy"],
+  store_name: ["branch name", "branch", "store name", "store", "site", "site name", "plant", "location", "warehouse", "outlet"],
+  store_city: ["city", "town", "city province", "city/province"],
+  store_province: ["province", "state", "region", "county"],
+  store_country: ["country"],
+};
+
+// Priority order matters: name before description-y collisions, sku before
+// gtin, store_name before store_city, etc.
+const CANONICAL_ORDER = [
+  "name", "sku", "gtin", "brand", "category_name", "store_name",
+  "store_city", "store_province", "store_country", "price", "sale_price",
+  "stock", "currency", "color", "size",
+];
+
+function normaliseHeader(h: string): string {
+  return String(h)
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, " ") // drop parenthetical notes: "Barcode (EAN-13)" -> "barcode"
+    .replace(/[/_\-.]+/g, " ") // slashes/underscores/dashes -> space
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function deterministicHeaderMap(headers: string[]): Record<string, string | null> {
+  const normed = headers.map((h) => ({ raw: h, norm: normaliseHeader(h) }));
+  const used = new Set<string>();
+  const map: Record<string, string | null> = {};
+
+  for (const field of CANONICAL_ORDER) {
+    const synonyms = HEADER_SYNONYMS[field] ?? [];
+    let match: string | null = null;
+    // Exact normalised match first, then whole-word containment.
+    for (const syn of synonyms) {
+      const hit = normed.find((h) => !used.has(h.raw) && h.norm === syn);
+      if (hit) {
+        match = hit.raw;
+        break;
+      }
+    }
+    if (!match) {
+      for (const syn of synonyms) {
+        const hit = normed.find(
+          (h) => !used.has(h.raw) && new RegExp(`\\b${syn.replace(/\s+/g, "\\s+")}\\b`).test(h.norm),
+        );
+        if (hit) {
+          match = hit.raw;
+          break;
+        }
+      }
+    }
+    if (match) used.add(match);
+    map[field] = match;
+  }
+  return map;
+}
+
 export async function callAiJson(
   prompt: string,
   systemPrompt: string,
@@ -138,13 +217,34 @@ export const previewProductImport = createServerFn({ method: "POST" })
         .map((r: any) => normaliseRow(r))
         .filter((r: ImportRow | null): r is ImportRow => r !== null);
     } else {
-      // Ask AI to produce a header mapping
-      const sample = rawRows.slice(0, 5);
-      const mapping = await callAiJson(
-        `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {name, sku, gtin, brand, description, category_name, color, size, price, sale_price, stock, currency, store_name, store_city, store_province, store_country} to the best-matching source header (or null if absent). store_name covers ERP branch/site/plant/location/warehouse columns (e.g. SAP plant code, Oracle inventory org, Dynamics warehouse, a POS store master column) — map it whenever the sheet has a column identifying which physical store/branch a row belongs to. store_province covers state/province/region columns.`,
-        "You map raw spreadsheet columns to a canonical product schema. Output only valid JSON.",
-      );
-      const map: Record<string, string | null> = mapping?.map ?? {};
+      // Deterministic header mapping first — reliable for any spreadsheet
+      // with sensible column names, and independent of the AI service.
+      const detMap = deterministicHeaderMap(headers);
+
+      // Only fall back to AI when the deterministic pass can't find the two
+      // required fields (name + sku). Even then, deterministic matches win;
+      // the AI just fills gaps. Wrapped so an AI failure can never break an
+      // import the deterministic map already handled.
+      let map: Record<string, string | null> = detMap;
+      if (!detMap.name || !detMap.sku) {
+        try {
+          const sample = rawRows.slice(0, 5);
+          const mapping = await callAiJson(
+            `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {name, sku, gtin, brand, description, category_name, color, size, price, sale_price, stock, currency, store_name, store_city, store_province, store_country} to the best-matching source header (or null if absent). store_name covers ERP branch/site/plant/location/warehouse columns (e.g. SAP plant code, Oracle inventory org, Dynamics warehouse, a POS store master column) — map it whenever the sheet has a column identifying which physical store/branch a row belongs to. store_province covers state/province/region columns.`,
+            "You map raw spreadsheet columns to a canonical product schema. Output only valid JSON.",
+          );
+          const aiMap: Record<string, string | null> = mapping?.map ?? {};
+          // Merge: AI fills the base, deterministic overrides where it found
+          // a match (deterministic is the trusted source of truth).
+          map = { ...aiMap };
+          for (const [field, source] of Object.entries(detMap)) {
+            if (source) map[field] = source;
+          }
+        } catch {
+          // AI unavailable — proceed with whatever the deterministic map has.
+          map = detMap;
+        }
+      }
       mapped = rawRows
         .map((row) => {
           const get = (k: string) => (map[k] ? row[map[k] as string] : undefined);
