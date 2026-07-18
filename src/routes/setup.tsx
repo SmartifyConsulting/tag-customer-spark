@@ -33,7 +33,7 @@ import {
   commitStoreImport,
   type StoreImportRow,
 } from "@/lib/stores-import.functions";
-import { saveRetailerPosSystem } from "@/lib/settings.functions";
+import { saveRetailerPosSystem, markOnboardingComplete } from "@/lib/settings.functions";
 import { TagLogo } from "@/components/tag-logo";
 
 export const Route = createFileRoute("/setup")({
@@ -152,6 +152,19 @@ function SetupWizard() {
   const storeInputRef = useRef<HTMLInputElement>(null);
 
   const savePosFn = useServerFn(saveRetailerPosSystem);
+  const markCompleteFn = useServerFn(markOnboardingComplete);
+
+  // Marks setup finished/skipped (so the onboarding gate stops sending them
+  // here), then goes to the dashboard. Best-effort: never trap the user in
+  // the wizard if the mark call fails — navigate regardless.
+  const finishSetup = async () => {
+    try {
+      await markCompleteFn();
+    } catch {
+      // Non-fatal — they can re-run setup from Settings later.
+    }
+    navigate({ to: "/dashboard" });
+  };
   const previewFn = useServerFn(previewProductImport);
   const commitFn = useServerFn(commitProductImport);
   const assignBarcodesFn = useServerFn(assignMissingBarcodes);
@@ -448,7 +461,7 @@ function SetupWizard() {
               ← Back
             </button>
           )}
-          {step === "welcome" && <WelcomeStep onNext={() => goTo("system")} />}
+          {step === "welcome" && <WelcomeStep onNext={() => goTo("system")} onSkip={finishSetup} />}
           {step === "system" && <SystemStep onPick={handlePickSystem} />}
           {step === "connecting" && <ConnectingStep activeIdx={connectingIdx} />}
           {step === "file" && (
@@ -499,7 +512,7 @@ function SetupWizard() {
               productCount={totalProducts}
               customerCount={totalCustomers}
               storeCount={totalStores}
-              onGoToDashboard={() => navigate({ to: "/dashboard" })}
+              onGoToDashboard={finishSetup}
             />
           )}
         </Card>
@@ -509,7 +522,7 @@ function SetupWizard() {
   );
 }
 
-function WelcomeStep({ onNext }: { onNext: () => void }) {
+function WelcomeStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void }) {
   return (
     <div className="space-y-6 text-center">
       <div>
@@ -521,6 +534,13 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
       <Button size="lg" className="w-full" onClick={onNext}>
         Get Started
       </Button>
+      <button
+        type="button"
+        onClick={onSkip}
+        className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+      >
+        Skip for now — I'll set up later
+      </button>
     </div>
   );
 }

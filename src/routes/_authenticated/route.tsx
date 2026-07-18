@@ -18,6 +18,32 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
+
+    // Onboarding gate: if this user's retailer hasn't finished the Setup
+    // Wizard yet, send them there before rendering any authenticated page.
+    // This is a persistent, DB-backed check (retailers.onboarding_completed_at)
+    // that runs on every authenticated load — so a new user can never slip
+    // past setup due to a timing race or a reload, which was the old
+    // one-shot-redirect bug. /setup lives outside this route, so redirecting
+    // to it can't loop.
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("retailer_id")
+      .eq("user_id", data.user.id)
+      .not("retailer_id", "is", null)
+      .limit(1)
+      .maybeSingle();
+    if (roleRow?.retailer_id) {
+      const { data: retailer } = await supabase
+        .from("retailers")
+        .select("onboarding_completed_at")
+        .eq("id", roleRow.retailer_id)
+        .maybeSingle();
+      if (retailer && !retailer.onboarding_completed_at) {
+        throw redirect({ to: "/setup" });
+      }
+    }
+
     return { user: data.user };
   },
   component: AuthenticatedLayout,

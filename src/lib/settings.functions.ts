@@ -13,6 +13,18 @@ async function resolveRetailerId(supabase: any, userId: string) {
   return data?.retailer_id ?? null;
 }
 
+// Marks the caller's retailer as having finished (or explicitly skipped)
+// the Setup Wizard, so the authenticated-layout gate stops redirecting them
+// there. Idempotent — safe to call more than once.
+export const markOnboardingComplete = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context;
+    const { error } = await (supabase as any).rpc("mark_onboarding_complete");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const getWorkspaceSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

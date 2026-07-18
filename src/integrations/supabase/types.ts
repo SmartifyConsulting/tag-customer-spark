@@ -2424,6 +2424,7 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          onboarding_completed_at: string | null
           plan: string
           slug: string
           status: Database["public"]["Enums"]["retailer_status"]
@@ -2441,6 +2442,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          onboarding_completed_at?: string | null
           plan?: string
           slug: string
           status?: Database["public"]["Enums"]["retailer_status"]
@@ -2458,6 +2460,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          onboarding_completed_at?: string | null
           plan?: string
           slug?: string
           status?: Database["public"]["Enums"]["retailer_status"]

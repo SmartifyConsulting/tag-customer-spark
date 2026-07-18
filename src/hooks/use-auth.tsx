@@ -113,12 +113,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // `isFreshSignIn` (only true on the "SIGNED_IN" event) is what decides
-  // whether this call is responsible for navigating the browser onward.
-  // This is the single place that owns post-auth navigation now — auth.tsx
-  // no longer does its own, so there's only one navigate() decision instead
-  // of two racing ones (the second always used to win a moment later,
-  // producing a visible flash to the wrong page first).
+  // `isFreshSignIn` (only true on the "SIGNED_IN" event) decides whether
+  // this call navigates the browser onward. On a fresh sign-in we always
+  // send the user to /dashboard; the /_authenticated onboarding gate then
+  // bounces them to /setup if their retailer hasn't finished onboarding.
+  // Deciding "setup vs dashboard" here (the old approach) was a one-shot,
+  // race-prone guess; the DB-backed gate is the single source of truth now.
   const loadProfileAndRoles = async (userId: string, isFreshSignIn = false) => {
     const [{ data: prof }, { data: roleRows }] = await Promise.all([
       supabase.from("profiles").select("id, full_name, avatar_url").eq("id", userId).maybeSingle(),
@@ -126,20 +126,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
     setProfile(prof ?? null);
     let rows = (roleRows ?? []) as { role: AppRole; retailer_id: string | null }[];
-    let routedToSetup = false;
 
-    // Safety net: a session with no retailer_id yet — try provisioning
-    // once. Idempotent server-side. Covers every entry path uniformly
-    // (confirmation link, magic link, OAuth, manual sign-in/sign-up), so
-    // it's also where "send a brand-new owner into TAG Setup" has to live.
-    //
-    // The `rows.length === 0` branch (only on a fresh sign-in) closes a
-    // race that made this inconsistent: handle_new_user's default
-    // user_roles row is inserted by a DB trigger, and this query can
-    // sometimes run before that row is visible yet. Previously that made
-    // `rows.length > 0` false, so provisioning was skipped entirely and
-    // the user landed on /dashboard instead of the Setup Wizard.
-    // complete_signup() is written to handle either case safely.
+    // Provision a retailer for a session that has none yet. Idempotent
+    // server-side. Covers every entry path uniformly (confirmation link,
+    // magic link, OAuth, manual sign-in/sign-up). The `rows.length === 0`
+    // branch (fresh sign-in only) also covers the case where the
+    // handle_new_user trigger row isn't visible to this query yet.
+    // complete_signup() handles either state safely, and the new retailer
+    // starts un-onboarded so the gate will route them into /setup.
     const noRetailerYet =
       (rows.length > 0 && rows.every((r) => !r.retailer_id)) ||
       (isFreshSignIn && rows.length === 0);
@@ -152,17 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select("role, retailer_id")
           .eq("user_id", userId);
         rows = (refreshed ?? []) as { role: AppRole; retailer_id: string | null }[];
-        // Went from "no retailer at all" to "has one" in this exact call —
-        // this account's very first usable moment, whether as a brand-new
-        // owner or a staff invite just being attached. Don't try to tell
-        // those two apart via complete_signup's return value (that
-        // depends on a migration that may not be deployed yet, and this
-        // redirect kept silently failing because of it) — the observable
-        // before/after state alone is enough, and seeing the wizard once
-        // is harmless even for an invited staff member.
         if (rows.some((r) => r.retailer_id)) {
-          navigate({ to: "/setup", replace: true });
-          routedToSetup = true;
           await applyLogoFromWebsite();
         }
       } catch {
@@ -170,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    if (isFreshSignIn && !routedToSetup) {
+    if (isFreshSignIn) {
       navigate({ to: "/dashboard", replace: true });
     }
 
