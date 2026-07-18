@@ -166,7 +166,7 @@ function EnterpriseTile() {
         className="mt-4 w-fit"
         asChild
       >
-        <a href="mailto:hello@mypenguin.co.za?subject=Tag%20Enterprise">Contact sales</a>
+        <a href="mailto:hello@tag-tech.co.za?subject=Tag%20Enterprise">Contact sales</a>
       </Button>
     </div>
   );

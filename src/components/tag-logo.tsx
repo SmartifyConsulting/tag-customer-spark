@@ -1,4 +1,3 @@
-import tagLogo from "@/assets/Tag_logo_pink.png";
 import tagLogoHorizontal from "@/assets/Tag_logo_pink_horizontal.png";
 
 export function TagLogo({
@@ -37,7 +36,7 @@ export function TagLogo({
   return (
     <div className={`flex items-center justify-center ${className ?? ""}`}>
       <img
-        src={tagLogo}
+        src={tagLogoHorizontal}
         alt="Tag"
         className={`${dim} object-contain`}
       />

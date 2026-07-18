@@ -164,8 +164,8 @@ function PrivacyPage() {
             <h2 className="text-lg font-semibold text-foreground">13. Contact Us</h2>
             <p>
               Questions about this Privacy Policy or your data? Contact us at{" "}
-              <a href="mailto:hello@mypenguin.co.za" className="font-medium text-foreground underline">
-                hello@mypenguin.co.za
+              <a href="mailto:hello@tag-tech.co.za" className="font-medium text-foreground underline">
+                hello@tag-tech.co.za
               </a>
               . See also our{" "}
               <a href="/terms" className="font-medium text-foreground underline">

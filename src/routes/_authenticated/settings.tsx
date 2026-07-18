@@ -399,7 +399,7 @@ function EmailsTab({ defaultTo }: { defaultTo: string }) {
       <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">Resend <Badge className="bg-success/15 text-success"><CheckCircle2 className="mr-1 h-3 w-3" /> Connected</Badge></CardTitle>
-          <CardDescription>Sending from <span className="font-mono">noreply@mypenguin.co.za</span>. Verify <span className="font-mono">mypenguin.co.za</span> in your Resend dashboard for deliverability.</CardDescription>
+          <CardDescription>Sending from <span className="font-mono">noreply@tag-tech.co.za</span>. Verify <span className="font-mono">tag-tech.co.za</span> in your Resend dashboard for deliverability.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2 sm:max-w-sm">

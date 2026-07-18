@@ -164,7 +164,7 @@ function UpgradePage() {
             <Link to="/settings" search={{ tab: "billing" }}>Manage plan</Link>
           </Button>
           <Button asChild className="bg-[color:var(--mint)] text-white hover:bg-[color:var(--mint)]/90">
-            <a href="mailto:hello@mypenguin.co.za?subject=Tag%20Enterprise">Contact sales</a>
+            <a href="mailto:hello@tag-tech.co.za?subject=Tag%20Enterprise">Contact sales</a>
           </Button>
         </div>
       </div>

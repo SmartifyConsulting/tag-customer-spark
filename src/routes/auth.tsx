@@ -159,7 +159,7 @@ function AuthPage() {
       <Button
         type="button"
         variant="outline"
-        className="w-full gap-2"
+        className="w-full gap-2 hover:!bg-[#D6B326] hover:!text-white hover:!border-[#D6B326]"
         onClick={handleGoogle}
         disabled={googleLoading}
       >

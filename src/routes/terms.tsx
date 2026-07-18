@@ -175,8 +175,8 @@ function TermsPage() {
             <h2 className="text-lg font-semibold text-foreground">14. Contact</h2>
             <p>
               Questions about these Terms? Contact us at{" "}
-              <a href="mailto:hello@mypenguin.co.za" className="font-medium text-foreground underline">
-                hello@mypenguin.co.za
+              <a href="mailto:hello@tag-tech.co.za" className="font-medium text-foreground underline">
+                hello@tag-tech.co.za
               </a>
               .
             </p>

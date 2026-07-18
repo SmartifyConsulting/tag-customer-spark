@@ -1,7 +1,7 @@
 // Resend email sender via Lovable connector gateway. Server-only.
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 
-export const DEFAULT_FROM = "Tag <noreply@mypenguin.co.za>";
+export const DEFAULT_FROM = "Tag <noreply@tag-tech.co.za>";
 
 export type EmailPayload = {
   to: string | string[];
