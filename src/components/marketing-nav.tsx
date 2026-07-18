@@ -12,39 +12,36 @@ const LINKS = [
   { label: "Pricing", to: "/pricing" as const },
 ];
 
-// Flat, bold, left-aligned nav shared by every marketing/auth page so it
-// never drifts out of sync between them. showStartSetup adds a trailing
-// CTA button — used on every page except the hero and the sign-in page
-// itself, which already have their own primary actions.
-export function MarketingNav({ showStartSetup = false }: { showStartSetup?: boolean }) {
+// Just the pill row. Consumers place it inside the shared header grid and
+// decide what sits in the right slot (see MarketingHeader).
+export function MarketingNav() {
+  return (
+    <nav className="hidden items-center gap-2 text-[15px] font-bold text-foreground md:flex">
+      {LINKS.map((l) => (
+        <Link
+          key={l.to}
+          to={l.to}
+          className="rounded-full border-2 border-[color:var(--mint)] bg-[color:var(--mint)] px-3 py-1.5 text-white transition-colors hover:bg-transparent hover:text-[color:var(--mint)]"
+        >
+          {l.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+// Default right-slot CTA for marketing sub-pages.
+export function MarketingCtaButton() {
   const navigate = useNavigate();
   const [authed, setAuthed] = useState(false);
-
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
   }, []);
-
   const primaryHref = authed ? "/dashboard" : "/auth";
   const primaryLabel = authed ? "Open dashboard" : "Start Setup";
-
   return (
-    <div className="flex items-center gap-8">
-      <nav className="hidden items-center gap-2 text-[15px] font-bold text-foreground md:flex">
-        {LINKS.map((l) => (
-          <Link
-            key={l.to}
-            to={l.to}
-            className="rounded-full border-2 border-[color:var(--mint)] bg-[color:var(--mint)] px-3 py-1.5 text-white transition-colors hover:bg-transparent hover:text-[color:var(--mint)]"
-          >
-            {l.label}
-          </Link>
-        ))}
-      </nav>
-      {showStartSetup && (
-        <Button onClick={() => navigate({ to: primaryHref })} className="gap-2">
-          {primaryLabel} <ArrowRight className="h-4 w-4" />
-        </Button>
-      )}
-    </div>
+    <Button onClick={() => navigate({ to: primaryHref })} className="gap-2">
+      {primaryLabel} <ArrowRight className="h-4 w-4" />
+    </Button>
   );
 }

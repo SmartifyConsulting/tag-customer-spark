@@ -2,8 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { MarketingNav } from "@/components/marketing-nav";
-import { MarketingFooter } from "@/components/marketing-page";
+import { MarketingFooter, MarketingHeader } from "@/components/marketing-page";
+
 import { AuthCardFrame } from "@/components/auth-card-frame";
 import { CreateAccountCard } from "@/components/create-account-card";
 import { TagLogo } from "@/components/tag-logo";
@@ -64,25 +64,25 @@ function Landing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Nav */}
-      <header className="mx-auto flex max-w-7xl items-center px-6 py-5">
-        <img
-          src={heroLogo}
-          alt="Tag"
-          className="mt-[2cm] mr-[3cm] h-[13.44rem] w-auto object-contain md:h-[17.28rem]"
-        />
-        <MarketingNav />
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate({ to: primaryHref })} className="gap-2">
-            {primaryLabel}
-          </Button>
-          {!authed && (
-            <Button onClick={() => setShowSignup(true)} className="gap-2">
-              Start Setup <ArrowRight className="h-4 w-4" />
+      <MarketingHeader
+        right={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => navigate({ to: primaryHref })}
+              className="gap-2"
+            >
+              {primaryLabel}
             </Button>
-          )}
-        </div>
-      </header>
+            {!authed && (
+              <Button onClick={() => setShowSignup(true)} className="gap-2">
+                Start Setup <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
+          </>
+        }
+      />
+
 
       {/* Hero */}
       <section className="relative overflow-hidden">

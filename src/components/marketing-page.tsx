@@ -1,29 +1,38 @@
+import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { MarketingNav } from "@/components/marketing-nav";
-import { TagLogo } from "@/components/tag-logo";
+import { MarketingNav, MarketingCtaButton } from "@/components/marketing-nav";
+import heroLogo from "@/assets/GreenTag.png.asset.png";
 
-// Shared chrome for every "sub" marketing page (Features, How it Works,
-// Intelligence Engine, Intent Gap Analytics, Pricing) — logo + the same flat
-// nav + a Start Setup CTA, so navigating between them never loses context.
-export function MarketingHeader() {
+// Shared header used by every top-level page (hero, auth, marketing subs).
+// 3-column grid keeps the logo pinned top-left and the nav pills centered
+// regardless of what sits in the right slot, so nothing jumps between pages.
+export function MarketingHeader({
+  right,
+}: {
+  right?: ReactNode;
+}) {
+  const rightSlot = right === undefined ? <MarketingCtaButton /> : right;
   return (
-    <header className="border-b border-border/20 px-6 py-4 sm:py-6">
-      <div className="mx-auto flex max-w-7xl items-center gap-6">
-        <Link to="/about" className="shrink-0">
-          <TagLogo variant="wordmark" size="sm" className="h-[4.8rem]" />
-        </Link>
-        <div className="flex-1" />
-        <nav className="flex justify-center">
-          <MarketingNav showStartSetup />
-        </nav>
+    <header className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-start gap-8 px-6 py-5">
+      <Link to="/about">
+        <img
+          src={heroLogo}
+          alt="Tag"
+          className="h-[12rem] w-auto object-contain md:h-[13.2rem]"
+        />
+      </Link>
+      <div className="flex justify-center pt-4">
+        <MarketingNav />
       </div>
+      <div className="flex items-start gap-2 pt-4">{rightSlot}</div>
     </header>
   );
 }
+
 
 export function MarketingCta() {
   const navigate = useNavigate();
