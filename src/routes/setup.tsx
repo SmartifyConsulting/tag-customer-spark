@@ -316,7 +316,7 @@ function SetupWizard() {
           for (let i = 0; i < needEnrich.length; i += CHUNK) {
             if (cancelled) return;
             const chunk = needEnrich.slice(i, i + CHUNK);
-            setImportLabel(`Enhancing intelligence… ${done} / ${needEnrich.length}`);
+            setImportLabel(`Generating product profiles… ${done} / ${needEnrich.length}`);
             await bulkEnrichFn({ data: { productIds: chunk } });
             done += chunk.length;
             setImportProgress(70 + Math.round((done / needEnrich.length) * 30));
@@ -439,17 +439,12 @@ function SetupWizard() {
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
-      {/* Header with top-left logo */}
-      <header className="border-b border-border/20 px-4 py-4 sm:px-6 sm:py-6">
-        <div className="mx-auto max-w-7xl">
-          <Link to="/dashboard" className="shrink-0">
-            <TagLogo variant="wordmark" size="sm" />
-          </Link>
-        </div>
-      </header>
-
-      {/* Main content - centered card */}
-      <main className="flex flex-1 items-center justify-center px-4 py-10">
+      {/* Main content - centered card, with the logo sitting just above it
+          (80% larger than the old top-bar logo: 4.8rem → 8.64rem). */}
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-10">
+        <Link to="/dashboard" className="mb-6 shrink-0">
+          <TagLogo variant="wordmark" heightClass="h-[8.64rem]" />
+        </Link>
         <div className="w-full max-w-lg space-y-6">
           <Card className="rounded-2xl border-border/60 p-8 shadow-sm">
           {canGoBack && (

@@ -172,10 +172,14 @@ export const commitStoreImport = createServerFn({ method: "POST" })
           city: row.city ?? null,
           province: row.province ?? null,
           country: row.country ?? null,
-          timezone: row.timezone ?? null,
           manager_name: row.manager_name ?? null,
           contact_phone: row.contact_phone ?? null,
         };
+        // stores.timezone is NOT NULL (DB default 'UTC'). Only set it when
+        // we actually have a value — otherwise a null would override the
+        // default and violate the constraint. Omitting it lets the default
+        // apply on insert and leaves the existing value intact on update.
+        if (row.timezone) payload.timezone = row.timezone;
         if (existingId) {
           const { error } = await supabase.from("stores").update(payload).eq("id", existingId);
           if (error) throw new Error(error.message);

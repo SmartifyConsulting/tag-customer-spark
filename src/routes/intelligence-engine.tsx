@@ -65,11 +65,7 @@ function IntelligenceEnginePage() {
     <div className="min-h-screen bg-background text-foreground">
       <MarketingHeader />
       <section className="mx-auto max-w-7xl px-6 py-10">
-        <p className="mx-auto max-w-2xl text-center text-muted-foreground">
-          Tag is not just a collection of features. Behind every scan, interaction, and customer
-          decision is an intelligence layer that continuously learns and reveals opportunities.
-        </p>
-        <div className="mx-auto mt-6 max-w-2xl text-center">
+        <div className="mx-auto max-w-2xl text-center">
           <span className="text-base font-bold uppercase tracking-wide text-[color:var(--mint)]">
             The Tag Intelligence Engine™
           </span>

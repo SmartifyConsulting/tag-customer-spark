@@ -5,21 +5,27 @@ export function TagLogo({
   withWordmark = false,
   size = "default",
   variant = "icon",
+  heightClass,
 }: {
   className?: string;
   withWordmark?: boolean;
   size?: "default" | "sm" | "lg" | "xl";
   variant?: "icon" | "wordmark";
+  // Optional explicit Tailwind height class (e.g. "h-[8.64rem]"). Overrides
+  // the size-based height for the wordmark image when a caller needs a
+  // specific size the presets don't cover.
+  heightClass?: string;
 }) {
   if (variant === "wordmark") {
     const h =
-      size === "sm"
+      heightClass ??
+      (size === "sm"
         ? "h-[4.8rem]"
         : size === "lg"
           ? "h-32"
           : size === "xl"
             ? "h-[368px]"
-            : "h-[5.6rem]";
+            : "h-[5.6rem]");
     return (
       <div className={`flex items-center justify-center ${className ?? ""}`}>
         <img
