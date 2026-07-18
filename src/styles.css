@@ -91,7 +91,7 @@
   --success: #25D366;                            /* WhatsApp green */
   --success-foreground: oklch(1 0 0);
 
-  --mint: #E91E63;                               /* TAG pink */
+  --mint: #C75984;                               /* TAG pink (matches logo) */
   --mint-foreground: oklch(1 0 0);
 
   --accent-secondary: #EBA327;                  /* Amber/Gold */
@@ -149,7 +149,7 @@
   --success: oklch(0.78 0.14 78);
   --success-foreground: oklch(0.16 0.04 60);
 
-  --mint: oklch(0.65 0.18 20);                   /* Dark mode TAG pink */
+  --mint: #C75984;                               /* Dark mode TAG pink (matches logo) */
   --mint-foreground: oklch(0.99 0 0);
 
   --accent-secondary: oklch(0.70 0.14 78);      /* Dark mode amber */

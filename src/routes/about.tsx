@@ -10,7 +10,7 @@ import { TagLogo } from "@/components/tag-logo";
 
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
-import heroLogo from "@/assets/Tag_logo_pink.png";
+import heroLogo from "@/assets/Tag_logo_pink_horizontal.png";
 
 export const Route = createFileRoute("/about")({
   ssr: false,
