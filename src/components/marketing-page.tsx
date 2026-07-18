@@ -4,18 +4,18 @@ import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { MarketingNav, MarketingCtaButton } from "@/components/marketing-nav";
+import { MarketingNav, MarketingCtaGroup } from "@/components/marketing-nav";
 import { TagLogo } from "@/components/tag-logo";
 
 // Shared header used by every top-level page (hero, auth, marketing subs).
-// Nav pills sit left, CTA and logo sit right with the logo as the
-// right-most element, so nothing jumps between pages.
+// Nav pills sit left, Sign in/Start Setup and the logo sit right with the
+// logo as the right-most element, so nothing jumps between pages.
 export function MarketingHeader({
   right,
 }: {
   right?: ReactNode;
 }) {
-  const rightSlot = right === undefined ? <MarketingCtaButton /> : right;
+  const rightSlot = right === undefined ? <MarketingCtaGroup /> : right;
   return (
     <header className="mx-auto flex max-w-7xl items-center justify-between gap-8 px-6 py-5">
       <div className="flex items-center">
@@ -24,7 +24,7 @@ export function MarketingHeader({
       <div className="flex items-center gap-4">
         {rightSlot}
         <Link to="/about" className="shrink-0">
-          <TagLogo variant="wordmark" size="lg" className="h-[24rem]" />
+          <TagLogo variant="wordmark" size="lg" className="h-[31.2rem]" />
         </Link>
       </div>
     </header>

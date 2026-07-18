@@ -16,12 +16,12 @@ const LINKS = [
 // decide what sits in the right slot (see MarketingHeader).
 export function MarketingNav() {
   return (
-    <nav className="hidden items-center gap-2 text-sm font-medium text-foreground md:flex">
+    <nav className="hidden items-center gap-2 text-sm font-bold text-foreground md:flex">
       {LINKS.map((l) => (
         <Link
           key={l.to}
           to={l.to}
-          className="rounded-md bg-[color:var(--mint)] px-4 py-2 text-white transition-colors hover:bg-gray-200 hover:text-[color:var(--mint)]"
+          className="rounded-md bg-[color:var(--mint)] px-4 py-2 text-white transition-colors hover:bg-[#A6446B]"
         >
           {l.label}
         </Link>
@@ -43,5 +43,37 @@ export function MarketingCtaButton() {
     <Button onClick={() => navigate({ to: primaryHref })} className="gap-2">
       {primaryLabel} <ArrowRight className="h-4 w-4" />
     </Button>
+  );
+}
+
+// Sign in + Start Setup, shown together in the header on every marketing
+// page (not just the hero) so the entry points are always consistent.
+export function MarketingCtaGroup() {
+  const navigate = useNavigate();
+  const [authed, setAuthed] = useState(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
+  }, []);
+
+  if (authed) {
+    return (
+      <Button onClick={() => navigate({ to: "/dashboard" })} className="gap-2">
+        Open dashboard <ArrowRight className="h-4 w-4" />
+      </Button>
+    );
+  }
+
+  return (
+    <>
+      <Button variant="outline" onClick={() => navigate({ to: "/auth" })} className="gap-2">
+        Sign in
+      </Button>
+      <Button
+        onClick={() => navigate({ to: "/auth", search: { mode: "signup" } })}
+        className="gap-2"
+      >
+        Start Setup <ArrowRight className="h-4 w-4" />
+      </Button>
+    </>
   );
 }
