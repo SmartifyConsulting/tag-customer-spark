@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MarketingNav, MarketingCtaButton } from "@/components/marketing-nav";
-import heroLogo from "@/assets/GreenTag.png.asset.png";
+import { TagLogo } from "@/components/tag-logo";
 
 // Shared header used by every top-level page (hero, auth, marketing subs).
 // 3-column grid keeps the logo pinned top-left and the nav pills centered
@@ -17,18 +17,14 @@ export function MarketingHeader({
 }) {
   const rightSlot = right === undefined ? <MarketingCtaButton /> : right;
   return (
-    <header className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-start gap-8 px-6 py-5">
-      <Link to="/about">
-        <img
-          src={heroLogo}
-          alt="Tag"
-          className="h-[12rem] w-auto object-contain md:h-[13.2rem]"
-        />
+    <header className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-8 px-6 py-5">
+      <Link to="/about" className="shrink-0">
+        <TagLogo variant="wordmark" size="lg" className="h-[20rem]" />
       </Link>
-      <div className="flex justify-center pt-4">
+      <div className="flex justify-center">
         <MarketingNav />
       </div>
-      <div className="flex items-start gap-2 pt-4">{rightSlot}</div>
+      <div className="flex items-center gap-2">{rightSlot}</div>
     </header>
   );
 }

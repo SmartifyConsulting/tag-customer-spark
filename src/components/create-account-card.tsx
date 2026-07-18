@@ -189,10 +189,6 @@ export function CreateAccountCard({
                 value={suCompany}
                 onChange={(e) => setSuCompany(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                If you were invited to an existing workspace, this is ignored — you'll join that
-                one instead.
-              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="su-website">Company website (optional)</Label>
@@ -204,10 +200,6 @@ export function CreateAccountCard({
                 value={suWebsite}
                 onChange={(e) => setSuWebsite(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                We'll pick up your logo from here automatically — you can replace it later in
-                Settings.
-              </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -278,7 +270,6 @@ export function CreateAccountCard({
                 value={suPassword}
                 onChange={(e) => setSuPassword(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">At least 8 characters.</p>
             </div>
             {inlineError && (
               <p className="text-sm text-destructive" aria-live="polite">

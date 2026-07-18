@@ -16,12 +16,12 @@ const LINKS = [
 // decide what sits in the right slot (see MarketingHeader).
 export function MarketingNav() {
   return (
-    <nav className="hidden items-center gap-2 text-[15px] font-bold text-foreground md:flex">
+    <nav className="hidden items-center gap-1.5 text-[13px] font-bold text-foreground md:flex">
       {LINKS.map((l) => (
         <Link
           key={l.to}
           to={l.to}
-          className="rounded-full border-2 border-[color:var(--mint)] bg-[color:var(--mint)] px-3 py-1.5 text-white transition-colors hover:bg-transparent hover:text-[color:var(--mint)]"
+          className="rounded-full border-2 border-[color:var(--mint)] bg-[color:var(--mint)] px-2.5 py-1 text-white transition-colors hover:bg-gray-200 hover:text-[color:var(--mint)]"
         >
           {l.label}
         </Link>
