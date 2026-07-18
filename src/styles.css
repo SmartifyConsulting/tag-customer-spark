@@ -91,8 +91,11 @@
   --success: #25D366;                            /* WhatsApp green */
   --success-foreground: oklch(1 0 0);
 
-  --mint: #25D366;                               /* Alias — WhatsApp green */
+  --mint: #E91E63;                               /* TAG pink */
   --mint-foreground: oklch(1 0 0);
+
+  --accent-secondary: #EBA327;                  /* Amber/Gold */
+  --accent-secondary-foreground: oklch(0.20 0.03 60);
 
   --warning: oklch(0.80 0.14 78);                /* Amber #e8b84a */
   --warning-foreground: oklch(0.20 0.03 60);
@@ -146,9 +149,11 @@
   --success: oklch(0.78 0.14 78);
   --success-foreground: oklch(0.16 0.04 60);
 
-  --mint: oklch(0.78 0.14 78);
-  --mint-foreground: oklch(0.16 0.04 60);
+  --mint: oklch(0.65 0.18 20);                   /* Dark mode TAG pink */
+  --mint-foreground: oklch(0.99 0 0);
 
+  --accent-secondary: oklch(0.70 0.14 78);      /* Dark mode amber */
+  --accent-secondary-foreground: oklch(0.20 0.03 60);
 
   --warning: oklch(0.82 0.14 78);
   --warning-foreground: oklch(0.20 0.03 60);

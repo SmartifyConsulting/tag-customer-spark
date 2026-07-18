@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate, Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -34,7 +34,7 @@ import {
   type StoreImportRow,
 } from "@/lib/stores-import.functions";
 import { saveRetailerPosSystem } from "@/lib/settings.functions";
-import heroLogo from "@/assets/GreenTag.png.asset.png";
+import { TagLogo } from "@/components/tag-logo";
 
 export const Route = createFileRoute("/setup")({
   ssr: false,
@@ -425,12 +425,20 @@ function SetupWizard() {
   const totalStores = (storeResult?.created ?? 0) + (storeResult?.updated ?? 0);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-10">
-      <div className="w-full max-w-lg space-y-6">
-        <div className="flex justify-center">
-          <img src={heroLogo} alt="Tag" className="h-[9.6rem] w-auto object-contain" />
+    <div className="flex min-h-screen flex-col bg-muted/40">
+      {/* Header with top-left logo */}
+      <header className="border-b border-border/20 px-4 py-4 sm:px-6 sm:py-6">
+        <div className="mx-auto max-w-7xl">
+          <Link to="/dashboard" className="shrink-0">
+            <TagLogo variant="wordmark" size="sm" />
+          </Link>
         </div>
-        <Card className="rounded-2xl border-border/60 p-8 shadow-sm">
+      </header>
+
+      {/* Main content - centered card */}
+      <main className="flex flex-1 items-center justify-center px-4 py-10">
+        <div className="w-full max-w-lg space-y-6">
+          <Card className="rounded-2xl border-border/60 p-8 shadow-sm">
           {canGoBack && (
             <button
               type="button"
@@ -495,7 +503,8 @@ function SetupWizard() {
             />
           )}
         </Card>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

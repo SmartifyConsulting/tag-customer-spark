@@ -28,7 +28,7 @@ export function MarketingNav({ showStartSetup = false }: { showStartSetup?: bool
   const primaryLabel = authed ? "Open dashboard" : "Start Setup";
 
   return (
-    <div className="flex flex-1 items-center gap-8">
+    <div className="flex items-center gap-8">
       <nav className="hidden items-center gap-2 text-[15px] font-bold text-foreground md:flex">
         {LINKS.map((l) => (
           <Link
@@ -41,7 +41,7 @@ export function MarketingNav({ showStartSetup = false }: { showStartSetup?: bool
         ))}
       </nav>
       {showStartSetup && (
-        <Button onClick={() => navigate({ to: primaryHref })} className="ml-auto gap-2">
+        <Button onClick={() => navigate({ to: primaryHref })} className="gap-2">
           {primaryLabel} <ArrowRight className="h-4 w-4" />
         </Button>
       )}

@@ -1,4 +1,4 @@
-import tagLogo from "@/assets/GreenTag.png.asset.png";
+import tagLogo from "@/assets/Tag_logo_pink.png";
 
 export function TagLogo({
   className,

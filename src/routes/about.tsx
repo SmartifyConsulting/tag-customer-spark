@@ -6,10 +6,11 @@ import { MarketingNav } from "@/components/marketing-nav";
 import { MarketingFooter } from "@/components/marketing-page";
 import { AuthCardFrame } from "@/components/auth-card-frame";
 import { CreateAccountCard } from "@/components/create-account-card";
+import { TagLogo } from "@/components/tag-logo";
 
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
-import heroLogo from "@/assets/GreenTag.png.asset.png";
+import heroLogo from "@/assets/Tag_logo_pink.png";
 
 export const Route = createFileRoute("/about")({
   ssr: false,
@@ -48,8 +49,8 @@ function Landing() {
         >
           <ArrowLeft className="h-4 w-4" /> Back to Tag
         </button>
-        <img src={heroLogo} alt="Tag" className="h-24 w-auto object-contain" />
-        <div className="mt-8 w-full max-w-md">
+        <TagLogo variant="wordmark" size="lg" className="mb-8" />
+        <div className="w-full max-w-md">
           <AuthCardFrame
             title="Create your Tag account"
             subtitle="Start recovering lost sales in under a minute."
