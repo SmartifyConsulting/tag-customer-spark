@@ -47,11 +47,26 @@ function detectBarcodeType(code: unknown): string | null {
   return null;
 }
 
+// Recomputes and replaces the trailing GS1 check digit — sources like
+// spreadsheet typos, OCR, or an AI-generated demo catalogue routinely
+// produce numbers that *look* like a barcode but fail the checksum, which
+// silently blocked QR generation and the public passport page downstream
+// with no visible error at import time. Only the last digit is replaced;
+// the identifying digits (and correct barcodes) are untouched.
+function withCorrectGs1CheckDigit(padded14: string): string {
+  let sum = 0;
+  for (let i = 0; i < 13; i++) {
+    sum += Number(padded14[i]) * (i % 2 === 0 ? 3 : 1);
+  }
+  const check = (10 - (sum % 10)) % 10;
+  return padded14.slice(0, 13) + String(check);
+}
+
 function toGtin14(code: unknown): string | null {
   if (code === null || code === undefined) return null;
   const s = String(code).replace(/\D/g, "");
   if (s.length !== 8 && s.length !== 12 && s.length !== 13 && s.length !== 14) return null;
-  return s.padStart(14, "0");
+  return withCorrectGs1CheckDigit(s.padStart(14, "0"));
 }
 
 function priceToCents(v: unknown): number {
