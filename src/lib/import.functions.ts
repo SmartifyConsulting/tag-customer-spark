@@ -37,9 +37,19 @@ async function resolveRetailerId(supabase: any, userId: string) {
   return data?.retailer_id as string | null;
 }
 
+// Excel commonly stores a long numeric barcode as a float and can surface
+// a spurious trailing fraction (e.g. a cell formatted with 2 decimals
+// reads back as "6001234567895.00"). Strip any decimal portion before
+// stripping non-digits, so it doesn't get concatenated into the digit
+// string as extra digits — a barcode never legitimately has one.
+function stripSpuriousDecimal(input: string): string {
+  const dot = input.indexOf(".");
+  return dot === -1 ? input : input.slice(0, dot);
+}
+
 function detectBarcodeType(code: unknown): string | null {
   if (code === null || code === undefined) return null;
-  const s = String(code).replace(/\D/g, "");
+  const s = stripSpuriousDecimal(String(code)).replace(/\D/g, "");
   if (s.length === 8) return "EAN-8";
   if (s.length === 12) return "UPC-A";
   if (s.length === 13) return "EAN-13";
@@ -64,7 +74,7 @@ function withCorrectGs1CheckDigit(padded14: string): string {
 
 function toGtin14(code: unknown): string | null {
   if (code === null || code === undefined) return null;
-  const s = String(code).replace(/\D/g, "");
+  const s = stripSpuriousDecimal(String(code)).replace(/\D/g, "");
   if (s.length !== 8 && s.length !== 12 && s.length !== 13 && s.length !== 14) return null;
   return withCorrectGs1CheckDigit(s.padStart(14, "0"));
 }

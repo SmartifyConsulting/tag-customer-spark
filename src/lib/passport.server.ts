@@ -49,7 +49,12 @@ const passportSchema = z.object({
   }),
   images: z.array(
     z.object({
-      url: z.string().url(),
+      // Plain string, not .url() — OpenAI's strict structured-output mode
+      // only supports a fixed set of JSON Schema `format` values
+      // (date-time, email, uuid, etc.); zod-to-json-schema emits "uri" for
+      // .url(), which isn't in that set and made every enrichment call
+      // fail schema validation before the model ever ran.
+      url: z.string(),
       role: z.string(),
       source: z.string().nullable(),
       license: z.string().nullable(),
