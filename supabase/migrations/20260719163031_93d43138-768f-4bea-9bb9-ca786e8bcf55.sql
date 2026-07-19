@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.mark_onboarding_complete();

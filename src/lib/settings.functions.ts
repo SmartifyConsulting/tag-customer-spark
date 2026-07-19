@@ -19,8 +19,12 @@ async function resolveRetailerId(supabase: any, userId: string) {
 export const markOnboardingComplete = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase } = context;
-    const { error } = await (supabase as any).rpc("mark_onboarding_complete");
+    // mark_onboarding_complete is SECURITY DEFINER and only callable by
+    // service_role. Invoke via the admin client with the caller's verified id.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as any).rpc("mark_onboarding_complete", {
+      p_user_id: context.userId,
+    });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
