@@ -9,9 +9,14 @@ export function isValidGtin(input: string): boolean {
   const padded = input.padStart(14, "0");
   const digits = padded.split("").map(Number);
   const check = digits[13];
+  // Weight 3 applies to the digit immediately left of the check digit
+  // (index 12) and alternates outward — i.e. weight 3 at even indices,
+  // 1 at odd. This previously had the parity inverted, which rejected
+  // the majority of genuinely valid GTINs (verified against a real
+  // UPC-A) and blocked QR generation for almost everything.
   const sum = digits
     .slice(0, 13)
-    .reduce((s, d, i) => s + d * ((13 - i) % 2 === 0 ? 3 : 1), 0);
+    .reduce((s, d, i) => s + d * (i % 2 === 0 ? 3 : 1), 0);
   const expected = (10 - (sum % 10)) % 10;
   return check === expected;
 }
