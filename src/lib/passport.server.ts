@@ -60,7 +60,10 @@ const passportSchema = z.object({
       license: z.string().nullable(),
     }),
   ),
-  field_confidence: z.record(z.string(), z.number().min(0).max(1)),
+  // No field_confidence here — z.record() has dynamic keys, which OpenAI's
+  // strict structured-output mode can't express (it requires every object
+  // in the schema to have a fixed, closed set of properties). Stored as an
+  // empty object downstream instead of asking the model to produce it.
 });
 
 export type EnrichedPassport = z.infer<typeof passportSchema>;
@@ -173,7 +176,6 @@ Rules:
 - marketing_description: 1 paragraph, evocative but truthful.
 - product_summary: 1-2 sentence factual summary.
 - images: only include URLs present in lookup data (do not invent URLs).
-- field_confidence: map each populated field name to 0-1 confidence.
 - Return only valid data matching the schema; nulls are fine.`;
 
   try {
@@ -292,7 +294,7 @@ export async function enrichProductPassport(
       sustainability: merge(enriched.sustainability, existing?.sustainability ?? {}),
       images: merge(enriched.images, existing?.images ?? []),
       sources,
-      field_confidence: enriched.field_confidence ?? {},
+      field_confidence: existing?.field_confidence ?? {},
       enrichment_status: "enriched",
       enrichment_model: "openai/gpt-5.5",
       enriched_at: new Date().toISOString(),
