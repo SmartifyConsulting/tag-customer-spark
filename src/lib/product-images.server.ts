@@ -6,6 +6,24 @@
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 8 * 1024 * 1024;
+const FETCH_TIMEOUT_MS = 6000;
+
+// Open Food Facts is queried across up to 7 GTIN variants (plus Serper on
+// top) with no timeout — for barcodes that were never going to be there
+// (e.g. an appliance, or a synthetic/demo GTIN), a single slow or hung
+// upstream response stalled the entire resolver indefinitely with nothing
+// to catch, leaving image_status stuck on "pending" forever. This bounds
+// every external call so the pipeline always converges, worst case on the
+// guaranteed-fast local placeholder.
+async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 type ResolveInput = {
   productId: string;
@@ -52,7 +70,7 @@ async function downloadAndUpload(
   destPath: string,
 ): Promise<{ ok: true; contentType: string; url: string } | { ok: false; reason: string }> {
   try {
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       headers: { "User-Agent": "TAG-Product-Image/1.0" },
       redirect: "follow",
     });
@@ -358,7 +376,7 @@ const MIN_QUALITY_PX = 500;
 
 async function serperImageSearch(apiKey: string, query: string): Promise<string | null> {
   try {
-    const res = await fetch("https://google.serper.dev/images", {
+    const res = await fetchWithTimeout("https://google.serper.dev/images", {
       method: "POST",
       headers: {
         "X-API-KEY": apiKey,
@@ -439,7 +457,7 @@ async function lookupSerperImage(input: {
 
 async function offFetch(url: string): Promise<any | null> {
   try {
-    const r = await fetch(url, { headers: { "User-Agent": "TAG-DPP/1.0" } });
+    const r = await fetchWithTimeout(url, { headers: { "User-Agent": "TAG-DPP/1.0" } });
     if (!r.ok) return null;
     return await r.json();
   } catch {
