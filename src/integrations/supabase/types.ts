@@ -3438,7 +3438,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      mark_onboarding_complete: { Args: never; Returns: undefined }
+      mark_onboarding_complete:
+        | { Args: never; Returns: undefined }
+        | { Args: { p_user_id?: string }; Returns: undefined }
       recompute_product_intent: {
         Args: { _product_id: string }
         Returns: undefined
