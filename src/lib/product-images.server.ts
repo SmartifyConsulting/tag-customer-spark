@@ -573,8 +573,11 @@ export async function resolveAndSyncProductImage(input: {
     planTier: (sub as any)?.plan ?? null,
   });
 
-  // Write to products
-  await supabase
+  // Write to products — checked, unlike before: an unchecked failure here
+  // (e.g. an RLS policy rejecting the write) left the caller believing
+  // the refresh succeeded while image_status silently stayed "pending"
+  // forever, with no error surfaced anywhere.
+  const { error: productUpdateErr } = await supabase
     .from("products")
     .update({
       image_url: result.image_url,
@@ -586,6 +589,9 @@ export async function resolveAndSyncProductImage(input: {
       image_gallery: result.image_gallery,
     })
     .eq("id", productId);
+  if (productUpdateErr) {
+    throw new Error(`Resolved image but failed to save it: ${productUpdateErr.message}`);
+  }
 
   // Mirror to passport
   await supabaseAdmin
