@@ -65,6 +65,7 @@ import { Route as ApiPublicWebhooksTwilioInboundRouteImport } from './routes/api
 import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public/webhooks/paypal'
 import { Route as ApiPublicWebhooksPayfastItnRouteImport } from './routes/api/public/webhooks/payfast-itn'
 import { Route as ApiPublicScanInterestRouteImport } from './routes/api/public/scan.interest'
+import { Route as ApiPublicScanBarcodeInterestRouteImport } from './routes/api/public/scan.barcode-interest'
 import { Route as ApiPublicSShortCodeRouteImport } from './routes/api/public/s.$shortCode'
 import { Route as ApiPublicHooksPassportTickRouteImport } from './routes/api/public/hooks.passport-tick'
 import { Route as ApiPublicHooksNotificationsTickRouteImport } from './routes/api/public/hooks.notifications-tick'
@@ -374,6 +375,12 @@ const ApiPublicScanInterestRoute = ApiPublicScanInterestRouteImport.update({
   path: '/api/public/scan/interest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicScanBarcodeInterestRoute =
+  ApiPublicScanBarcodeInterestRouteImport.update({
+    id: '/api/public/scan/barcode-interest',
+    path: '/api/public/scan/barcode-interest',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicSShortCodeRoute = ApiPublicSShortCodeRouteImport.update({
   id: '/api/public/s/$shortCode',
   path: '/api/public/s/$shortCode',
@@ -466,6 +473,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
+  '/api/public/scan/barcode-interest': typeof ApiPublicScanBarcodeInterestRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
@@ -526,6 +534,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
+  '/api/public/scan/barcode-interest': typeof ApiPublicScanBarcodeInterestRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
@@ -591,6 +600,7 @@ export interface FileRoutesById {
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
+  '/api/public/scan/barcode-interest': typeof ApiPublicScanBarcodeInterestRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
@@ -656,6 +666,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-tick'
     | '/api/public/hooks/passport-tick'
     | '/api/public/s/$shortCode'
+    | '/api/public/scan/barcode-interest'
     | '/api/public/scan/interest'
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
@@ -716,6 +727,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-tick'
     | '/api/public/hooks/passport-tick'
     | '/api/public/s/$shortCode'
+    | '/api/public/scan/barcode-interest'
     | '/api/public/scan/interest'
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
@@ -780,6 +792,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/notifications-tick'
     | '/api/public/hooks/passport-tick'
     | '/api/public/s/$shortCode'
+    | '/api/public/scan/barcode-interest'
     | '/api/public/scan/interest'
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
@@ -811,6 +824,7 @@ export interface RootRouteChildren {
   ApiPublicHooksNotificationsTickRoute: typeof ApiPublicHooksNotificationsTickRoute
   ApiPublicHooksPassportTickRoute: typeof ApiPublicHooksPassportTickRoute
   ApiPublicSShortCodeRoute: typeof ApiPublicSShortCodeRoute
+  ApiPublicScanBarcodeInterestRoute: typeof ApiPublicScanBarcodeInterestRoute
   ApiPublicScanInterestRoute: typeof ApiPublicScanInterestRoute
   ApiPublicWebhooksPayfastItnRoute: typeof ApiPublicWebhooksPayfastItnRoute
   ApiPublicWebhooksPaypalRoute: typeof ApiPublicWebhooksPaypalRoute
@@ -1211,6 +1225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicScanInterestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/scan/barcode-interest': {
+      id: '/api/public/scan/barcode-interest'
+      path: '/api/public/scan/barcode-interest'
+      fullPath: '/api/public/scan/barcode-interest'
+      preLoaderRoute: typeof ApiPublicScanBarcodeInterestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/s/$shortCode': {
       id: '/api/public/s/$shortCode'
       path: '/api/public/s/$shortCode'
@@ -1424,6 +1445,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksNotificationsTickRoute: ApiPublicHooksNotificationsTickRoute,
   ApiPublicHooksPassportTickRoute: ApiPublicHooksPassportTickRoute,
   ApiPublicSShortCodeRoute: ApiPublicSShortCodeRoute,
+  ApiPublicScanBarcodeInterestRoute: ApiPublicScanBarcodeInterestRoute,
   ApiPublicScanInterestRoute: ApiPublicScanInterestRoute,
   ApiPublicWebhooksPayfastItnRoute: ApiPublicWebhooksPayfastItnRoute,
   ApiPublicWebhooksPaypalRoute: ApiPublicWebhooksPaypalRoute,

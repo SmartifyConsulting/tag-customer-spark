@@ -1,7 +1,13 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { useState } from "react";
+import PhoneInput from "react-phone-number-input";
+import { isValidPhoneNumber } from "libphonenumber-js";
+import { CheckCircle2, Loader2, MessageCircle, ShieldCheck } from "lucide-react";
 import { ProductImage } from "@/components/products/product-image";
+import { Button } from "@/components/ui/button";
+import "react-phone-number-input/style.css";
 
 // ------- Server: resolve product by GTIN, self-heal, log scan --------------
 
@@ -35,7 +41,7 @@ const getPublicProductByGtin = createServerFn({ method: "GET" })
     const { data: product } = await supabase
       .from("products")
       .select(
-        "id, retailer_id, name, brand, description, gtin, image_url, thumbnail_url, hero_image, image_status, price_cents, sale_price_cents, currency, on_promotion, promotion_label",
+        "id, retailer_id, store_id, stock_qty, name, brand, description, gtin, image_url, thumbnail_url, hero_image, image_status, price_cents, sale_price_cents, currency, on_promotion, promotion_label",
       )
       .eq("gtin", gtin14)
       .eq("status", "active")
@@ -93,6 +99,7 @@ const getPublicProductByGtin = createServerFn({ method: "GET" })
       await supabaseAdmin.from("qr_scans").insert({
         product_id: (product as any).id,
         retailer_id: (product as any).retailer_id,
+        store_id: (product as any).store_id,
         scanned_at: new Date().toISOString(),
         device_type: device,
         user_agent: ua,
@@ -217,6 +224,11 @@ function PublicProduct() {
                     ★ {product.promotion_label ?? "On promotion"}
                   </span>
                 )}
+                {typeof product.stock_qty === "number" && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {product.stock_qty > 0 ? `${product.stock_qty} left in stock` : "Out of stock"}
+                  </p>
+                )}
               </div>
             </div>
             {passport?.product_summary && (
@@ -225,6 +237,8 @@ function PublicProduct() {
             {!passport?.product_summary && product.description && (
               <p className="mt-4 text-base leading-relaxed">{product.description}</p>
             )}
+
+            <NotifyBar gtin={gtin} productName={product.name} />
           </div>
         </div>
 
@@ -322,6 +336,81 @@ function PublicProduct() {
         </div>
       </div>
     </div>
+  );
+}
+
+function NotifyBar({ gtin, productName }: { gtin: string; productName: string }) {
+  const [phone, setPhone] = useState<string | undefined>();
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const phoneOk = phone && isValidPhoneNumber(phone);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!phoneOk || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/public/scan/barcode-interest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gtin, whatsapp: phone }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error ?? "Something went wrong");
+      setDone(true);
+    } catch (err: any) {
+      setError(err.message ?? "Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="mt-6 flex items-center gap-3 rounded-2xl border bg-card p-4">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-600/12 text-emerald-600">
+          <CheckCircle2 className="h-5 w-5" />
+        </div>
+        <p className="text-sm">
+          You're all set — {productName} will WhatsApp you if anything changes.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-6 rounded-2xl border bg-card p-4">
+      <p className="text-sm font-medium">Notify me on WhatsApp</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        One WhatsApp if this drops in price, restocks, or is almost gone.
+      </p>
+      <div className="mt-3 rounded-md border border-input bg-background px-3 py-2 [&_.PhoneInput]:flex [&_.PhoneInputCountry]:mr-2 [&_input]:bg-transparent [&_input]:outline-none [&_input]:flex-1 [&_input]:text-sm">
+        <PhoneInput
+          defaultCountry="ZA"
+          international
+          placeholder="Enter phone number"
+          value={phone}
+          onChange={setPhone}
+        />
+      </div>
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+      <Button type="submit" disabled={!phoneOk || submitting} className="mt-3 w-full h-11">
+        {submitting ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <>
+            <MessageCircle className="mr-2 h-4 w-4" />
+            Notify me on WhatsApp
+          </>
+        )}
+      </Button>
+      <p className="mt-2 flex items-center gap-1.5 justify-center text-[11px] text-muted-foreground">
+        <ShieldCheck className="h-3 w-3" /> Secure · No spam · Unsubscribe anytime
+      </p>
+    </form>
   );
 }
 
