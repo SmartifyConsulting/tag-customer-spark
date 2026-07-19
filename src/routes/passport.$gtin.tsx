@@ -38,15 +38,23 @@ const getPublicProductByGtin = createServerFn({ method: "GET" })
       { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
     );
 
-    const { data: product } = await supabase
+    // The same manufacturer GTIN can be stocked by multiple retailers, so
+    // this can legitimately match more than one row — .maybeSingle() would
+    // throw in that case. Bare /passport/{gtin} (no store context) can't
+    // disambiguate which retailer's copy the scanner meant, so it
+    // deterministically picks the oldest-registered match; a store-linked
+    // scan entry point (in progress) will resolve this precisely instead.
+    const { data: products } = await supabase
       .from("products")
       .select(
         "id, retailer_id, store_id, stock_qty, name, brand, description, gtin, image_url, thumbnail_url, hero_image, image_status, price_cents, sale_price_cents, currency, on_promotion, promotion_label",
       )
       .eq("gtin", gtin14)
       .eq("status", "active")
-      .maybeSingle();
+      .order("created_at", { ascending: true })
+      .limit(1);
 
+    const product = products?.[0] ?? null;
     if (!product) return { found: false as const, gtin: gtin14 };
 
     // Self-heal: shell passport if missing

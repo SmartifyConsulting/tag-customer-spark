@@ -121,15 +121,18 @@ export async function generateForProduct(
   const existingOwn = await readActiveQr(supabase, productId);
   if (existingOwn && !force) return existingOwn;
 
-  // GTIN uniqueness across the platform (partial unique index also protects us)
+  // GTIN uniqueness is scoped per retailer (partial unique index also
+  // protects us) — the same manufacturer GTIN is legitimately stocked by
+  // multiple retailers, so each gets their own resolver for it.
   const { data: gtinClash } = await supabase
     .from("product_qr_assets")
     .select("id, product_id")
     .eq("gtin", gtin14)
+    .eq("retailer_id", product.retailer_id)
     .eq("status", "active")
     .maybeSingle();
   if (gtinClash && gtinClash.product_id !== productId) {
-    throw new Error("This GTIN already has an active QR code on another product.");
+    throw new Error("This GTIN already has an active QR code on another of your products.");
   }
 
   // Retire existing active row if regenerating

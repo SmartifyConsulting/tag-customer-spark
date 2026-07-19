@@ -112,6 +112,32 @@ function InventoryAdminPage() {
     })();
   }, [backfillFn, qc]);
 
+  // Silently finish any product's digital identity (normalise, QR, image,
+  // passport, enrichment) left stalled by an interrupted import — no
+  // button, no loading state; the list and Tag Intelligence badge just
+  // update as processing catches up. Barcode-less products are skipped
+  // (still the explicit "Tag Intelligence" action below) since assigning a
+  // barcode is a more consequential change than completing an identity a
+  // barcode already unlocks. Bounded per page load; any remaining backlog
+  // catches up on the next visit.
+  const autoCompleteRan = useRef(false);
+  useEffect(() => {
+    if (autoCompleteRan.current) return;
+    autoCompleteRan.current = true;
+    (async () => {
+      const { ids } = await listIncompleteFn().catch(() => ({ ids: [] as string[] }));
+      if (!ids.length) return;
+      const CHUNK = 10;
+      const MAX_CHUNKS = 5;
+      for (let i = 0; i < ids.length && i / CHUNK < MAX_CHUNKS; i += CHUNK) {
+        const chunk = ids.slice(i, i + CHUNK);
+        await bulkCompleteFn({ data: { productIds: chunk } }).catch(() => null);
+        qc.invalidateQueries({ queryKey: ["admin-inventory"] });
+        qc.invalidateQueries({ queryKey: ["tag-intelligence-status"] });
+      }
+    })();
+  }, [listIncompleteFn, bulkCompleteFn, qc]);
+
   const rows = (q.data?.rows ?? []) as any[];
   const taggedCount = rows.filter((r) => r.is_tagged).length;
   const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
