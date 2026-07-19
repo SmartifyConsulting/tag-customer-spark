@@ -1,0 +1,24 @@
+-- has_role() had EXECUTE revoked from `authenticated` on 2026-06-29
+-- (migration 20260629162804), but 9 RLS policies across multiple tables
+-- (retailers, audit_logs, subscriptions, brands, and others) - including
+-- some added weeks *after* that revoke - call has_role(auth.uid(), ...)
+-- directly in their USING/WITH CHECK clauses. Postgres must evaluate
+-- every permissive policy on a relation (including ones combined with OR)
+-- to determine visibility, so any authenticated query that touches one of
+-- these tables - even a plain non-admin user, even via an embedded join
+-- with no matching rows - throws "permission denied for function
+-- has_role" before row visibility is even decided.
+--
+-- Concretely: the product image resolver embeds a join to `brands`
+-- (brands:brand_id(...)) to check for a fallback logo. `brands`' RLS has
+-- a `brands_super_admin_all` policy using has_role() directly, so that
+-- embed failed this way for every authenticated user, on every product,
+-- silently aborting image resolution (and, before recent fixes added
+-- error visibility, doing so with no reported error at all).
+--
+-- has_role() only exposes whether a given user id holds a given role -
+-- the same exposure profile as belongs_to_retailer/can_manage_retailer/
+-- has_any_role, which all remained grantable to `authenticated` from the
+-- same original migration. Restoring this grant brings has_role back in
+-- line with its sibling functions rather than introducing new exposure.
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated;
