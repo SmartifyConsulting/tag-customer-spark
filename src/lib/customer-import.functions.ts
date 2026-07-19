@@ -3,6 +3,56 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { callAiJson } from "./import.functions";
 
+// Deterministic column -> canonical-field mapping, same approach as
+// import.functions.ts's product import: reliable for any spreadsheet with
+// sensible headers, independent of AI availability (the AI fallback below
+// previously had no non-AI path at all, so it failed outright whenever the
+// AI gateway was rate-limited, over quota, or just slow).
+const CUSTOMER_HEADER_SYNONYMS: Record<string, string[]> = {
+  full_name: ["full name", "name", "customer name", "contact name"],
+  first_name: ["first name", "firstname", "given name"],
+  last_name: ["last name", "lastname", "surname", "family name"],
+  phone: [
+    "phone", "mobile", "mobile number", "mobile no", "cell", "cellphone",
+    "cell number", "whatsapp", "whatsapp number", "contact number", "tel", "telephone",
+  ],
+  phone_country_code: ["country code", "dial code", "phone country code", "calling code"],
+  email: ["email", "email address", "e mail"],
+};
+const CUSTOMER_CANONICAL_ORDER = [
+  "full_name", "first_name", "last_name", "phone", "phone_country_code", "email",
+];
+
+function normaliseHeader(h: string): string {
+  return String(h)
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[/_\-.]+/g, " ")
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function deterministicCustomerHeaderMap(headers: string[]): Record<string, string | null> {
+  const normed = headers.map((h) => ({ raw: h, norm: normaliseHeader(h) }));
+  const used = new Set<string>();
+  const map: Record<string, string | null> = {};
+  for (const field of CUSTOMER_CANONICAL_ORDER) {
+    const synonyms = CUSTOMER_HEADER_SYNONYMS[field] ?? [];
+    let match: string | null = null;
+    for (const syn of synonyms) {
+      const hit = normed.find((h) => !used.has(h.raw) && h.norm === syn);
+      if (hit) {
+        match = hit.raw;
+        break;
+      }
+    }
+    if (match) used.add(match);
+    map[field] = match;
+  }
+  return map;
+}
+
 const customerRowSchema = z.object({
   full_name: z.string().trim().min(1),
   whatsapp_e164: z.string().trim().min(8),
@@ -98,17 +148,38 @@ export const previewCustomerImport = createServerFn({ method: "POST" })
     const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: "" }) as Record<string, any>[];
     const headers = rawRows.length ? Object.keys(rawRows[0]) : [];
 
-    const sample = rawRows.slice(0, 5);
-    const mapping = await callAiJson(
-      `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {full_name, first_name, last_name, phone, phone_country_code, email} to the best-matching source header (or null if absent).
+    // Deterministic mapping first — reliable for any spreadsheet with
+    // sensible headers, independent of the AI service. Only fall back to AI
+    // when it can't find the two required fields (a name and a phone), and
+    // even then a deterministic match always wins over an AI guess. Wrapped
+    // so an AI outage (rate limit, over quota, timeout) degrades to
+    // whatever the deterministic pass found instead of failing the entire
+    // import outright.
+    const detMap = deterministicCustomerHeaderMap(headers);
+    let map: Record<string, string | null> = detMap;
+    const hasName = !!(detMap.full_name || (detMap.first_name && detMap.last_name));
+    if (!hasName || !detMap.phone) {
+      try {
+        const sample = rawRows.slice(0, 5);
+        const mapping = await callAiJson(
+          `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {full_name, first_name, last_name, phone, phone_country_code, email} to the best-matching source header (or null if absent).
 Rules:
 - If the sheet has one combined name column, map it to full_name.
 - If the sheet has separate first/last name columns instead, map those to first_name and last_name (leave full_name null) — do not skip the row for lacking a single full_name column.
 - "phone" should match a mobile/cellphone/WhatsApp number column, not a landline.
 - If country/dial code is a SEPARATE column from the phone number (e.g. a "27" or "+27" or "Country Code" column), map it to phone_country_code so it can be combined with the local number.`,
-      "You map raw spreadsheet columns from a customer/CRM/ERP export to a canonical schema, intelligently handling split name and phone/country-code columns rather than discarding rows that lack a single matching column. Output only valid JSON.",
-    );
-    const map: Record<string, string | null> = mapping?.map ?? {};
+          "You map raw spreadsheet columns from a customer/CRM/ERP export to a canonical schema, intelligently handling split name and phone/country-code columns rather than discarding rows that lack a single matching column. Output only valid JSON.",
+        );
+        const aiMap: Record<string, string | null> = mapping?.map ?? {};
+        map = { ...aiMap };
+        for (const [field, source] of Object.entries(detMap)) {
+          if (source) map[field] = source;
+        }
+      } catch {
+        // AI unavailable — proceed with whatever the deterministic map has.
+        map = detMap;
+      }
+    }
     const get = (row: Record<string, any>, k: string) =>
       map[k] ? row[map[k] as string] : undefined;
     const mapped = rawRows

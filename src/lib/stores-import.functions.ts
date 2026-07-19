@@ -2,6 +2,58 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+// Deterministic column -> canonical-field mapping, same approach as
+// import.functions.ts's product import: reliable for any spreadsheet with
+// sensible headers, independent of AI availability (the AI fallback below
+// previously had no non-AI path at all, so it failed outright whenever the
+// AI gateway was rate-limited, over quota, or just slow).
+const STORE_HEADER_SYNONYMS: Record<string, string[]> = {
+  name: [
+    "name", "branch", "branch name", "store", "store name", "site", "site name",
+    "plant", "location", "warehouse", "outlet", "branch code",
+  ],
+  address: ["address", "street address", "address line 1"],
+  city: ["city", "town"],
+  province: ["province", "state", "region"],
+  country: ["country"],
+  timezone: ["timezone", "time zone", "tz"],
+  manager_name: ["manager", "manager name", "store manager", "branch manager"],
+  contact_phone: ["phone", "contact", "contact phone", "contact number", "tel", "telephone"],
+};
+const STORE_CANONICAL_ORDER = [
+  "name", "address", "city", "province", "country", "timezone", "manager_name", "contact_phone",
+];
+
+function normaliseHeader(h: string): string {
+  return String(h)
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[/_\-.]+/g, " ")
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function deterministicStoreHeaderMap(headers: string[]): Record<string, string | null> {
+  const normed = headers.map((h) => ({ raw: h, norm: normaliseHeader(h) }));
+  const used = new Set<string>();
+  const map: Record<string, string | null> = {};
+  for (const field of STORE_CANONICAL_ORDER) {
+    const synonyms = STORE_HEADER_SYNONYMS[field] ?? [];
+    let match: string | null = null;
+    for (const syn of synonyms) {
+      const hit = normed.find((h) => !used.has(h.raw) && h.norm === syn);
+      if (hit) {
+        match = hit.raw;
+        break;
+      }
+    }
+    if (match) used.add(match);
+    map[field] = match;
+  }
+  return map;
+}
+
 const rowSchema = z.object({
   name: z.string().min(1),
   address: z.string().optional().nullable(),
@@ -114,12 +166,32 @@ export const previewStoreImport = createServerFn({ method: "POST" })
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: "" }) as Record<string, any>[];
       headers = rawRows.length ? Object.keys(rawRows[0]) : [];
-      const sample = rawRows.slice(0, 5);
-      const mapping = await callAiJson(
-        `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {name, address, city, province, country, timezone, manager_name, contact_phone} to the best-matching source header (or null if absent). "name" covers ERP branch/site/plant/location/warehouse code or name columns (e.g. SAP plant code, Oracle inventory org, Dynamics warehouse, a POS store master column). "province" covers state/province/region columns.`,
-        "You map raw spreadsheet columns to a canonical store/branch schema. Output only valid JSON.",
-      );
-      const map: Record<string, string | null> = mapping?.map ?? {};
+
+      // Deterministic mapping first — reliable for any spreadsheet with
+      // sensible headers, independent of the AI service. Only fall back to
+      // AI when it can't find the one required field (name), and even then
+      // a deterministic match always wins over an AI guess. Wrapped so an
+      // AI outage (rate limit, over quota, timeout) degrades to whatever
+      // the deterministic pass found instead of failing the whole import.
+      const detMap = deterministicStoreHeaderMap(headers);
+      let map: Record<string, string | null> = detMap;
+      if (!detMap.name) {
+        try {
+          const sample = rawRows.slice(0, 5);
+          const mapping = await callAiJson(
+            `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {name, address, city, province, country, timezone, manager_name, contact_phone} to the best-matching source header (or null if absent). "name" covers ERP branch/site/plant/location/warehouse code or name columns (e.g. SAP plant code, Oracle inventory org, Dynamics warehouse, a POS store master column). "province" covers state/province/region columns.`,
+            "You map raw spreadsheet columns to a canonical store/branch schema. Output only valid JSON.",
+          );
+          const aiMap: Record<string, string | null> = mapping?.map ?? {};
+          map = { ...aiMap };
+          for (const [field, source] of Object.entries(detMap)) {
+            if (source) map[field] = source;
+          }
+        } catch {
+          // AI unavailable — proceed with whatever the deterministic map has.
+          map = detMap;
+        }
+      }
       mapped = rawRows
         .map((row) => {
           const get = (k: string) => (map[k] ? row[map[k] as string] : undefined);
