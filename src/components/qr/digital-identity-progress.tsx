@@ -37,7 +37,7 @@ export function DigitalIdentityProgress({ product, qr, passport }: Props) {
       label: "Product image resolved",
       done:
         !!product.image_status &&
-        ["ready", "ai_suggested", "placeholder", "retailer", "official"].includes(
+        ["ai_suggested", "placeholder", "retailer", "official", "brand_logo"].includes(
           product.image_status,
         ),
       pending: !product.image_status || product.image_status === "pending",

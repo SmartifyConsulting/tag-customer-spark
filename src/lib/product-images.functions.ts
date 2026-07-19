@@ -54,8 +54,17 @@ export const backfillStaleProductImages = createServerFn({ method: "POST" })
     let changed = 0;
     for (const row of rows ?? []) {
       const before = row.image_status;
-      const result = await resolveAndSyncProductImage({ supabase, productId: row.id });
-      if (result && result.image_status !== before) changed++;
+      // Best-effort per row — resolveAndSyncProductImage now throws instead
+      // of silently returning null on failure (so callers that DO want to
+      // see the error, like the manual refresh button, finally can). This
+      // loop still shouldn't let one bad product abort the rest of the
+      // batch, so it's caught and skipped here same as before.
+      try {
+        const result = await resolveAndSyncProductImage({ supabase, productId: row.id });
+        if (result && result.image_status !== before) changed++;
+      } catch {
+        /* skip — next visit's batch will retry it */
+      }
     }
     return {
       processed: (rows ?? []).length,

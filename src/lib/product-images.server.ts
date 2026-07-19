@@ -527,14 +527,22 @@ export async function resolveAndSyncProductImage(input: {
   productId: string;
 }): Promise<ResolveOutput | null> {
   const { supabase, productId } = input;
-  const { data: product } = await supabase
+  const { data: product, error: productErr } = await supabase
     .from("products")
     .select(
       "id, retailer_id, gtin, name, brand, image_url, image_status, category:product_categories!products_category_id_fkey(name), brands:brand_id(id, name, website, logo_url)",
     )
     .eq("id", productId)
     .maybeSingle();
-  if (!product) return null;
+  // A silent `return null` here previously let the caller report success
+  // (resetProductImage never checked the return value) while nothing ran
+  // and image_status stayed "pending" forever with zero visible error.
+  if (productErr) {
+    throw new Error(`Could not load product for image resolution: ${productErr.message}`);
+  }
+  if (!product) {
+    throw new Error("Product not found or not visible to this session (check RLS/permissions)");
+  }
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: sub } = await supabaseAdmin
