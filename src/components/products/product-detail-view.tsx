@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -29,7 +29,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { archiveProduct, deleteProduct, getProduct } from "@/lib/products.functions";
+import {
+  archiveProduct,
+  bulkCompleteDigitalIdentity,
+  deleteProduct,
+  getProduct,
+} from "@/lib/products.functions";
 import { resetProductImage } from "@/lib/product-images.functions";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { PassportTab } from "@/components/products/passport-tab";
@@ -66,12 +71,40 @@ export function ProductDetailView({
   const archiveFn = useServerFn(archiveProduct);
   const deleteFn = useServerFn(deleteProduct);
   const resetImageFn = useServerFn(resetProductImage);
+  const bulkCompleteFn = useServerFn(bulkCompleteDigitalIdentity);
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["product", productId],
     queryFn: () => fn({ data: { id: productId } }),
   });
+
+  // Silently finish this product's digital identity (normalise, QR, image,
+  // passport, enrichment) if it's stalled — e.g. this detail page was
+  // opened directly (a bookmark, a shared link) without ever visiting the
+  // Inventory list, which has its own self-heal sweep. No button, no
+  // loading state; the panel below just updates once processing catches
+  // up. Skipped for barcode-less products (that's still the explicit
+  // "Tag Intelligence" action on the list page).
+  const autoCompleteRan = useRef(false);
+  useEffect(() => {
+    if (autoCompleteRan.current || !data?.product) return;
+    const p = data.product as any;
+    const gtin = String(p.gtin ?? "").trim();
+    if (!gtin) return;
+    const enrichment = (data as any).passport?.enrichment_status ?? "pending";
+    const incomplete =
+      !p.normalised_at ||
+      !p.image_status ||
+      p.image_status === "pending" ||
+      p.qr_status !== "active" ||
+      !["enriched", "complete", "manual"].includes(enrichment);
+    if (!incomplete) return;
+    autoCompleteRan.current = true;
+    bulkCompleteFn({ data: { productIds: [productId] } })
+      .then(() => qc.invalidateQueries({ queryKey: ["product", productId] }))
+      .catch(() => {});
+  }, [data, productId, bulkCompleteFn, qc]);
 
   const [editOpen, setEditOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
