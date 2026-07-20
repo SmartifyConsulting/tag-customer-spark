@@ -16,7 +16,7 @@ export function AuthShell({
     <div className="min-h-screen bg-white px-4 py-6 lg:px-10">
       <MarketingHeader right={null} />
 
-      <div className="mx-auto grid max-w-6xl items-start gap-10 lg:grid-cols-[1fr_1fr]">
+      <div className="mx-auto grid max-w-6xl items-start gap-10 pt-[3cm] lg:grid-cols-[1fr_1fr]">
         {/* Hero copy column */}
         <div className="hidden lg:block">
           <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight text-foreground xl:text-5xl">
