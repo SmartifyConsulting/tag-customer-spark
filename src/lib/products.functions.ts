@@ -701,35 +701,48 @@ export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
         }
 
         // 1. QR + shell passport + image (generateForProduct handles all three)
+        let qrClashed = false;
         try {
           await generateForProduct(supabase, userId, pid, data.force);
         } catch (e: any) {
-          results.errors.push({ productId: pid, step: "qr", message: e?.message ?? "QR failed" });
-        }
-
-        // 2. Image resolver (in case QR path skipped it)
-        try {
-          await resolveAndSyncProductImage({ supabase, productId: pid });
-        } catch (e: any) {
-          results.errors.push({
-            productId: pid,
-            step: "image",
-            message: e?.message ?? "Image failed",
-          });
-        }
-
-        // 3. Passport enrichment
-        try {
-          const r = await enrichProductPassport(supabaseAdmin, pid, { overwrite: false });
-          if (!r.ok) {
-            results.errors.push({ productId: pid, step: "enrichment", message: r.error });
+          const msg = e?.message ?? "QR failed";
+          // Detect the structured GTIN clash — image + enrichment cannot
+          // succeed until the user merges the duplicate, so skip them
+          // instead of cascading two more misleading "failed" errors.
+          try {
+            const parsed = JSON.parse(msg);
+            if (parsed?.code === "GTIN_CLASH") qrClashed = true;
+          } catch {
+            /* not structured */
           }
-        } catch (e: any) {
-          results.errors.push({
-            productId: pid,
-            step: "enrichment",
-            message: e?.message ?? "Enrichment failed",
-          });
+          results.errors.push({ productId: pid, step: "qr", message: msg });
+        }
+
+        if (!qrClashed) {
+          // 2. Image resolver (in case QR path skipped it)
+          try {
+            await resolveAndSyncProductImage({ supabase, productId: pid });
+          } catch (e: any) {
+            results.errors.push({
+              productId: pid,
+              step: "image",
+              message: e?.message ?? "Image failed",
+            });
+          }
+
+          // 3. Passport enrichment
+          try {
+            const r = await enrichProductPassport(supabaseAdmin, pid, { overwrite: false });
+            if (!r.ok) {
+              results.errors.push({ productId: pid, step: "enrichment", message: r.error });
+            }
+          } catch (e: any) {
+            results.errors.push({
+              productId: pid,
+              step: "enrichment",
+              message: e?.message ?? "Enrichment failed",
+            });
+          }
         }
 
         results.succeeded++;
