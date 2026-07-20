@@ -188,15 +188,8 @@ export function TaxonomyEngineTab() {
     },
   });
 
-  const seedTemplates = useMutation({
-    mutationFn: () => seedFn(),
-    onSuccess: (r: any) => {
-      invalidate();
-      if (r.created === 0) toast.info("All sector templates are already loaded.");
-      else toast.success(`Added ${r.created} sector templates. Pick one from the dropdown.`);
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Could not load templates"),
-  });
+
+
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
