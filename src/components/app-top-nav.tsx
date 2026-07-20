@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { useRouterState } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -34,17 +34,18 @@ export function AppTopNav() {
         item.items && item.items.length > 0 ? (
           <NavDropdown key={item.title} item={item} pathname={pathname} />
         ) : (
-          // Router-typed Link for the parent's own route (works for
-          // /admin/pricing etc. — no search params to reconcile).
-          <Link
+          // Plain <a> so path strings from nav.ts don't have to satisfy
+          // the router's typed `to` union — targets are real routes and
+          // a full-page nav here is imperceptible after preload.
+          <a
             key={item.title}
-            to={item.url}
+            href={item.url}
             className={`flex items-center gap-1 ${BASE} ${
               isNavActive(item, pathname) ? "underline underline-offset-4" : ""
             }`}
           >
             {item.title}
-          </Link>
+          </a>
         ),
       )}
     </nav>
