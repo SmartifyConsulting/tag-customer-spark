@@ -57,6 +57,8 @@ import {
   upsertProfile,
 } from "@/lib/taxonomy.functions";
 import { TAXONOMY_TEMPLATES, type TaxonomyTemplate } from "@/lib/taxonomy-templates";
+import { cn } from "@/lib/utils";
+
 
 type Level = { id?: string; attribute_key: string; label: string; hidden: boolean; tmpId: string };
 
