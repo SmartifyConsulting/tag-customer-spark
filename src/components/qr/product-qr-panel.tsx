@@ -183,7 +183,20 @@ export function ProductQrPanel({
                 Generate a GS1 Digital Link QR that preserves the product's GTIN.
               </p>
             </div>
-            <div className="mx-auto">
+            <div className="mx-auto flex flex-wrap items-center justify-center gap-2">
+              {stores.length > 1 && (
+                <Select value={storeId ?? "__none__"} onValueChange={(v) => setStoreId(v === "__none__" ? null : v)}>
+                  <SelectTrigger className="w-[220px]">
+                    <SelectValue placeholder="Store attribution…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">All stores (no attribution)</SelectItem>
+                    {stores.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Button onClick={() => generate.mutate(false)} disabled={generate.isPending}>
                 {generate.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -193,6 +206,12 @@ export function ProductQrPanel({
                 Generate QR
               </Button>
             </div>
+            {stores.length > 1 && (
+              <p className="text-xs text-muted-foreground">
+                Pick the branch that will print this card so scans attribute the customer's opt-in to that store.
+              </p>
+            )}
+
           </div>
         </section>
         {clashDialogs}
