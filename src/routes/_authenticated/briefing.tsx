@@ -95,9 +95,9 @@ function BriefingPage() {
         </div>
       </div>
 
-      {/* Row 2 — Scan heatmap (6) + High intent (3) + Rising intent (3) */}
+      {/* Row 2 — Scan heatmap full width */}
       <div className="grid grid-cols-12 gap-4">
-        <Card className="col-span-12 lg:col-span-6 p-5">
+        <Card className="col-span-12 p-5">
           <div className="mb-1 flex items-center justify-between gap-3">
             <h3 className="text-sm font-semibold">Scan heatmap</h3>
             <ScanHeatmapLegend />
@@ -111,9 +111,12 @@ function BriefingPage() {
             <Skeleton className="h-56 w-full" />
           )}
         </Card>
+      </div>
 
+      {/* Row 3 — High intent (6) + Rising intent (6) */}
+      <div className="grid grid-cols-12 gap-4">
         <IntentColumn
-          className="col-span-12 sm:col-span-6 lg:col-span-3"
+          className="col-span-12 lg:col-span-6"
           title="High intent products"
           icon={Flame}
           items={intent?.high}
@@ -121,7 +124,7 @@ function BriefingPage() {
           emptyLabel="No high-intent products yet."
         />
         <IntentColumn
-          className="col-span-12 sm:col-span-6 lg:col-span-3"
+          className="col-span-12 lg:col-span-6"
           title="Rising intent"
           icon={TrendingUp}
           items={intent?.rising}

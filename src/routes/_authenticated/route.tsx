@@ -56,31 +56,40 @@ function AuthenticatedLayout() {
   if (brandTheme?.primaryForeground) themeStyle["--primary-foreground"] = brandTheme.primaryForeground;
 
   return (
-    <SidebarProvider style={themeStyle as any}>
-      <AppSidebar />
-      <SidebarInset className="bg-background">
-        <header className="sticky top-0 z-20 flex items-center gap-3 bg-background/80 px-4 py-3 backdrop-blur-md sm:px-6">
-          <SidebarTrigger className="md:hidden" />
-          <div className="min-w-0 flex-1">
-            {greetingName && (
-              <p className="truncate text-lg font-semibold tracking-tight sm:text-xl">
-                Hello {greetingName}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <TagLogo variant="wordmark" heightClass="h-14" />
-          </div>
-        </header>
-        <CommandPalette />
-        <main className="flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10 md:pb-10">
+    <div className="flex flex-col min-h-screen">
+      {/* Greeting banner above nav */}
+      {greetingName && (
+        <div className="bg-background/80 px-4 py-4 backdrop-blur-md sm:px-6 border-b border-border">
           <div className="mx-auto w-full max-w-7xl">
-            <Outlet />
+            <p className="text-[14px] font-semibold tracking-tight">
+              Hello {greetingName}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Your daily briefing — freshly tagged products this month, and shoppers waiting on a reply.
+            </p>
           </div>
-        </main>
-        <MobileBottomNav />
-      </SidebarInset>
-    </SidebarProvider>
+        </div>
+      )}
+
+      <SidebarProvider style={themeStyle as any} className="flex-1">
+        <AppSidebar />
+        <SidebarInset className="bg-background">
+          <header className="sticky top-0 z-20 flex items-center justify-end gap-3 bg-background/80 px-4 py-3 backdrop-blur-md sm:px-6">
+            <SidebarTrigger className="md:hidden mr-auto" />
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              <TagLogo variant="wordmark" heightClass="h-[10.608rem]" />
+            </div>
+          </header>
+          <CommandPalette />
+          <main className="flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10 md:pb-10">
+            <div className="mx-auto w-full max-w-7xl">
+              <Outlet />
+            </div>
+          </main>
+          <MobileBottomNav />
+        </SidebarInset>
+      </SidebarProvider>
+    </div>
   );
 }

@@ -78,8 +78,8 @@ export const NAV: readonly NavItem[] = [
     title: "Intelligence",
     url: "/intelligence",
     icon: TrendingUp,
-    // NOTE: `/dashboard`, `/analytics`, `/roi` all light up Intelligence in
-    // the sidebar because those pages are Intelligence tabs now.
+    // Intelligence tabs (Dashboard, Insights, Analytics, ROI, Trends, Forecasting)
+    // are now shown within the Intelligence page, not as submenu items here.
     match: [
       "/intelligence",
       "/analytics",
@@ -87,15 +87,6 @@ export const NAV: readonly NavItem[] = [
       "/commerce",
       "/dashboard",
     ],
-    items: [
-      { title: "Dashboard", url: "/dashboard", match: ["/dashboard"] },
-      { title: "Insights", url: "/intelligence/insights", match: ["/intelligence/insights"] },
-      { title: "Analytics", url: "/analytics", match: ["/analytics"] },
-      { title: "ROI", url: "/roi", match: ["/roi"] },
-      { title: "Trends", url: "/intelligence/trends", match: ["/intelligence/trends"] },
-      { title: "Forecasting", url: "/intelligence/forecasting", match: ["/intelligence/forecasting"] },
-    ],
-
   },
 
   {
