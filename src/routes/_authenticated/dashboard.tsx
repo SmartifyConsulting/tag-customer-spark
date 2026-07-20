@@ -50,7 +50,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       {
         name: "description",
         content:
-          "Executive overview of in-store scans, customer engagement, WhatsApps and recovered revenue.",
+          "Executive overview of in-store scans, customer engagement, Messages and recovered revenue.",
       },
     ],
   }),
