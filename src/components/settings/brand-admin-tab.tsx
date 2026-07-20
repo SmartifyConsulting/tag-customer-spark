@@ -63,7 +63,6 @@ export function BrandAdminTab() {
   }, []);
 
   const [name, setName] = useState("");
-  const [website, setWebsite] = useState("");
   const [editing, setEditing] = useState<Brand | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [mergeOpen, setMergeOpen] = useState(false);
@@ -71,8 +70,8 @@ export function BrandAdminTab() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["brands"] });
 
   const create = useMutation({
-    mutationFn: (v: { name: string; website?: string | null }) => upsertFn({ data: v }),
-    onSuccess: () => { invalidate(); setName(""); setWebsite(""); toast.success("Brand added"); },
+    mutationFn: (v: { name: string }) => upsertFn({ data: v }),
+    onSuccess: () => { invalidate(); setName(""); toast.success("Brand added"); },
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
   const save = useMutation({
@@ -90,29 +89,22 @@ export function BrandAdminTab() {
 
   const rows = (q.data?.rows ?? []) as Brand[];
   const counts = q.data?.counts ?? {};
-  const missingLogos = rows.filter((r) => !r.logo_url).length;
 
   return (
     <Card className="rounded-2xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><TagIcon className="h-5 w-5" /> Brand admin</CardTitle>
-        <CardDescription>Brands and their logos. Logos appear beside product names in the Inventory list.</CardDescription>
+        <CardDescription>Manage product brands across your catalogue.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-muted/30 p-3">
           <div className="text-sm">
             <span className="font-medium">{rows.length}</span>{" "}
             <span className="text-muted-foreground">brands</span>
-            <span className="mx-2 text-muted-foreground">·</span>
-            <span className="font-medium">{missingLogos}</span>{" "}
-            <span className="text-muted-foreground">missing logos</span>
           </div>
           <div className="ml-auto flex gap-2">
             <Button size="sm" variant="outline" onClick={() => setMergeOpen(true)}>
               <GitMerge className="mr-1 h-3.5 w-3.5" /> Merge
-            </Button>
-            <Button size="sm" onClick={() => link.mutate()} disabled={link.isPending}>
-              <Wand2 className="mr-1 h-3.5 w-3.5" /> Auto-link & fetch logos
             </Button>
           </div>
         </div>
@@ -122,11 +114,10 @@ export function BrandAdminTab() {
           onSubmit={(e) => {
             e.preventDefault();
             if (!name.trim()) return;
-            create.mutate({ name: name.trim(), website: website.trim() || null });
+            create.mutate({ name: name.trim() });
           }}
         >
           <Input placeholder="Brand name" value={name} onChange={(e) => setName(e.target.value)} className="max-w-xs" />
-          <Input placeholder="Website (optional, helps auto-fetch logo)" value={website} onChange={(e) => setWebsite(e.target.value)} className="max-w-sm" />
           <Button type="submit" disabled={create.isPending}><Plus className="mr-1 h-4 w-4" /> Add brand</Button>
         </form>
 
@@ -149,24 +140,13 @@ export function BrandAdminTab() {
                     >
                       {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     </button>
-                    <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md border bg-white">
-                      {b.logo_url ? (
-                        <img src={b.logo_url} alt={b.name} className="h-full w-full object-contain" />
-                      ) : (
-                        <TagIcon className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </div>
                     <div className="min-w-0 flex-1">
                       {editing?.id === b.id ? (
                         <div className="flex flex-wrap gap-2">
                           <Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} className="h-8 max-w-xs" />
-                          <Input value={editing.website ?? ""} placeholder="website" onChange={(e) => setEditing({ ...editing, website: e.target.value })} className="h-8 max-w-sm" />
                         </div>
                       ) : (
-                        <>
-                          <div className="truncate text-sm font-medium">{b.name}</div>
-                          {b.website && <div className="truncate text-xs text-muted-foreground">{b.website}</div>}
-                        </>
+                        <div className="truncate text-sm font-medium">{b.name}</div>
                       )}
                     </div>
                     <span className="text-xs text-muted-foreground">{counts[b.id] ?? 0} products</span>
