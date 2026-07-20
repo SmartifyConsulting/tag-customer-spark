@@ -53,7 +53,6 @@ const getPublicProductByGtin = createServerFn({ method: "GET" })
     if (!product) return { found: false as const, gtin: gtin14 };
 
     // Self-heal: shell passport if missing
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let { data: passport } = await supabaseAdmin
       .from("product_passports")
       .select("*")
