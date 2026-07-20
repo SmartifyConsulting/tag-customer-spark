@@ -127,7 +127,51 @@ export function TagReaderCardDialog({ open, onOpenChange, readerUrl }: Props) {
     [qrDataUrl, logoDataUrl, readerUrl],
   );
 
-  const print = () => window.print();
+  const print = () => {
+    if (!qrDataUrl || !logoDataUrl) return;
+    const w = window.open("", "_blank", "width=820,height=1160");
+    if (!w) return;
+    const face = `
+      <section class="face">
+        <img class="logo" src="${logoDataUrl}" alt="Tag" />
+        <p class="headline">SCAN THE QR CODE<br/><span>USING YOUR PHONE CAMERA</span></p>
+        <div class="qr-frame"><div class="qr-inner"><img src="${qrDataUrl}" alt="QR" /></div></div>
+        <p class="url">${readerUrl.replace(/^https?:\/\//, "")}</p>
+      </section>`;
+    w.document.write(`<!doctype html><html><head><title>Tag Barcode Reader</title>
+      <style>
+        @page { size: A4 portrait; margin: 0; }
+        html, body { margin: 0; padding: 0; background: #141821; color: #fff;
+          font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+        .sheet { width: 210mm; height: 297mm; display: flex; flex-direction: column;
+          box-sizing: border-box; page-break-after: avoid; }
+        .face { flex: 1 1 0; display: flex; flex-direction: column; align-items: center;
+          justify-content: center; gap: 6mm; padding: 12mm 10mm; box-sizing: border-box; }
+        .logo { height: 22mm; width: auto; object-fit: contain; }
+        .headline { margin: 0; text-align: center; font-weight: 800; font-size: 20pt;
+          letter-spacing: 0.02em; }
+        .headline span { display: block; margin-top: 2mm; font-weight: 400;
+          font-size: 10pt; opacity: 0.85; letter-spacing: 0.14em; }
+        .qr-frame { background: #FFC828; padding: 3mm; border-radius: 3mm; }
+        .qr-inner { background: #fff; padding: 2mm; border-radius: 1.5mm; }
+        .qr-inner img { display: block; width: 62mm; height: 62mm; }
+        .url { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          font-size: 8pt; opacity: 0.7; }
+        .fold { position: relative; height: 0; border-top: 1px dashed rgba(255,255,255,0.5); }
+        .fold span { position: absolute; left: 50%; top: 50%;
+          transform: translate(-50%, -50%); background: #141821; padding: 0 3mm;
+          font-size: 7pt; letter-spacing: 0.3em; text-transform: uppercase;
+          color: rgba(255,255,255,0.6); }
+      </style></head><body>
+      <div class="sheet">${face}<div class="fold"><span>fold</span></div>${face}</div>
+      <script>
+        window.addEventListener('load', function () {
+          setTimeout(function () { window.focus(); window.print(); }, 150);
+        });
+      </script>
+      </body></html>`);
+    w.document.close();
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -153,7 +197,7 @@ export function TagReaderCardDialog({ open, onOpenChange, readerUrl }: Props) {
         </div>
 
         <DialogFooter className="gap-2 sm:justify-between">
-          <Button variant="outline" onClick={print}>
+          <Button variant="outline" onClick={print} disabled={!qrDataUrl || !logoDataUrl}>
             <Printer className="mr-2 h-4 w-4" /> Print preview
           </Button>
           <Button onClick={downloadPdf} disabled={!qrDataUrl || !logoDataUrl}>
@@ -161,14 +205,6 @@ export function TagReaderCardDialog({ open, onOpenChange, readerUrl }: Props) {
           </Button>
         </DialogFooter>
       </DialogContent>
-
-      <style>{`
-        @media print {
-          body * { visibility: hidden !important; }
-          #tag-reader-print-area, #tag-reader-print-area * { visibility: visible !important; }
-          #tag-reader-print-area { position: fixed; inset: 0; margin: auto; }
-        }
-      `}</style>
     </Dialog>
   );
 }
