@@ -458,3 +458,34 @@ function EmailsTab({ defaultTo }: { defaultTo: string }) {
     </div>
   );
 }
+
+function TagReaderCard() {
+  const [open, setOpen] = useState(false);
+  const readerUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/tools/barcode-reader`
+      : "/tools/barcode-reader";
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <ScanLine className="h-4 w-4" /> Tag Barcode Reader
+        </CardTitle>
+        <CardDescription>
+          Print this QR on a shelf card. Shoppers point their phone camera at it and get an in-browser barcode scanner branded with your Tag.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col items-center gap-3">
+        <QrPreview value={readerUrl} size={160} />
+        <Button className="w-full" onClick={() => setOpen(true)}>
+          View Tag Barcode Reader
+        </Button>
+        <p className="text-center text-[11px] text-muted-foreground">
+          Preview the fold-out shelf card and download a print-ready PDF.
+        </p>
+      </CardContent>
+      <TagReaderCardDialog open={open} onOpenChange={setOpen} readerUrl={readerUrl} />
+    </Card>
+  );
+}
+
