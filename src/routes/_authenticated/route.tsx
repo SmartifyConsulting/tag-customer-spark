@@ -64,12 +64,6 @@ function AuthenticatedLayout() {
       <SidebarInset className="bg-background">
         <header className="sticky top-0 z-20 flex items-center gap-3 bg-background/80 px-4 py-3 backdrop-blur-md sm:px-6">
           <SidebarTrigger className="md:hidden" />
-          {/* The sidebar's own logo is fitted to its 16rem width, so it can't
-              also be the +70%-larger mark that was requested — that size only
-              fits in this wide bar next to it. */}
-          <div className="hidden shrink-0 pt-3 md:block">
-            <TagLogo variant="wordmark" heightClass="h-[10.608rem]" />
-          </div>
           <div className="ml-auto flex items-center gap-1.5">
             <ThemeToggle />
             <UserMenu />
