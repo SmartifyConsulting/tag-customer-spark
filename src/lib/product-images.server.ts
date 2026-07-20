@@ -228,21 +228,31 @@ export async function resolveProductImage(input: ResolveInput): Promise<ResolveO
     }
   }
 
-  // 2b) Serper Google Images lookup — real product photos from the web.
+  // 2b) Serper Google Images lookup — real product photos from the web,
+  // then a Vision verification pass to pick the candidate that actually
+  // depicts this product (Serper's first result is often the wrong pack
+  // size, a category thumbnail, or a watermarked listing).
   {
-    const serperUrl = await lookupSerperImage({
+    const candidates = await lookupSerperImageCandidates({
       gtin: input.gtin,
       name: input.name,
       brand: input.brand,
     });
-    if (serperUrl) {
+    const chosen = await pickBestCandidateWithVision(candidates, {
+      name: input.name,
+      brand: input.brand,
+      gtin: input.gtin,
+      categoryName: input.categoryName,
+    });
+    if (chosen) {
       const dest = bucketPath(input.retailerId, input.gtin, input.productId, `original.jpg`);
-      const r = await downloadAndUpload(supabaseAdmin, serperUrl, dest);
+      const r = await downloadAndUpload(supabaseAdmin, chosen, dest);
       if (r.ok) {
         return finalize({ primary: r.url, status: "official", source: "serper" });
       }
     }
   }
+
 
   // 3) AI suggested — gated to Growth+ plan, and only for products with no
   // GTIN. A barcode means real, manufacturer-designed packaging exists —
