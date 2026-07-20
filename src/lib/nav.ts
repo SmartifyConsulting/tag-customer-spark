@@ -26,6 +26,12 @@ export type NavItem = {
   url: string;
   icon: typeof LayoutDashboard;
   match: readonly string[];
+  // When true, `match` entries only activate on an exact pathname match
+  // (no descendant paths). Used for Admin, whose destinations are all
+  // `/admin?tab=…` (same pathname `/admin`) — without this, `/admin`
+  // would also light up on `/admin/inventory/*` and highlight two
+  // sidebar items at once.
+  exact?: boolean;
   feature?: TierFeatureKey;
   items?: readonly NavSubItem[];
   adminOnly?: boolean;
