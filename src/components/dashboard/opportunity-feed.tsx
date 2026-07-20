@@ -63,7 +63,8 @@ function actionMeta(action?: string, kind?: string): { key: ActionKey; icon: Rea
       icon: <PackagePlus className="h-3.5 w-3.5" />,
       label: "Restock",
       verb: "Order",
-      className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+      className:
+        "bg-[color:var(--mint)]/15 text-[color:var(--mint)] border-[color:var(--mint)]/30",
     },
     promote: {
       icon: <Sparkles className="h-3.5 w-3.5" />,
@@ -78,7 +79,7 @@ function actionMeta(action?: string, kind?: string): { key: ActionKey; icon: Rea
 function signalMeta(signal?: string, body?: string): { icon: ReactElement; label: string } {
   const raw = (signal ?? "").toLowerCase();
   if (raw.includes("high") || raw.includes("demand"))
-    return { icon: <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />, label: "High demand" };
+    return { icon: <TrendingUp className="h-3.5 w-3.5 text-[color:var(--mint)]" />, label: "High demand" };
   if (raw.includes("slow"))
     return { icon: <TrendingDown className="h-3.5 w-3.5 text-amber-600" />, label: "Slow sales" };
   if (raw.includes("low") || raw.includes("left"))
@@ -92,7 +93,7 @@ function signalMeta(signal?: string, body?: string): { icon: ReactElement; label
 function confidenceMeta(score?: number | null) {
   const n = score == null ? null : Math.round(Number(score));
   if (n == null) return { dot: "bg-muted-foreground/40", tone: "text-muted-foreground", label: "—" };
-  if (n >= 90) return { dot: "bg-emerald-500", tone: "text-emerald-700 dark:text-emerald-400", label: `${n}%` };
+  if (n >= 90) return { dot: "bg-[color:var(--mint)]", tone: "text-[color:var(--mint)]", label: `${n}%` };
   if (n >= 70) return { dot: "bg-amber-500", tone: "text-amber-700 dark:text-amber-400", label: `${n}%` };
   return { dot: "bg-red-500", tone: "text-red-700 dark:text-red-400", label: `${n}%` };
 }
@@ -254,7 +255,7 @@ export function OpportunityFeedCard() {
                         <span className="mr-1.5">{emoji}</span>
                         <span className="align-middle">{productName}</span>
                       </TableCell>
-                      <TableCell className="text-right font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
+                      <TableCell className="text-right font-semibold text-[color:var(--mint)] whitespace-nowrap">
                         {revenue ?? "—"}
                       </TableCell>
                       <TableCell>
