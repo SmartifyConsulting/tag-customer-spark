@@ -681,8 +681,8 @@ export const getBriefing = createServerFn({ method: "GET" })
     return {
       buckets,
       unread,
-      totalTagged: buckets.reduce((n, b) => n + b.products.length, 0),
+      totalTagged: buckets.reduce((n, b) => n + b.products.reduce((m, p) => m + p.count, 0), 0),
+      taggedTodayCount,
       greetingName,
-
     };
   });
