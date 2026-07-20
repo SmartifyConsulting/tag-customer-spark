@@ -56,7 +56,7 @@ export function AppSidebar() {
 
                 if (item.items && item.items.length > 0 && !locked) {
                   return (
-                    <Collapsible key={item.url} defaultOpen className="group/collapsible">
+                    <Collapsible key={item.url} open className="group/collapsible">
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton isActive={active} tooltip={item.title} className={activeClass}>
@@ -114,7 +114,7 @@ export function AppSidebar() {
 
       <SidebarFooter>
         {!collapsed && (
-          <div className="px-3 py-3 space-y-3 border-t border-sidebar-border">
+          <div className="px-3 py-3 space-y-3">
             <input
               type="text"
               placeholder="Search anything..."
