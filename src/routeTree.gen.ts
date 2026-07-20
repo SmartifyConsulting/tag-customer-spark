@@ -42,6 +42,7 @@ import { Route as AuthenticatedCustomersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
 import { Route as AuthenticatedIntelligenceIndexRouteImport } from './routes/_authenticated/intelligence.index'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedProductsCompareRouteImport } from './routes/_authenticated/products.compare'
 import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products.$productId'
 import { Route as AuthenticatedOrganisationRolesRouteImport } from './routes/_authenticated/organisation.roles'
@@ -240,6 +241,11 @@ const AuthenticatedIntelligenceIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedIntelligenceRoute,
   } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProductsCompareRoute =
   AuthenticatedProductsCompareRouteImport.update({
     id: '/compare',
@@ -465,6 +471,7 @@ export interface FileRoutesByFullPath {
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
@@ -526,6 +533,7 @@ export interface FileRoutesByTo {
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/intelligence': typeof AuthenticatedIntelligenceIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
@@ -592,6 +600,7 @@ export interface FileRoutesById {
   '/_authenticated/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/products/compare': typeof AuthenticatedProductsCompareRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
@@ -658,6 +667,7 @@ export interface FileRouteTypes {
     | '/organisation/roles'
     | '/products/$productId'
     | '/products/compare'
+    | '/admin/'
     | '/intelligence/'
     | '/products/'
     | '/admin/inventory/$productId'
@@ -719,6 +729,7 @@ export interface FileRouteTypes {
     | '/organisation/roles'
     | '/products/$productId'
     | '/products/compare'
+    | '/admin'
     | '/intelligence'
     | '/products'
     | '/admin/inventory/$productId'
@@ -784,6 +795,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organisation/roles'
     | '/_authenticated/products/$productId'
     | '/_authenticated/products/compare'
+    | '/_authenticated/admin/'
     | '/_authenticated/intelligence/'
     | '/_authenticated/products/'
     | '/_authenticated/admin/inventory/$productId'
@@ -1063,6 +1075,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/intelligence/'
       preLoaderRoute: typeof AuthenticatedIntelligenceIndexRouteImport
       parentRoute: typeof AuthenticatedIntelligenceRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/products/compare': {
       id: '/_authenticated/products/compare'
@@ -1391,6 +1410,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCommercePricingRoute: typeof AuthenticatedCommercePricingRoute
   AuthenticatedCommerceRoiRoute: typeof AuthenticatedCommerceRoiRoute
   AuthenticatedOrganisationRolesRoute: typeof AuthenticatedOrganisationRolesRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1416,6 +1436,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCommercePricingRoute: AuthenticatedCommercePricingRoute,
   AuthenticatedCommerceRoiRoute: AuthenticatedCommerceRoiRoute,
   AuthenticatedOrganisationRolesRoute: AuthenticatedOrganisationRolesRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -1454,13 +1475,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

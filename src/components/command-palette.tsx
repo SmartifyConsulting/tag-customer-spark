@@ -14,7 +14,7 @@ const items = [
   { label: "Customers", to: "/customers", icon: Users, group: "Go to" },
   { label: "Watchlists", to: "/watchlists", icon: Eye, group: "Go to" },
   { label: "Intent Engine", to: "/intent", icon: Gauge, group: "Go to" },
-  { label: "WhatsApps", to: "/inbox", icon: Inbox, group: "Go to" },
+  { label: "Messages", to: "/inbox", icon: Inbox, group: "Go to" },
   { label: "Insights", to: "/analytics", icon: BarChart3, group: "Go to" },
   { label: "AI Intelligence", to: "/intelligence", icon: Sparkles, group: "Go to" },
   { label: "ROI Engine", to: "/roi", icon: DollarSign, group: "Go to" },

@@ -1,11 +1,12 @@
 import {
   LayoutDashboard,
-  Settings,
   Tag,
   Users,
   TrendingUp,
   Inbox,
   ShieldCheck,
+  Boxes,
+  DollarSign,
 } from "lucide-react";
 import type { TierFeatureKey } from "@/lib/tier";
 
@@ -22,61 +23,69 @@ export type NavItem = {
   match: readonly string[];
   feature?: TierFeatureKey;
   items?: readonly NavSubItem[];
+  adminOnly?: boolean;
+  superAdminOnly?: boolean;
 };
 
+// Top-nav is grouped into a few bold pink dropdowns instead of many pill
+// links. Dropdown children point at real routes; parent `url` values are
+// only used for highlight-matching and mobile-nav fallbacks.
 export const NAV: readonly NavItem[] = [
   {
-    title: "Dashboard",
+    title: "Product",
     url: "/dashboard",
-    icon: LayoutDashboard,
-    match: ["/dashboard"],
+    icon: Boxes,
+    match: ["/dashboard", "/inbox", "/products", "/customers", "/admin/inventory", "/watchlists", "/intent"],
+    items: [
+      { title: "Dashboard", url: "/dashboard", match: ["/dashboard"] },
+      { title: "Messages", url: "/inbox", match: ["/inbox"] },
+      { title: "Inventory", url: "/admin/inventory", match: ["/admin/inventory", "/products"] },
+      { title: "Customers", url: "/customers", match: ["/customers"] },
+    ],
   },
   {
-    title: "WhatsApps",
-    url: "/inbox",
-    icon: Inbox,
-    match: ["/inbox"],
-  },
-  {
-    title: "Inventory",
-    url: "/products",
-    icon: Tag,
-    match: ["/products"],
-  },
-  {
-    title: "Customers",
-    url: "/customers",
-    icon: Users,
-    match: ["/customers", "/watchlists", "/intent"],
-  },
-  {
-    title: "Insights",
+    title: "Intelligence",
     url: "/intelligence/insights",
     icon: TrendingUp,
     match: ["/intelligence", "/analytics", "/roi", "/commerce"],
     feature: "roi",
-  },
-  {
-    title: "Admin",
-    url: "/admin/categories",
-    icon: ShieldCheck,
-    match: ["/staff", "/stores", "/organisation", "/admin"],
     items: [
-      { title: "Inventory", url: "/admin/inventory", match: ["/admin/inventory"] },
-      { title: "Taxonomy", url: "/admin/categories", match: ["/admin/categories"] },
-      { title: "Stores", url: "/stores", match: ["/stores"] },
-      { title: "Users", url: "/admin/users", match: ["/admin/users"] },
-      { title: "Pricing", url: "/admin/pricing", match: ["/admin/pricing"] },
+      { title: "Insights", url: "/intelligence/insights", match: ["/intelligence/insights"] },
+      { title: "Analytics", url: "/analytics", match: ["/analytics"] },
+      { title: "ROI", url: "/commerce/roi", match: ["/commerce/roi", "/roi"] },
+      { title: "Trends", url: "/intelligence/trends", match: ["/intelligence/trends"] },
     ],
   },
   {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-    match: ["/settings", "/upgrade"],
+    title: "Admin",
+    url: "/admin",
+    icon: ShieldCheck,
+    match: ["/admin", "/stores"],
+    adminOnly: true,
+    items: [
+      { title: "Taxonomy", url: "/admin?tab=taxonomy", match: ["/admin"] },
+      { title: "Stores", url: "/admin?tab=stores", match: ["/admin", "/stores"] },
+      { title: "Users", url: "/admin?tab=users", match: ["/admin"] },
+    ],
+  },
+  {
+    title: "Pricing",
+    url: "/admin/pricing",
+    icon: DollarSign,
+    match: ["/admin/pricing"],
+    superAdminOnly: true,
   },
 ] as const;
 
-export function isNavActive(item: NavItem, pathname: string): boolean {
+// Flat items shown on the mobile bottom nav — dropdowns don't fit on a
+// bottom bar, so we surface the four everyday destinations directly.
+export const MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, match: ["/dashboard"] },
+  { title: "Messages", url: "/inbox", icon: Inbox, match: ["/inbox"] },
+  { title: "Inventory", url: "/admin/inventory", icon: Tag, match: ["/admin/inventory", "/products"] },
+  { title: "Customers", url: "/customers", icon: Users, match: ["/customers"] },
+] as const;
+
+export function isNavActive(item: { match: readonly string[] }, pathname: string): boolean {
   return item.match.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
