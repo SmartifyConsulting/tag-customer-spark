@@ -39,18 +39,29 @@ const getPublicProductByGtin = createServerFn({ method: "GET" })
     // disambiguate which retailer's copy the scanner meant, so it
     // deterministically picks the oldest-registered match; a store-linked
     // scan entry point (in progress) will resolve this precisely instead.
+    // GTINs can be stored in the DB as the raw input (12 / 13 / 14 digits)
+    // depending on the source, but the scanner always resolves them into a
+    // padded 14-digit form. Match against both so a QR encoded as e.g.
+    // `02007453265190` still finds a product stored as `2007453265190`.
+    const gtinCandidates = Array.from(
+      new Set([gtin14, gtin14.replace(/^0+/, "") || gtin14, gtin14.slice(1), gtin14.slice(2)]),
+    );
     const { data: products } = await supabaseAdmin
       .from("products")
       .select(
         "id, retailer_id, store_id, stock_qty, name, brand, description, gtin, image_url, thumbnail_url, hero_image, image_status, price_cents, sale_price_cents, currency, on_promotion, promotion_label",
       )
-      .eq("gtin", gtin14)
+      .in("gtin", gtinCandidates)
       .eq("status", "active")
       .order("created_at", { ascending: true })
       .limit(1);
 
     const product = products?.[0] ?? null;
-    if (!product) return { found: false as const, gtin: gtin14 };
+    if (!product) {
+      console.warn("[passport] no product for gtin", { input: data.gtin, gtin14, tried: gtinCandidates });
+      return { found: false as const, gtin: gtin14 };
+    }
+
 
     // Self-heal: shell passport if missing
     let { data: passport } = await supabaseAdmin
