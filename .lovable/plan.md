@@ -1,48 +1,35 @@
-## What's happening
+## Changes
 
-**"This GTIN already has an active QR code on another of your products"**
-Your retailer has two (or more) product rows carrying the same GTIN. QR uniqueness is scoped per (retailer, GTIN), so only one product can hold the active QR — the code refuses to reassign it silently. Root cause is duplicate product rows, not the QR flow itself.
+### 1. Sidebar / header logo rework
+- **`src/components/app-sidebar.tsx`**
+  - Remove the small icon shown in the collapsed `SidebarHeader` (`<TagLogo variant="icon" />` branch). Always render the wordmark, sized to fill the sidebar header (`heightClass="h-[10.6rem]"` — same size currently in the top bar).
+  - Auto-expand all collapsible sub-nav groups (`defaultOpen` for every item with children), not just Intelligence.
+- **`src/routes/_authenticated/route.tsx`**
+  - Remove the large `<TagLogo>` block from the top header (lines 67–72). Header keeps `SidebarTrigger` (mobile) + `ThemeToggle` + `UserMenu`.
 
-**Why enrichment / product image feel slow**
-- **AI enrichment** runs in the background. When a QR is generated, the product is pushed onto `passport_enrichment_queue`. Nothing runs the job until `POST /api/public/hooks/passport-tick` is called (pg_cron or external scheduler drains it in batches of 5, up to 20/tick). If the cron isn't firing (or fires infrequently), items sit in the queue showing "pending" indefinitely.
-- **Product image** is resolved inline during QR generation on a best-effort basis (retailer URL → Open Food Facts → Serper Google Images → AI). Each external call has its own network latency and any failure is swallowed so QR generation isn't blocked — that's why the image can stay on "pending" while everything else looks fine.
-- **In short**: the delay is scheduler cadence + external API round-trips, not the AI model itself. Explanation only — no AI changes.
+### 2. Crisp white background + grey hover
+- **`src/styles.css`**: Set `--background` and `--sidebar` to pure white (`oklch(1 0 0)`) in the light theme so sidebar and main area read as one crisp white surface.
+- **`src/components/app-sidebar.tsx`**: Change non-active hover from `hover:bg-foreground/5` to `hover:bg-muted` (grey token) for top-level and locked items.
 
-## Fix for the GTIN clash — Force merge duplicates
+### 3. QR / GTIN_CLASH toast (fix "once and for all")
+The generator throws a JSON `GTIN_CLASH` payload. `ProductQrPanel` handles it, but the auto-run `bulkCompleteDigitalIdentity` in `product-detail-view.tsx` surfaces it as raw JSON (screenshot).
+- **`src/components/products/product-detail-view.tsx`**: When reading `res.errors`, detect `step === "qr"` messages that parse as `{ code: "GTIN_CLASH", … }`. Show a friendly toast: *"Duplicate GTIN with '<otherProductName>'. Open the QR panel below to merge."* Suppress the follow-up `image` toast when the QR step already clashed.
+- No change to `qr.functions.ts` — the structured error is correct; only client presentation is fixed.
 
-1. **Return structured clash info from `generateForProduct`** (`src/lib/qr.functions.ts`)
-   Instead of throwing a plain string, throw an error whose message is a JSON payload the UI can parse: `{ code: "GTIN_CLASH", gtin, otherProductId, otherProductName }`. Look up the other product's name in the same query.
+### 4. Product-image resolver error
+When QR fails (e.g. GTIN clash) the code still runs `resolveAndSyncProductImage`, which errors on the half-written product state.
+- **`src/lib/products.functions.ts` (`bulkCompleteDigitalIdentity`)**: If the QR step recorded a `GTIN_CLASH`, mark that product `skipped` and skip the image + enrichment steps (they can't succeed until merge). Stops cascading "image failed" toasts.
+- **`src/lib/product-images.server.ts`**: Guard the initial product-row read so a missing row returns silently instead of throwing.
 
-2. **Handle the clash in `ProductQrPanel`** (`src/components/qr/product-qr-panel.tsx`)
-   - Parse the error in `onError`. If `code === "GTIN_CLASH"`, open an AlertDialog titled "Duplicate GTIN detected" naming the other product and offering **"Merge duplicates"** as primary (plus Cancel).
-   - The dialog opens the existing `MergeProductsSearchDialog` prefilled: current product as survivor (target), clashing product pre-selected as source, search box pre-filled with the shared GTIN.
-   - After merge succeeds, auto-retry `generate.mutate(false)` so QR is produced against the surviving row.
+### 5. Tag Barcode Reader shelf card — fit on one A4
+Current PDF export renders **7 pages**; it must be a single A4 sheet.
+- **`src/components/settings/tag-reader-card-dialog.tsx`**: Fix the jsPDF layout so the tri-fold card renders on exactly one A4 page (landscape, `format: "a4"`, no auto page breaks). Constrain the outer card to A4 minus margins, scale the QR + logo + copy to fit each of the three folds, and remove any `addPage()` calls that fire when content overflows. After the fix, verify the exported PDF is one page (both the on-screen preview and the downloaded file).
 
-3. **Small refactor to `MergeProductsSearchDialog`** to accept optional `initialTargetId`, `initialSourceIds`, and `initialSearch` props (defaults preserve current behaviour).
-
-## Sidebar highlight bug — only one item may appear "active" at a time
-
-The reference screenshot shows **both** "Inventory" (black pill) and "Admin" (pink outline) rendered as active at the same time. That's wrong — exactly one nav item should be highlighted for the current route.
-
-Cause: in `src/lib/nav.ts` the Admin item's `match` array includes `"/admin"`, which also matches `/admin/inventory` because `isNavActive` uses `pathname.startsWith(p + "/")`. So on `/admin/inventory/*` both Inventory (matches `/admin/inventory`) and Admin (matches `/admin`) return active.
-
-Fix in `src/lib/nav.ts`:
-- Remove `"/admin"` from Admin's `match` and replace with the specific admin sub-paths that are not also inventory: keep `"/stores"` and add tab-only routes. Since Admin's real destinations are `/admin?tab=…` (same pathname `/admin`), narrow the match to **exactly** `/admin` (no descendants) by adding an `exact?: boolean` flag on `NavItem` and honouring it in `isNavActive`:
-  ```
-  export function isNavActive(item, pathname) {
-    return item.match.some((p) =>
-      item.exact ? pathname === p : pathname === p || pathname.startsWith(p + "/"),
-    );
-  }
-  ```
-  Mark the Admin nav item `exact: true`. Inventory keeps `startsWith` behaviour so drill-downs stay highlighted.
-- Also drop `"/stores"` from Admin's `match` if it doesn't collide with any other top-level item (it doesn't) — keep it, but Admin becomes active only when pathname is exactly `/admin` or exactly `/stores`.
-
-Result: on `/admin/inventory/:id` only Inventory highlights; on `/admin?tab=users` only Admin highlights.
+## Out of scope
+- No AI enrichment, Serper, or QR crypto/rendering changes.
+- No DB migrations.
 
 ## Technical notes
-
-- Error transport: TanStack server-fn errors serialise `.message` to the client, so JSON-in-message is the simplest reliable channel.
-- The existing per-retailer unique index (`product_qr_assets_active_gtin_uidx`) stays as source of truth; merge archives the losing product, freeing the GTIN so the retry succeeds cleanly.
-- No database migrations, no changes to AI enrichment or image resolution logic.
-- Files touched: `src/lib/qr.functions.ts`, `src/components/qr/product-qr-panel.tsx`, `src/components/settings/merge-products-search-dialog.tsx`, `src/lib/nav.ts`.
+- `--background` change ripples through `bg-background` consumers (main, header, sidebar-inset) — intended single-token switch.
+- Sidebar wordmark at `h-[10.6rem]` already fits the expanded sidebar; collapsed (icon) mode simply shows an empty header (desktop-only, rarely used).
+- One-page A4 fix is a layout/scale change in the existing jsPDF code — no new dependency.
