@@ -33,13 +33,15 @@ function BriefingPage() {
   const { user } = useAuth();
   const { data } = useSuspenseQuery(briefingQueryOptions);
   const first = user?.user_metadata?.full_name?.split(" ")?.[0] ?? "there";
+  const greeting = data.greetingName ?? first;
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title={`Good to see you, ${first}`}
+        title={`Hello ${greeting}`}
         description="Your daily briefing — freshly tagged products this month, and shoppers waiting on a reply."
       />
+
 
       <section className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Card>
