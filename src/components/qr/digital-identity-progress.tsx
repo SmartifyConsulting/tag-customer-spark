@@ -14,9 +14,12 @@ type Props = {
   };
   qr?: { active: boolean } | null;
   passport?: { status?: string | null; enrichment_status?: string | null } | null;
+  // When true, render without the outer card chrome so this block can be
+  // embedded inside another card (e.g. the product detail header card).
+  embedded?: boolean;
 };
 
-export function DigitalIdentityProgress({ product, qr, passport }: Props) {
+export function DigitalIdentityProgress({ product, qr, passport, embedded }: Props) {
   const enrichment = passport?.enrichment_status ?? "pending";
   const steps: Step[] = [
     { key: "barcode", label: "Valid GS1 barcode", done: !!product.gtin },
@@ -59,7 +62,7 @@ export function DigitalIdentityProgress({ product, qr, passport }: Props) {
   const pct = Math.round((completed / steps.length) * 100);
 
   return (
-    <div className="rounded-2xl border bg-card p-4">
+    <div className={embedded ? "" : "rounded-2xl border bg-card p-4"}>
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold">Digital Identity Build</h3>
         <span className="text-xs text-muted-foreground">{completed} / {steps.length} complete</span>
@@ -70,7 +73,7 @@ export function DigitalIdentityProgress({ product, qr, passport }: Props) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <ul className="space-y-1.5">
+      <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
         {steps.map((s) => (
           <li key={s.key} className="flex items-center gap-2 text-sm">
             {s.done ? (
@@ -87,3 +90,4 @@ export function DigitalIdentityProgress({ product, qr, passport }: Props) {
     </div>
   );
 }
+

@@ -82,7 +82,9 @@ export const NAV: readonly NavItem[] = [
     // (which sits under Intelligence → Dashboard) highlights Intelligence
     // in the sidebar, not the top-level Briefing.
     match: ["/intelligence", "/analytics", "/roi", "/commerce", "/dashboard"],
-    feature: "roi",
+    // No group-level `feature` gate — locking the group hides its sub-items
+    // (the sidebar renders a single upgrade link instead of the collapsible).
+    // Sub-items can still be individually tier-locked if needed.
     items: [
       {
         title: "Dashboard",
