@@ -6,6 +6,7 @@ import {
   Check,
   Download,
   ExternalLink,
+  GitMerge,
   Loader2,
   Printer,
   QrCode as QrIcon,
@@ -24,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { generateProductQr } from "@/lib/qr.functions";
+import { MergeProductsSearchDialog } from "@/components/settings/merge-products-search-dialog";
 
 export type ActiveQrAsset = {
   id: string;
@@ -37,6 +39,23 @@ export type ActiveQrAsset = {
   png_url: string;
   svg_url: string;
 };
+
+type GtinClash = {
+  gtin: string;
+  otherProductId: string;
+  otherProductName: string;
+  otherProductSku: string | null;
+};
+
+function parseClash(message: string): GtinClash | null {
+  try {
+    const parsed = JSON.parse(message);
+    if (parsed?.code === "GTIN_CLASH") return parsed as GtinClash;
+  } catch {
+    /* not a structured error */
+  }
+  return null;
+}
 
 export function ProductQrPanel({
   productId,
@@ -52,6 +71,9 @@ export function ProductQrPanel({
   const qc = useQueryClient();
   const generateFn = useServerFn(generateProductQr);
   const [confirmRegen, setConfirmRegen] = useState(false);
+  const [clash, setClash] = useState<GtinClash | null>(null);
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [autoRetryAfterMerge, setAutoRetryAfterMerge] = useState(false);
 
   const generate = useMutation({
     mutationFn: (force: boolean) => generateFn({ data: { productId, force } }),
@@ -63,47 +85,113 @@ export function ProductQrPanel({
       qc.invalidateQueries({ queryKey: ["product", productId] });
       toast.success("GS1 QR Code successfully generated.");
     },
-    onError: (e: any) => toast.error(e.message ?? "QR generation failed"),
+    onError: (e: any) => {
+      const parsed = parseClash(e?.message ?? "");
+      if (parsed) {
+        setClash(parsed);
+        return;
+      }
+      toast.error(e.message ?? "QR generation failed");
+    },
   });
+
+
+  const clashDialogs = (
+    <>
+      <AlertDialog open={!!clash} onOpenChange={(v) => !v && setClash(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Duplicate GTIN detected</AlertDialogTitle>
+            <AlertDialogDescription>
+              GTIN <code className="rounded bg-muted px-1 py-0.5 text-xs">{clash?.gtin}</code>{" "}
+              already has an active QR code on{" "}
+              <strong>{clash?.otherProductName}</strong>
+              {clash?.otherProductSku ? ` (${clash.otherProductSku})` : ""}. These look like
+              duplicate product records. Merge them — <strong>{productName}</strong> will survive
+              and its QR will be generated automatically after the merge.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setAutoRetryAfterMerge(true);
+                setMergeOpen(true);
+                setClash(null);
+              }}
+            >
+              <GitMerge className="mr-2 h-4 w-4" /> Merge duplicates
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <MergeProductsSearchDialog
+        open={mergeOpen}
+        onOpenChange={setMergeOpen}
+        initialSearch={clash?.gtin ?? ""}
+        initialTargetId={productId}
+        initialPreselected={
+          clash
+            ? [
+                { id: productId, name: productName },
+                { id: clash.otherProductId, name: clash.otherProductName, sku: clash.otherProductSku },
+              ]
+            : [{ id: productId, name: productName }]
+        }
+        onMerged={() => {
+          qc.invalidateQueries({ queryKey: ["product", productId] });
+          if (autoRetryAfterMerge) {
+            setAutoRetryAfterMerge(false);
+            generate.mutate(false);
+          }
+        }}
+      />
+    </>
+  );
 
   if (!qr) {
     return (
-      <section className="grid gap-4 rounded-xl border border-border bg-card p-6">
-        <header className="flex items-center gap-2">
-          <QrIcon className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            QR status
-          </h2>
-        </header>
-        <div className="grid gap-4 rounded-xl border border-dashed border-border p-8 text-center">
-          <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-muted">
-            <QrIcon className="h-5 w-5 text-muted-foreground" />
+      <>
+        <section className="grid gap-4 rounded-xl border border-border bg-card p-6">
+          <header className="flex items-center gap-2">
+            <QrIcon className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              QR status
+            </h2>
+          </header>
+          <div className="grid gap-4 rounded-xl border border-dashed border-border p-8 text-center">
+            <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-muted">
+              <QrIcon className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="font-medium">No QR yet for this product.</p>
+              <p className="text-sm text-muted-foreground">
+                Generate a GS1 Digital Link QR that preserves the product's GTIN.
+              </p>
+            </div>
+            <div className="mx-auto">
+              <Button onClick={() => generate.mutate(false)} disabled={generate.isPending}>
+                {generate.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <QrIcon className="mr-2 h-4 w-4" />
+                )}
+                Generate QR
+              </Button>
+            </div>
           </div>
-          <div>
-            <p className="font-medium">No QR yet for this product.</p>
-            <p className="text-sm text-muted-foreground">
-              Generate a GS1 Digital Link QR that preserves the product's GTIN.
-            </p>
-          </div>
-          <div className="mx-auto">
-            <Button onClick={() => generate.mutate(false)} disabled={generate.isPending}>
-              {generate.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <QrIcon className="mr-2 h-4 w-4" />
-              )}
-              Generate QR
-            </Button>
-          </div>
-        </div>
-      </section>
+        </section>
+        {clashDialogs}
+      </>
     );
   }
+
 
   const generatedDate = new Date(qr.generated_at).toLocaleString();
   const dppHref = dppId ? `/p/${dppId}` : qr.resolver_url;
 
   return (
+    <>
     <section className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[220px_minmax(0,1fr)]">
       <div className="flex flex-col items-center gap-3">
         <div
@@ -183,6 +271,8 @@ export function ProductQrPanel({
         </AlertDialogContent>
       </AlertDialog>
     </section>
+    {clashDialogs}
+    </>
   );
 }
 
