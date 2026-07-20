@@ -75,7 +75,12 @@ export const NAV: readonly NavItem[] = [
     title: "Admin",
     url: "/admin",
     icon: ShieldCheck,
+    // Exact-only: Admin sub-tabs all live at pathname `/admin` with
+    // `?tab=…`. Without `exact`, `/admin` startsWith-matches
+    // `/admin/inventory/*` and highlights Admin at the same time as
+    // Inventory.
     match: ["/admin", "/stores"],
+    exact: true,
     adminOnly: true,
     items: [
       { title: "Taxonomy", url: "/admin?tab=taxonomy", match: ["/admin"] },
