@@ -16,9 +16,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { TagLogo } from "./tag-logo";
 import { useTier } from "@/hooks/use-tier";
 import { useAuth } from "@/hooks/use-auth";
+import { UserMenu } from "@/components/user-menu";
 import { NAV, isNavActive, type NavItem } from "@/lib/nav";
 
 export function AppSidebar() {
@@ -31,13 +31,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="hidden border-r-0 overflow-visible md:flex">
-      <SidebarHeader className="relative flex-row items-center justify-center overflow-visible bg-sidebar p-0 py-2">
-        {!collapsed && (
-          <TagLogo variant="wordmark" heightClass="h-[10.608rem]" />
-        )}
-      </SidebarHeader>
+      <SidebarHeader className="bg-sidebar p-0" />
 
-      <SidebarContent className="px-1.5 pb-3 pt-6">
+      <SidebarContent className="px-1.5 pb-3 pt-4">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -114,15 +110,14 @@ export function AppSidebar() {
 
       <SidebarFooter>
         {!collapsed && (
-          <div className="px-3 py-3 space-y-3">
+          <div className="space-y-2 px-3 py-3">
             <input
               type="text"
               placeholder="Search anything..."
               className="w-full rounded-lg border border-sidebar-border bg-sidebar px-3 py-2 text-sm placeholder:text-sidebar-foreground/40 text-sidebar-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
             />
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-wider text-sidebar-foreground/40">Tag</p>
-              <p className="text-[11px] text-sidebar-foreground/60">Demand Intelligence</p>
+            <div className="pt-1">
+              <UserMenu />
             </div>
           </div>
         )}
