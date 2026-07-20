@@ -18,6 +18,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { TagLogo } from "./tag-logo";
 import { useTier } from "@/hooks/use-tier";
+import { useAuth } from "@/hooks/use-auth";
 import { NAV, isNavActive, type NavItem } from "@/lib/nav";
 
 export function AppSidebar() {
@@ -25,21 +26,25 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { hasFeature } = useTier();
+  const { primaryRole } = useAuth();
   const isActive = (item: NavItem) => isNavActive(item, pathname);
 
   return (
     <Sidebar collapsible="icon" className="hidden border-r-0 overflow-visible md:flex">
-      <SidebarHeader className="relative h-16 flex-row items-center justify-center overflow-visible bg-sidebar p-0">
+      <SidebarHeader className="relative h-20 flex-row items-center justify-center overflow-visible bg-sidebar p-0">
         {collapsed ? (
           <TagLogo variant="icon" size="sm" />
         ) : (
-          <div className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2">
-            <TagLogo variant="wordmark" size="xl" />
-          </div>
+          // The source logo image is a near-square 719x494px, not a thin
+          // banner — the sidebar is only 16rem wide, so this has to be
+          // sized to actually fit the column instead of the much larger
+          // "xl" preset (which was never fitted since this sidebar wasn't
+          // wired into the layout until now).
+          <TagLogo variant="wordmark" heightClass="h-16" />
         )}
       </SidebarHeader>
 
-      <SidebarContent className="px-1.5 pb-3 pt-[176px]">
+      <SidebarContent className="px-1.5 pb-3 pt-6">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -69,7 +74,14 @@ export function AppSidebar() {
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <SidebarMenuSub>
-                            {item.items.map((sub) => {
+                            {item.items
+                              .filter(
+                                (sub) =>
+                                  !sub.hiddenForRoles ||
+                                  !primaryRole ||
+                                  !sub.hiddenForRoles.includes(primaryRole),
+                              )
+                              .map((sub) => {
                               const subActive = pathname === sub.url || pathname.startsWith(sub.url + "/");
                               return (
                                 <SidebarMenuSubItem key={sub.url}>

@@ -24,7 +24,7 @@ export function MarketingHeader({
       <div className="flex items-center gap-4">
         {rightSlot}
         <Link to="/about" className="shrink-0">
-          <TagLogo variant="wordmark" size="lg" className="h-[31.2rem]" />
+          <TagLogo variant="wordmark" size="lg" heightClass="h-[10.4rem]" />
         </Link>
       </div>
     </header>

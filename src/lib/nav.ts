@@ -9,11 +9,16 @@ import {
   DollarSign,
 } from "lucide-react";
 import type { TierFeatureKey } from "@/lib/tier";
+import type { AppRole } from "@/hooks/use-auth";
 
 export type NavSubItem = {
   title: string;
   url: string;
   match: readonly string[];
+  // Hidden from this sub-item's parent group for these roles — e.g. the
+  // executive Dashboard link is meaningless for a store-floor attendant,
+  // who gets their own dashboard instead.
+  hiddenForRoles?: readonly AppRole[];
 };
 
 export type NavItem = {
@@ -27,29 +32,33 @@ export type NavItem = {
   superAdminOnly?: boolean;
 };
 
-// Top-nav is grouped into a few bold pink dropdowns instead of many pill
-// links. Dropdown children point at real routes; parent `url` values are
-// only used for highlight-matching and mobile-nav fallbacks.
+// Left sidebar nav. Messages/Inventory/Customers are flat top-level items
+// (no "Product" grouping label — they're everyday destinations, not a
+// sub-category). Dashboard lives at the top of Intelligence instead, since
+// it's an executive/analytics view — and is hidden there for sales
+// assistants, who get their own store-floor dashboard.
 export const NAV: readonly NavItem[] = [
+  { title: "Messages", url: "/inbox", icon: Inbox, match: ["/inbox"] },
   {
-    title: "Product",
-    url: "/dashboard",
+    title: "Inventory",
+    url: "/admin/inventory",
     icon: Boxes,
-    match: ["/dashboard", "/inbox", "/products", "/customers", "/admin/inventory", "/watchlists", "/intent"],
-    items: [
-      { title: "Dashboard", url: "/dashboard", match: ["/dashboard"] },
-      { title: "Messages", url: "/inbox", match: ["/inbox"] },
-      { title: "Inventory", url: "/admin/inventory", match: ["/admin/inventory", "/products"] },
-      { title: "Customers", url: "/customers", match: ["/customers"] },
-    ],
+    match: ["/admin/inventory", "/products"],
   },
+  { title: "Customers", url: "/customers", icon: Users, match: ["/customers"] },
   {
     title: "Intelligence",
     url: "/intelligence/insights",
     icon: TrendingUp,
-    match: ["/intelligence", "/analytics", "/roi", "/commerce"],
+    match: ["/intelligence", "/analytics", "/roi", "/commerce", "/dashboard"],
     feature: "roi",
     items: [
+      {
+        title: "Dashboard",
+        url: "/dashboard",
+        match: ["/dashboard"],
+        hiddenForRoles: ["sales_assistant"],
+      },
       { title: "Insights", url: "/intelligence/insights", match: ["/intelligence/insights"] },
       { title: "Analytics", url: "/analytics", match: ["/analytics"] },
       { title: "ROI", url: "/commerce/roi", match: ["/commerce/roi", "/roi"] },

@@ -1,8 +1,9 @@
-import { createFileRoute, Outlet, redirect, Link } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { AppTopNav } from "@/components/app-top-nav";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { TagLogo } from "@/components/tag-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
@@ -60,37 +61,43 @@ function AuthenticatedLayout() {
   if (brandTheme?.primaryForeground) themeStyle["--primary-foreground"] = brandTheme.primaryForeground;
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background" style={themeStyle as any}>
-      <header className="sticky top-0 z-20 flex h-24 items-center gap-6 border-b border-border bg-background/80 px-4 backdrop-blur-md sm:px-6">
-        <Link to="/dashboard" className="shrink-0">
-          <TagLogo variant="wordmark" heightClass="h-[6.24rem]" />
-        </Link>
-        <AppTopNav />
-        <Separator orientation="vertical" className="mx-1 hidden h-5 lg:block" />
-        <button
-          onClick={() => {
-            const ev = new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true });
-            window.dispatchEvent(ev);
-          }}
-          className="hidden h-9 items-center gap-2.5 rounded-full border border-border bg-muted/40 px-3.5 text-xs text-muted-foreground transition-colors hover:border-[color:var(--mint)]/40 hover:bg-card lg:flex"
-        >
-          <CommandIcon className="h-3.5 w-3.5" /> Search anything…
-          <kbd className="ml-2 rounded-md bg-[color:var(--mint)]/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[color:var(--mint)]">
-            ⌘K
-          </kbd>
-        </button>
-        <div className="ml-auto flex items-center gap-1.5">
-          <ThemeToggle />
-          <UserMenu />
-        </div>
-      </header>
-      <CommandPalette />
-      <main className="flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10 md:pb-10">
-        <div className="mx-auto w-full max-w-7xl">
-          <Outlet />
-        </div>
-      </main>
-      <MobileBottomNav />
-    </div>
+    <SidebarProvider style={themeStyle as any}>
+      <AppSidebar />
+      <SidebarInset className="bg-background">
+        <header className="sticky top-0 z-20 flex items-center gap-3 bg-background/80 px-4 py-3 backdrop-blur-md sm:px-6">
+          <SidebarTrigger className="md:hidden" />
+          {/* The sidebar's own logo is fitted to its 16rem width, so it can't
+              also be the +70%-larger mark that was requested — that size only
+              fits in this wide bar next to it. */}
+          <div className="hidden shrink-0 pt-3 md:block">
+            <TagLogo variant="wordmark" heightClass="h-[10.608rem]" />
+          </div>
+          <button
+            onClick={() => {
+              const ev = new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true });
+              window.dispatchEvent(ev);
+            }}
+            className="hidden h-9 items-center gap-2.5 rounded-full border border-border bg-muted/40 px-3.5 text-xs text-muted-foreground transition-colors hover:border-[color:var(--mint)]/40 hover:bg-card lg:flex"
+          >
+            <CommandIcon className="h-3.5 w-3.5" /> Search anything…
+            <kbd className="ml-2 rounded-md bg-[color:var(--mint)]/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[color:var(--mint)]">
+              ⌘K
+            </kbd>
+          </button>
+          <Separator orientation="vertical" className="mx-1 hidden h-5 lg:block" />
+          <div className="ml-auto flex items-center gap-1.5">
+            <ThemeToggle />
+            <UserMenu />
+          </div>
+        </header>
+        <CommandPalette />
+        <main className="flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10 md:pb-10">
+          <div className="mx-auto w-full max-w-7xl">
+            <Outlet />
+          </div>
+        </main>
+        <MobileBottomNav />
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

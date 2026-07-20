@@ -20,6 +20,7 @@ import { PageHeader } from "@/components/page-header";
 import { useServerFn } from "@tanstack/react-start";
 import { getRetailerBranding } from "@/lib/branding.functions";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,6 +42,7 @@ import { ScanTrendsCard } from "@/components/dashboard/scan-trends-card";
 import { TopProductsCard } from "@/components/dashboard/top-products-card";
 import { RecentActivityCard } from "@/components/dashboard/recent-activity-card";
 import { IntentSectionsCard } from "@/components/dashboard/intent-sections-card";
+import { StoreAttendantDashboard } from "@/components/dashboard/store-attendant-dashboard";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -119,20 +121,39 @@ function DashboardContent() {
   const { data } = useSuspenseQuery(dashboardOverviewQueryOptions);
   const analyticsQuery = useQuery(advancedAnalyticsQueryOptions(days));
   const analytics = analyticsQuery.data;
-  const { profile, user } = useAuth();
+  const { user, hasRole } = useAuth();
   const brandingFn = useServerFn(getRetailerBranding);
   const branding = useQuery({ queryKey: ["branding"], queryFn: () => brandingFn(), staleTime: 5 * 60_000 });
+  // The greeting names the branch/store this account is assigned to (via
+  // staff.store_id), not the person — the dashboard is a store-level view.
+  // Owners/admins with no store assignment fall back to the retailer name.
+  const myStore = useQuery({
+    queryKey: ["my-store", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data: staffRow } = await supabase
+        .from("staff")
+        .select("store_id, store:stores(name)")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return {
+        storeId: (staffRow as any)?.store_id ?? null,
+        storeName: (staffRow as any)?.store?.name ?? null,
+      };
+    },
+    enabled: !!user,
+    staleTime: 5 * 60_000,
+  });
   const k = data.kpis;
 
   const dailySpark = data.scansDaily.slice(-7).map((d) => ({ v: d.count }));
   const growthSpark = data.customerGrowth.slice(-7).map((d) => ({ v: d.total }));
-  
+
   const readSpark = data.notificationPerf.slice(-7).map((d) => ({ v: d.read }));
 
   const hour = new Date().getHours();
   const partOfDay = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
-  const fullName = profile?.full_name?.trim() || user?.email?.split("@")[0] || "there";
-  const firstName = fullName.split(" ")[0];
+  const branchName = myStore.data?.storeName || branding.data?.name || "there";
   const today = new Date().toLocaleDateString(undefined, {
     weekday: "long",
     day: "numeric",
@@ -191,12 +212,29 @@ function DashboardContent() {
     downloadBlob(new Blob([buf], { type: "application/pdf" }), "tag-dashboard.pdf");
   }
 
+  // Sales assistants get a store-floor view (inventory + messages + intent
+  // segments) instead of the executive revenue/ROI dashboard below, which
+  // assumes a cross-store manager's vantage point and isn't in their nav
+  // at all (see nav.ts's hiddenForRoles on the Dashboard sub-item) — this
+  // still handles the case of landing here directly by URL.
+  if (hasRole("sales_assistant")) {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          title={`Good ${partOfDay}, ${branchName} 👋`}
+          description={`${today} · Here's what's happening in your store today.`}
+        />
+        <StoreAttendantDashboard storeId={myStore.data?.storeId ?? null} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeader
           className="min-w-0 flex-1"
-          title={`Good ${partOfDay}, ${firstName} 👋`}
+          title={`Good ${partOfDay}, ${branchName} 👋`}
           description={`${today} · Here's what's happening across your stores today.`}
           actions={
             <div className="flex items-center gap-2">
