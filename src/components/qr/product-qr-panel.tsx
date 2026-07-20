@@ -271,6 +271,8 @@ export function ProductQrPanel({
         </AlertDialogContent>
       </AlertDialog>
     </section>
+    {clashDialogs}
+    </>
   );
 }
 
