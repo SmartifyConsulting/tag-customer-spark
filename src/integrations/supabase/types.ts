@@ -1717,6 +1717,8 @@ export type Database = {
           resolver_url: string | null
           retailer_id: string
           status: string
+          store_id: string | null
+          store_name: string | null
           svg_path: string | null
           version: number
         }
@@ -1734,6 +1736,8 @@ export type Database = {
           resolver_url?: string | null
           retailer_id: string
           status?: string
+          store_id?: string | null
+          store_name?: string | null
           svg_path?: string | null
           version?: number
         }
@@ -1751,6 +1755,8 @@ export type Database = {
           resolver_url?: string | null
           retailer_id?: string
           status?: string
+          store_id?: string | null
+          store_name?: string | null
           svg_path?: string | null
           version?: number
         }
@@ -1781,6 +1787,13 @@ export type Database = {
             columns: ["retailer_id"]
             isOneToOne: false
             referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_qr_assets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -2115,6 +2128,7 @@ export type Database = {
           scanned_at: string
           session_id: string | null
           store_id: string | null
+          store_name: string | null
           user_agent: string | null
           utm_campaign: string | null
           utm_medium: string | null
@@ -2141,6 +2155,7 @@ export type Database = {
           scanned_at?: string
           session_id?: string | null
           store_id?: string | null
+          store_name?: string | null
           user_agent?: string | null
           utm_campaign?: string | null
           utm_medium?: string | null
@@ -2167,6 +2182,7 @@ export type Database = {
           scanned_at?: string
           session_id?: string | null
           store_id?: string | null
+          store_name?: string | null
           user_agent?: string | null
           utm_campaign?: string | null
           utm_medium?: string | null
