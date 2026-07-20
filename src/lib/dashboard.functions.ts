@@ -541,7 +541,9 @@ export type Briefing = {
   buckets: BriefingBucket[];
   unread: BriefingUnread[];
   totalTagged: number;
+  greetingName: string | null;
 };
+
 
 export const getBriefing = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
