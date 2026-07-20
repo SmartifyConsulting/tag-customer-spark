@@ -1,64 +1,68 @@
-## 1. Fix "permission denied for function has_role" (product image resolution)
+## Answering your questions first
 
-Root cause confirmed from DB: `public.has_role(uuid, app_role)` currently grants `EXECUTE` only to `postgres`, `service_role`, `sandbox_exec` — `authenticated` is missing. The restore migration on disk was never applied to the live DB. RLS on `products` calls `has_role(...)`, so any authenticated `products` read fails with the toast in the earlier screenshot.
+### Is `06001234567899` an international GTIN? Will this keep happening?
 
-Fix (new migration): `GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated;`
+No. It's a placeholder/test barcode from demo seed data, not a real GS1-registered GTIN.
 
-## 2. Fix resolver domain (QR codes still pointing at penguin.co.za)
+- The `600` prefix is the GS1 South Africa country code, so it *looks* legitimate. But the digits `1234567899` are an obvious sequential test string, and 26 completely different products (Samsung TV, Stanley Tool Box, Sunbeam Kettle …) all share it — a real GTIN maps to exactly one product globally.
+- Your other clashes (`…567905`, `…567900`, `…567891` etc.) are the same pattern — deterministic demo GTINs I generated in an earlier session because the imported inventory had no GTINs. When multiple products got assigned from the same short pool, they collided.
+- **Going forward this will *not* keep happening for real inventory**, because:
+  - The Digital Identity flow now looks up real GTINs from the retailer's own source (Cape Union Mart URLs, Open Food Facts, product code fields) before falling back to a generated one.
+  - The generator we do fall back to derives from `hashtext(product_id)` (16 hex → 13-digit GS1-valid), so two different products can no longer collide.
+  - The Duplicates screen (below) lets you clear the bad GTINs once, and next enrichment run assigns clean unique ones.
+- What you're seeing is a one-time cleanup problem, not an ongoing one.
 
-`resolverUrlForGtin()` in `src/lib/passport.server.ts` reads `PUBLIC_SITE_URL` and falls back to `https://tag-customer-spark.lovable.app`. Any QR/DPP generated while `PUBLIC_SITE_URL` was `https://www.mypenguin.co.za` (and any legacy `product_qr_assets.resolver_url` stored then) still encodes that dead domain — e.g. `https://www.mypenguin.co.za/passport/02007453265`.
+### Scans — dropping the synthetic seed
 
-Actions:
-- Change the fallback in `getPublicSiteBase()` to `https://tag-tech.co.za` (the live custom domain), so a missing env doesn't regress again.
-- Add a `SITE_URL` (or reuse `PUBLIC_SITE_URL`) secret set to `https://tag-tech.co.za` via the secrets tool.
-- Backfill migration: `UPDATE public.product_qr_assets SET resolver_url = REGEXP_REPLACE(resolver_url, '^https?://(www\.)?mypenguin\.co\.za', 'https://tag-tech.co.za'), digital_link_url = REGEXP_REPLACE(digital_link_url, '^https?://(www\.)?mypenguin\.co\.za', 'https://tag-tech.co.za') WHERE resolver_url ILIKE '%mypenguin.co.za%' OR digital_link_url ILIKE '%mypenguin.co.za%';`
-- Bump `version` on each backfilled row so any cached PNG/SVG regenerates on next view (existing PNGs still encode the old URL until the user hits "Regenerate" — add a note in the panel banner that pre-domain-change codes should be reprinted).
+Removed from the plan. Since you're really scanning Peaceful Sleep, the fact that `qr_scans` has zero rows for it means the scan pipeline itself is broken for that product. New investigation step below replaces the seed.
 
-## 3. Fix "View public page" → Product not found
+## Updated plan
 
-The "View public page" button on the product detail links to `qr.resolver_url` (or `/passport/{gtin}`). The 404 page is our own `/passport/$gtin` route — it triggers when either the GTIN fails GS1 check-digit validation or no `products` row with that GTIN + `status='active'` exists.
+### 1. Taxonomy — all templates visible + preview auto-loads
+(unchanged from previous plan)
 
-Actions:
-- Log the raw `gtin` param in the not-found branch so we can distinguish "bad check digit" vs "no row" during rollout.
-- In `products.$productId` / QR panel, if the current product has no `gtin`, hide "View public page" (currently renders but leads here). If it has a `gtin` but no `product_qr_assets` row yet, route through `/p/{dppId}` instead when `dppId` exists, else prompt "Generate QR first".
-- Update the 404 page copy to include the raw GTIN and a "Register this GTIN" CTA that opens the create/merge flow for admins.
-- Verify the passport lookup query also matches on `qr_tags.gtin` (fallback), not just `products.gtin`, so a GTIN registered on a QR-only shell row still resolves.
+- Auto-seed the 19 sector templates on first render of the Taxonomy Engine tab if the retailer has none.
+- Replace the profile dropdown with a **template grid**: each profile as a card, selected one highlighted, ⭐ Default badge on the current default, **Set as default** action promotes it.
+- Preview panel always renders once a profile is selected; drop the "publish first" gate in `TaxonomyPreviewTab`.
 
-## 4. Sidebar nav restructure (`src/lib/nav.ts` + `src/components/app-sidebar.tsx`)
+### 2. Brand logo — no longer requested
+(unchanged) — logo optional in `BrandAdminTab`, no "add logo" nag.
 
-`NAV` becomes:
-- **Briefing** → `/dashboard` (personalised home, renamed)
-- **Messages** → `/inbox`
-- **Inventory** → `/admin/inventory`
-- **Intelligence** (expanded by default; sub-items are the "used to be there" set):
-  - Dashboard → `/intelligence` (the exec KPI view)
-  - Insights → `/intelligence/insights`
-  - Analytics → `/analytics`
-  - ROI → `/commerce/roi`
-  - Trends → `/intelligence/trends`
-  - Forecasting → `/intelligence/forecasting`
-- **Admin** (adds Customers tab): Taxonomy · Stores · Customers · Users — all `/admin?tab=…`
-- **Pricing** — super_admin only, unchanged
+### 3. Store attribution baked into the QR code — **new**
 
-Remove top-level **Customers**; redirect `/customers` → `/admin?tab=customers`. Update `src/routes/_authenticated/admin.index.tsx` to add the customers tab, reusing the existing customers view. Update `MOBILE_NAV` and `command-palette.tsx` (rename Dashboard → Briefing, move Customers under Admin).
+Right now `product_qr_assets` has no `store_id`, so a scan can only ever be attributed to the retailer, never to the physical branch — which means when a customer opts in via WhatsApp from the landing page, you can't tell which store they were standing in. Fix:
 
-### "Pointers to the navigation tip comments"
-Extend the inline JSDoc-style comments already at the top of each `NavItem` in `src/lib/nav.ts` with explicit pointers explaining *why* an item lives where it does (e.g. "Briefing = personalised home, not the exec KPI view — that one is Intelligence → Dashboard"). Purely code-comment; no on-screen tooltips added. Say so if you actually want in-UI help pointers.
+- **Schema**: add `store_id uuid null` (FK → `stores(id)` on delete set null) and `store_name text null` (denormalised, so an admin renaming a store later doesn't rewrite historic assets) to `product_qr_assets`. Nullable because sole proprietors have no branch.
+- **Digital Link URL**: append `?s=<store_id>` (short param) to the resolver URL when the QR is generated for a specific store. The 8-char short-code URL stays the primary target; `?s=…` is passed through the 302 redirect so the resolver route can attribute the scan.
+- **Resolver route** (`/api/public/s/$shortCode`): read `?s=` from the query string, look up the store, and insert `store_id` + `store_name` onto the `qr_scans` row. If missing/invalid, fall back to the retailer's only store when there's exactly one — otherwise leave null.
+- **Landing-page opt-in**: `scan.$shortCode.tsx` already collects the WhatsApp number via the opt-in button. Extend the resulting `customer_phone_opt_ins` / `customer_interests` inserts to carry `store_id` too, so sales leads route to the correct branch's staff.
+- **QR generation UI** (`ProductQrPanel`): when the retailer has multiple stores, add a **Store** selector (with an "All stores / retailer-wide" option). Print one QR per selected store when generating a batch. Single-store retailers get the store auto-attached silently.
+- **Duplicates screen** below also lists the current `store_id / store_name` per QR asset so you can see coverage per branch.
 
-## 5. Rename Dashboard → Briefing
+### 4. Peaceful Sleep scans not landing — investigate before the release goes out
 
-Rebuild `src/routes/_authenticated/dashboard.tsx`:
-- `PageHeader` title "Briefing", description "Your day at a glance."
-- **Tagged Products** — `<Accordion type="multiple">`, all sections collapsed. Sections: This Week (Mon 00:00 → now), Last Week, then one section per calendar month of the current year with ≥1 tagged product (newest first, non-overlapping with the two week buckets). Row = `ProductImage` thumb + name + brand + tagged-at → links to `/admin/inventory/$productId`.
-- **Unread WhatsApps needing response** — inbound-only conversations with no outbound reply since the last inbound; each row links to `/inbox?conversation=…`.
+Instead of seeding fake scans, add these to the same pass:
 
-New server fn `getBriefing` (auth-scoped, retailer-scoped via `requireSupabaseAuth`) in `src/lib/dashboard.functions.ts`, plus `briefingQueryOptions` in `src/lib/dashboard.ts`. Reads existing `products`, `conversations`, `conversation_messages` — no schema change.
+- Add structured logging to `/api/public/s/$shortCode.ts` on every failure branch (short code not found, insert error, redirect target invalid) so a real scan that doesn't record leaves a trail.
+- Verify the printed/displayed QR for Peaceful Sleep points at the current domain (`tag-tech.co.za`), not the previous `mypenguin.co.za` — earlier migrations backfilled the DB, but a QR PNG that was already downloaded/printed still encodes the old URL. If so, retire and reissue.
+- Check that the short-code the scanned QR carries actually exists in `qr_tags`. Most likely miss: the product was tagged before short-code storage went in, so the QR embeds a raw Digital Link (`/01/<gtin>`) which now 301-redirects to `/products/<gtin>` — a route that intentionally does **not** log a scan. If that's the cause, patch `/api/public/01/$gtin.ts` to write a `qr_scans` row before redirecting (with `store_id` from `?s=` if present).
 
-The existing exec KPI dashboard content moves to `intelligence.index.tsx` under Intelligence → Dashboard.
+Deliverable: one real scan on Peaceful Sleep produces one visible row in the product's Scans tab, no synthetic data anywhere.
 
-## 6. Cleanup
+### 5. Nav — Inventory under Briefing
+(unchanged) — reorder in `src/lib/nav.ts` and `MOBILE_NAV`.
 
-- `command-palette.tsx`: rename Dashboard → Briefing; move Customers into "Admin" group.
-- `MOBILE_NAV`: keep 4 slots but drop Customers (now under Admin) in favour of Briefing.
-- Preserve tier gating (`intelligence`, `roi`) on all moved routes.
-- Sidebar active-state: Briefing wins at exact `/dashboard`; Intelligence group highlights only for its non-`/dashboard` sub-paths.
+### 6. Duplicates workflow
+(unchanged) — new `/admin/inventory/duplicates` screen, two sections:
+
+- **Real duplicates** (same GTIN + same name): bulk merge onto oldest/most-complete survivor, moving scans, QR assets, passports, interests, watchlists.
+- **GTIN collisions** (same GTIN, different names): **Clear GTIN on all** or **Keep one, clear the rest**. Cleared products go back to `identity_status='needs_gtin'` so the next enrichment run assigns a fresh, unique GTIN.
+
+Product-detail toast that surfaces `GTIN_CLASH` gets clash-aware wording: "*GTIN 06001234567899 is shared with 25 unrelated products — clear the GTIN or open Duplicates to fix*", with inline **Clear GTIN** and **Open Duplicates** actions.
+
+## Technical notes
+
+- Migration adds `store_id`, `store_name` to `product_qr_assets` and `qr_scans` (backfilling `qr_scans.store_name` from the joined store name where `store_id` is set). Grants and RLS unchanged.
+- `product_qr_assets` unique index becomes `(retailer_id, gtin, coalesce(store_id, '00000000-…')) WHERE status='active'` so the same GTIN can have one active QR per branch, matching how you'll print shelf cards.
+- Short-code URL grows by ~5 chars (`?s=xxxxxxxx`) — a truncated 8-char store slug rather than the full uuid keeps the QR density unchanged.
+- No synthetic data inserted anywhere.

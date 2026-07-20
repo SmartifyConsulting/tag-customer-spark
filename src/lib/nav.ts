@@ -66,13 +66,14 @@ export const NAV: readonly NavItem[] = [
     icon: LayoutDashboard,
     match: ["/briefing"],
   },
-  { title: "Messages", url: "/inbox", icon: Inbox, match: ["/inbox"] },
   {
     title: "Inventory",
     url: "/admin/inventory",
     icon: Boxes,
     match: ["/admin/inventory", "/products"],
   },
+  { title: "Messages", url: "/inbox", icon: Inbox, match: ["/inbox"] },
+
   {
     title: "Intelligence",
     url: "/intelligence",

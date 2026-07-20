@@ -1,7 +1,16 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { listStores } from "@/lib/stores.functions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 import {
   Check,
   Download,
@@ -70,13 +79,18 @@ export function ProductQrPanel({
 }) {
   const qc = useQueryClient();
   const generateFn = useServerFn(generateProductQr);
+  const listStoresFn = useServerFn(listStores);
+  const storesQ = useQuery({ queryKey: ["stores"], queryFn: () => listStoresFn() });
+  const stores: Array<{ id: string; name: string }> = (storesQ.data as any)?.stores ?? [];
+  const [storeId, setStoreId] = useState<string | null>(null);
   const [confirmRegen, setConfirmRegen] = useState(false);
   const [clash, setClash] = useState<GtinClash | null>(null);
   const [mergeOpen, setMergeOpen] = useState(false);
   const [autoRetryAfterMerge, setAutoRetryAfterMerge] = useState(false);
 
   const generate = useMutation({
-    mutationFn: (force: boolean) => generateFn({ data: { productId, force } }),
+    mutationFn: (force: boolean) => generateFn({ data: { productId, force, storeId } }),
+
     onSuccess: (row: any) => {
       qc.setQueryData(["product", productId], (prev: any) => {
         if (!prev) return prev;
@@ -169,7 +183,20 @@ export function ProductQrPanel({
                 Generate a GS1 Digital Link QR that preserves the product's GTIN.
               </p>
             </div>
-            <div className="mx-auto">
+            <div className="mx-auto flex flex-wrap items-center justify-center gap-2">
+              {stores.length > 1 && (
+                <Select value={storeId ?? "__none__"} onValueChange={(v) => setStoreId(v === "__none__" ? null : v)}>
+                  <SelectTrigger className="w-[220px]">
+                    <SelectValue placeholder="Store attribution…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">All stores (no attribution)</SelectItem>
+                    {stores.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Button onClick={() => generate.mutate(false)} disabled={generate.isPending}>
                 {generate.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -179,6 +206,12 @@ export function ProductQrPanel({
                 Generate QR
               </Button>
             </div>
+            {stores.length > 1 && (
+              <p className="text-xs text-muted-foreground">
+                Pick the branch that will print this card so scans attribute the customer's opt-in to that store.
+              </p>
+            )}
+
           </div>
         </section>
         {clashDialogs}

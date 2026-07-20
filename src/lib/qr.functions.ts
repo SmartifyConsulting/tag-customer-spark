@@ -103,7 +103,9 @@ export async function generateForProduct(
   userId: string,
   productId: string,
   force: boolean,
+  storeId?: string | null,
 ): Promise<ActiveQr> {
+
   const { data: product, error: pErr } = await supabase
     .from("products")
     .select("id, retailer_id, name, sku, gtin, barcode_type")
@@ -173,9 +175,40 @@ export async function generateForProduct(
     }
   }
 
-  // Build GS1 Digital Link
+  // Resolve store attribution — explicit storeId wins, else the retailer's
+  // only store (silent), else null (retailer-wide QR for multi-store).
+  let effectiveStoreId: string | null = storeId ?? null;
+  let effectiveStoreName: string | null = null;
+  if (!effectiveStoreId) {
+    const { data: stores } = await supabase
+      .from("stores")
+      .select("id, name")
+      .eq("retailer_id", product.retailer_id)
+      .limit(2);
+    if (stores && stores.length === 1) {
+      effectiveStoreId = stores[0].id;
+      effectiveStoreName = stores[0].name;
+    }
+  } else {
+    const { data: st } = await supabase
+      .from("stores")
+      .select("name")
+      .eq("id", effectiveStoreId)
+      .eq("retailer_id", product.retailer_id)
+      .maybeSingle();
+    if (!st) throw new Error("Selected store does not belong to this retailer.");
+    effectiveStoreName = (st as any).name;
+  }
+
+  // Build GS1 Digital Link — the canonical GS1 URL points to id.gs1.org,
+  // but the printed QR encodes our own resolver URL so scans land on our
+  // tracking route. Append ?s=<store_id> so the resolver can attribute the
+  // scan to the branch that printed this specific card.
   const { resolverUrlForGtin } = await import("./passport.server");
-  const resolverUrl = resolverUrlForGtin(gtin14);
+  const baseResolver = resolverUrlForGtin(gtin14);
+  const resolverUrl = effectiveStoreId
+    ? `${baseResolver}?s=${effectiveStoreId}`
+    : baseResolver;
   const canonicalGs1 = `https://id.gs1.org/01/${gtin14}`;
 
   // Render PNG + SVG
@@ -196,7 +229,8 @@ export async function generateForProduct(
 
   // Upload artifacts (privileged; RLS on storage.objects varies by bucket policy)
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const base = `${product.retailer_id}/${productId}/${gtin14}-v${nextVersion}`;
+  const storeSuffix = effectiveStoreId ? `-s${effectiveStoreId.slice(0, 8)}` : "";
+  const base = `${product.retailer_id}/${productId}/${gtin14}-v${nextVersion}${storeSuffix}`;
   const pngPath = `${base}.png`;
   const svgPath = `${base}.svg`;
   const up1 = await supabaseAdmin.storage
@@ -218,6 +252,8 @@ export async function generateForProduct(
       retailer_id: product.retailer_id,
       product_id: productId,
       gtin: gtin14,
+      store_id: effectiveStoreId,
+      store_name: effectiveStoreName,
       digital_link_url: canonicalGs1,
       resolver_url: resolverUrl,
       png_path: pngPath,
@@ -231,6 +267,7 @@ export async function generateForProduct(
     .select("id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path")
     .single();
   if (insErr) throw new Error(insErr.message);
+
 
   // Mirror status on the product record
   await supabase
@@ -306,12 +343,20 @@ export const generateProductQr = createServerFn({ method: "POST" })
       .object({
         productId: z.string().uuid(),
         force: z.boolean().optional().default(false),
+        storeId: z.string().uuid().nullable().optional(),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    return await generateForProduct(context.supabase, context.userId, data.productId, data.force);
+    return await generateForProduct(
+      context.supabase,
+      context.userId,
+      data.productId,
+      data.force,
+      data.storeId ?? null,
+    );
   });
+
 
 // Back-compat: existing callers (bulk dialog, imports, product row menu) keep
 // working. Template is accepted but ignored — GS1 Digital Link is canonical.

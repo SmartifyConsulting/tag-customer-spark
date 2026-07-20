@@ -39,18 +39,29 @@ const getPublicProductByGtin = createServerFn({ method: "GET" })
     // disambiguate which retailer's copy the scanner meant, so it
     // deterministically picks the oldest-registered match; a store-linked
     // scan entry point (in progress) will resolve this precisely instead.
+    // GTINs can be stored in the DB as the raw input (12 / 13 / 14 digits)
+    // depending on the source, but the scanner always resolves them into a
+    // padded 14-digit form. Match against both so a QR encoded as e.g.
+    // `02007453265190` still finds a product stored as `2007453265190`.
+    const gtinCandidates = Array.from(
+      new Set([gtin14, gtin14.replace(/^0+/, "") || gtin14, gtin14.slice(1), gtin14.slice(2)]),
+    );
     const { data: products } = await supabaseAdmin
       .from("products")
       .select(
         "id, retailer_id, store_id, stock_qty, name, brand, description, gtin, image_url, thumbnail_url, hero_image, image_status, price_cents, sale_price_cents, currency, on_promotion, promotion_label",
       )
-      .eq("gtin", gtin14)
+      .in("gtin", gtinCandidates)
       .eq("status", "active")
       .order("created_at", { ascending: true })
       .limit(1);
 
     const product = products?.[0] ?? null;
-    if (!product) return { found: false as const, gtin: gtin14 };
+    if (!product) {
+      console.warn("[passport] no product for gtin", { input: data.gtin, gtin14, tried: gtinCandidates });
+      return { found: false as const, gtin: gtin14 };
+    }
+
 
     // Self-heal: shell passport if missing
     let { data: passport } = await supabaseAdmin
@@ -98,10 +109,40 @@ const getPublicProductByGtin = createServerFn({ method: "GET" })
       const country = getRequestHeader("cf-ipcountry") ?? getRequestHeader("x-vercel-ip-country") ?? null;
       const url = new URL(getRequest().url);
       const device = /Mobi|Android/i.test(ua ?? "") ? "mobile" : "desktop";
-      await supabaseAdmin.from("qr_scans").insert({
+
+      // Store attribution: ?s=<store_id> from the QR overrides the product's
+      // default store (so a QR printed for Store A logs against Store A even
+      // if the product's home store is B). Falls back to the product's store.
+      const scannedStoreParam = url.searchParams.get("s");
+      let scannedStoreId: string | null = null;
+      let scannedStoreName: string | null = null;
+      if (scannedStoreParam) {
+        const { data: st } = await supabaseAdmin
+          .from("stores")
+          .select("id, name")
+          .eq("id", scannedStoreParam)
+          .eq("retailer_id", (product as any).retailer_id)
+          .maybeSingle();
+        if (st) {
+          scannedStoreId = (st as any).id;
+          scannedStoreName = (st as any).name;
+        }
+      }
+      if (!scannedStoreId && (product as any).store_id) {
+        scannedStoreId = (product as any).store_id;
+        const { data: st } = await supabaseAdmin
+          .from("stores")
+          .select("name")
+          .eq("id", scannedStoreId as string)
+          .maybeSingle();
+        scannedStoreName = (st as any)?.name ?? null;
+      }
+
+      const { error: scanErr } = await supabaseAdmin.from("qr_scans").insert({
         product_id: (product as any).id,
         retailer_id: (product as any).retailer_id,
-        store_id: (product as any).store_id,
+        store_id: scannedStoreId,
+        store_name: scannedStoreName,
         scanned_at: new Date().toISOString(),
         device_type: device,
         user_agent: ua,
@@ -111,10 +152,12 @@ const getPublicProductByGtin = createServerFn({ method: "GET" })
         utm_medium: url.searchParams.get("utm_medium"),
         utm_campaign: url.searchParams.get("utm_campaign"),
       });
+      if (scanErr) console.warn("[passport] scan insert failed", scanErr.message);
       await supabaseAdmin.rpc("enqueue_intent_recompute", { _product_id: (product as any).id });
-    } catch {
-      /* scan logging is best-effort */
+    } catch (e) {
+      console.warn("[passport] scan logging error", (e as Error)?.message ?? e);
     }
+
 
     return {
       found: true as const,
