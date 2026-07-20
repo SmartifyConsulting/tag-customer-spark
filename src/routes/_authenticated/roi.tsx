@@ -22,6 +22,7 @@ import {
   getRoiOverview, getRoiSettings, updateRoiSettings, runAttributionSweep,
 } from "@/lib/roi.functions";
 import { formatMoney } from "@/lib/format";
+import { IntelligenceTabs } from "@/components/intelligence-tabs";
 
 export const Route = createFileRoute("/_authenticated/roi")({
   head: () => ({ meta: [{ title: "ROI Engine — Tag" }] }),
@@ -51,6 +52,7 @@ function RoiPage() {
 
   return (
     <div className="space-y-8">
+      <IntelligenceTabs />
       <PageHeader
         title="ROI Engine"
         description="Attribute revenue to scans, watchlists, and notifications — and prove the platform's value to your CFO."

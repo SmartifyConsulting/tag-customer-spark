@@ -26,7 +26,7 @@ import {
   dashboardOverviewQueryOptions,
   advancedAnalyticsQueryOptions,
 } from "@/lib/dashboard";
-import { useAuth } from "@/hooks/use-auth";
+
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { ScanHeatmap, ScanHeatmapLegend } from "@/components/dashboard/scan-heatmap";
 import { IntentBadge } from "@/components/intent/intent-badge";

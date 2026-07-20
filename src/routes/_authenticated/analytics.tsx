@@ -17,6 +17,7 @@ import {
   dashboardOverviewQueryOptions,
 } from "@/lib/dashboard";
 import { formatMoney } from "@/lib/format";
+import { IntelligenceTabs } from "@/components/intelligence-tabs";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   head: () => ({ meta: [{ title: "Analytics — Tag" }] }),
@@ -37,6 +38,7 @@ function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
+      <IntelligenceTabs />
       <PageHeader
         title="Analytics"
         description="Deep-dive view of scans, customer growth, and revenue attribution."
