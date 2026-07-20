@@ -69,40 +69,45 @@ function SettingsPage() {
           <TabsTrigger value="audit"><History className="mr-1 h-4 w-4" /> Audit log</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="workspace">
-          <Card className="rounded-2xl">
-            <CardHeader><CardTitle>Brand</CardTitle><CardDescription>Shown on QR cards, opt-in pages and WhatsApp messages.</CardDescription></CardHeader>
-            <CardContent className="space-y-4">
-              {settings.isLoading ? <Skeleton className="h-32 w-full" /> : (
-                <>
-                  <div><Label>Workspace name</Label><Input value={current.name ?? ""} onChange={(e) => setForm({ ...current, name: e.target.value })} /></div>
-                  <div><Label>Contact email</Label><Input value={current.contact_email ?? ""} onChange={(e) => setForm({ ...current, contact_email: e.target.value })} /></div>
+        <TabsContent value="workspace" className="space-y-8">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <Card className="rounded-2xl">
+              <CardHeader><CardTitle>Brand</CardTitle><CardDescription>Shown on QR cards, opt-in pages and WhatsApp messages.</CardDescription></CardHeader>
+              <CardContent className="space-y-4">
+                {settings.isLoading ? <Skeleton className="h-32 w-full" /> : (
+                  <>
+                    <div><Label>Workspace name</Label><Input value={current.name ?? ""} onChange={(e) => setForm({ ...current, name: e.target.value })} /></div>
+                    <div><Label>Contact email</Label><Input value={current.contact_email ?? ""} onChange={(e) => setForm({ ...current, contact_email: e.target.value })} /></div>
 
-                  <LogoUploader
-                    logoUrl={current.logo_url ?? ""}
-                    onUploaded={(url) => {
-                      setForm({ ...current, logo_url: url });
-                      qc.invalidateQueries({ queryKey: ["settings"] });
-                    }}
-                  />
+                    <LogoUploader
+                      logoUrl={current.logo_url ?? ""}
+                      onUploaded={(url) => {
+                        setForm({ ...current, logo_url: url });
+                        qc.invalidateQueries({ queryKey: ["settings"] });
+                      }}
+                    />
 
-                  <div className="flex items-center justify-between rounded-xl border p-4">
-                    <div>
-                      <p className="text-sm font-medium">Appearance</p>
-                      <p className="text-xs text-muted-foreground">Switch between light, dark, or system themes.</p>
+                    <div className="flex items-center justify-between rounded-xl border p-4">
+                      <div>
+                        <p className="text-sm font-medium">Appearance</p>
+                        <p className="text-xs text-muted-foreground">Switch between light, dark, or system themes.</p>
+                      </div>
+                      <ThemeToggle />
                     </div>
-                    <ThemeToggle />
-                  </div>
-                  <div className="flex justify-end">
-                    <Button onClick={() => save.mutate()} disabled={save.isPending}>Save</Button>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                    <div className="flex justify-end">
+                      <Button onClick={() => save.mutate()} disabled={save.isPending}>Save</Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <TagReaderCard />
+          </div>
 
           {canReseed && <DangerZoneCard />}
         </TabsContent>
+
 
         <TabsContent value="emails">
           <EmailsTab defaultTo={r?.contact_email ?? ""} />
