@@ -29,6 +29,9 @@ import { sendTestEmail, sendDailyBriefingEmail, sendWeeklyRoiEmail } from "@/lib
 import { BillingTab } from "@/components/settings/billing-tab";
 import { PlanAdminTab } from "@/components/settings/plan-admin-tab";
 import { useAuth } from "@/hooks/use-auth";
+import { TagReaderCardDialog } from "@/components/settings/tag-reader-card-dialog";
+import { QrPreview } from "@/components/qr/qr-preview";
+import { ScanLine } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — Tag" }] }),
