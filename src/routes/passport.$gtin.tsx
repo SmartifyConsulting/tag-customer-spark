@@ -31,12 +31,7 @@ const getPublicProductByGtin = createServerFn({ method: "GET" })
     const gtin14 = validGtin14(data.gtin);
     if (!gtin14) return { found: false as const, gtin: data.gtin };
 
-    const { createClient } = await import("@supabase/supabase-js");
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_PUBLISHABLE_KEY!,
-      { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // The same manufacturer GTIN can be stocked by multiple retailers, so
     // this can legitimately match more than one row — .maybeSingle() would
@@ -44,7 +39,7 @@ const getPublicProductByGtin = createServerFn({ method: "GET" })
     // disambiguate which retailer's copy the scanner meant, so it
     // deterministically picks the oldest-registered match; a store-linked
     // scan entry point (in progress) will resolve this precisely instead.
-    const { data: products } = await supabase
+    const { data: products } = await supabaseAdmin
       .from("products")
       .select(
         "id, retailer_id, store_id, stock_qty, name, brand, description, gtin, image_url, thumbnail_url, hero_image, image_status, price_cents, sale_price_cents, currency, on_promotion, promotion_label",
