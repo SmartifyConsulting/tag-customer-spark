@@ -114,7 +114,7 @@ export function AppSidebar() {
 
       <SidebarFooter>
         {!collapsed && (
-          <div className="px-3 py-3 space-y-3 border-t border-sidebar-border">
+          <div className="px-3 py-3 space-y-3">
             <input
               type="text"
               placeholder="Search anything..."
