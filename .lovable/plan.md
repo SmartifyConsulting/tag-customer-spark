@@ -1,58 +1,89 @@
-Unify the header across /about (hero), /auth, and every marketing sub-page so the logo and nav don't shift between pages.
+## 1. Setup wizard — remove Customers & Stores uploads, auto-detect branches
 
-## Target layout (all three page types)
+`src/routes/setup.tsx`
+- Drop the `customerFile` / `customerImporting` / `storeFile` / `storeImporting` steps and all related state, refs, mutations, effects, and imports (`previewCustomerImport`, `commitCustomerImport`, `previewStoreImport`, `commitStoreImport`, `StoreImportRow`, `CustomerImportRow`).
+- After the product `importing` step finishes, call a new server fn `autoDetectStoresFromProducts`, then go straight to `done`.
 
-Three-column header row, top-aligned:
+New helper `src/lib/stores.functions.ts` → `autoDetectStoresFromProducts`
+- Read distinct `store_id` values from the retailer's `products` (with per-store counts).
+- Insert a placeholder store row for every referenced `store_id` that has no matching `stores` row (name = "Branch N").
+- If products reference zero stores AND `stores` is empty, insert one store named after the retailer with `notes = "Sole proprietor"`.
+- Returns `{ createdCount, soleProprietor }`.
 
-```text
-[ Logo top-left ]      [ Nav pills — centered ]      [ Right slot ]
-```
+## 2. Fix "Digital Identity Build" hang at 4/7 (QR duplicate-key)
 
-- **Logo**: fixed size across every page. Take the current Features logo (`h-[10rem] md:h-[11rem]`) and scale +20% → `h-[12rem] md:h-[13.2rem]`. Same size on `/about`, `/auth`, and every marketing sub-page.
-- **Nav pills**: centered in the header row on every page (not left-hugged), same pill styling.
-- **Vertical alignment**: header uses `items-start` so the top edge of the Tag logo lines up with the top edge of the nav pill buttons. No `mt-*` offsets on the logo.
-- **Right slot** varies by page:
-  - Marketing sub-pages (Features, How it Works, Intelligence Engine, Intent Gap Analytics, Pricing): "Start Setup →" button.
-  - `/about` hero: existing Sign in + Start Setup buttons.
-  - `/auth`: empty (no right-side CTA) — but the center column still holds the nav in the same absolute position.
+Root cause (verified): the DB index `product_qr_assets_active_gtin_uidx` is `UNIQUE (gtin) WHERE status='active'` — globally unique across all retailers. `qr.functions.ts::generateForProduct` checks GTIN uniqueness scoped per-retailer, and `assignMissingBarcodes` generates deterministic GTIN-13s that can collide across retailers. The second insert throws `duplicate key … product_qr_assets_active_gtin_uidx`, killing the bulk loop and freezing the progress bar at "Converting to QR codes".
 
-## Implementation
+Migration:
+- Drop `product_qr_assets_active_gtin_uidx`.
+- Recreate as `UNIQUE (retailer_id, gtin) WHERE status = 'active'` — matches the code's per-retailer scope.
 
-### 1. `src/components/marketing-nav.tsx`
-- Restructure to remove the current `flex-1 items-center gap-8` wrapper.
-- Return just the nav pill row (no wrapper, no Start Setup slot). Consumers decide where to place it and what right-side content to render.
-- Move the Start Setup button out of `MarketingNav` — it becomes a separate `<MarketingCtaButton />` export in the same file so page headers can drop it into the right slot when needed.
+Code hardening in `src/lib/qr.functions.ts`:
+- On 23505 for this index, re-fetch any lingering active row for `(retailer_id, gtin)`, retire it, retry once.
+- `bulkGenerateQrs` / wizard bulk loop already collect per-product errors — surface the count in the toast instead of aborting the whole step.
 
-### 2. New shared header primitive in `src/components/marketing-page.tsx` (`MarketingHeader`)
-Rewrite to a 3-column grid:
+## 3. Navigation — new bold pink menu style + simplified item set
 
-```tsx
-<header className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-start gap-8 px-6 py-5">
-  <Link to="/about">
-    <img src={heroLogo} className="h-[12rem] md:h-[13.2rem] w-auto object-contain" />
-  </Link>
-  <div className="flex justify-center pt-4"><MarketingNav /></div>
-  <div className="flex items-start pt-4">{right}</div>
-</header>
-```
+Reference: the attached image shows top-nav items styled as plain text with a small chevron for dropdowns (no pill background). Replicate that style but in the pink brand colour.
 
-- `pt-4` on the nav/right columns pushes the pill row down enough that the top of the pills sits roughly at the top of the Tag logo icon — matches "top of the tag aligned with top of the buttons".
-- Accept an optional `right?: ReactNode` prop; default = `<MarketingCtaButton />`.
+`src/components/app-top-nav.tsx`
+- Remove the mint pill background. Each item becomes plain text: `text-[#A6446B] font-semibold text-sm`, hover `text-[#7d3350]`, active `underline underline-offset-4`.
+- Dropdown triggers keep the `ChevronDown` icon.
+- Same treatment for `MarketingNav` pills on the marketing/auth header so the whole app matches.
 
-### 3. `src/components/auth-shell.tsx`
-- Replace the current header row with `<MarketingHeader right={null} />` so `/auth` uses the exact same logo size, nav position, and top alignment as every other page.
-- Rest of the two-column body (hero copy + form card) unchanged.
+`src/lib/nav.ts` — simplified item set:
 
-### 4. `src/routes/about.tsx`
-- Replace the hand-rolled `<header>` with `<MarketingHeader right={<>Sign in / Start Setup buttons</>} />`, preserving the existing Sign in + Start Setup behaviour but inside the shared header shell.
-- Drop the custom `mt-[4cm] mr-[3cm]` / `h-[8.064rem] md:h-[10.368rem]` classes — logo now inherits the shared fixed size.
+| Top item | Type | Children |
+| --- | --- | --- |
+| **Product** | dropdown | Dashboard, **Messages** *(was WhatsApps)*, Inventory, Customers |
+| **Intelligence** | dropdown | Insights, Analytics, ROI, Trends |
+| **Admin** | dropdown *(admin-only)* | Taxonomy, Stores, Users → `/admin?tab=…` |
+| **Pricing** | flat link *(super-admin only)* | `/admin/pricing` |
 
-## Result
-- Same logo size (`h-[12rem] md:h-[13.2rem]`) and same left position on hero, auth, and all sub-pages — no jump when navigating between them.
-- Nav pills always centered in the header row.
-- Logo top edge aligns with the top of the nav pill row.
-- Right slot swaps per page without affecting logo or nav position.
+- Removes the top-level **Settings** entry (still reachable via avatar menu).
+- Non-admins don't see Admin; non-super-admins don't see Pricing.
+- Mobile bottom nav keeps the four most-used flat links (Dashboard, Messages, Inventory, Customers).
+
+## 4. Rename WhatsApps → Messages (label only)
+
+The current top-level "WhatsApps" item pointing at `/inbox` becomes **Messages** everywhere it renders. Scope:
+- `src/lib/nav.ts` — label change in the new Product dropdown entry.
+- `src/routes/_authenticated/inbox.tsx` — page `head` title, `PageHeader` title, and any "WhatsApps" copy in the empty state / section headings.
+- `src/components/command-palette.tsx` — command entry label.
+- Any breadcrumb / tab / dashboard link copy that reads "WhatsApps".
+
+Route path stays `/inbox` (no redirect needed). Underlying WhatsApp connector/provider names in server code and DB (`whatsapp_messages`, `send-whatsapp-message`, `TWILIO_WHATSAPP_FROM`) are unchanged — only the user-facing label moves.
+
+## 5. Role gating
+
+Admin = `super_admin | retail_admin | store_manager`. System Admin = `super_admin` only.
+
+- `useIsAdmin()` helper in `src/hooks/use-auth.tsx`.
+- Non-admins hitting `/admin/*` redirect to `/dashboard`.
+- Delete buttons across Inventory, Stores, Users, Products, Customers rendered only when `isAdmin` (RLS already blocks the writes — UI polish).
+- `/admin/pricing` stays super-admin-only.
+
+## 6. Admin as one tabbed page
+
+New `src/routes/_authenticated/admin.tsx` with `?tab=` — tabs: Taxonomy / Stores / Users.
+- Taxonomy → body of current `admin.categories.tsx`.
+- Stores → new `StoresView` component (extracted from `stores.tsx`) with the grid/list toggle from §7.
+- Users → `UserAdminTab`.
+
+Delete `admin.categories.tsx`, `admin.users.tsx`, `stores.tsx`. Redirect `/admin/categories`, `/admin/users`, `/stores` → `/admin?tab=…`. `admin.inventory.*` and `admin.pricing.tsx` stay as their own routes.
+
+## 7. Stores: grid / list toggle with persistence
+
+Inside `StoresView`, add a Grid/List `ToggleGroup` in the toolbar. Initial mode from `localStorage.getItem("stores.view")` (default `"grid"`); write on change. List mode = `<Table>` with Name, Location, Manager, Contact, Scans, Staff, Recovered, Status, Actions.
+
+## Technical details
+
+- Only DB change: the QR unique-index swap in §2.
+- Pink text nav uses existing `#A6446B` accent — no new tokens.
+- Search-param tab wiring follows existing `Route.useSearch()` + `navigate({ search })` pattern.
 
 ## Out of scope
-- No changes to nav link list, pill colors, or form card.
-- No changes to body content below the header.
+
+- No redesign of Settings, Pricing, Inventory admin screens beyond delete-button gating.
+- No RLS policy changes.
+- No change to the WhatsApp send infrastructure — only the "WhatsApps" label becomes "Messages".
