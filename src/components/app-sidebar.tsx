@@ -56,7 +56,7 @@ export function AppSidebar() {
 
                 if (item.items && item.items.length > 0 && !locked) {
                   return (
-                    <Collapsible key={item.url} defaultOpen className="group/collapsible">
+                    <Collapsible key={item.url} open className="group/collapsible">
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton isActive={active} tooltip={item.title} className={activeClass}>
