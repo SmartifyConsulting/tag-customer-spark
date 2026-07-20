@@ -333,9 +333,13 @@ export async function enrichProductPassport(
 }
 
 export function getPublicSiteBase(): string {
+  // Fall back to the live custom domain so a missing/mis-set PUBLIC_SITE_URL
+  // never regresses QR codes onto a defunct hostname (mypenguin.co.za was
+  // the previous default and left dead QR codes in the wild — see the
+  // one-shot resolver_url backfill migration that accompanies this change).
   return (
     process.env.PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-    "https://tag-customer-spark.lovable.app"
+    "https://tag-tech.co.za"
   );
 }
 
