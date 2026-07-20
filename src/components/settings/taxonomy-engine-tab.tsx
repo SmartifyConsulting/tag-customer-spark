@@ -278,7 +278,7 @@ export function TaxonomyEngineTab() {
               </SelectTrigger>
               <SelectContent>
                 {profiles.map((p: any) => (
-                  <SelectItem key={p.id} value={p.id}>
+                  <SelectItem key={p.id} value={p.id} className="hover:!text-white">
                     <span className="flex items-center gap-2">
                       <span className="truncate">{p.name}</span>
                       {p.is_default && (
@@ -287,7 +287,7 @@ export function TaxonomyEngineTab() {
                         </Badge>
                       )}
                       {p.is_published && (
-                        <Badge variant="outline" className="px-1 py-0 text-[10px]">Published</Badge>
+                        <Badge variant="outline" className="px-1 py-0 text-[10px] group-hover:!text-white">Published</Badge>
                       )}
                     </span>
                   </SelectItem>

@@ -59,7 +59,7 @@ function AuthenticatedLayout() {
     <div className="flex flex-col min-h-screen">
       {/* Greeting banner above nav */}
       {greetingName && (
-        <div className="bg-background/80 px-4 py-4 backdrop-blur-md sm:px-6 border-b border-border">
+        <div className="bg-background px-4 py-4 sm:px-6">
           <div className="mx-auto w-full max-w-7xl">
             <p className="text-[14px] font-semibold tracking-tight">
               Hello {greetingName}
@@ -74,7 +74,7 @@ function AuthenticatedLayout() {
       <SidebarProvider style={themeStyle as any} className="flex-1">
         <AppSidebar />
         <SidebarInset className="bg-background">
-          <header className="sticky top-0 z-20 flex items-center justify-end gap-3 bg-background/80 px-4 py-3 backdrop-blur-md sm:px-6">
+          <header className="flex items-center justify-end gap-3 bg-background px-4 py-3 sm:px-6">
             <SidebarTrigger className="md:hidden mr-auto" />
             <div className="flex items-center gap-3">
               <ThemeToggle />
