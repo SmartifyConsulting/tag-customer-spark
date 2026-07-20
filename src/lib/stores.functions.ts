@@ -97,3 +97,36 @@ export const upsertStore = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+// Called at the end of product import. Products already carry a
+// `store_id` when the source file had a branch/site/plant column, and
+// the importer auto-creates the store row for each distinct branch it
+// sees — so most retailers will already have their real stores. This
+// helper handles the leftover case: a retailer whose file had no
+// branch column at all (single-shop merchants) ends up with zero
+// stores, which then breaks store-scoped screens. If that's the case
+// we create one "Sole proprietor" placeholder so the rest of the app
+// has a store to hang scans, staff and recoveries off.
+export const ensureRetailerHasStore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) return { created: false, storeCount: 0 };
+
+    const { count } = await supabase
+      .from("stores")
+      .select("id", { count: "exact", head: true })
+      .eq("retailer_id", retailerId);
+
+    if ((count ?? 0) > 0) return { created: false, storeCount: count ?? 0 };
+
+    const { error } = await supabase.from("stores").insert({
+      retailer_id: retailerId,
+      name: "Sole proprietor",
+      status: "active",
+      created_by: userId,
+    } as any);
+    if (error) throw new Error(error.message);
+    return { created: true, storeCount: 1 };
+  });
