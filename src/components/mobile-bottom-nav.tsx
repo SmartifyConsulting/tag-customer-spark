@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { useRouterState } from "@tanstack/react-router";
 import { MOBILE_NAV, isNavActive } from "@/lib/nav";
 
 export function MobileBottomNav() {
@@ -14,8 +14,8 @@ export function MobileBottomNav() {
           const active = isNavActive(item, pathname);
           return (
             <li key={item.url} className="flex-1">
-              <Link
-                to={item.url}
+              <a
+                href={item.url}
                 className={[
                   "flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors",
                   active ? "text-[#A6446B]" : "text-muted-foreground hover:text-[#A6446B]",
@@ -30,7 +30,7 @@ export function MobileBottomNav() {
                   <item.icon className="h-4 w-4" />
                 </span>
                 <span className="truncate leading-tight">{item.title}</span>
-              </Link>
+              </a>
             </li>
           );
         })}
