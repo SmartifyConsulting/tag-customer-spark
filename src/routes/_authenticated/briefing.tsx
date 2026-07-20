@@ -51,7 +51,6 @@ export const Route = createFileRoute("/_authenticated/briefing")({
 });
 
 function BriefingPage() {
-  const { user } = useAuth();
   const { data } = useSuspenseQuery(briefingQueryOptions);
   const { data: overview } = useSuspenseQuery(dashboardOverviewQueryOptions);
   const analyticsQuery = useQuery(advancedAnalyticsQueryOptions(30));
@@ -61,8 +60,6 @@ function BriefingPage() {
     queryFn: () => listIntentSections(),
   });
   const intent = intentQuery.data as { high: any[]; rising: any[] } | undefined;
-  const first = user?.user_metadata?.full_name?.split(" ")?.[0] ?? "there";
-  const greeting = data.greetingName ?? first;
 
   const k = overview.kpis;
   const dailySpark = overview.scansDaily.slice(-7).map((d) => ({ v: d.count }));
