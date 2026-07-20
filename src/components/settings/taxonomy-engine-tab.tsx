@@ -273,24 +273,6 @@ export function TaxonomyEngineTab() {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex flex-wrap items-center gap-2">
-          {profiles.length > 0 && (
-            <div className="min-w-[220px]">
-              <Select value={selectedId ?? undefined} onValueChange={setSelectedId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select profile…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {profiles.map((p: any) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                      {p.is_default ? " · default" : ""}
-                      {p.is_published ? " · published" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
           <Button size="sm" variant="outline" onClick={() => setTemplatePickerOpen(true)}>
             <Plus className="mr-1 h-3.5 w-3.5" /> New profile
           </Button>
@@ -306,9 +288,6 @@ export function TaxonomyEngineTab() {
           </Button>
           {selectedId && (
             <>
-              <Button size="sm" variant="outline" onClick={() => makeDefault.mutate()}>
-                <Star className="mr-1 h-3.5 w-3.5" /> Set default
-              </Button>
               <Button
                 size="sm"
                 variant={profileQ.data?.profile.is_published ? "secondary" : "default"}
@@ -329,17 +308,67 @@ export function TaxonomyEngineTab() {
           )}
         </div>
 
+        {/* Profile grid — every template shown as a picker card. */}
+        {profiles.length > 0 && (
+          <div>
+            <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Templates ({profiles.length})
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {profiles.map((p: any) => {
+                const isSelected = p.id === selectedId;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelectedId(p.id)}
+                    className={cn(
+                      "flex flex-col gap-1 rounded-xl border px-3 py-2 text-left transition hover:bg-accent",
+                      isSelected && "border-primary bg-accent",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-medium">{p.name}</span>
+                      {p.is_default && (
+                        <Badge variant="secondary" className="shrink-0 gap-0.5 px-1.5 py-0 text-[10px]">
+                          <Star className="h-2.5 w-2.5 fill-current" /> Default
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      {p.is_published && <Badge variant="outline" className="px-1 py-0 text-[10px]">Published</Badge>}
+                      {isSelected && !p.is_default && (
+                        <span
+                          role="button"
+                          className="cursor-pointer text-primary hover:underline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            makeDefault.mutate();
+                          }}
+                        >
+                          Set as default
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {profilesQ.isLoading ? (
           <Skeleton className="h-40 w-full" />
         ) : !isEditing && profiles.length === 0 ? (
           <EmptyState
             icon={Layers}
             title="No taxonomy profiles yet"
-            description="Create your first profile to control how the product browser groups items."
+            description="Loading sector templates… if none appear, click 'Load sector templates' above."
           />
         ) : !isEditing ? (
-          <p className="text-sm text-muted-foreground">Select or create a profile to edit its hierarchy.</p>
+          <p className="text-sm text-muted-foreground">Select a template above to edit its hierarchy.</p>
         ) : (
+
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             {/* Editor */}
             <div className="space-y-4">
