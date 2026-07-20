@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing-page";
+import { TagLogo } from "@/components/tag-logo";
 
 import { ArrowRight } from "lucide-react";
 
