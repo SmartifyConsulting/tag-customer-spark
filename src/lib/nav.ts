@@ -15,9 +15,8 @@ export type NavSubItem = {
   title: string;
   url: string;
   match: readonly string[];
-  // Hidden from this sub-item's parent group for these roles — e.g. the
-  // executive Dashboard link is meaningless for a store-floor attendant,
-  // who gets their own dashboard instead.
+  // Hide this sub-item for these roles (e.g. exec Dashboard is meaningless
+  // for a store-floor attendant).
   hiddenForRoles?: readonly AppRole[];
 };
 
@@ -26,11 +25,10 @@ export type NavItem = {
   url: string;
   icon: typeof LayoutDashboard;
   match: readonly string[];
-  // When true, `match` entries only activate on an exact pathname match
-  // (no descendant paths). Used for Admin, whose destinations are all
-  // `/admin?tab=…` (same pathname `/admin`) — without this, `/admin`
-  // would also light up on `/admin/inventory/*` and highlight two
-  // sidebar items at once.
+  // Exact-only path matching (no descendant-startsWith highlight). Used
+  // where a group's destinations all live at the same base pathname with
+  // query params (e.g. Admin's `/admin?tab=…`) — otherwise `/admin` would
+  // also light up on `/admin/inventory/*` and highlight two items at once.
   exact?: boolean;
   feature?: TierFeatureKey;
   items?: readonly NavSubItem[];
@@ -38,12 +36,36 @@ export type NavItem = {
   superAdminOnly?: boolean;
 };
 
-// Left sidebar nav. Messages/Inventory/Customers are flat top-level items
-// (no "Product" grouping label — they're everyday destinations, not a
-// sub-category). Dashboard lives at the top of Intelligence instead, since
-// it's an executive/analytics view — and is hidden there for sales
-// assistants, who get their own store-floor dashboard.
+// ─── Left sidebar nav ───────────────────────────────────────────────────
+// Pointers to keep the two dashboards / customers home from drifting again:
+//
+//   • **Briefing** (`/briefing`) is the personalised HOME page — tagged
+//     products this week / last week / month buckets, plus unread WhatsApp
+//     conversations that need a reply. It's what the user sees right after
+//     signing in. It is NOT the exec KPI dashboard.
+//
+//   • **Intelligence → Dashboard** (`/dashboard`) is the exec KPI view
+//     (scans, revenue recovered, heatmap, top products). It lives under
+//     Intelligence because it's an analytics surface, not a daily action
+//     surface. Do not promote it back to the top level.
+//
+//   • **Customers** lives under Admin now (not top-level) — it's a
+//     configuration surface (bulk import, delete, edit) rather than an
+//     everyday destination like Messages/Inventory. If you're tempted to
+//     hoist it back to the top nav, remember why it moved: the top nav is
+//     limited to daily-use destinations.
+//
+//   • **Inventory** is `/admin/inventory` (yes, the URL sits under /admin,
+//     but the item is top-level because inventory is an every-day
+//     destination). Keep it here; don't move it under Admin.
+//
 export const NAV: readonly NavItem[] = [
+  {
+    title: "Briefing",
+    url: "/briefing",
+    icon: LayoutDashboard,
+    match: ["/briefing"],
+  },
   { title: "Messages", url: "/inbox", icon: Inbox, match: ["/inbox"] },
   {
     title: "Inventory",
@@ -51,11 +73,13 @@ export const NAV: readonly NavItem[] = [
     icon: Boxes,
     match: ["/admin/inventory", "/products"],
   },
-  { title: "Customers", url: "/customers", icon: Users, match: ["/customers"] },
   {
     title: "Intelligence",
-    url: "/intelligence/insights",
+    url: "/intelligence",
     icon: TrendingUp,
+    // NOTE: `/dashboard` matches this group too so the exec dashboard
+    // (which sits under Intelligence → Dashboard) highlights Intelligence
+    // in the sidebar, not the top-level Briefing.
     match: ["/intelligence", "/analytics", "/roi", "/commerce", "/dashboard"],
     feature: "roi",
     items: [
@@ -69,22 +93,21 @@ export const NAV: readonly NavItem[] = [
       { title: "Analytics", url: "/analytics", match: ["/analytics"] },
       { title: "ROI", url: "/commerce/roi", match: ["/commerce/roi", "/roi"] },
       { title: "Trends", url: "/intelligence/trends", match: ["/intelligence/trends"] },
+      { title: "Forecasting", url: "/intelligence/forecasting", match: ["/intelligence/forecasting"] },
     ],
   },
   {
     title: "Admin",
     url: "/admin",
     icon: ShieldCheck,
-    // Exact-only: Admin sub-tabs all live at pathname `/admin` with
-    // `?tab=…`. Without `exact`, `/admin` startsWith-matches
-    // `/admin/inventory/*` and highlights Admin at the same time as
-    // Inventory.
-    match: ["/admin", "/stores"],
+    // Exact-only — see NavItem.exact above.
+    match: ["/admin", "/stores", "/customers"],
     exact: true,
     adminOnly: true,
     items: [
       { title: "Taxonomy", url: "/admin?tab=taxonomy", match: ["/admin"] },
       { title: "Stores", url: "/admin?tab=stores", match: ["/admin", "/stores"] },
+      { title: "Customers", url: "/admin?tab=customers", match: ["/admin", "/customers"] },
       { title: "Users", url: "/admin?tab=users", match: ["/admin"] },
     ],
   },
@@ -97,13 +120,13 @@ export const NAV: readonly NavItem[] = [
   },
 ] as const;
 
-// Flat items shown on the mobile bottom nav — dropdowns don't fit on a
-// bottom bar, so we surface the four everyday destinations directly.
+// Mobile bottom nav — dropdowns don't fit on a bar, so we surface four
+// everyday destinations. Briefing replaces Dashboard as the home slot.
 export const MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, match: ["/dashboard"] },
+  { title: "Briefing", url: "/briefing", icon: LayoutDashboard, match: ["/briefing"] },
   { title: "Messages", url: "/inbox", icon: Inbox, match: ["/inbox"] },
   { title: "Inventory", url: "/admin/inventory", icon: Tag, match: ["/admin/inventory", "/products"] },
-  { title: "Customers", url: "/customers", icon: Users, match: ["/customers"] },
+  { title: "Customers", url: "/admin?tab=customers", icon: Users, match: ["/admin", "/customers"] },
 ] as const;
 
 export function isNavActive(

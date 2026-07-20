@@ -30,7 +30,7 @@ function Landing() {
     supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
   }, []);
 
-  const primaryHref = authed ? "/dashboard" : "/auth";
+  const primaryHref = authed ? "/briefing" : "/auth";
 
   return (
     <div className="min-h-screen bg-background text-foreground">

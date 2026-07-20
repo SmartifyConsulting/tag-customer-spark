@@ -40,6 +40,7 @@ import { Route as AuthenticatedIntelligenceRouteImport } from './routes/_authent
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
+import { Route as AuthenticatedBriefingRouteImport } from './routes/_authenticated/briefing'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
 import { Route as AuthenticatedIntelligenceIndexRouteImport } from './routes/_authenticated/intelligence.index'
@@ -228,6 +229,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBriefingRoute = AuthenticatedBriefingRouteImport.update({
+  id: '/briefing',
+  path: '/briefing',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
@@ -443,6 +449,7 @@ export interface FileRoutesByFullPath {
   '/setup': typeof SetupRoute
   '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
+  '/briefing': typeof AuthenticatedBriefingRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
@@ -509,6 +516,7 @@ export interface FileRoutesByTo {
   '/setup': typeof SetupRoute
   '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
+  '/briefing': typeof AuthenticatedBriefingRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
@@ -574,6 +582,7 @@ export interface FileRoutesById {
   '/setup': typeof SetupRoute
   '/terms': typeof TermsRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
+  '/_authenticated/briefing': typeof AuthenticatedBriefingRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
@@ -642,6 +651,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/terms'
     | '/analytics'
+    | '/briefing'
     | '/customers'
     | '/dashboard'
     | '/inbox'
@@ -708,6 +718,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/terms'
     | '/analytics'
+    | '/briefing'
     | '/customers'
     | '/dashboard'
     | '/inbox'
@@ -772,6 +783,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/terms'
     | '/_authenticated/analytics'
+    | '/_authenticated/briefing'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
     | '/_authenticated/inbox'
@@ -1073,6 +1085,13 @@ declare module '@tanstack/react-router' {
       path: '/customers'
       fullPath: '/customers'
       preLoaderRoute: typeof AuthenticatedCustomersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/briefing': {
+      id: '/_authenticated/briefing'
+      path: '/briefing'
+      fullPath: '/briefing'
+      preLoaderRoute: typeof AuthenticatedBriefingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/analytics': {
@@ -1410,6 +1429,7 @@ const AuthenticatedAdminInventoryRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRouteWithChildren
+  AuthenticatedBriefingRoute: typeof AuthenticatedBriefingRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
@@ -1435,6 +1455,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRouteWithChildren,
+  AuthenticatedBriefingRoute: AuthenticatedBriefingRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,

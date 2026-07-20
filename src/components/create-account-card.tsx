@@ -129,7 +129,7 @@ export function CreateAccountCard({
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/dashboard", replace: true });
+    navigate({ to: "/briefing", replace: true });
   };
 
   if (confirmationEmail) {

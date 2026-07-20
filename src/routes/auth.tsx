@@ -39,7 +39,7 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true });
+      if (data.session) navigate({ to: "/briefing", replace: true });
     });
   }, [navigate]);
 
@@ -77,7 +77,7 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/dashboard", replace: true });
+    navigate({ to: "/briefing", replace: true });
   };
 
   // Signup gets its own minimal, centered layout: just the logo and the

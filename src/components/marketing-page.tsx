@@ -41,7 +41,7 @@ export function MarketingCta() {
   const primaryLabel = authed ? "Open dashboard" : "Start Setup";
   const handleClick = () =>
     authed
-      ? navigate({ to: "/dashboard" })
+      ? navigate({ to: "/briefing" })
       : navigate({ to: "/auth", search: { mode: "signup" } });
 
   return (

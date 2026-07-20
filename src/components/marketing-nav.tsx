@@ -43,7 +43,7 @@ export function MarketingCtaGroup() {
 
   if (authed) {
     return (
-      <Button onClick={() => navigate({ to: "/dashboard" })} className="gap-2">
+      <Button onClick={() => navigate({ to: "/briefing" })} className="gap-2">
         Open dashboard <ArrowRight className="h-4 w-4" />
       </Button>
     );
