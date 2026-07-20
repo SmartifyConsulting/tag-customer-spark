@@ -504,6 +504,21 @@ export const seedSectorTemplates = createServerFn({ method: "POST" })
       }
       created++;
     }
+
+    // Ensure exactly one default profile — if none is currently marked, pick
+    // the first one (deterministic) so the UI has a sensible default.
+    const { data: after } = await supabase
+      .from("taxonomy_profiles")
+      .select("id, is_default, created_at")
+      .eq("retailer_id", retailerId)
+      .order("created_at", { ascending: true });
+    const hasDefault = (after ?? []).some((p: any) => p.is_default);
+    if (!hasDefault && after && after.length > 0) {
+      await supabase
+        .from("taxonomy_profiles")
+        .update({ is_default: true })
+        .eq("id", after[0].id);
+    }
     return { created, total: TAXONOMY_TEMPLATES.length };
   });
 
