@@ -18,10 +18,12 @@ type Props = {
   readerUrl: string;
 };
 
-// Fold-out shelf card. Designed as a tent card on A4 portrait:
-// the sheet is folded in half along the horizontal center; the top
-// half prints inverted so that once folded it forms a self-standing
-// tent showing the same face front and back.
+// Fold-out shelf card: A4 portrait, single-side print. Two identical
+// panels stacked vertically with a faint dashed fold line down the middle
+// so it can be folded in half (crease at top) to stand on a shelf as a
+// tent card, or trimmed at the fold for a flat card. Sending to a
+// professional printer for duplex tent-card printing also works because
+// both faces of the sheet are ready-made.
 export function TagReaderCardDialog({ open, onOpenChange, readerUrl }: Props) {
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [logoDataUrl, setLogoDataUrl] = useState<string>("");
@@ -38,7 +40,6 @@ export function TagReaderCardDialog({ open, onOpenChange, readerUrl }: Props) {
 
   useEffect(() => {
     if (!open || logoDataUrl) return;
-    // Convert bundled PNG to a data URL so jsPDF can embed it.
     fetch(tagLogo)
       .then((r) => r.blob())
       .then(
@@ -62,102 +63,71 @@ export function TagReaderCardDialog({ open, onOpenChange, readerUrl }: Props) {
       const H = 297;
       const mid = H / 2;
 
-      // Background panels
-      doc.setFillColor(20, 24, 33); // near-black
+      // Dark background across the whole sheet
+      doc.setFillColor(20, 24, 33);
       doc.rect(0, 0, W, H, "F");
 
-      // Fold guide down the middle
-      doc.setDrawColor(200);
-      doc.setLineDashPattern([2, 2], 0);
-      doc.setLineWidth(0.2);
-      doc.line(8, mid, W - 8, mid);
-      doc.setLineDashPattern([], 0);
-
-      // Small "fold here" label
-      doc.setFontSize(7);
-      doc.setTextColor(180);
-      doc.text("— fold here —", W / 2, mid - 1, { align: "center" });
-
-      // Draw a face (called twice: once upright bottom half, once inverted top half)
-      const drawFace = (originY: number, panelH: number, invert: boolean) => {
+      // Draw one face centered on a panel (upright)
+      const drawFace = (panelTop: number, panelH: number) => {
         const cx = W / 2;
-        // Coordinate helper: y relative to the panel's own top when upright.
-        const y = (t: number) => (invert ? originY + panelH - t : originY + t);
+        const top = panelTop + 14;
 
-        // Logo
         if (logoDataUrl) {
           const lw = 70;
-          const lh = 28;
-          const lx = cx - lw / 2;
-          const ly = y(invert ? 18 + lh : 18);
-          if (invert) {
-            // Rotate 180deg around image center
-            doc.addImage(
-              logoDataUrl,
-              "PNG",
-              lx,
-              ly,
-              lw,
-              lh,
-              undefined,
-              "FAST",
-              180,
-            );
-          } else {
-            doc.addImage(logoDataUrl, "PNG", lx, ly, lw, lh);
-          }
+          const lh = 26;
+          doc.addImage(logoDataUrl, "PNG", cx - lw / 2, top, lw, lh);
         }
 
-        // Caption
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(20);
         doc.setTextColor(255);
-        const cap1 = "SCAN THE QR CODE";
-        const cap2 = "USING YOUR PHONE CAMERA";
-        drawText(doc, cap1, cx, y(invert ? 60 : 60), invert);
-        doc.setFontSize(13);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.text("SCAN THE QR CODE", cx, top + 44, { align: "center" });
         doc.setFont("helvetica", "normal");
-        drawText(doc, cap2, cx, y(invert ? 70 : 70), invert);
+        doc.setFontSize(12);
+        doc.text("USING YOUR PHONE CAMERA", cx, top + 54, { align: "center" });
 
-        // QR code with a yellow frame accent
-        const qrSize = 78;
+        // QR with yellow frame accent
+        const qrSize = 76;
         const qx = cx - qrSize / 2;
-        const qy = y(invert ? 88 + qrSize : 88);
+        const qy = top + 66;
         doc.setFillColor(255, 200, 40);
-        doc.roundedRect(qx - 4, qy - 4, qrSize + 8, qrSize + 8, 2, 2, "F");
+        doc.roundedRect(qx - 5, qy - 5, qrSize + 10, qrSize + 10, 3, 3, "F");
         doc.setFillColor(255);
         doc.rect(qx - 1, qy - 1, qrSize + 2, qrSize + 2, "F");
         if (qrDataUrl) {
-          doc.addImage(
-            qrDataUrl,
-            "PNG",
-            qx,
-            qy,
-            qrSize,
-            qrSize,
-            undefined,
-            "FAST",
-            invert ? 180 : 0,
-          );
+          doc.addImage(qrDataUrl, "PNG", qx, qy, qrSize, qrSize);
         }
 
-        // Footer URL
+        doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         doc.setTextColor(220);
-        drawText(doc, readerUrl.replace(/^https?:\/\//, ""), cx, y(invert ? 178 : 178), invert);
+        doc.text(
+          readerUrl.replace(/^https?:\/\//, ""),
+          cx,
+          Math.min(panelTop + panelH - 8, qy + qrSize + 12),
+          { align: "center" },
+        );
       };
 
-      drawFace(0, mid, true); // top half: inverted
-      drawFace(mid, mid, false); // bottom half: upright
+      drawFace(0, mid);
+      drawFace(mid, mid);
+
+      // Fold guide across the middle
+      doc.setDrawColor(210);
+      doc.setLineDashPattern([2.5, 2.5], 0);
+      doc.setLineWidth(0.25);
+      doc.line(8, mid, W - 8, mid);
+      doc.setLineDashPattern([], 0);
+      doc.setFontSize(7);
+      doc.setTextColor(200);
+      doc.text("— fold here —", W / 2, mid - 1.5, { align: "center" });
 
       doc.save("tag-barcode-reader-card.pdf");
     },
     [qrDataUrl, logoDataUrl, readerUrl],
   );
 
-  const print = () => {
-    window.print();
-  };
+  const print = () => window.print();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -165,23 +135,19 @@ export function TagReaderCardDialog({ open, onOpenChange, readerUrl }: Props) {
         <DialogHeader>
           <DialogTitle>Tag Barcode Reader — shelf card</DialogTitle>
           <DialogDescription>
-            Fold along the dashed line so it stands as a tent card. Print on A4 or send the PDF to a professional printer.
+            Print on A4, fold along the dashed line to stand as a tent card on shelves, or send the PDF to a professional printer.
           </DialogDescription>
         </DialogHeader>
 
-        {/* On-screen preview */}
         <div id="tag-reader-print-area" className="mx-auto w-full max-w-[360px]">
-          <div className="relative overflow-hidden rounded-xl bg-[#141821] text-white shadow-lg">
-            {/* Top face (inverted) */}
-            <CardFace qrDataUrl={qrDataUrl} readerUrl={readerUrl} inverted />
-            {/* Fold line */}
+          <div className="overflow-hidden rounded-xl bg-[#141821] text-white shadow-lg">
+            <CardFace qrDataUrl={qrDataUrl} readerUrl={readerUrl} />
             <div className="relative">
               <div className="border-t border-dashed border-white/40" />
               <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#141821] px-2 text-[10px] uppercase tracking-widest text-white/60">
                 fold
               </span>
             </div>
-            {/* Bottom face (upright) */}
             <CardFace qrDataUrl={qrDataUrl} readerUrl={readerUrl} />
           </div>
         </div>
@@ -196,7 +162,6 @@ export function TagReaderCardDialog({ open, onOpenChange, readerUrl }: Props) {
         </DialogFooter>
       </DialogContent>
 
-      {/* Print-only styling: isolate the card when the user hits Print */}
       <style>{`
         @media print {
           body * { visibility: hidden !important; }
@@ -208,20 +173,9 @@ export function TagReaderCardDialog({ open, onOpenChange, readerUrl }: Props) {
   );
 }
 
-function CardFace({
-  qrDataUrl,
-  readerUrl,
-  inverted = false,
-}: {
-  qrDataUrl: string;
-  readerUrl: string;
-  inverted?: boolean;
-}) {
+function CardFace({ qrDataUrl, readerUrl }: { qrDataUrl: string; readerUrl: string }) {
   return (
-    <div
-      className="flex flex-col items-center gap-3 px-6 py-6"
-      style={inverted ? { transform: "rotate(180deg)" } : undefined}
-    >
+    <div className="flex flex-col items-center gap-3 px-6 py-6">
       <img src={tagLogo} alt="Tag" className="h-10 w-auto object-contain" />
       <p className="mt-1 text-center text-sm font-bold leading-tight">
         SCAN THE QR CODE
@@ -242,20 +196,4 @@ function CardFace({
       </p>
     </div>
   );
-}
-
-// jsPDF has no rotated-text primitive in v3+ that centers cleanly, so we
-// use its angle option and manually offset for 180deg text.
-function drawText(
-  doc: any,
-  text: string,
-  x: number,
-  y: number,
-  invert: boolean,
-) {
-  if (!invert) {
-    doc.text(text, x, y, { align: "center" });
-  } else {
-    doc.text(text, x, y, { align: "center", angle: 180 });
-  }
 }
