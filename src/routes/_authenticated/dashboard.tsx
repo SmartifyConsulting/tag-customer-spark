@@ -153,7 +153,9 @@ function DashboardContent() {
 
   const hour = new Date().getHours();
   const partOfDay = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
-  const branchName = myStore.data?.storeName || branding.data?.name || "there";
+  const companyName = branding.data?.name || "there";
+  const storeName = myStore.data?.storeName;
+  const branchName = storeName ? `${companyName} · ${storeName}` : companyName;
   const today = new Date().toLocaleDateString(undefined, {
     weekday: "long",
     day: "numeric",

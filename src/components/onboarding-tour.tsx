@@ -98,8 +98,8 @@ export function OnboardingTour({
       ref={cardRef}
       className={
         floating
-          ? "fixed z-50 w-[22rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-border/60 bg-card p-5 shadow-lg transition-[top,left] duration-300"
-          : "fixed bottom-6 right-6 z-50 w-[22rem] max-w-[calc(100vw-3rem)] rounded-2xl border border-border/60 bg-card p-5 shadow-lg"
+          ? "fixed z-50 w-[22rem] max-w-[calc(100vw-2rem)] rounded-2xl bg-[#C75984] p-5 shadow-lg transition-[top,left] duration-300 before:absolute before:w-0 before:h-0 before:border-8 before:border-transparent before:border-t-[#C75984] before:-bottom-2 before:left-6 text-white"
+          : "fixed bottom-6 right-6 z-50 w-[22rem] max-w-[calc(100vw-3rem)] rounded-2xl bg-[#C75984] p-5 shadow-lg text-white"
       }
       style={floating ? { top: position!.top, left: position!.left } : undefined}
     >
@@ -107,18 +107,18 @@ export function OnboardingTour({
         type="button"
         onClick={dismiss}
         aria-label="Close tips"
-        className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+        className="absolute right-3 top-3 text-white/70 hover:text-white"
       >
         <X className="h-4 w-4" />
       </button>
 
-      <div className="flex items-center gap-2 text-[color:var(--mint)]">
+      <div className="flex items-center gap-2 text-white">
         <Lightbulb className="h-4 w-4" />
         <span className="text-xs font-bold uppercase tracking-wide">Tip</span>
       </div>
 
-      <h3 className="mt-2 text-base font-bold text-foreground">{step.title}</h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
+      <h3 className="mt-2 text-base font-bold text-white">{step.title}</h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-white/90">{step.body}</p>
 
       <div className="mt-4 flex items-center justify-between">
         <div className="flex gap-1.5">
@@ -126,17 +126,17 @@ export function OnboardingTour({
             <span
               key={i}
               className={`h-1.5 w-1.5 rounded-full ${
-                i === index ? "bg-[color:var(--mint)]" : "bg-muted"
+                i === index ? "bg-white" : "bg-white/40"
               }`}
             />
           ))}
         </div>
         {isLast ? (
-          <Button size="sm" onClick={dismiss} className="gap-1.5">
+          <Button size="sm" onClick={dismiss} className="gap-1.5 bg-white text-[#C75984] hover:bg-white/90">
             Got it
           </Button>
         ) : (
-          <Button size="sm" onClick={() => setIndex((i) => i + 1)} className="gap-1.5">
+          <Button size="sm" onClick={() => setIndex((i) => i + 1)} className="gap-1.5 bg-white text-[#C75984] hover:bg-white/90">
             Next <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         )}

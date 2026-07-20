@@ -82,7 +82,7 @@
   --muted: oklch(0.96 0 0);
   --muted-foreground: oklch(0.46 0 0);
 
-  --accent: #25D366;                             /* WhatsApp green */
+  --accent: oklch(0.16 0.005 60);                /* Black (consistent with primary) */
   --accent-foreground: oklch(1 0 0);
 
   --destructive: oklch(0.45 0.14 40);            /* Crimson — errors only */
@@ -140,7 +140,7 @@
   --muted: oklch(0.22 0.005 60);
   --muted-foreground: oklch(0.70 0.02 60);
 
-  --accent: oklch(0.68 0.14 55);
+  --accent: oklch(0.955 0.012 82);               /* Cream on dark (consistent with primary) */
   --accent-foreground: oklch(0.14 0.005 60);
 
   --destructive: oklch(0.55 0.16 40);

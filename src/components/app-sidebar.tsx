@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ChevronRight, Lock } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -31,16 +31,11 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="hidden border-r-0 overflow-visible md:flex">
-      <SidebarHeader className="relative h-20 flex-row items-center justify-center overflow-visible bg-sidebar p-0">
+      <SidebarHeader className="relative h-[9rem] flex-row items-center justify-center overflow-visible bg-sidebar p-0">
         {collapsed ? (
           <TagLogo variant="icon" size="sm" />
         ) : (
-          // The source logo image is a near-square 719x494px, not a thin
-          // banner — the sidebar is only 16rem wide, so this has to be
-          // sized to actually fit the column instead of the much larger
-          // "xl" preset (which was never fitted since this sidebar wasn't
-          // wired into the layout until now).
-          <TagLogo variant="wordmark" heightClass="h-16" />
+          <TagLogo variant="wordmark" heightClass="h-[8.84rem]" />
         )}
       </SidebarHeader>
 
@@ -62,8 +57,9 @@ export function AppSidebar() {
                       : "text-sidebar-foreground/80 hover:bg-foreground/5 hover:text-sidebar-foreground";
 
                 if (item.items && item.items.length > 0 && !locked) {
+                  const isIntelligence = item.title === "Intelligence";
                   return (
-                    <Collapsible key={item.url} defaultOpen={active} className="group/collapsible">
+                    <Collapsible key={item.url} defaultOpen={isIntelligence || active} className="group/collapsible">
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton isActive={active} tooltip={item.title} className={activeClass}>
@@ -109,7 +105,6 @@ export function AppSidebar() {
                       <Link {...linkProps} className="flex items-center gap-2.5">
                         <item.icon className="h-4 w-4 shrink-0" />
                         <span className="truncate flex-1">{item.title}</span>
-                        {locked && <Lock className="h-3 w-3 shrink-0 opacity-70" />}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -122,9 +117,16 @@ export function AppSidebar() {
 
       <SidebarFooter>
         {!collapsed && (
-          <div className="px-3 py-2">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-sidebar-foreground/40">Tag</p>
-            <p className="text-[11px] text-sidebar-foreground/60">Demand Intelligence</p>
+          <div className="px-3 py-3 space-y-3 border-t border-sidebar-border">
+            <input
+              type="text"
+              placeholder="Search anything..."
+              className="w-full rounded-lg border border-sidebar-border bg-sidebar px-3 py-2 text-sm placeholder:text-sidebar-foreground/40 text-sidebar-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
+            />
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-sidebar-foreground/40">Tag</p>
+              <p className="text-[11px] text-sidebar-foreground/60">Demand Intelligence</p>
+            </div>
           </div>
         )}
       </SidebarFooter>
