@@ -51,13 +51,12 @@ export function AppSidebar() {
                   active && !locked
                     ? "bg-foreground text-background font-semibold hover:bg-foreground hover:text-background data-[active=true]:bg-foreground data-[active=true]:text-background [&_svg]:text-background"
                     : locked
-                      ? "text-sidebar-foreground/50 hover:bg-foreground/5 hover:text-sidebar-foreground/80"
-                      : "text-sidebar-foreground/80 hover:bg-foreground/5 hover:text-sidebar-foreground";
+                      ? "text-sidebar-foreground/50 hover:bg-muted hover:text-sidebar-foreground/80"
+                      : "text-sidebar-foreground/80 hover:bg-muted hover:text-sidebar-foreground";
 
                 if (item.items && item.items.length > 0 && !locked) {
-                  const isIntelligence = item.title === "Intelligence";
                   return (
-                    <Collapsible key={item.url} defaultOpen={isIntelligence || active} className="group/collapsible">
+                    <Collapsible key={item.url} defaultOpen className="group/collapsible">
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton isActive={active} tooltip={item.title} className={activeClass}>
