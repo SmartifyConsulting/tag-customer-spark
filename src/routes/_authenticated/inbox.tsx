@@ -124,8 +124,8 @@ function InboxPage() {
                 className="pl-8 h-9"
               />
             </div>
-            <Tabs value={scope} onValueChange={(v) => setScope(v as any)}>
-              <TabsList className="w-full grid grid-cols-5 h-8">
+            <Tabs value={scope} onValueChange={(v) => setScope(v as any)} className="border-0">
+              <TabsList className="w-full grid grid-cols-5 h-8 border-b-0">
                 <TabsTrigger value="all" className="text-[11px] px-1">All</TabsTrigger>
                 <TabsTrigger value="unread" className="text-[11px] px-1">Unread</TabsTrigger>
                 <TabsTrigger value="mine" className="text-[11px] px-1">Mine</TabsTrigger>

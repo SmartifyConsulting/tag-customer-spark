@@ -339,8 +339,8 @@ export function TaxonomyEngineTab() {
         ) : !isEditing && profiles.length === 0 ? (
           <EmptyState
             icon={Layers}
-            title="No taxonomy profiles yet"
-            description="Loading sector templates… if none appear, click 'Load sector templates' above."
+            title="Loading taxonomy profiles"
+            description="Sector templates are loading. The default template will be selected automatically."
           />
         ) : !isEditing ? (
           <p className="text-sm text-muted-foreground">Select a template above to edit its hierarchy.</p>
@@ -429,10 +429,6 @@ export function TaxonomyEngineTab() {
           startBlank();
           setTemplatePickerOpen(false);
         }}
-        onPickTemplate={(t) => {
-          startFromTemplate(t);
-          setTemplatePickerOpen(false);
-        }}
       />
     </Card>
   );
@@ -442,54 +438,28 @@ function TemplatePickerDialog({
   open,
   onOpenChange,
   onPickBlank,
-  onPickTemplate,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onPickBlank: () => void;
-  onPickTemplate: (t: TaxonomyTemplate) => void;
 }) {
-  const groups: TaxonomyTemplate["group"][] = ["Retail", "Wholesale"];
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Start a new profile</DialogTitle>
+          <DialogTitle>Create a blank profile</DialogTitle>
           <DialogDescription>
-            Pick a template close to your business and adjust it, or start from scratch.
+            Start with a custom taxonomy profile and build your own hierarchy.
           </DialogDescription>
         </DialogHeader>
-        <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+        <div className="space-y-3">
           <button
-            className="flex w-full items-center justify-between rounded-lg border border-dashed px-3 py-2 text-left text-sm hover:bg-accent"
+            className="flex w-full items-center justify-between rounded-lg border border-dashed px-4 py-3 text-left hover:bg-accent"
             onClick={onPickBlank}
           >
-            <span className="font-medium">Blank profile</span>
+            <span className="font-medium">Start blank</span>
             <span className="text-xs text-muted-foreground">Brand → Category → Product</span>
           </button>
-          {groups.map((group) => (
-            <div key={group}>
-              <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                {group}
-              </div>
-              <ul className="grid gap-1.5 sm:grid-cols-2">
-                {TAXONOMY_TEMPLATES.filter((t) => t.group === group).map((t) => (
-                  <li key={t.id}>
-                    <button
-                      className="flex w-full flex-col gap-0.5 rounded-lg border px-3 py-2 text-left text-sm hover:bg-accent"
-                      onClick={() => onPickTemplate(t)}
-                    >
-                      <span className="font-medium">{t.name}</span>
-                      <span className="text-xs text-muted-foreground">{t.description}</span>
-                      <span className="mt-1 text-[10px] text-muted-foreground">
-                        {t.levels.map((l) => l.label).join(" → ")}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
         </div>
       </DialogContent>
     </Dialog>
