@@ -31,11 +31,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="hidden border-r-0 overflow-visible md:flex">
-      <SidebarHeader className="relative h-[9rem] flex-row items-center justify-center overflow-visible bg-sidebar p-0">
-        {collapsed ? (
-          <TagLogo variant="icon" size="sm" />
-        ) : (
-          <TagLogo variant="wordmark" heightClass="h-[8.84rem]" />
+      <SidebarHeader className="relative flex-row items-center justify-center overflow-visible bg-sidebar p-0 py-2">
+        {!collapsed && (
+          <TagLogo variant="wordmark" heightClass="h-[10.608rem]" />
         )}
       </SidebarHeader>
 
@@ -53,13 +51,12 @@ export function AppSidebar() {
                   active && !locked
                     ? "bg-foreground text-background font-semibold hover:bg-foreground hover:text-background data-[active=true]:bg-foreground data-[active=true]:text-background [&_svg]:text-background"
                     : locked
-                      ? "text-sidebar-foreground/50 hover:bg-foreground/5 hover:text-sidebar-foreground/80"
-                      : "text-sidebar-foreground/80 hover:bg-foreground/5 hover:text-sidebar-foreground";
+                      ? "text-sidebar-foreground/50 hover:bg-muted hover:text-sidebar-foreground/80"
+                      : "text-sidebar-foreground/80 hover:bg-muted hover:text-sidebar-foreground";
 
                 if (item.items && item.items.length > 0 && !locked) {
-                  const isIntelligence = item.title === "Intelligence";
                   return (
-                    <Collapsible key={item.url} defaultOpen={isIntelligence || active} className="group/collapsible">
+                    <Collapsible key={item.url} defaultOpen className="group/collapsible">
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton isActive={active} tooltip={item.title} className={activeClass}>

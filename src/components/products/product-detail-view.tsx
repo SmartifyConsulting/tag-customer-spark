@@ -104,10 +104,25 @@ export function ProductDetailView({
     bulkCompleteFn({ data: { productIds: [productId] } })
       .then((res) => {
         qc.invalidateQueries({ queryKey: ["product", productId] });
-        if (res.skipped > 0 || res.errors.length > 0) {
-          const detail = res.errors[0] ? `${res.errors[0].step}: ${res.errors[0].message}` : "skipped";
-          toast.error(`Digital identity build didn't finish — ${detail}`);
+        if (res.errors.length === 0) return;
+        // Detect the structured GTIN clash and surface a friendly toast
+        // pointing at the QR panel's merge flow instead of dumping raw JSON.
+        const qrErr = res.errors.find((e: any) => e.step === "qr");
+        if (qrErr) {
+          try {
+            const parsed = JSON.parse(qrErr.message);
+            if (parsed?.code === "GTIN_CLASH") {
+              toast.error(
+                `Duplicate GTIN with "${parsed.otherProductName ?? "another product"}". Open the QR panel below to merge.`,
+              );
+              return;
+            }
+          } catch {
+            /* not structured — fall through */
+          }
         }
+        const first = res.errors[0];
+        toast.error(`Digital identity build didn't finish — ${first.step}: ${first.message}`);
       })
       .catch((e: any) => {
         toast.error(`Digital identity build failed to run — ${e?.message ?? "unknown error"}`);
