@@ -1,52 +1,78 @@
-## 1. Why Intelligence isn't expanding
+## 1. Taxonomy Engine — built-in templates, dropdown picker
 
-Intelligence in `src/lib/nav.ts` is gated behind `feature: "roi"`. Your tier doesn't include it (you're on `/upgrade?feature=roi` right now), so in `app-sidebar.tsx` the `locked` branch skips the `Collapsible` and renders Intelligence as a single upgrade link with no sub-items.
+**`src/components/settings/taxonomy-engine-tab.tsx`**
+- Remove the **"Load sector templates"** button and its `seedTemplates` mutation/toasts. Auto-seed stays and runs silently on first render.
+- Remove the **profile tile grid** (the "TEMPLATES (N)" block). The selected tile's `bg-accent` is what renders as the unreadable near-black block in the screenshot; deleting the grid removes the bug at source.
+- Replace it with a compact **shadcn `Select` dropdown** at the top of the card:
+  - Trigger label: "Active template".
+  - Options show `Name` + inline `Default` badge when `is_default`, `Published` pill when `is_published`.
+  - Selecting an option sets `selectedId` — the editor + Live Preview below load that profile (same behaviour the tiles had).
+  - Ghost **"Set as default"** button beside the dropdown, visible only when the current selection isn't already default (calls existing `makeDefault`). No `bg-accent` fill anywhere.
+- Keep **New profile / Publish / Unpublish / Delete** buttons unchanged.
+- Update empty-state copy to drop the "Load templates" reference.
 
-Fix: remove the `feature: "roi"` gate on the Intelligence group. Sub-items (ROI, Forecasting) can keep individual tier locks — locked ones link to `/upgrade` instead of hiding.
+**`src/lib/taxonomy.functions.ts`** — no schema changes.
+- Extend the auto-seed path so that after seeding, if no profile is marked default, it:
+  1. Runs existing `suggestTemplateForRetailer` on the retailer's product sample.
+  2. Finds the seeded profile matching the suggestion's source template id.
+  3. Calls `setDefaultProfile`.
+- Fallback (AI null or no products): mark the first "Retail" template as default. The dropdown always opens with a Default selected — zero manual steps.
 
-## 2. Product screen — rearrange to match the mock
+## 2. Briefing redesign — infographic grid
 
-Edit `src/components/products/product-detail-view.tsx` only (presentation change).
+Match the reference (`image-46.png`): compact KPI tiles top-left, a wide Scan heatmap under them, Intent cards in the middle column, Tagged products + Unread WhatsApps stacked on the right. The current page is a single 2-column stack; the redesign is a proper responsive grid so all six info blocks sit together on one screen.
 
-### Header card (single row)
-- Left: hero image (~160px).
-- Middle: title + SKU + price + `Active` badge, plus a compact 2-column facts grid (Category, Store, Stock, Low at) as bordered input-style tiles.
-- Right: `Digital Identity Build` checklist inline (reuse `DigitalIdentityProgress` with 6/7 progress bar) — no separate card.
-- Top-right corner: icon-only Archive, Delete, Edit buttons (ghost). Remove the text Archive / Delete / Refresh image row.
+**`src/routes/_authenticated/briefing.tsx`** — restructure only.
+- Layout: `grid grid-cols-12 gap-6` (single column on mobile, promoting at `lg:`).
+  - **Left column (cols 1–5 on lg)**
+    - Row of two KPI tiles side-by-side: **Today's Scans**, **Customers Waiting** — reuse existing `KpiCard` with the same tokens the dashboard uses (`todaysScans`, `customersWaiting` already on `dashboardOverviewQueryOptions`).
+    - Full-width **Scan heatmap** card below — reuse the existing dashboard heatmap component (`ScanTrendsCard` / the day×hour heatmap already rendered in the manager dashboard). No new component; just import and place it here.
+  - **Middle column (cols 6–8)**
+    - **High-intent products** card + **Rising intent** card stacked. Reuse `IntentSectionsCard`'s two sub-sections; if that component only renders as a single unit today, split it into `HighIntentCard` and `RisingIntentCard` presentational wrappers around the existing data so the two can stack vertically. No data change.
+  - **Right column (cols 9–12)**
+    - **Tagged products** accordion (existing block, unchanged data — Today / Yesterday / This week / This month buckets from item 3 below).
+    - **Unread WhatsApps** card (existing block).
+- All cards use the current `Card` / `CardContent` chrome with `p-4`, `space-y-*` matching the reference's calm spacing. No colour changes; no new tokens.
+- Loader stays `briefingQueryOptions`; add `dashboardOverviewQueryOptions` to the loader `ensureQueryData` batch so the KPI + heatmap data are ready server-side.
+- `PageHeader` stays at the top with the "Hello {store}" greeting.
 
-### Merged QR + Passport card (replaces two blocks)
-- Two-column card:
-  - Left: `QR STATUS` + existing `ProductQrPanel` visual.
-  - Right: `Digital Product ID` header with `ENRICHED` badge + `Re-enrich` button top-right, then passport fields (Brand, Manufacturer, Country of origin, Category, Short/Marketing description, Ingredients, Allergens, Warranty, Sustainability) in the label/value grid shown in the mock.
-- Replaces the `ProductQrPanel` + `DigitalIdentityProgress` row AND the full-width `PassportTab` block below. `PassportTab` file stays for reuse.
+No new files, no new server functions — every card already exists elsewhere in the app and is being re-composed here.
 
-### Below the merged card
-- Keep `ProductIntentPanel` (Intent Score).
-- Remove the Scans / Analytics tabs block (not in mock).
+## 3. Briefing data — Today / Yesterday / This week / This month, grouped per product
 
-### Kept behaviours
-- Auto-complete digital identity effect, edit dialog, delete confirmation, GTIN clash toast.
-- `canManage` still gates Archive/Delete/Edit/Re-enrich.
+**`src/lib/dashboard.functions.ts`** (`getBriefing` handler)
+- Replace This Week / Last Week / month-name buckets with exactly four, in order: **Today**, **Yesterday**, **This week**, **This month**. Anything before the start of the current calendar month is excluded.
+- Boundaries (local time, same style as existing `startOfWeek` helper):
+  - Today: `ts >= startOfToday`
+  - Yesterday: `startOfYesterday <= ts < startOfToday`
+  - This week: `startOfWeek <= ts < startOfYesterday` (Monday-based)
+  - This month: `startOfMonth <= ts < startOfWeek`
+- Within each bucket, **group by product id** — collapse duplicate rows into one entry with `count` (times tagged in bucket) and most-recent `tagged_at`. Sort by count desc, then most-recent.
+- Add `count: number` to `BriefingProduct`. `totalTagged` becomes sum of counts.
 
-## 3. Product-image resolution — add Vision verification
+**`src/routes/_authenticated/briefing.tsx`**
+- Render the four buckets in server order, empty ones omitted.
+- Each row shows one unique product with a small `×N` badge on the right when `count > 1`.
 
-Problem: Serper returns candidates that are often the wrong pack size, category thumbnails, or watermarked listings, so the "first result" heuristic in `src/lib/product-images.server.ts` picks bad images. GPT-5 Vision can look at a candidate and *judge* whether it actually depicts the product; it can't search the web itself, so Serper stays as the retrieval step.
+## 4. Chrome tidy — remove two dividers
 
-New pipeline in `src/lib/product-images.server.ts`:
-1. Retailer/Open Food Facts URL (unchanged).
-2. Serper image search (unchanged) — pull top **N=6** candidates instead of 1.
-3. **Vision verification (new)** — one call to `openai/gpt-5-mini` (vision-capable, cheapest suitable model on the Lovable AI Gateway allowlist) via the AI SDK, with the product name/brand/GTIN/category as text and the N candidate image URLs as `image_url` blocks in one message. Structured output returns `{ bestIndex: number | null, confidence: "high" | "medium" | "low", reason: string }`. Uses `createLovableAiGatewayProvider(..., { structuredOutputs: true })` per gateway rules.
-4. If `bestIndex != null` and confidence >= medium → store that URL. Otherwise fall back to internal AI image generation (existing behaviour).
+**`src/components/ui/sidebar.tsx`** (line ~242)
+- Drop `group-data-[side=left]:border-r group-data-[side=right]:border-l` from the inner sidebar container div. `app-sidebar.tsx` sets `border-r-0` on the outer `Sidebar`, but the inner sibling div is what paints the vertical rule between nav and app canvas. Removing those utility classes on the primitive removes the line; the project only uses one Sidebar instance so no regression.
 
-Guardrails:
-- Wrap the call in the standard `NoObjectGeneratedError` fallback (parse `error.text`, else skip verification and use the first Serper hit — never crash the resolver).
-- Rate/credit errors (429/402) surface via the existing toast path; resolver marks image_status=`failed` and moves on.
-- No schema bounds; N=6 stated in the prompt, clamped in code.
-- Runs only when Serper returns >=2 candidates (single-hit case skips verification to save a call).
+**`src/routes/_authenticated/inbox.tsx`** (line 117)
+- Change `<div className="p-3 space-y-3 border-b border-border">` (wrapper around search input + `All / Unread / Mine / Open / Done` tabs) to `<div className="p-3 space-y-3">`. That is the horizontal rule under the tabs; surrounding column keeps its own borders.
+
+## Technical notes
+- No packages, no schema migration, no new server function.
+- Removing the tile grid removes the black-shading bug.
+- Briefing regrouping is a pure JS reshape of existing rows — no extra DB calls.
+- Briefing redesign reuses `KpiCard`, `ScanTrendsCard`, `IntentSectionsCard` (splitting to two wrappers if needed) already in the codebase.
 
 ## Files touched
-- `src/lib/nav.ts` — drop `feature: "roi"` on Intelligence group.
-- `src/components/products/product-detail-view.tsx` — restructure JSX.
-- Minor prop tweaks to `PassportTab` / `DigitalIdentityProgress` for inline rendering (no card chrome).
-- `src/lib/product-images.server.ts` — request N Serper candidates + Vision verification step.
-- No DB migration; no new secrets (uses `LOVABLE_API_KEY` already in place).
+- `src/components/settings/taxonomy-engine-tab.tsx` — drop button + tile grid, add Select + Set-default.
+- `src/lib/taxonomy.functions.ts` — auto-seed picks + marks AI-suggested default.
+- `src/lib/dashboard.functions.ts` — new bucketing + per-product grouping.
+- `src/routes/_authenticated/briefing.tsx` — 12-col infographic grid; render counts; loader batches KPI + briefing queries.
+- `src/components/dashboard/intent-sections-card.tsx` *(only if needed)* — expose `HighIntentCard` / `RisingIntentCard` presentational splits so the Briefing middle column can stack them.
+- `src/components/ui/sidebar.tsx` — drop left/right border utility classes on inner container.
+- `src/routes/_authenticated/inbox.tsx` — remove `border-b border-border` on search+tabs wrapper.
