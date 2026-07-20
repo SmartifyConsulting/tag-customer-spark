@@ -6,11 +6,11 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { TagLogo } from "@/components/tag-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { UserMenu } from "@/components/user-menu";
 import { CommandPalette } from "@/components/command-palette";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { getRetailerBranding } from "@/lib/branding.functions";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
+import { briefingQueryOptions } from "@/lib/dashboard";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -18,13 +18,6 @@ export const Route = createFileRoute("/_authenticated")({
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
 
-    // Onboarding gate: if this user's retailer hasn't finished the Setup
-    // Wizard yet, send them there before rendering any authenticated page.
-    // This is a persistent, DB-backed check (retailers.onboarding_completed_at)
-    // that runs on every authenticated load — so a new user can never slip
-    // past setup due to a timing race or a reload, which was the old
-    // one-shot-redirect bug. /setup lives outside this route, so redirecting
-    // to it can't loop.
     const { data: roleRow } = await supabase
       .from("user_roles")
       .select("retailer_id")
@@ -52,6 +45,10 @@ function AuthenticatedLayout() {
   const brandingFn = useServerFn(getRetailerBranding);
   const branding = useQuery({ queryKey: ["branding"], queryFn: () => brandingFn(), staleTime: 5 * 60_000 });
   const brandTheme = useBrandTheme(branding.data?.logo_url);
+  // Greeting name shown in the top-left of the app header — same source
+  // the Briefing page uses so it stays in sync ("Hello Makro Woodmead").
+  const briefing = useQuery(briefingQueryOptions);
+  const greetingName = briefing.data?.greetingName ?? null;
 
   const themeStyle: Record<string, string> = {};
   if (brandTheme?.background) themeStyle["--background"] = brandTheme.background;
@@ -64,9 +61,16 @@ function AuthenticatedLayout() {
       <SidebarInset className="bg-background">
         <header className="sticky top-0 z-20 flex items-center gap-3 bg-background/80 px-4 py-3 backdrop-blur-md sm:px-6">
           <SidebarTrigger className="md:hidden" />
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="min-w-0 flex-1">
+            {greetingName && (
+              <p className="truncate text-lg font-semibold tracking-tight sm:text-xl">
+                Hello {greetingName}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
             <ThemeToggle />
-            <UserMenu />
+            <TagLogo variant="wordmark" heightClass="h-14" />
           </div>
         </header>
         <CommandPalette />

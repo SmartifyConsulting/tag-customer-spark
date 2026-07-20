@@ -1,46 +1,53 @@
-# Plan
+# Briefing, chrome, and Intelligence build-out
 
-## 1. Taxonomy Engine — dropdown default, no manual button
-- `src/components/settings/taxonomy-engine-tab.tsx`
-  - Remove the "Load sector templates" button and its `seedTemplates` mutation.
-  - Replace the profile tile grid (the dark-shaded cards) with a `Select` dropdown listing every profile. Show "Default" and "Published" badges inside the dropdown items.
-  - Keep `Set as default` / `Publish` / `Delete` actions as a small toolbar next to the dropdown.
-  - Keep auto-seed on mount (silent). After seeding, if no profile is marked default, mark the AI-suggested one (or first) as default automatically.
-- `src/lib/taxonomy.functions.ts`
-  - Extend `seedSectorTemplates` to, after creating profiles, ensure exactly one `is_default = true` using the existing sector-scoring / AI suggestion helper. Idempotent.
+## 1. Briefing page (`src/routes/_authenticated/briefing.tsx`)
 
-## 2. Briefing page — 12-column infographic layout
-- `src/lib/dashboard.functions.ts` (`getBriefing`)
-  - Re-bucket tagged products into **Today / Yesterday / This week / This month** only (drop last-week + month-by-name).
-  - Group each bucket by `product_id` so repeated tags collapse to one row with a `count` badge; sort by count desc, then most-recent.
-  - Return type: `buckets: { key, label, products: { id, name, image_url, gtin, count, last_tagged_at }[] }[]`.
-- `src/routes/_authenticated/briefing.tsx`
-  - Rebuild as a 12-column grid matching the infographic:
-    ```text
-    ┌────────────────────────────────────────────────────────────┐
-    │  Hello {greetingName}                                       │
-    ├──────────────┬──────────────┬──────────────┬───────────────┤
-    │ KPI Today's  │ KPI Waiting  │ KPI Tagged   │ KPI Unread    │  (row 1, col-span-3 each)
-    │  scans       │  customers   │  today       │  WhatsApps    │
-    ├──────────────┴──────────────┼──────────────┴───────────────┤
-    │  Scan heatmap (col-span-8)  │  High intent (col-span-4)    │  (row 2)
-    │                             │  Rising intent               │
-    ├─────────────────────────────┼──────────────────────────────┤
-    │  Tagged products            │  Unread WhatsApps            │  (row 3)
-    │  (accordion Today/Yest/     │  (list, tap → /inbox/$id)    │
-    │   Week/Month, col-span-8)   │  (col-span-4)                │
-    └─────────────────────────────┴──────────────────────────────┘
-    ```
-  - Reuse existing components: `KpiCard`, `Heatmap` (extract from `dashboard.tsx` into `src/components/dashboard/scan-heatmap.tsx`), `IntentSectionsCard` (render just `high` + `rising` in a compact 1-column mode via a new `variant="stack"` prop, or slice the same query).
-  - Product rows show thumbnail + name + count badge; accordion collapsed by default with the four time buckets.
-  - Loader batches `dashboardOverviewQueryOptions`, `briefingQueryOptions`, `advancedAnalyticsQueryOptions(30)`.
+Row 1 (KPIs) — remove the **Unread WhatsApps** tile. Keep Scans, Waiting Customers, Tagged Today (3 tiles across).
 
-## 3. Chrome clean-up
-- `src/components/ui/sidebar.tsx` line ~242 — drop `group-data-[side=left]:border-r group-data-[side=right]:border-l` so the vertical rule between nav and canvas disappears.
-- `src/routes/_authenticated/inbox.tsx` line 117 — remove `border-b` from the search/tabs wrapper so the horizontal line under `All / Unread / Mine / Open / Done` is gone.
+Row 2 (was row 3) — Tagged Product accordions (8 cols) + Unread WhatsApps list (4 cols). No change to contents; only its position moves up.
 
-## Technical notes
-- Extracting `Heatmap`/`HeatmapLegend` into a shared component keeps the dashboard route and the new briefing sharing one implementation.
-- `getBriefing` bucketing uses local dates derived from `created_at`; "This week" = Mon-now, "This month" = 1st-now, excluding Today/Yesterday.
-- The dropdown replacement in Taxonomy uses shadcn `Select` (already imported), so no new dependencies.
-- No schema changes.
+Row 3 (was row 2) — Remove **Conversion Gap Products**. Reduce **Scan Heatmap** to half width (6 cols). Split the remaining 6 cols between **High Intent Products** (3 cols) and **Rising Intent** (3 cols).
+
+Result:
+
+```text
+Row 1: [Scans] [Waiting Customers] [Tagged Today]
+Row 2: [Tagged Products accordions ............ 8] [Unread WhatsApps 4]
+Row 3: [Scan Heatmap .... 6] [High Intent 3] [Rising Intent 3]
+```
+
+## 2. App header / greeting
+
+Currently the in-app top bar shows the large TagLogo on the left and the greeting to its right. Change to:
+
+- Greeting ("Hello Makro Woodmead") on the **left**, where the logo used to sit.
+- Remove the **waving hand emoji/icon** from the greeting line.
+- Move the TagLogo to the **extreme right** of the top bar.
+
+File: `src/routes/_authenticated/route.tsx` (top-bar layout) and wherever `TagLogo` currently renders in the authenticated shell.
+
+## 3. Sidebar (`src/components/app-sidebar.tsx`)
+
+- Remove the "TAG / Demand Intelligence" footer text block.
+- Move the profile avatar (user menu) from the top bar into `SidebarFooter`, positioned **below the "Search anything…" input**.
+- Sidebar header no longer needs the wordmark logo (it's moving to the top-right of the app). Keep the header minimal / collapsible-safe.
+
+Touches `app-sidebar.tsx` and the authenticated top-bar so the `UserMenu` no longer renders there.
+
+## 4. Build out Intelligence sub-pages
+
+Replace the current placeholders/thin pages with real content using existing data sources.
+
+- **Insights** (`intelligence.insights.tsx`) — already exists; audit and polish (OverallIntent + SignalContributions + OpportunityFeed already wired). No structural change unless empty states need work.
+- **Analytics** (`analytics.tsx` → repurpose) — build a real analytics view: scans over time (`ScanTrendsCard`), top products (`TopProductsCard`), customer growth (`CustomerGrowthCard`), heatmap.
+- **ROI** (`roi.tsx`) — exists; ensure it renders KPIs (revenue recovered, attribution counts) from `roi.functions.ts`. Add empty state.
+- **Trends** (`intelligence.trends.tsx`) — expand beyond current bucket lists: add a rising/falling leaderboard with sparkline-style score deltas.
+- **Forecasting** (`intelligence.forecasting.tsx`) — expand: show 7/14/30-day horizon summary tiles + the intent sections card grouped by horizon.
+
+Each page keeps its existing `requireFeature` gate and `head()` metadata, and follows the PageHeader + Card grid pattern used elsewhere.
+
+## Out of scope
+
+- No backend/schema changes.
+- No changes to nav order or tier gating.
+- No new server functions — reuse existing dashboard/intent/ROI data helpers.

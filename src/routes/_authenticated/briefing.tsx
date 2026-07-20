@@ -7,7 +7,8 @@ import {
   QrCode,
   Users,
   Tag,
-  Inbox,
+  Flame,
+  TrendingUp,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -28,7 +29,8 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { ScanHeatmap, ScanHeatmapLegend } from "@/components/dashboard/scan-heatmap";
-import { IntentSectionsCard } from "@/components/dashboard/intent-sections-card";
+import { IntentBadge } from "@/components/intent/intent-badge";
+import { listIntentSections } from "@/lib/intent.functions";
 
 export const Route = createFileRoute("/_authenticated/briefing")({
   head: () => ({ meta: [{ title: "Briefing — Tag" }] }),
@@ -54,6 +56,11 @@ function BriefingPage() {
   const { data: overview } = useSuspenseQuery(dashboardOverviewQueryOptions);
   const analyticsQuery = useQuery(advancedAnalyticsQueryOptions(30));
   const analytics = analyticsQuery.data;
+  const intentQuery = useQuery({
+    queryKey: ["intent", "sections"],
+    queryFn: () => listIntentSections(),
+  });
+  const intent = intentQuery.data as { high: any[]; rising: any[] } | undefined;
   const first = user?.user_metadata?.full_name?.split(" ")?.[0] ?? "there";
   const greeting = data.greetingName ?? first;
 
@@ -68,9 +75,9 @@ function BriefingPage() {
         description="Your daily briefing — scans, waiting customers, and freshly tagged products."
       />
 
-      {/* Row 1 — KPI tiles */}
+      {/* Row 1 — KPI tiles (Unread WhatsApps removed per spec) */}
       <div className="grid grid-cols-12 gap-4">
-        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-4">
           <KpiCard
             index={0}
             label="Today's scans"
@@ -81,7 +88,7 @@ function BriefingPage() {
             sparkline={dailySpark}
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-4">
           <KpiCard
             index={1}
             label="Customers waiting"
@@ -91,42 +98,12 @@ function BriefingPage() {
             sparkline={growthSpark}
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-4">
           <KpiCard index={2} label="Tagged today" value={data.taggedTodayCount} icon={Tag} />
         </div>
-        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
-          <KpiCard
-            index={3}
-            label="Unread WhatsApps"
-            value={data.unread.length}
-            icon={Inbox}
-            tone={data.unread.length > 0 ? "warning" : "default"}
-          />
-        </div>
       </div>
 
-      {/* Row 2 — Heatmap + Intent */}
-      <div className="grid grid-cols-12 gap-4">
-        <Card className="col-span-12 lg:col-span-8 p-5">
-          <div className="mb-1 flex items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold">Scan heatmap</h3>
-            <ScanHeatmapLegend />
-          </div>
-          <p className="mb-3 text-xs text-muted-foreground">
-            Shopper scans by day of week × hour of day — darker cells mean more scans in that slot.
-          </p>
-          {analytics ? (
-            <ScanHeatmap data={analytics.heatmap} />
-          ) : (
-            <Skeleton className="h-56 w-full" />
-          )}
-        </Card>
-        <div className="col-span-12 lg:col-span-4">
-          <IntentSectionsCard />
-        </div>
-      </div>
-
-      {/* Row 3 — Tagged products + Unread WhatsApps */}
+      {/* Row 2 — Tagged products + Unread WhatsApps (promoted from row 3) */}
       <div className="grid grid-cols-12 gap-4">
         <Card className="col-span-12 lg:col-span-8 p-4">
           <div className="mb-3 flex items-center justify-between">
@@ -239,6 +216,97 @@ function BriefingPage() {
           )}
         </Card>
       </div>
+
+      {/* Row 3 — Scan heatmap (half width) + High intent + Rising intent */}
+      <div className="grid grid-cols-12 gap-4">
+        <Card className="col-span-12 lg:col-span-6 p-5">
+          <div className="mb-1 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold">Scan heatmap</h3>
+            <ScanHeatmapLegend />
+          </div>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Shopper scans by day of week × hour of day.
+          </p>
+          {analytics ? (
+            <ScanHeatmap data={analytics.heatmap} />
+          ) : (
+            <Skeleton className="h-56 w-full" />
+          )}
+        </Card>
+
+        <IntentColumn
+          className="col-span-12 sm:col-span-6 lg:col-span-3"
+          title="High intent products"
+          icon={Flame}
+          items={intent?.high}
+          loading={intentQuery.isLoading}
+          emptyLabel="No high-intent products yet."
+        />
+        <IntentColumn
+          className="col-span-12 sm:col-span-6 lg:col-span-3"
+          title="Rising intent"
+          icon={TrendingUp}
+          items={intent?.rising}
+          loading={intentQuery.isLoading}
+          emptyLabel="No rising-trend products yet."
+        />
+      </div>
     </div>
+  );
+}
+
+function IntentColumn({
+  className,
+  title,
+  icon: Icon,
+  items,
+  loading,
+  emptyLabel,
+}: {
+  className?: string;
+  title: string;
+  icon: typeof Flame;
+  items: any[] | undefined;
+  loading: boolean;
+  emptyLabel: string;
+}) {
+  return (
+    <Card className={`${className ?? ""} p-4`}>
+      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+        <Icon className="h-4 w-4 text-primary" />
+        {title}
+      </h3>
+      {loading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-9 w-full" />
+          ))}
+        </div>
+      ) : !items || items.length === 0 ? (
+        <p className="rounded-md border border-dashed p-3 text-center text-xs text-muted-foreground">
+          {emptyLabel}
+        </p>
+      ) : (
+        <ul className="space-y-1">
+          {items.map((p) => (
+            <li key={p.id}>
+              <Link
+                to="/products/$productId"
+                params={{ productId: p.id }}
+                className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 transition hover:bg-muted/50"
+              >
+                <span className="truncate text-sm">{p.name}</span>
+                <IntentBadge
+                  score={p.intent_score}
+                  trend={p.intent_score_trend}
+                  confidence={p.intent_score_confidence}
+                  size="sm"
+                />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }
