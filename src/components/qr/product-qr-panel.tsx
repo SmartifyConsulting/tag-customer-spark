@@ -6,6 +6,7 @@ import {
   Check,
   Download,
   ExternalLink,
+  GitMerge,
   Loader2,
   Printer,
   QrCode as QrIcon,
@@ -24,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { generateProductQr } from "@/lib/qr.functions";
+import { MergeProductsSearchDialog } from "@/components/settings/merge-products-search-dialog";
 
 export type ActiveQrAsset = {
   id: string;
@@ -37,6 +39,23 @@ export type ActiveQrAsset = {
   png_url: string;
   svg_url: string;
 };
+
+type GtinClash = {
+  gtin: string;
+  otherProductId: string;
+  otherProductName: string;
+  otherProductSku: string | null;
+};
+
+function parseClash(message: string): GtinClash | null {
+  try {
+    const parsed = JSON.parse(message);
+    if (parsed?.code === "GTIN_CLASH") return parsed as GtinClash;
+  } catch {
+    /* not a structured error */
+  }
+  return null;
+}
 
 export function ProductQrPanel({
   productId,
@@ -52,6 +71,9 @@ export function ProductQrPanel({
   const qc = useQueryClient();
   const generateFn = useServerFn(generateProductQr);
   const [confirmRegen, setConfirmRegen] = useState(false);
+  const [clash, setClash] = useState<GtinClash | null>(null);
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [autoRetryAfterMerge, setAutoRetryAfterMerge] = useState(false);
 
   const generate = useMutation({
     mutationFn: (force: boolean) => generateFn({ data: { productId, force } }),
@@ -63,8 +85,16 @@ export function ProductQrPanel({
       qc.invalidateQueries({ queryKey: ["product", productId] });
       toast.success("GS1 QR Code successfully generated.");
     },
-    onError: (e: any) => toast.error(e.message ?? "QR generation failed"),
+    onError: (e: any) => {
+      const parsed = parseClash(e?.message ?? "");
+      if (parsed) {
+        setClash(parsed);
+        return;
+      }
+      toast.error(e.message ?? "QR generation failed");
+    },
   });
+
 
   if (!qr) {
     return (
