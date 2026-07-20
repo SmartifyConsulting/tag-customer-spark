@@ -10,7 +10,7 @@ import {
   Flame,
   TrendingUp,
 } from "lucide-react";
-import { PageHeader } from "@/components/page-header";
+
 import {
   Accordion,
   AccordionContent,
