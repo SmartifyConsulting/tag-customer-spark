@@ -23,16 +23,7 @@ import {
 } from "@/lib/products.functions";
 import { bulkReenrichPassports } from "@/lib/passport.functions";
 import { assignMissingBarcodes } from "@/lib/barcode-assign.functions";
-import {
-  previewCustomerImport,
-  commitCustomerImport,
-  type CustomerImportRow,
-} from "@/lib/customer-import.functions";
-import {
-  previewStoreImport,
-  commitStoreImport,
-  type StoreImportRow,
-} from "@/lib/stores-import.functions";
+import { ensureRetailerHasStore } from "@/lib/stores.functions";
 import { saveRetailerPosSystem, markOnboardingComplete } from "@/lib/settings.functions";
 import { TagLogo } from "@/components/tag-logo";
 
@@ -87,32 +78,23 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-type Step =
-  | "welcome"
-  | "system"
-  | "connecting"
-  | "file"
-  | "importing"
-  | "customerFile"
-  | "customerImporting"
-  | "storeFile"
-  | "storeImporting"
-  | "done";
+// Wizard is now four screens: welcome → system → connecting → file →
+// importing → done. Customer and store uploads were removed — store
+// branches are auto-detected from the product file (each unique branch
+// column becomes a store; retailers with no branch column get one
+// "Sole proprietor" placeholder) and customers arrive later via
+// WhatsApp scans, so making people upload two more spreadsheets at
+// setup time was pure friction.
+type Step = "welcome" | "system" | "connecting" | "file" | "importing" | "done";
 
-// Steps a person can land the Back button on — i.e. every real screen
-// they actively looked at. Ephemeral/auto-advancing steps (connecting,
-// *Importing) are excluded from the history push below, so Back always
-// lands on the last screen the person actually chose, not mid-animation.
-const EPHEMERAL_STEPS: Step[] = ["connecting", "importing", "customerImporting", "storeImporting"];
-const BACK_BUTTON_STEPS: Step[] = ["system", "file", "customerFile", "storeFile"];
+const EPHEMERAL_STEPS: Step[] = ["connecting", "importing"];
+const BACK_BUTTON_STEPS: Step[] = ["system", "file"];
 
 function SetupWizard() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("welcome");
   const [history, setHistory] = useState<Step[]>([]);
 
-  // Wraps setStep so leaving a real (non-ephemeral) screen remembers it,
-  // enabling a real Back button instead of browser history hacks.
   const goTo = (next: Step) => {
     setHistory((h) => (EPHEMERAL_STEPS.includes(step) ? h : [...h, step]));
     setStep(next);
@@ -131,32 +113,16 @@ function SetupWizard() {
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [result, setResult] = useState<{ created: number; updated: number } | null>(null);
+  const [storeSummary, setStoreSummary] = useState<{ created: boolean; storeCount: number } | null>(
+    null,
+  );
   const [importLabel, setImportLabel] = useState("");
   const [importProgress, setImportProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [customerFile, setCustomerFile] = useState<File | null>(null);
-  const [customerRows, setCustomerRows] = useState<CustomerImportRow[]>([]);
-  const [customerResult, setCustomerResult] = useState<{ created: number; updated: number } | null>(
-    null,
-  );
-  const [customerImportLabel, setCustomerImportLabel] = useState("");
-  const [customerImportProgress, setCustomerImportProgress] = useState(0);
-  const customerInputRef = useRef<HTMLInputElement>(null);
-
-  const [storeFile, setStoreFile] = useState<File | null>(null);
-  const [storeRows, setStoreRows] = useState<StoreImportRow[]>([]);
-  const [storeResult, setStoreResult] = useState<{ created: number; updated: number } | null>(null);
-  const [storeImportLabel, setStoreImportLabel] = useState("");
-  const [storeImportProgress, setStoreImportProgress] = useState(0);
-  const storeInputRef = useRef<HTMLInputElement>(null);
-
   const savePosFn = useServerFn(saveRetailerPosSystem);
   const markCompleteFn = useServerFn(markOnboardingComplete);
 
-  // Marks setup finished/skipped (so the onboarding gate stops sending them
-  // here), then goes to the dashboard. Best-effort: never trap the user in
-  // the wizard if the mark call fails — navigate regardless.
   const finishSetup = async () => {
     try {
       await markCompleteFn();
@@ -171,10 +137,7 @@ function SetupWizard() {
   const listIncompleteFn = useServerFn(listIncompleteDigitalIdentityIds);
   const bulkQrImagesFn = useServerFn(bulkGenerateQrAndImages);
   const bulkEnrichFn = useServerFn(bulkReenrichPassports);
-  const customerPreviewFn = useServerFn(previewCustomerImport);
-  const customerCommitFn = useServerFn(commitCustomerImport);
-  const storePreviewFn = useServerFn(previewStoreImport);
-  const storeCommitFn = useServerFn(commitStoreImport);
+  const ensureStoreFn = useServerFn(ensureRetailerHasStore);
 
   const preview = useMutation({
     mutationFn: async (f: File) => {
@@ -194,44 +157,6 @@ function SetupWizard() {
     onError: () => toast.error("That file didn't come through — please try another export."),
   });
 
-  const customerPreview = useMutation({
-    mutationFn: async (f: File) => {
-      const base64 = await fileToBase64(f);
-      return customerPreviewFn({
-        data: { filename: f.name, mime: f.type || "application/octet-stream", base64 },
-      });
-    },
-    onSuccess: (res) => {
-      if (!res.rows.length) {
-        toast.warning("We couldn't find any customers with a name and phone number in that file.");
-        return;
-      }
-      setCustomerRows(res.rows);
-      goTo("customerImporting");
-    },
-    onError: () => toast.error("That file didn't come through — please try another export."),
-  });
-
-  const storePreview = useMutation({
-    mutationFn: async (f: File) => {
-      const base64 = await fileToBase64(f);
-      return storePreviewFn({
-        data: { filename: f.name, mime: f.type || "application/octet-stream", base64 },
-      });
-    },
-    onSuccess: (res) => {
-      if (!res.rows.length) {
-        toast.warning("We couldn't find any stores/branches in that file.");
-        return;
-      }
-      setStoreRows(res.rows);
-      goTo("storeImporting");
-    },
-    onError: () => toast.error("That file didn't come through — please try another export."),
-  });
-
-  // Themed "connecting" animation — always resolves to the fallback file
-  // picker, framed as the next step rather than a failure.
   useEffect(() => {
     if (step !== "connecting") return;
     setConnectingIdx(0);
@@ -250,21 +175,10 @@ function SetupWizard() {
     };
   }, [step]);
 
-  // The real import, then the same barcode-to-QR pipeline as "Tag
-  // Intelligence" — the progress bar tracks actual completion (not a fixed
-  // timer), so "done" only shows once every imported product genuinely has
-  // a complete digital identity and is ready to appear in Inventory and
-  // Taxonomy, however long that takes.
   useEffect(() => {
     if (step !== "importing" || rows.length === 0) return;
     let cancelled = false;
 
-    // Four honest, distinct phases instead of one opaque "importing" step —
-    // each does genuinely different (and separately network/AI-bound) work,
-    // so labelling them separately both tells the truth about what's
-    // happening and gives the progress bar something to visibly move on
-    // every few products instead of appearing frozen for minutes on a
-    // single big request.
     (async () => {
       try {
         let created = 0;
@@ -283,6 +197,16 @@ function SetupWizard() {
         }
         if (cancelled) return;
         setImportProgress(22);
+
+        setImportLabel("Detecting your store branches…");
+        try {
+          const summary = await ensureStoreFn();
+          if (!cancelled) setStoreSummary(summary);
+        } catch {
+          // Non-fatal — dashboard still works without the placeholder store.
+        }
+        if (cancelled) return;
+        setImportProgress(26);
 
         setImportLabel("Importing barcodes…");
         await assignBarcodesFn();
@@ -329,7 +253,7 @@ function SetupWizard() {
         setImportLabel("All done — your products are ready.");
         setResult({ created, updated });
         await sleep(500);
-        if (!cancelled) goTo("customerFile");
+        if (!cancelled) goTo("done");
       } catch {
         if (!cancelled)
           toast.error("We hit a snag getting your products ready — please try again.");
@@ -342,76 +266,6 @@ function SetupWizard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, rows]);
 
-  // Same real-progress approach as the product import above.
-  useEffect(() => {
-    if (step !== "customerImporting" || customerRows.length === 0) return;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        setCustomerImportProgress(20);
-        setCustomerImportLabel(
-          `Importing ${customerRows.length} customer${customerRows.length === 1 ? "" : "s"}…`,
-        );
-        const res = await customerCommitFn({ data: { rows: customerRows } });
-        if (cancelled) return;
-        setCustomerImportProgress(100);
-        setCustomerImportLabel("All done — your customers are ready.");
-        setCustomerResult({ created: res.created, updated: res.updated });
-        await sleep(500);
-        if (!cancelled) goTo("storeFile");
-      } catch {
-        if (!cancelled) toast.error("We hit a snag importing your customers — please try again.");
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, customerRows]);
-
-  // Same real-progress approach as the product/customer imports above.
-  useEffect(() => {
-    if (step !== "storeImporting" || storeRows.length === 0) return;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        setStoreImportProgress(20);
-        setStoreImportLabel(
-          `Importing ${storeRows.length} store${storeRows.length === 1 ? "" : "s"}…`,
-        );
-        const res = await storeCommitFn({ data: { rows: storeRows } });
-        if (cancelled) return;
-        setStoreImportProgress(100);
-        const total = res.created + res.updated;
-        if (total === 0 && res.errors.length > 0) {
-          // Every row failed — surface it instead of quietly moving on
-          // (e.g. a schema column the file needs isn't deployed yet).
-          console.warn("Store import errors:", res.errors);
-          toast.error(
-            `None of your ${storeRows.length} stores could be saved — ${res.errors[0]}${res.errors.length > 1 ? ` (+${res.errors.length - 1} more)` : ""}`,
-          );
-        } else if (res.errors.length > 0) {
-          console.warn("Store import errors:", res.errors);
-          toast.warning(`${total} store${total === 1 ? "" : "s"} saved, ${res.errors.length} had issues.`);
-        }
-        setStoreImportLabel("All done — your stores are ready.");
-        setStoreResult({ created: res.created, updated: res.updated });
-        await sleep(500);
-        if (!cancelled) goTo("done");
-      } catch {
-        if (!cancelled) toast.error("We hit a snag importing your stores — please try again.");
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, storeRows]);
-
   const handlePickSystem = (system: string) => {
     setPosSystem(system);
     savePosFn({ data: { posSystem: system } }).catch(() => {});
@@ -423,94 +277,51 @@ function SetupWizard() {
     preview.mutate(f);
   };
 
-  const handleCustomerFile = (f: File) => {
-    setCustomerFile(f);
-    customerPreview.mutate(f);
-  };
-
-  const handleStoreFile = (f: File) => {
-    setStoreFile(f);
-    storePreview.mutate(f);
-  };
-
   const totalProducts = (result?.created ?? 0) + (result?.updated ?? 0);
-  const totalCustomers = (customerResult?.created ?? 0) + (customerResult?.updated ?? 0);
-  const totalStores = (storeResult?.created ?? 0) + (storeResult?.updated ?? 0);
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
-      {/* Main content - centered card, with the logo sitting just above it
-          (80% larger than the old top-bar logo: 4.8rem → 8.64rem). */}
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-10">
         <Link to="/dashboard" className="mb-6 shrink-0">
           <TagLogo variant="wordmark" heightClass="h-[8.64rem]" />
         </Link>
         <div className="w-full max-w-lg space-y-6">
           <Card className="rounded-2xl border-border/60 p-8 shadow-sm">
-          {canGoBack && (
-            <button
-              type="button"
-              onClick={goBack}
-              className="mb-4 inline-flex items-center text-xs text-muted-foreground hover:text-foreground"
-            >
-              ← Back
-            </button>
-          )}
-          {step === "welcome" && <WelcomeStep onNext={() => goTo("system")} onSkip={finishSetup} />}
-          {step === "system" && <SystemStep onPick={handlePickSystem} />}
-          {step === "connecting" && <ConnectingStep activeIdx={connectingIdx} />}
-          {step === "file" && (
-            <FileStep
-              inputRef={inputRef}
-              file={file}
-              loading={preview.isPending}
-              onFile={handleFile}
-            />
-          )}
-          {step === "importing" && <ImportingStep label={importLabel} progress={importProgress} />}
-          {step === "customerFile" && (
-            <CustomerFileStep
-              inputRef={customerInputRef}
-              file={customerFile}
-              loading={customerPreview.isPending}
-              posSystem={posSystem}
-              onFile={handleCustomerFile}
-              onSkip={() => goTo("storeFile")}
-            />
-          )}
-          {step === "customerImporting" && (
-            <ImportingStep
-              title="Getting your customers ready…"
-              label={customerImportLabel}
-              progress={customerImportProgress}
-            />
-          )}
-          {step === "storeFile" && (
-            <StoreFileStep
-              inputRef={storeInputRef}
-              file={storeFile}
-              loading={storePreview.isPending}
-              posSystem={posSystem}
-              onFile={handleStoreFile}
-              onSkip={() => goTo("done")}
-            />
-          )}
-          {step === "storeImporting" && (
-            <ImportingStep
-              title="Getting your stores ready…"
-              label={storeImportLabel}
-              progress={storeImportProgress}
-            />
-          )}
-          {step === "done" && (
-            <DoneStep
-              productCount={totalProducts}
-              customerCount={totalCustomers}
-              storeCount={totalStores}
-              onGoToDashboard={finishSetup}
-            />
-          )}
-        </Card>
+            {canGoBack && (
+              <button
+                type="button"
+                onClick={goBack}
+                className="mb-4 inline-flex items-center text-xs text-muted-foreground hover:text-foreground"
+              >
+                ← Back
+              </button>
+            )}
+            {step === "welcome" && (
+              <WelcomeStep onNext={() => goTo("system")} onSkip={finishSetup} />
+            )}
+            {step === "system" && <SystemStep onPick={handlePickSystem} />}
+            {step === "connecting" && <ConnectingStep activeIdx={connectingIdx} />}
+            {step === "file" && (
+              <FileStep
+                inputRef={inputRef}
+                file={file}
+                loading={preview.isPending}
+                posSystem={posSystem}
+                onFile={handleFile}
+              />
+            )}
+            {step === "importing" && (
+              <ImportingStep label={importLabel} progress={importProgress} />
+            )}
+            {step === "done" && (
+              <DoneStep
+                productCount={totalProducts}
+                storeCount={storeSummary?.storeCount ?? 0}
+                storeAutoCreated={!!storeSummary?.created}
+                onGoToDashboard={finishSetup}
+              />
+            )}
+          </Card>
         </div>
       </main>
     </div>
@@ -591,11 +402,13 @@ function FileStep({
   inputRef,
   file,
   loading,
+  posSystem,
   onFile,
 }: {
   inputRef: React.RefObject<HTMLInputElement | null>;
   file: File | null;
   loading: boolean;
+  posSystem: string | null;
   onFile: (f: File) => void;
 }) {
   return (
@@ -603,7 +416,8 @@ function FileStep({
       <div>
         <h1 className="text-xl font-bold tracking-tight">Almost there!</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          To finish setting up TAG, simply choose your latest product export.
+          Upload your latest product export from {posSystem ?? "your system"}. If your file
+          includes a branch or site column, we'll set up those stores automatically.
         </p>
       </div>
       <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 p-10 hover:bg-muted/50">
@@ -622,102 +436,6 @@ function FileStep({
         />
       </label>
       {loading && <p className="text-sm text-muted-foreground">Reading {file?.name}…</p>}
-    </div>
-  );
-}
-
-function CustomerFileStep({
-  inputRef,
-  file,
-  loading,
-  posSystem,
-  onFile,
-  onSkip,
-}: {
-  inputRef: React.RefObject<HTMLInputElement | null>;
-  file: File | null;
-  loading: boolean;
-  posSystem: string | null;
-  onFile: (f: File) => void;
-  onSkip: () => void;
-}) {
-  return (
-    <div className="space-y-5 text-center">
-      <div>
-        <h1 className="text-xl font-bold tracking-tight">Bring in your customers too</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {posSystem
-            ? `Export your customer list from ${posSystem} and upload it here — we'll map the columns automatically.`
-            : "Upload your customer list — we'll map the columns automatically."}
-        </p>
-      </div>
-      <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 p-10 hover:bg-muted/50">
-        <FileUp className="mb-3 h-8 w-8 text-muted-foreground" />
-        <span className="font-medium">Choose your customer file</span>
-        <span className="mt-1 text-xs text-muted-foreground">XLSX or CSV</span>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) onFile(f);
-          }}
-        />
-      </label>
-      {loading && <p className="text-sm text-muted-foreground">Reading {file?.name}…</p>}
-      <Button variant="ghost" className="w-full" onClick={onSkip} disabled={loading}>
-        Skip for now
-      </Button>
-    </div>
-  );
-}
-
-function StoreFileStep({
-  inputRef,
-  file,
-  loading,
-  posSystem,
-  onFile,
-  onSkip,
-}: {
-  inputRef: React.RefObject<HTMLInputElement | null>;
-  file: File | null;
-  loading: boolean;
-  posSystem: string | null;
-  onFile: (f: File) => void;
-  onSkip: () => void;
-}) {
-  return (
-    <div className="space-y-5 text-center">
-      <div>
-        <h1 className="text-xl font-bold tracking-tight">Add your store branches</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {posSystem
-            ? `If ${posSystem} manages more than one branch, export your store/branch list and upload it here.`
-            : "If you have more than one branch, upload your store/branch list — we'll map the columns automatically."}
-        </p>
-      </div>
-      <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 p-10 hover:bg-muted/50">
-        <FileUp className="mb-3 h-8 w-8 text-muted-foreground" />
-        <span className="font-medium">Choose your store file</span>
-        <span className="mt-1 text-xs text-muted-foreground">XLSX, CSV, or PDF</span>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".xlsx,.xls,.csv,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) onFile(f);
-          }}
-        />
-      </label>
-      {loading && <p className="text-sm text-muted-foreground">Reading {file?.name}…</p>}
-      <Button variant="ghost" className="w-full" onClick={onSkip} disabled={loading}>
-        Skip for now
-      </Button>
     </div>
   );
 }
@@ -763,13 +481,13 @@ function ProgressLine({ label, done, active }: { label: string; done: boolean; a
 
 function DoneStep({
   productCount,
-  customerCount,
   storeCount,
+  storeAutoCreated,
   onGoToDashboard,
 }: {
   productCount: number;
-  customerCount: number;
   storeCount: number;
+  storeAutoCreated: boolean;
   onGoToDashboard: () => void;
 }) {
   return (
@@ -782,18 +500,18 @@ function DoneStep({
         <p className="mt-2 text-sm text-muted-foreground">
           {productCount.toLocaleString()} product{productCount === 1 ? "" : "s"}{" "}
           {productCount === 1 ? "is" : "are"} now ready on TAG.
-          {customerCount > 0 && (
+          {storeCount > 0 && !storeAutoCreated && (
             <>
               {" "}
-              {customerCount.toLocaleString()} customer{customerCount === 1 ? "" : "s"}{" "}
-              {customerCount === 1 ? "was" : "were"} imported too.
+              We detected {storeCount.toLocaleString()} store{storeCount === 1 ? "" : "s"}{" "}
+              from your file.
             </>
           )}
-          {storeCount > 0 && (
+          {storeAutoCreated && (
             <>
               {" "}
-              {storeCount.toLocaleString()} store{storeCount === 1 ? "" : "s"}{" "}
-              {storeCount === 1 ? "was" : "were"} set up too.
+              We didn't see any branches in your file, so we set you up as a sole proprietor
+              with one store — you can rename or add more in Admin › Stores.
             </>
           )}
         </p>
