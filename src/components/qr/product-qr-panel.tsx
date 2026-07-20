@@ -79,13 +79,18 @@ export function ProductQrPanel({
 }) {
   const qc = useQueryClient();
   const generateFn = useServerFn(generateProductQr);
+  const listStoresFn = useServerFn(listStores);
+  const storesQ = useQuery({ queryKey: ["stores"], queryFn: () => listStoresFn() });
+  const stores: Array<{ id: string; name: string }> = (storesQ.data as any)?.stores ?? [];
+  const [storeId, setStoreId] = useState<string | null>(null);
   const [confirmRegen, setConfirmRegen] = useState(false);
   const [clash, setClash] = useState<GtinClash | null>(null);
   const [mergeOpen, setMergeOpen] = useState(false);
   const [autoRetryAfterMerge, setAutoRetryAfterMerge] = useState(false);
 
   const generate = useMutation({
-    mutationFn: (force: boolean) => generateFn({ data: { productId, force } }),
+    mutationFn: (force: boolean) => generateFn({ data: { productId, force, storeId } }),
+
     onSuccess: (row: any) => {
       qc.setQueryData(["product", productId], (prev: any) => {
         if (!prev) return prev;
