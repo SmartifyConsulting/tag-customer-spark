@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -20,24 +20,60 @@ import {
 } from "@/components/ui/dialog";
 import { listProducts, mergeProducts } from "@/lib/products.functions";
 
+type PreselectItem = { id: string; name: string; sku?: string | null; stock_qty?: number | null };
+
 export function MergeProductsSearchDialog({
   open,
   onOpenChange,
   onMerged,
+  initialSearch,
+  initialTargetId,
+  initialPreselected,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onMerged: () => void;
+  initialSearch?: string;
+  initialTargetId?: string;
+  initialPreselected?: PreselectItem[];
 }) {
   const listFn = useServerFn(listProducts);
   const mergeFn = useServerFn(mergeProducts);
 
-  const [search, setSearch] = useState("");
-  const [checked, setChecked] = useState<Set<string>>(new Set());
-  const [target, setTarget] = useState<string | null>(null);
-  const [checkedDetail, setCheckedDetail] = useState<Map<string, { name: string; sku: string | null; stock_qty: number | null }>>(
-    new Map(),
+  const [search, setSearch] = useState(initialSearch ?? "");
+  const [checked, setChecked] = useState<Set<string>>(
+    () => new Set((initialPreselected ?? []).map((p) => p.id)),
   );
+  const [target, setTarget] = useState<string | null>(
+    initialTargetId ?? initialPreselected?.[0]?.id ?? null,
+  );
+  const [checkedDetail, setCheckedDetail] = useState<Map<string, { name: string; sku: string | null; stock_qty: number | null }>>(
+    () =>
+      new Map(
+        (initialPreselected ?? []).map((p) => [
+          p.id,
+          { name: p.name, sku: p.sku ?? null, stock_qty: p.stock_qty ?? null },
+        ]),
+      ),
+  );
+
+  // When re-opened with new preselections (e.g. from the GTIN clash flow
+  // on a different product), reset internal state to match.
+  useEffect(() => {
+    if (!open) return;
+    setSearch(initialSearch ?? "");
+    setChecked(new Set((initialPreselected ?? []).map((p) => p.id)));
+    setTarget(initialTargetId ?? initialPreselected?.[0]?.id ?? null);
+    setCheckedDetail(
+      new Map(
+        (initialPreselected ?? []).map((p) => [
+          p.id,
+          { name: p.name, sku: p.sku ?? null, stock_qty: p.stock_qty ?? null },
+        ]),
+      ),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialSearch, initialTargetId, JSON.stringify(initialPreselected ?? [])]);
 
   const listQ = useQuery({
     queryKey: ["products-for-merge", search],
@@ -62,6 +98,7 @@ export function MergeProductsSearchDialog({
     setTarget(null);
     setCheckedDetail(new Map());
   };
+
 
   const toggle = (p: { id: string; name: string; sku: string | null; stock_qty: number | null }) => {
     setChecked((cur) => {
