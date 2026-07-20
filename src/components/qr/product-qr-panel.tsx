@@ -191,6 +191,7 @@ export function ProductQrPanel({
   const dppHref = dppId ? `/p/${dppId}` : qr.resolver_url;
 
   return (
+    <>
     <section className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[220px_minmax(0,1fr)]">
       <div className="flex flex-col items-center gap-3">
         <div
