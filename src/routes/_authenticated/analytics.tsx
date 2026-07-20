@@ -81,7 +81,8 @@ function AnalyticsPage() {
           <KpiCard
             index={3}
             label="Recovered revenue"
-            value={
+            value={a ? Math.round(a.totals.recoveredCents / 100) : 0}
+            formatted={
               a
                 ? formatMoney(a.totals.recoveredCents, a.totals.currency, {
                     maximumFractionDigits: 0,
