@@ -106,6 +106,11 @@ export const MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
   { title: "Customers", url: "/customers", icon: Users, match: ["/customers"] },
 ] as const;
 
-export function isNavActive(item: { match: readonly string[] }, pathname: string): boolean {
-  return item.match.some((p) => pathname === p || pathname.startsWith(p + "/"));
+export function isNavActive(
+  item: { match: readonly string[]; exact?: boolean },
+  pathname: string,
+): boolean {
+  return item.match.some((p) =>
+    item.exact ? pathname === p : pathname === p || pathname.startsWith(p + "/"),
+  );
 }
