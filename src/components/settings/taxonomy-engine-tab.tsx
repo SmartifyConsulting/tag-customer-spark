@@ -188,15 +188,8 @@ export function TaxonomyEngineTab() {
     },
   });
 
-  const seedTemplates = useMutation({
-    mutationFn: () => seedFn(),
-    onSuccess: (r: any) => {
-      invalidate();
-      if (r.created === 0) toast.info("All sector templates are already loaded.");
-      else toast.success(`Added ${r.created} sector templates. Pick one from the dropdown.`);
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Could not load templates"),
-  });
+
+
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -275,19 +268,49 @@ export function TaxonomyEngineTab() {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-[240px] flex-1 sm:flex-none">
+            <Select
+              value={selectedId ?? ""}
+              onValueChange={(v) => setSelectedId(v || null)}
+            >
+              <SelectTrigger className="w-full sm:w-[320px]">
+                <SelectValue placeholder={profiles.length === 0 ? "Loading templates…" : "Select a taxonomy template"} />
+              </SelectTrigger>
+              <SelectContent>
+                {profiles.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    <span className="flex items-center gap-2">
+                      <span className="truncate">{p.name}</span>
+                      {p.is_default && (
+                        <Badge variant="secondary" className="gap-0.5 px-1.5 py-0 text-[10px]">
+                          <Star className="h-2.5 w-2.5 fill-current" /> Default
+                        </Badge>
+                      )}
+                      {p.is_published && (
+                        <Badge variant="outline" className="px-1 py-0 text-[10px]">Published</Badge>
+                      )}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <Button size="sm" variant="outline" onClick={() => setTemplatePickerOpen(true)}>
             <Plus className="mr-1 h-3.5 w-3.5" /> New profile
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => seedTemplates.mutate()}
-            disabled={seedTemplates.isPending}
-            title="Add every built-in sector template (Fashion, Grocery, Pharmacy, …) as ready-to-pick profiles"
-          >
-            <Layers className="mr-1 h-3.5 w-3.5" />
-            {seedTemplates.isPending ? "Loading…" : "Load sector templates"}
-          </Button>
+
+          {selectedId && !profileQ.data?.profile.is_default && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => makeDefault.mutate()}
+              disabled={makeDefault.isPending}
+            >
+              <Star className="mr-1 h-3.5 w-3.5" /> Set as default
+            </Button>
+          )}
+
           {selectedId && (
             <>
               <Button
@@ -310,54 +333,6 @@ export function TaxonomyEngineTab() {
           )}
         </div>
 
-        {/* Profile grid — every template shown as a picker card. */}
-        {profiles.length > 0 && (
-          <div>
-            <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Templates ({profiles.length})
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {profiles.map((p: any) => {
-                const isSelected = p.id === selectedId;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setSelectedId(p.id)}
-                    className={cn(
-                      "flex flex-col gap-1 rounded-xl border px-3 py-2 text-left transition hover:bg-accent",
-                      isSelected && "border-primary bg-accent",
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium">{p.name}</span>
-                      {p.is_default && (
-                        <Badge variant="secondary" className="shrink-0 gap-0.5 px-1.5 py-0 text-[10px]">
-                          <Star className="h-2.5 w-2.5 fill-current" /> Default
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                      {p.is_published && <Badge variant="outline" className="px-1 py-0 text-[10px]">Published</Badge>}
-                      {isSelected && !p.is_default && (
-                        <span
-                          role="button"
-                          className="cursor-pointer text-primary hover:underline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            makeDefault.mutate();
-                          }}
-                        >
-                          Set as default
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {profilesQ.isLoading ? (
           <Skeleton className="h-40 w-full" />

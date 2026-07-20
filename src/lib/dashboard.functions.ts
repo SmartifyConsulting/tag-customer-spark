@@ -525,8 +525,9 @@ export type BriefingProduct = {
   id: string;
   name: string;
   image_url: string | null;
-  tagged_at: string;
+  last_tagged_at: string;
   gtin: string | null;
+  count: number;
 };
 export type BriefingBucket = { key: string; label: string; products: BriefingProduct[] };
 export type BriefingUnread = {
@@ -541,6 +542,7 @@ export type Briefing = {
   buckets: BriefingBucket[];
   unread: BriefingUnread[];
   totalTagged: number;
+  taggedTodayCount: number;
   greetingName: string | null;
 };
 
@@ -556,7 +558,8 @@ export const getBriefing = createServerFn({ method: "GET" })
       .limit(1)
       .maybeSingle();
     const retailerId = role?.retailer_id;
-    if (!retailerId) return { buckets: [], unread: [], totalTagged: 0, greetingName: null };
+    if (!retailerId)
+      return { buckets: [], unread: [], totalTagged: 0, taggedTodayCount: 0, greetingName: null };
 
     // Greeting: prefer the single active store's name (e.g. "Makro Woodmead");
     // fall back to the retailer name so the greeting is always branded.
@@ -577,62 +580,67 @@ export const getBriefing = createServerFn({ method: "GET" })
       greetingName = retailer?.name ?? null;
     }
 
-
     const now = new Date();
-    const startOfYear = new Date(now.getFullYear(), 0, 1).toISOString();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const { data: products = [] } = await supabase
       .from("products")
       .select("id, name, image_url, gtin, created_at")
       .eq("retailer_id", retailerId)
       .not("gtin", "is", null)
-      .gte("created_at", startOfYear)
+      .gte("created_at", startOfMonth)
       .order("created_at", { ascending: false })
-      .limit(500);
+      .limit(1000);
 
-    // Bucket by This Week / Last Week / Month name.
-    const startOfWeek = (d: Date) => {
-      const c = new Date(d);
-      const day = (c.getDay() + 6) % 7; // Monday = 0
-      c.setHours(0, 0, 0, 0);
-      c.setDate(c.getDate() - day);
-      return c;
-    };
-    const thisWeek = startOfWeek(now).getTime();
-    const lastWeek = thisWeek - 7 * 86400 * 1000;
-    const monthLabels = [
-      "January","February","March","April","May","June",
-      "July","August","September","October","November","December",
+    // Time boundaries (local): Today / Yesterday / This week (Mon-now, excl.
+    // Today+Yesterday) / This month (1st-now, excl. rest).
+    const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+    const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const weekStart = new Date(todayStart);
+    weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const bucketDefs: { key: string; label: string; from: number; to: number }[] = [
+      { key: "today", label: "Today", from: todayStart.getTime(), to: Infinity },
+      { key: "yesterday", label: "Yesterday", from: yesterdayStart.getTime(), to: todayStart.getTime() },
+      { key: "this-week", label: "This week", from: weekStart.getTime(), to: yesterdayStart.getTime() },
+      { key: "this-month", label: "This month", from: monthStart.getTime(), to: weekStart.getTime() },
     ];
-    const bucketMap = new Map<string, BriefingBucket>();
-    const put = (key: string, label: string, p: BriefingProduct) => {
-      if (!bucketMap.has(key)) bucketMap.set(key, { key, label, products: [] });
-      bucketMap.get(key)!.products.push(p);
-    };
+
+    // Group by product_id within each bucket → count + most recent tagged_at.
+    type Agg = { id: string; name: string; image_url: string | null; gtin: string | null; count: number; last: number };
+    const grouped = new Map<string, Map<string, Agg>>();
+    for (const def of bucketDefs) grouped.set(def.key, new Map());
     for (const p of products ?? []) {
       const ts = new Date(p.created_at).getTime();
-      const proj: BriefingProduct = {
-        id: p.id,
-        name: p.name,
-        image_url: p.image_url,
-        gtin: p.gtin,
-        tagged_at: p.created_at,
-      };
-      if (ts >= thisWeek) put("this-week", "This week", proj);
-      else if (ts >= lastWeek) put("last-week", "Last week", proj);
-      else {
-        const d = new Date(p.created_at);
-        const key = `m-${d.getMonth()}`;
-        put(key, monthLabels[d.getMonth()], proj);
+      const def = bucketDefs.find((b) => ts >= b.from && ts < b.to);
+      if (!def) continue;
+      const bag = grouped.get(def.key)!;
+      const cur = bag.get(p.id);
+      if (cur) {
+        cur.count++;
+        if (ts > cur.last) cur.last = ts;
+      } else {
+        bag.set(p.id, { id: p.id, name: p.name, image_url: p.image_url, gtin: p.gtin, count: 1, last: ts });
       }
     }
-    // Order: this-week, last-week, then months desc.
-    const buckets: BriefingBucket[] = [];
-    if (bucketMap.has("this-week")) buckets.push(bucketMap.get("this-week")!);
-    if (bucketMap.has("last-week")) buckets.push(bucketMap.get("last-week")!);
-    for (let m = now.getMonth(); m >= 0; m--) {
-      const k = `m-${m}`;
-      if (bucketMap.has(k)) buckets.push(bucketMap.get(k)!);
-    }
+    const buckets: BriefingBucket[] = bucketDefs
+      .map((def) => ({
+        key: def.key,
+        label: def.label,
+        products: Array.from(grouped.get(def.key)!.values())
+          .sort((a, b) => b.count - a.count || b.last - a.last)
+          .map<BriefingProduct>((a) => ({
+            id: a.id,
+            name: a.name,
+            image_url: a.image_url,
+            gtin: a.gtin,
+            count: a.count,
+            last_tagged_at: new Date(a.last).toISOString(),
+          })),
+      }))
+      .filter((b) => b.products.length > 0);
+
+    const taggedTodayCount = grouped.get("today")!.size;
 
     const { data: convs = [] } = await supabase
       .from("conversations")
@@ -673,8 +681,8 @@ export const getBriefing = createServerFn({ method: "GET" })
     return {
       buckets,
       unread,
-      totalTagged: buckets.reduce((n, b) => n + b.products.length, 0),
+      totalTagged: buckets.reduce((n, b) => n + b.products.reduce((m, p) => m + p.count, 0), 0),
+      taggedTodayCount,
       greetingName,
-
     };
   });

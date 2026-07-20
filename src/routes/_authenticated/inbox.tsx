@@ -114,7 +114,7 @@ function InboxPage() {
       <div className="grid h-[calc(100vh-220px)] min-h-[520px] grid-cols-1 md:grid-cols-[320px_1fr] lg:grid-cols-[320px_1fr_320px] gap-0 overflow-hidden rounded-2xl border border-border bg-card">
         {/* List */}
         <div className="border-r border-border flex flex-col min-h-0">
-          <div className="p-3 space-y-3 border-b border-border">
+          <div className="p-3 space-y-3">
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
