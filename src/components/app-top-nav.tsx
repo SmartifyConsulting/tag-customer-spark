@@ -34,6 +34,8 @@ export function AppTopNav() {
         item.items && item.items.length > 0 ? (
           <NavDropdown key={item.title} item={item} pathname={pathname} />
         ) : (
+          // Router-typed Link for the parent's own route (works for
+          // /admin/pricing etc. — no search params to reconcile).
           <Link
             key={item.title}
             to={item.url}
@@ -63,33 +65,25 @@ function NavDropdown({ item, pathname }: { item: NavItem; pathname: string }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-48">
         {item.items!.map((sub) => {
-          const subActive =
-            pathname === sub.url.split("?")[0] ||
-            pathname.startsWith(sub.url.split("?")[0] + "/");
+          const basePath = sub.url.split("?")[0];
+          const subActive = pathname === basePath || pathname.startsWith(basePath + "/");
+          // Sub-links can carry search params (e.g. /admin?tab=stores).
+          // Plain <a> keeps typing simple across heterogeneous routes; a
+          // full-page nav here is fine — the target route lazy-loads.
           return (
             <DropdownMenuItem key={sub.url} asChild>
-              <Link
-                to={sub.url.split("?")[0]}
-                search={parseSearch(sub.url)}
-                className={`cursor-pointer ${subActive ? "font-semibold text-[#A6446B]" : ""}`}
+              <a
+                href={sub.url}
+                className={`block w-full cursor-pointer ${
+                  subActive ? "font-semibold text-[#A6446B]" : ""
+                }`}
               >
                 {sub.title}
-              </Link>
+              </a>
             </DropdownMenuItem>
           );
         })}
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
-
-function parseSearch(url: string): Record<string, string> | undefined {
-  const q = url.split("?")[1];
-  if (!q) return undefined;
-  const out: Record<string, string> = {};
-  for (const pair of q.split("&")) {
-    const [k, v] = pair.split("=");
-    if (k) out[k] = decodeURIComponent(v ?? "");
-  }
-  return out;
 }
