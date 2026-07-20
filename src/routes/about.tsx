@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MarketingFooter, MarketingHeader } from "@/components/marketing-page";
+import { TagLogo } from "@/components/tag-logo";
 
 import { ArrowRight } from "lucide-react";
 
@@ -39,6 +40,7 @@ function Landing() {
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,hsl(var(--primary)/0.10),transparent_70%)]" />
         <div className="mx-auto max-w-4xl px-6 py-14 text-center lg:py-20">
+          <TagLogo variant="wordmark" heightClass="h-[27rem]" className="mb-8" />
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
             Your customers are interested—your products just don't know it yet.
           </h1>

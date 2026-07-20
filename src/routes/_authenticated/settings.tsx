@@ -29,6 +29,9 @@ import { sendTestEmail, sendDailyBriefingEmail, sendWeeklyRoiEmail } from "@/lib
 import { BillingTab } from "@/components/settings/billing-tab";
 import { PlanAdminTab } from "@/components/settings/plan-admin-tab";
 import { useAuth } from "@/hooks/use-auth";
+import { TagReaderCardDialog } from "@/components/settings/tag-reader-card-dialog";
+import { QrPreview } from "@/components/qr/qr-preview";
+import { ScanLine } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — Tag" }] }),
@@ -66,40 +69,45 @@ function SettingsPage() {
           <TabsTrigger value="audit"><History className="mr-1 h-4 w-4" /> Audit log</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="workspace">
-          <Card className="rounded-2xl">
-            <CardHeader><CardTitle>Brand</CardTitle><CardDescription>Shown on QR cards, opt-in pages and WhatsApp messages.</CardDescription></CardHeader>
-            <CardContent className="space-y-4">
-              {settings.isLoading ? <Skeleton className="h-32 w-full" /> : (
-                <>
-                  <div><Label>Workspace name</Label><Input value={current.name ?? ""} onChange={(e) => setForm({ ...current, name: e.target.value })} /></div>
-                  <div><Label>Contact email</Label><Input value={current.contact_email ?? ""} onChange={(e) => setForm({ ...current, contact_email: e.target.value })} /></div>
+        <TabsContent value="workspace" className="space-y-8">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <Card className="rounded-2xl">
+              <CardHeader><CardTitle>Brand</CardTitle><CardDescription>Shown on QR cards, opt-in pages and WhatsApp messages.</CardDescription></CardHeader>
+              <CardContent className="space-y-4">
+                {settings.isLoading ? <Skeleton className="h-32 w-full" /> : (
+                  <>
+                    <div><Label>Workspace name</Label><Input value={current.name ?? ""} onChange={(e) => setForm({ ...current, name: e.target.value })} /></div>
+                    <div><Label>Contact email</Label><Input value={current.contact_email ?? ""} onChange={(e) => setForm({ ...current, contact_email: e.target.value })} /></div>
 
-                  <LogoUploader
-                    logoUrl={current.logo_url ?? ""}
-                    onUploaded={(url) => {
-                      setForm({ ...current, logo_url: url });
-                      qc.invalidateQueries({ queryKey: ["settings"] });
-                    }}
-                  />
+                    <LogoUploader
+                      logoUrl={current.logo_url ?? ""}
+                      onUploaded={(url) => {
+                        setForm({ ...current, logo_url: url });
+                        qc.invalidateQueries({ queryKey: ["settings"] });
+                      }}
+                    />
 
-                  <div className="flex items-center justify-between rounded-xl border p-4">
-                    <div>
-                      <p className="text-sm font-medium">Appearance</p>
-                      <p className="text-xs text-muted-foreground">Switch between light, dark, or system themes.</p>
+                    <div className="flex items-center justify-between rounded-xl border p-4">
+                      <div>
+                        <p className="text-sm font-medium">Appearance</p>
+                        <p className="text-xs text-muted-foreground">Switch between light, dark, or system themes.</p>
+                      </div>
+                      <ThemeToggle />
                     </div>
-                    <ThemeToggle />
-                  </div>
-                  <div className="flex justify-end">
-                    <Button onClick={() => save.mutate()} disabled={save.isPending}>Save</Button>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                    <div className="flex justify-end">
+                      <Button onClick={() => save.mutate()} disabled={save.isPending}>Save</Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <TagReaderCard />
+          </div>
 
           {canReseed && <DangerZoneCard />}
         </TabsContent>
+
 
         <TabsContent value="emails">
           <EmailsTab defaultTo={r?.contact_email ?? ""} />
@@ -450,3 +458,34 @@ function EmailsTab({ defaultTo }: { defaultTo: string }) {
     </div>
   );
 }
+
+function TagReaderCard() {
+  const [open, setOpen] = useState(false);
+  const readerUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/tools/barcode-reader`
+      : "/tools/barcode-reader";
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <ScanLine className="h-4 w-4" /> Tag Barcode Reader
+        </CardTitle>
+        <CardDescription>
+          Print this QR on a shelf card. Shoppers point their phone camera at it and get an in-browser barcode scanner branded with your Tag.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col items-center gap-3">
+        <QrPreview value={readerUrl} size={160} />
+        <Button className="w-full" onClick={() => setOpen(true)}>
+          View Tag Barcode Reader
+        </Button>
+        <p className="text-center text-[11px] text-muted-foreground">
+          Preview the fold-out shelf card and download a print-ready PDF.
+        </p>
+      </CardContent>
+      <TagReaderCardDialog open={open} onOpenChange={setOpen} readerUrl={readerUrl} />
+    </Card>
+  );
+}
+

@@ -1,89 +1,47 @@
-## 1. Setup wizard — remove Customers & Stores uploads, auto-detect branches
+## 1. Settings screen — spacing + Tag Barcode Reader card
 
-`src/routes/setup.tsx`
-- Drop the `customerFile` / `customerImporting` / `storeFile` / `storeImporting` steps and all related state, refs, mutations, effects, and imports (`previewCustomerImport`, `commitCustomerImport`, `previewStoreImport`, `commitStoreImport`, `StoreImportRow`, `CustomerImportRow`).
-- After the product `importing` step finishes, call a new server fn `autoDetectStoresFromProducts`, then go straight to `done`.
+`src/routes/_authenticated/settings.tsx` (Workspace tab):
 
-New helper `src/lib/stores.functions.ts` → `autoDetectStoresFromProducts`
-- Read distinct `store_id` values from the retailer's `products` (with per-store counts).
-- Insert a placeholder store row for every referenced `store_id` that has no matching `stores` row (name = "Branch N").
-- If products reference zero stores AND `stores` is empty, insert one store named after the retailer with `notes = "Sole proprietor"`.
-- Returns `{ createdCount, soleProprietor }`.
+- Increase the vertical gap between the "Brand" card and the "Danger zone" card (change the wrapper from the current default spacing to `space-y-8` / `mt-8` so the two frames breathe like the reference image).
+- Add a new **Tag Barcode Reader** card, positioned top-right of the Workspace tab (two-column grid on `md+`, single column on mobile: left column keeps Brand, right column stacks the new Reader card above empty space). Card contents:
+  - Small heading "Tag Barcode Reader" + short description ("Print a shelf card so shoppers can scan any barcode with their phone camera").
+  - Live QR preview (reuse `QrPreview` from `src/components/qr/qr-preview.tsx`) encoding the absolute URL of the new reader route: `${origin}/tools/barcode-reader`.
+  - Primary button **View Tag Barcode Reader** → opens a modal showing the fold-out shelf card preview (see §2).
+  - Secondary button **Download PDF** → triggers the same PDF generation directly.
 
-## 2. Fix "Digital Identity Build" hang at 4/7 (QR duplicate-key)
+## 2. Fold-out shelf card (preview + PDF)
 
-Root cause (verified): the DB index `product_qr_assets_active_gtin_uidx` is `UNIQUE (gtin) WHERE status='active'` — globally unique across all retailers. `qr.functions.ts::generateForProduct` checks GTIN uniqueness scoped per-retailer, and `assignMissingBarcodes` generates deterministic GTIN-13s that can collide across retailers. The second insert throws `duplicate key … product_qr_assets_active_gtin_uidx`, killing the bulk loop and freezing the progress bar at "Converting to QR codes".
+New component `src/components/settings/tag-reader-card-dialog.tsx`:
 
-Migration:
-- Drop `product_qr_assets_active_gtin_uidx`.
-- Recreate as `UNIQUE (retailer_id, gtin) WHERE status = 'active'` — matches the code's per-retailer scope.
+- Dialog with an on-screen SVG preview of a landscape fold-out card, styled to match the uploaded reference (dark panel, bold "SCAN QR CODE USING PHONE CAMERA" caption, large QR, arrow accent, Tag logo top).
+- Faint vertical **fold lines** rendered as dashed light-grey strokes at the two fold positions (tri-fold) so the printer knows where to score.
+- Buttons: **Print** (browser print of the preview) and **Download PDF**.
+- PDF generation client-side using `jspdf` (already common) — A4 landscape, three panels separated by dashed fold guides, TAG logo (import from `@/assets/Tag_logo_pink_horizontal.png`), QR rendered via `qrcode` package (`toDataURL`, already used in `qr-preview.tsx`), same URL as the Settings card.
+- File name: `tag-barcode-reader-card.pdf`.
 
-Code hardening in `src/lib/qr.functions.ts`:
-- On 23505 for this index, re-fetch any lingering active row for `(retailer_id, gtin)`, retire it, retry once.
-- `bulkGenerateQrs` / wizard bulk loop already collect per-product errors — surface the count in the toast instead of aborting the whole step.
+## 3. Public barcode-reader page
 
-## 3. Navigation — new bold pink menu style + simplified item set
+New route `src/routes/tools.barcode-reader.tsx` (public, no auth):
 
-Reference: the attached image shows top-nav items styled as plain text with a small chevron for dropdowns (no pill background). Replicate that style but in the pink brand colour.
+- Full-screen page: centered Tag logo (wordmark) + heading "Tag Barcode Reader" + short instructions.
+- 1D barcode scanner using the existing dependency stack in `src/components/products/barcode-scanner-dialog.tsx` (reuse the same ZXing/BarcodeDetector logic factored into a reusable `<BarcodeReader onDetect={...} />` component if convenient, otherwise inline).
+- On detect: show the decoded value, a "Scan again" button, and a "Look up product" link that navigates to `/passport/{gtin}` when the code looks like a GTIN.
+- `head()` with proper title/description; mobile-first layout (camera view + result panel).
 
-`src/components/app-top-nav.tsx`
-- Remove the mint pill background. Each item becomes plain text: `text-[#A6446B] font-semibold text-sm`, hover `text-[#7d3350]`, active `underline underline-offset-4`.
-- Dropdown triggers keep the `ChevronDown` icon.
-- Same treatment for `MarketingNav` pills on the marketing/auth header so the whole app matches.
+## 4. Hero page logo (about.tsx)
 
-`src/lib/nav.ts` — simplified item set:
+- Move the Tag wordmark **above** the H1 headline inside the hero `<section>` (currently only shown inside `MarketingHeader`).
+- Render at **150%** of the current header wordmark size (use `TagLogo variant="wordmark"` with an explicit `heightClass` — e.g. current `h-[31.2rem]` header size × 1.5 is too large, so scale the intended hero baseline: use `heightClass="h-[18rem]"` centered, with `mb-6` before the H1). Exact class picked so aspect ratio is preserved (image is `w-auto object-contain`).
+- Keep the header's existing logo untouched (previously fixed so it doesn't jump between pages).
 
-| Top item | Type | Children |
-| --- | --- | --- |
-| **Product** | dropdown | Dashboard, **Messages** *(was WhatsApps)*, Inventory, Customers |
-| **Intelligence** | dropdown | Insights, Analytics, ROI, Trends |
-| **Admin** | dropdown *(admin-only)* | Taxonomy, Stores, Users → `/admin?tab=…` |
-| **Pricing** | flat link *(super-admin only)* | `/admin/pricing` |
+## 5. In-app top-left logo (+30%)
 
-- Removes the top-level **Settings** entry (still reachable via avatar menu).
-- Non-admins don't see Admin; non-super-admins don't see Pricing.
-- Mobile bottom nav keeps the four most-used flat links (Dashboard, Messages, Inventory, Customers).
+- `src/routes/_authenticated/route.tsx` line 66: replace `<TagLogo variant="wordmark" size="sm" />` with an explicit `heightClass` that is 30% larger than the current `size="sm"` (`h-[4.8rem]` → `h-[6.24rem]`). Keep aspect ratio (image already uses `w-auto`).
+- Verify the top nav row height / alignment still looks correct; nudge padding only if the taller logo forces the nav to grow.
 
-## 4. Rename WhatsApps → Messages (label only)
+## Technical notes
 
-The current top-level "WhatsApps" item pointing at `/inbox` becomes **Messages** everywhere it renders. Scope:
-- `src/lib/nav.ts` — label change in the new Product dropdown entry.
-- `src/routes/_authenticated/inbox.tsx` — page `head` title, `PageHeader` title, and any "WhatsApps" copy in the empty state / section headings.
-- `src/components/command-palette.tsx` — command entry label.
-- Any breadcrumb / tab / dashboard link copy that reads "WhatsApps".
-
-Route path stays `/inbox` (no redirect needed). Underlying WhatsApp connector/provider names in server code and DB (`whatsapp_messages`, `send-whatsapp-message`, `TWILIO_WHATSAPP_FROM`) are unchanged — only the user-facing label moves.
-
-## 5. Role gating
-
-Admin = `super_admin | retail_admin | store_manager`. System Admin = `super_admin` only.
-
-- `useIsAdmin()` helper in `src/hooks/use-auth.tsx`.
-- Non-admins hitting `/admin/*` redirect to `/dashboard`.
-- Delete buttons across Inventory, Stores, Users, Products, Customers rendered only when `isAdmin` (RLS already blocks the writes — UI polish).
-- `/admin/pricing` stays super-admin-only.
-
-## 6. Admin as one tabbed page
-
-New `src/routes/_authenticated/admin.tsx` with `?tab=` — tabs: Taxonomy / Stores / Users.
-- Taxonomy → body of current `admin.categories.tsx`.
-- Stores → new `StoresView` component (extracted from `stores.tsx`) with the grid/list toggle from §7.
-- Users → `UserAdminTab`.
-
-Delete `admin.categories.tsx`, `admin.users.tsx`, `stores.tsx`. Redirect `/admin/categories`, `/admin/users`, `/stores` → `/admin?tab=…`. `admin.inventory.*` and `admin.pricing.tsx` stay as their own routes.
-
-## 7. Stores: grid / list toggle with persistence
-
-Inside `StoresView`, add a Grid/List `ToggleGroup` in the toolbar. Initial mode from `localStorage.getItem("stores.view")` (default `"grid"`); write on change. List mode = `<Table>` with Name, Location, Manager, Contact, Scans, Staff, Recovered, Status, Actions.
-
-## Technical details
-
-- Only DB change: the QR unique-index swap in §2.
-- Pink text nav uses existing `#A6446B` accent — no new tokens.
-- Search-param tab wiring follows existing `Route.useSearch()` + `navigate({ search })` pattern.
-
-## Out of scope
-
-- No redesign of Settings, Pricing, Inventory admin screens beyond delete-button gating.
-- No RLS policy changes.
-- No change to the WhatsApp send infrastructure — only the "WhatsApps" label becomes "Messages".
+- Reader URL: derive at render time from `window.location.origin` so the QR works in preview, published, and custom-domain deployments.
+- `jspdf` may need to be added (`bun add jspdf`); if already present, reuse. Logo embedded as PNG data URL (fetch the imported asset via a hidden `<img>` → canvas, or bundle a small base64).
+- No backend/schema changes. No changes to auth or RLS.
+- No design-system token changes; all colors via existing tokens except the shelf card art which is intentionally styled (dark panel, yellow QR frame) to match the printed reference.

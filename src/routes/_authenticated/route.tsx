@@ -63,7 +63,7 @@ function AuthenticatedLayout() {
     <div className="flex min-h-screen w-full flex-col bg-background" style={themeStyle as any}>
       <header className="sticky top-0 z-20 flex h-24 items-center gap-6 border-b border-border bg-background/80 px-4 backdrop-blur-md sm:px-6">
         <Link to="/dashboard" className="shrink-0">
-          <TagLogo variant="wordmark" size="sm" />
+          <TagLogo variant="wordmark" heightClass="h-[6.24rem]" />
         </Link>
         <AppTopNav />
         <Separator orientation="vertical" className="mx-1 hidden h-5 lg:block" />
