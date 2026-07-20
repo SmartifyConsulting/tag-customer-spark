@@ -23,6 +23,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ToolsBarcodeReaderRouteImport } from './routes/tools.barcode-reader'
 import { Route as ScanShortCodeRouteImport } from './routes/scan.$shortCode'
 import { Route as PassportGtinRouteImport } from './routes/passport.$gtin'
 import { Route as PDppIdRouteImport } from './routes/p.$dppId'
@@ -141,6 +142,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsBarcodeReaderRoute = ToolsBarcodeReaderRouteImport.update({
+  id: '/tools/barcode-reader',
+  path: '/tools/barcode-reader',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ScanShortCodeRoute = ScanShortCodeRouteImport.update({
@@ -453,6 +459,7 @@ export interface FileRoutesByFullPath {
   '/p/$dppId': typeof PDppIdRoute
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/tools/barcode-reader': typeof ToolsBarcodeReaderRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRouteWithChildren
   '/admin/pricing': typeof AuthenticatedAdminPricingRoute
@@ -516,6 +523,7 @@ export interface FileRoutesByTo {
   '/p/$dppId': typeof PDppIdRoute
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/tools/barcode-reader': typeof ToolsBarcodeReaderRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/pricing': typeof AuthenticatedAdminPricingRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -582,6 +590,7 @@ export interface FileRoutesById {
   '/p/$dppId': typeof PDppIdRoute
   '/passport/$gtin': typeof PassportGtinRoute
   '/scan/$shortCode': typeof ScanShortCodeRoute
+  '/tools/barcode-reader': typeof ToolsBarcodeReaderRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRouteWithChildren
   '/_authenticated/admin/pricing': typeof AuthenticatedAdminPricingRoute
@@ -649,6 +658,7 @@ export interface FileRouteTypes {
     | '/p/$dppId'
     | '/passport/$gtin'
     | '/scan/$shortCode'
+    | '/tools/barcode-reader'
     | '/admin/categories'
     | '/admin/inventory'
     | '/admin/pricing'
@@ -712,6 +722,7 @@ export interface FileRouteTypes {
     | '/p/$dppId'
     | '/passport/$gtin'
     | '/scan/$shortCode'
+    | '/tools/barcode-reader'
     | '/admin/categories'
     | '/admin/pricing'
     | '/admin/users'
@@ -777,6 +788,7 @@ export interface FileRouteTypes {
     | '/p/$dppId'
     | '/passport/$gtin'
     | '/scan/$shortCode'
+    | '/tools/barcode-reader'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/inventory'
     | '/_authenticated/admin/pricing'
@@ -831,6 +843,7 @@ export interface RootRouteChildren {
   PDppIdRoute: typeof PDppIdRoute
   PassportGtinRoute: typeof PassportGtinRoute
   ScanShortCodeRoute: typeof ScanShortCodeRoute
+  ToolsBarcodeReaderRoute: typeof ToolsBarcodeReaderRoute
   ApiPublic01GtinRoute: typeof ApiPublic01GtinRoute
   ApiPublicHooksIntentTickRoute: typeof ApiPublicHooksIntentTickRoute
   ApiPublicHooksNotificationsTickRoute: typeof ApiPublicHooksNotificationsTickRoute
@@ -941,6 +954,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools/barcode-reader': {
+      id: '/tools/barcode-reader'
+      path: '/tools/barcode-reader'
+      fullPath: '/tools/barcode-reader'
+      preLoaderRoute: typeof ToolsBarcodeReaderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/scan/$shortCode': {
@@ -1461,6 +1481,7 @@ const rootRouteChildren: RootRouteChildren = {
   PDppIdRoute: PDppIdRoute,
   PassportGtinRoute: PassportGtinRoute,
   ScanShortCodeRoute: ScanShortCodeRoute,
+  ToolsBarcodeReaderRoute: ToolsBarcodeReaderRoute,
   ApiPublic01GtinRoute: ApiPublic01GtinRoute,
   ApiPublicHooksIntentTickRoute: ApiPublicHooksIntentTickRoute,
   ApiPublicHooksNotificationsTickRoute: ApiPublicHooksNotificationsTickRoute,
