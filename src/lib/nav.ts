@@ -89,12 +89,13 @@ export const NAV: readonly NavItem[] = [
     ],
     items: [
       { title: "Dashboard", url: "/dashboard", match: ["/dashboard"] },
-      { title: "Insights", url: "/intelligence", match: ["/intelligence"] },
+      { title: "Insights", url: "/intelligence/insights", match: ["/intelligence/insights"] },
       { title: "Analytics", url: "/analytics", match: ["/analytics"] },
       { title: "ROI", url: "/roi", match: ["/roi"] },
-      { title: "Trends", url: "/trends", match: ["/trends"] },
-      { title: "Forecasting", url: "/forecasting", match: ["/forecasting"] },
+      { title: "Trends", url: "/intelligence/trends", match: ["/intelligence/trends"] },
+      { title: "Forecasting", url: "/intelligence/forecasting", match: ["/intelligence/forecasting"] },
     ],
+
   },
 
   {
