@@ -519,3 +519,138 @@ export const getSignalContributions = createServerFn({ method: "GET" })
     return { contributions, breakdown };
   });
 
+
+// ─── Briefing (home page) ────────────────────────────────────────────────
+export type BriefingProduct = {
+  id: string;
+  name: string;
+  image_url: string | null;
+  tagged_at: string;
+  gtin: string | null;
+};
+export type BriefingBucket = { key: string; label: string; products: BriefingProduct[] };
+export type BriefingUnread = {
+  conversation_id: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  last_message: string | null;
+  last_message_at: string;
+  unread_count: number;
+};
+export type Briefing = {
+  buckets: BriefingBucket[];
+  unread: BriefingUnread[];
+  totalTagged: number;
+};
+
+export const getBriefing = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<Briefing> => {
+    const { supabase, userId } = context;
+    const { data: role } = await supabase
+      .from("user_roles")
+      .select("retailer_id")
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+    const retailerId = role?.retailer_id;
+    if (!retailerId) return { buckets: [], unread: [], totalTagged: 0 };
+
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1).toISOString();
+    const { data: products = [] } = await supabase
+      .from("products")
+      .select("id, name, image_url, gtin, created_at")
+      .eq("retailer_id", retailerId)
+      .not("gtin", "is", null)
+      .gte("created_at", startOfYear)
+      .order("created_at", { ascending: false })
+      .limit(500);
+
+    // Bucket by This Week / Last Week / Month name.
+    const startOfWeek = (d: Date) => {
+      const c = new Date(d);
+      const day = (c.getDay() + 6) % 7; // Monday = 0
+      c.setHours(0, 0, 0, 0);
+      c.setDate(c.getDate() - day);
+      return c;
+    };
+    const thisWeek = startOfWeek(now).getTime();
+    const lastWeek = thisWeek - 7 * 86400 * 1000;
+    const monthLabels = [
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December",
+    ];
+    const bucketMap = new Map<string, BriefingBucket>();
+    const put = (key: string, label: string, p: BriefingProduct) => {
+      if (!bucketMap.has(key)) bucketMap.set(key, { key, label, products: [] });
+      bucketMap.get(key)!.products.push(p);
+    };
+    for (const p of products ?? []) {
+      const ts = new Date(p.created_at).getTime();
+      const proj: BriefingProduct = {
+        id: p.id,
+        name: p.name,
+        image_url: p.image_url,
+        gtin: p.gtin,
+        tagged_at: p.created_at,
+      };
+      if (ts >= thisWeek) put("this-week", "This week", proj);
+      else if (ts >= lastWeek) put("last-week", "Last week", proj);
+      else {
+        const d = new Date(p.created_at);
+        const key = `m-${d.getMonth()}`;
+        put(key, monthLabels[d.getMonth()], proj);
+      }
+    }
+    // Order: this-week, last-week, then months desc.
+    const buckets: BriefingBucket[] = [];
+    if (bucketMap.has("this-week")) buckets.push(bucketMap.get("this-week")!);
+    if (bucketMap.has("last-week")) buckets.push(bucketMap.get("last-week")!);
+    for (let m = now.getMonth(); m >= 0; m--) {
+      const k = `m-${m}`;
+      if (bucketMap.has(k)) buckets.push(bucketMap.get(k)!);
+    }
+
+    const { data: convs = [] } = await supabase
+      .from("conversations")
+      .select(
+        "id, customer_id, subject, last_message_at, unread_count, customers(full_name, whatsapp_e164)",
+      )
+      .eq("retailer_id", retailerId)
+      .gt("unread_count", 0)
+      .order("last_message_at", { ascending: false })
+      .limit(20);
+
+    const convIds = (convs ?? []).map((c: any) => c.id);
+    let lastMsgByConv = new Map<string, string>();
+    if (convIds.length > 0) {
+      const { data: msgs = [] } = await supabase
+        .from("conversation_messages")
+        .select("conversation_id, body, sent_at")
+        .in("conversation_id", convIds)
+        .eq("direction", "inbound")
+        .order("sent_at", { ascending: false })
+        .limit(200);
+      for (const m of msgs ?? []) {
+        if (!lastMsgByConv.has(m.conversation_id)) {
+          lastMsgByConv.set(m.conversation_id, m.body ?? "");
+        }
+      }
+    }
+
+    const unread: BriefingUnread[] = (convs ?? []).map((c: any) => ({
+      conversation_id: c.id,
+      customer_name: c.customers?.full_name ?? null,
+      customer_phone: c.customers?.whatsapp_e164 ?? null,
+      last_message: lastMsgByConv.get(c.id) ?? c.subject ?? null,
+      last_message_at: c.last_message_at,
+      unread_count: c.unread_count,
+    }));
+
+    return {
+      buckets,
+      unread,
+      totalTagged: buckets.reduce((n, b) => n + b.products.length, 0),
+    };
+  });
