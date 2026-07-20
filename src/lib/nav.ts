@@ -87,7 +87,16 @@ export const NAV: readonly NavItem[] = [
       "/commerce",
       "/dashboard",
     ],
+    items: [
+      { title: "Dashboard", url: "/dashboard", match: ["/dashboard"] },
+      { title: "Insights", url: "/intelligence", match: ["/intelligence"] },
+      { title: "Analytics", url: "/analytics", match: ["/analytics"] },
+      { title: "ROI", url: "/roi", match: ["/roi"] },
+      { title: "Trends", url: "/trends", match: ["/trends"] },
+      { title: "Forecasting", url: "/forecasting", match: ["/forecasting"] },
+    ],
   },
+
   {
     title: "Admin",
     url: "/admin",
