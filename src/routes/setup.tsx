@@ -282,7 +282,7 @@ function SetupWizard() {
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-10">
-        <Link to="/dashboard" className="mb-6 shrink-0">
+        <Link to="/briefing" className="mb-6 shrink-0">
           <TagLogo variant="wordmark" heightClass="h-[8.64rem]" />
         </Link>
         <div className="w-full max-w-lg space-y-6">
