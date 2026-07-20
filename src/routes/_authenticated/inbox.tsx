@@ -101,8 +101,8 @@ function InboxPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="WhatsApps"
-        description="Every WhatsApp response, in one place."
+        title="Messages"
+        description="Every customer WhatsApp reply, in one place."
         actions={
           <Button size="sm" className="gap-2" onClick={() => setBroadcastOpen(true)}>
             <Megaphone className="h-4 w-4" /> New broadcast
