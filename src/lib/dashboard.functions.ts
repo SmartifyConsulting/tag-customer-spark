@@ -556,7 +556,27 @@ export const getBriefing = createServerFn({ method: "GET" })
       .limit(1)
       .maybeSingle();
     const retailerId = role?.retailer_id;
-    if (!retailerId) return { buckets: [], unread: [], totalTagged: 0 };
+    if (!retailerId) return { buckets: [], unread: [], totalTagged: 0, greetingName: null };
+
+    // Greeting: prefer the single active store's name (e.g. "Makro Woodmead");
+    // fall back to the retailer name so the greeting is always branded.
+    let greetingName: string | null = null;
+    const { data: stores } = await supabase
+      .from("stores")
+      .select("name")
+      .eq("retailer_id", retailerId)
+      .limit(2);
+    if (stores && stores.length === 1) {
+      greetingName = stores[0].name;
+    } else {
+      const { data: retailer } = await supabase
+        .from("retailers")
+        .select("name")
+        .eq("id", retailerId)
+        .maybeSingle();
+      greetingName = retailer?.name ?? null;
+    }
+
 
     const now = new Date();
     const startOfYear = new Date(now.getFullYear(), 0, 1).toISOString();
