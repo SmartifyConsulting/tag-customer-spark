@@ -7,9 +7,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { TagLogo } from "@/components/tag-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
-import { Separator } from "@/components/ui/separator";
 import { CommandPalette } from "@/components/command-palette";
-import { Command as CommandIcon } from "lucide-react";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { getRetailerBranding } from "@/lib/branding.functions";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
@@ -72,19 +70,6 @@ function AuthenticatedLayout() {
           <div className="hidden shrink-0 pt-3 md:block">
             <TagLogo variant="wordmark" heightClass="h-[10.608rem]" />
           </div>
-          <button
-            onClick={() => {
-              const ev = new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true });
-              window.dispatchEvent(ev);
-            }}
-            className="hidden h-9 items-center gap-2.5 rounded-full border border-border bg-muted/40 px-3.5 text-xs text-muted-foreground transition-colors hover:border-[color:var(--mint)]/40 hover:bg-card lg:flex"
-          >
-            <CommandIcon className="h-3.5 w-3.5" /> Search anything…
-            <kbd className="ml-2 rounded-md bg-[color:var(--mint)]/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[color:var(--mint)]">
-              ⌘K
-            </kbd>
-          </button>
-          <Separator orientation="vertical" className="mx-1 hidden h-5 lg:block" />
           <div className="ml-auto flex items-center gap-1.5">
             <ThemeToggle />
             <UserMenu />

@@ -51,7 +51,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/inventory/")({
-  head: () => ({ meta: [{ title: "Inventory Admin — Tag" }] }),
+  head: () => ({ meta: [{ title: "Inventory — Tag" }] }),
   component: InventoryAdminPage,
 });
 
@@ -320,7 +320,7 @@ function InventoryAdminPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Inventory Admin"
+        title="Inventory"
         description="Every uploaded product, tagged or not. The main Inventory screen only shows tagged items — review and tag the rest here."
         actions={
           <div className="flex flex-wrap items-center gap-2">
