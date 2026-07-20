@@ -32,13 +32,13 @@ export function KpiCard({
   const positive = (delta ?? 0) >= 0;
   const toneRing =
     tone === "success"
-      ? "bg-success/10 text-success"
+      ? "bg-[color:var(--mint)]/15 text-[color:var(--mint)]"
       : tone === "warning"
         ? "bg-warning/10 text-warning"
         : "bg-primary/10 text-primary";
   const sparkColor =
     tone === "success"
-      ? "var(--success)"
+      ? "var(--mint)"
       : tone === "warning"
         ? "var(--warning)"
         : "var(--primary)";
@@ -65,7 +65,7 @@ export function KpiCard({
             <span
               className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-medium ${
                 positive
-                  ? "bg-success/10 text-success"
+                  ? "bg-[color:var(--mint)]/15 text-[color:var(--mint)]"
                   : "bg-destructive/10 text-destructive"
               }`}
             >

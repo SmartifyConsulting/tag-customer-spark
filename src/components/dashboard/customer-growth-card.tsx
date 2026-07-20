@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Users } from "lucide-react";
 
 const config: ChartConfig = {
-  total: { label: "Customers", color: "var(--success)" },
+  total: { label: "Customers", color: "var(--mint)" },
 };
 
 export function CustomerGrowthCard({
@@ -31,7 +31,7 @@ export function CustomerGrowthCard({
               <XAxis dataKey="x" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} interval="preserveStartEnd" />
               <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} width={28} />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Line type="monotone" dataKey="total" stroke="var(--success)" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="total" stroke="var(--mint)" strokeWidth={2} dot={false} />
             </LineChart>
           </ChartContainer>
         )}
