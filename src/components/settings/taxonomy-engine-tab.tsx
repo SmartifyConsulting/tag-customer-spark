@@ -76,6 +76,19 @@ export function TaxonomyEngineTab() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [levels, setLevels] = useState<Level[]>([]);
+  const [autoSeedTried, setAutoSeedTried] = useState(false);
+
+  // Auto-seed sector templates on first render if the retailer has none, so
+  // the grid isn't empty and the user can pick one immediately rather than
+  // clicking through "New profile" first.
+  useEffect(() => {
+    if (autoSeedTried || profilesQ.isLoading || profiles.length > 0) return;
+    setAutoSeedTried(true);
+    seedFn()
+      .then(() => qc.invalidateQueries({ queryKey: ["taxonomy-profiles"] }))
+      .catch(() => {/* silent — user can click "Load sector templates" manually */});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profilesQ.isLoading, profiles.length]);
 
   // Auto-select whichever profile is live (published, else default, else the
   // first one) as soon as the list loads, so the taxonomy that was actually
@@ -90,6 +103,7 @@ export function TaxonomyEngineTab() {
     if (pick) setSelectedId(pick.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profiles]);
+
 
   // Load selected profile
   const profileQ = useQuery({
