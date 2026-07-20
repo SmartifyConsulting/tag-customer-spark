@@ -140,14 +140,22 @@ export async function generateForProduct(
     throw new Error("This GTIN already has an active QR code on another of your products.");
   }
 
-  // Retire existing active row if regenerating
+  // Retire existing active row if regenerating — checked, unlike before: an
+  // unchecked failure here (e.g. an RLS policy silently rejecting the
+  // update) left the old row "active" while the code below still tried to
+  // insert a new active row for the same (gtin, retailer_id), surfacing as
+  // a confusing "duplicate key" error from the insert instead of the real
+  // cause.
   let nextVersion = 1;
   if (existingOwn) {
     nextVersion = existingOwn.version + 1;
-    await supabase
+    const { error: retireErr } = await supabase
       .from("product_qr_assets")
       .update({ status: "retired" })
       .eq("id", existingOwn.id);
+    if (retireErr) {
+      throw new Error(`Could not retire the previous QR code: ${retireErr.message}`);
+    }
   }
 
   // Build GS1 Digital Link
