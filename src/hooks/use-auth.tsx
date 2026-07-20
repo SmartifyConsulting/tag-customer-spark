@@ -155,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (isFreshSignIn) {
-      navigate({ to: "/dashboard", replace: true });
+      navigate({ to: "/briefing", replace: true });
     }
 
     setRoles(rows.map((r) => r.role));

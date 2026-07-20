@@ -129,7 +129,7 @@ function SetupWizard() {
     } catch {
       // Non-fatal — they can re-run setup from Settings later.
     }
-    navigate({ to: "/dashboard" });
+    navigate({ to: "/briefing" });
   };
   const previewFn = useServerFn(previewProductImport);
   const commitFn = useServerFn(commitProductImport);
