@@ -10,7 +10,7 @@ import {
   Flame,
   TrendingUp,
 } from "lucide-react";
-import { PageHeader } from "@/components/page-header";
+
 import {
   Accordion,
   AccordionContent,
@@ -26,7 +26,7 @@ import {
   dashboardOverviewQueryOptions,
   advancedAnalyticsQueryOptions,
 } from "@/lib/dashboard";
-import { useAuth } from "@/hooks/use-auth";
+
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { ScanHeatmap, ScanHeatmapLegend } from "@/components/dashboard/scan-heatmap";
 import { IntentBadge } from "@/components/intent/intent-badge";
@@ -51,7 +51,6 @@ export const Route = createFileRoute("/_authenticated/briefing")({
 });
 
 function BriefingPage() {
-  const { user } = useAuth();
   const { data } = useSuspenseQuery(briefingQueryOptions);
   const { data: overview } = useSuspenseQuery(dashboardOverviewQueryOptions);
   const analyticsQuery = useQuery(advancedAnalyticsQueryOptions(30));
@@ -61,8 +60,6 @@ function BriefingPage() {
     queryFn: () => listIntentSections(),
   });
   const intent = intentQuery.data as { high: any[]; rising: any[] } | undefined;
-  const first = user?.user_metadata?.full_name?.split(" ")?.[0] ?? "there";
-  const greeting = data.greetingName ?? first;
 
   const k = overview.kpis;
   const dailySpark = overview.scansDaily.slice(-7).map((d) => ({ v: d.count }));
@@ -70,11 +67,6 @@ function BriefingPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={`Hello ${greeting}`}
-        description="Your daily briefing — scans, waiting customers, and freshly tagged products."
-      />
-
       {/* Row 1 — KPI tiles (Unread WhatsApps removed per spec) */}
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-12 sm:col-span-6 xl:col-span-4">
@@ -103,9 +95,87 @@ function BriefingPage() {
         </div>
       </div>
 
-      {/* Row 2 — Tagged products + Unread WhatsApps (promoted from row 3) */}
+      {/* Row 2 — Scan heatmap (6) + High intent (3) + Rising intent (3) */}
       <div className="grid grid-cols-12 gap-4">
-        <Card className="col-span-12 lg:col-span-8 p-4">
+        <Card className="col-span-12 lg:col-span-6 p-5">
+          <div className="mb-1 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold">Scan heatmap</h3>
+            <ScanHeatmapLegend />
+          </div>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Shopper scans by day of week × hour of day.
+          </p>
+          {analytics ? (
+            <ScanHeatmap data={analytics.heatmap} />
+          ) : (
+            <Skeleton className="h-56 w-full" />
+          )}
+        </Card>
+
+        <IntentColumn
+          className="col-span-12 sm:col-span-6 lg:col-span-3"
+          title="High intent products"
+          icon={Flame}
+          items={intent?.high}
+          loading={intentQuery.isLoading}
+          emptyLabel="No high-intent products yet."
+        />
+        <IntentColumn
+          className="col-span-12 sm:col-span-6 lg:col-span-3"
+          title="Rising intent"
+          icon={TrendingUp}
+          items={intent?.rising}
+          loading={intentQuery.isLoading}
+          emptyLabel="No rising-trend products yet."
+        />
+      </div>
+
+      {/* Row 3 — Unread WhatsApps (6) + Tagged products (6) */}
+      <div className="grid grid-cols-12 gap-4">
+        <Card className="col-span-12 lg:col-span-6 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-base font-semibold">
+              <MessageSquare className="h-4 w-4" /> Unread WhatsApps
+            </h2>
+            <Link to="/inbox" className="text-xs text-muted-foreground hover:underline">
+              Open inbox →
+            </Link>
+          </div>
+          {data.unread.length === 0 ? (
+            <EmptyState
+              icon={MessageSquare}
+              title="Inbox zero"
+              description="No shoppers waiting on a reply. Nice work."
+            />
+          ) : (
+            <ul className="divide-y">
+              {data.unread.map((c) => (
+                <li key={c.conversation_id}>
+                  <Link to="/inbox" className="flex items-start gap-3 py-3 hover:bg-muted/40">
+                    <div className="min-w-0 flex-1">
+                      <p className="flex items-center gap-2 text-sm font-medium">
+                        <span className="truncate">
+                          {c.customer_name || c.customer_phone || "Unknown"}
+                        </span>
+                        <Badge className="ml-auto shrink-0">{c.unread_count}</Badge>
+                      </p>
+                      {c.last_message && (
+                        <p className="line-clamp-2 text-xs text-muted-foreground">
+                          {c.last_message}
+                        </p>
+                      )}
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        {new Date(c.last_message_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card className="col-span-12 lg:col-span-6 p-4">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-base font-semibold">
               <PackageOpen className="h-4 w-4" /> Tagged products
@@ -172,84 +242,6 @@ function BriefingPage() {
             </Accordion>
           )}
         </Card>
-
-        <Card className="col-span-12 lg:col-span-4 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-base font-semibold">
-              <MessageSquare className="h-4 w-4" /> Unread WhatsApps
-            </h2>
-            <Link to="/inbox" className="text-xs text-muted-foreground hover:underline">
-              Open inbox →
-            </Link>
-          </div>
-          {data.unread.length === 0 ? (
-            <EmptyState
-              icon={MessageSquare}
-              title="Inbox zero"
-              description="No shoppers waiting on a reply. Nice work."
-            />
-          ) : (
-            <ul className="divide-y">
-              {data.unread.map((c) => (
-                <li key={c.conversation_id}>
-                  <Link to="/inbox" className="flex items-start gap-3 py-3 hover:bg-muted/40">
-                    <div className="min-w-0 flex-1">
-                      <p className="flex items-center gap-2 text-sm font-medium">
-                        <span className="truncate">
-                          {c.customer_name || c.customer_phone || "Unknown"}
-                        </span>
-                        <Badge className="ml-auto shrink-0">{c.unread_count}</Badge>
-                      </p>
-                      {c.last_message && (
-                        <p className="line-clamp-2 text-xs text-muted-foreground">
-                          {c.last_message}
-                        </p>
-                      )}
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        {new Date(c.last_message_at).toLocaleString()}
-                      </p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </div>
-
-      {/* Row 3 — Scan heatmap (half width) + High intent + Rising intent */}
-      <div className="grid grid-cols-12 gap-4">
-        <Card className="col-span-12 lg:col-span-6 p-5">
-          <div className="mb-1 flex items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold">Scan heatmap</h3>
-            <ScanHeatmapLegend />
-          </div>
-          <p className="mb-3 text-xs text-muted-foreground">
-            Shopper scans by day of week × hour of day.
-          </p>
-          {analytics ? (
-            <ScanHeatmap data={analytics.heatmap} />
-          ) : (
-            <Skeleton className="h-56 w-full" />
-          )}
-        </Card>
-
-        <IntentColumn
-          className="col-span-12 sm:col-span-6 lg:col-span-3"
-          title="High intent products"
-          icon={Flame}
-          items={intent?.high}
-          loading={intentQuery.isLoading}
-          emptyLabel="No high-intent products yet."
-        />
-        <IntentColumn
-          className="col-span-12 sm:col-span-6 lg:col-span-3"
-          title="Rising intent"
-          icon={TrendingUp}
-          items={intent?.rising}
-          loading={intentQuery.isLoading}
-          emptyLabel="No rising-trend products yet."
-        />
       </div>
     </div>
   );

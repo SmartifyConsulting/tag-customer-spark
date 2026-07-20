@@ -1,53 +1,72 @@
-# Briefing, chrome, and Intelligence build-out
+# Header/sidebar layout fix + Admin/Intelligence tabs + infographic recolor + Briefing reflow
 
-## 1. Briefing page (`src/routes/_authenticated/briefing.tsx`)
+Reference screenshot: big Tag logo far top-right; "Hello Makro" greeting + subtitle top-left; sidebar starts directly at nav items (Briefing highlighted) with no logo above.
 
-Row 1 (KPIs) — remove the **Unread WhatsApps** tile. Keep Scans, Waiting Customers, Tagged Today (3 tiles across).
+## 1. Sidebar
 
-Row 2 (was row 3) — Tagged Product accordions (8 cols) + Unread WhatsApps list (4 cols). No change to contents; only its position moves up.
+`src/components/app-sidebar.tsx`
+- Remove the big `TagLogo` from `SidebarHeader`; nav list is the first thing in the sidebar.
+- Keep the search box and profile avatar in the footer as they are.
 
-Row 3 (was row 2) — Remove **Conversion Gap Products**. Reduce **Scan Heatmap** to half width (6 cols). Split the remaining 6 cols between **High Intent Products** (3 cols) and **Rising Intent** (3 cols).
+## 2. App header (top of main content)
 
-Result:
+`src/routes/_authenticated/route.tsx`
+- Left: bold "Hello [Store]" title with muted subtitle "Your daily briefing — scans, waiting customers, and freshly tagged products." Store name from `briefingQueryOptions.greetingName`, no emoji.
+- Right: keep the big `TagLogo` at its current larger size, aligned far right.
+- Simple flex justify-between row; sidebar trigger + user menu / theme toggle stay on this bar without visual competition.
 
-```text
-Row 1: [Scans] [Waiting Customers] [Tagged Today]
-Row 2: [Tagged Products accordions ............ 8] [Unread WhatsApps 4]
-Row 3: [Scan Heatmap .... 6] [High Intent 3] [Rising Intent 3]
-```
+## 3. Briefing page reflow
 
-## 2. App header / greeting
+`src/routes/_authenticated/briefing.tsx`
+- Remove the in-page "Hello Makro" `PageHeader` (greeting now lives only in the app header).
+- Rebuild the grid below the KPI row like this:
 
-Currently the in-app top bar shows the large TagLogo on the left and the greeting to its right. Change to:
+  ```
+  Row A (KPI tiles)         Today's scans | Customers waiting | Tagged today
+  Row B (12 cols)           Scan heatmap (6) | High intent (3) | Rising intent (3)
+  Row C (12 cols)           Unread WhatsApps (6) | Tagged products (6)
+  ```
 
-- Greeting ("Hello Makro Woodmead") on the **left**, where the logo used to sit.
-- Remove the **waving hand emoji/icon** from the greeting line.
-- Move the TagLogo to the **extreme right** of the top bar.
+  - Row B: heatmap expands to 6 columns; High Intent Products and Rising Intent sit as two 3-column columns to its right (they were previously below the heatmap).
+  - Row C: Tagged Products moves next to Unread WhatsApps as a 6/6 split (it was previously alongside the heatmap in Row B).
+  - Everything else on the page (tagged-product accordion buckets, KPI content) stays.
 
-File: `src/routes/_authenticated/route.tsx` (top-bar layout) and wherever `TagLogo` currently renders in the authenticated shell.
+## 4. Remove Admin & Intelligence sidebar accordions → in-page tabs
 
-## 3. Sidebar (`src/components/app-sidebar.tsx`)
+`src/lib/nav.ts`
+- Drop the `items` array from Admin so it renders as one top-level link to `/admin`.
+- Drop the `items` array from Intelligence so it renders as one top-level link to `/intelligence`.
+- All existing routes stay; only sidebar sub-menus are removed.
 
-- Remove the "TAG / Demand Intelligence" footer text block.
-- Move the profile avatar (user menu) from the top bar into `SidebarFooter`, positioned **below the "Search anything…" input**.
-- Sidebar header no longer needs the wordmark logo (it's moving to the top-right of the app). Keep the header minimal / collapsible-safe.
+`src/components/app-sidebar.tsx`
+- With `items` gone, both fall through to the plain `SidebarMenuButton` branch — no `Collapsible`, no chevron, no expanded sub-list.
 
-Touches `app-sidebar.tsx` and the authenticated top-bar so the `UserMenu` no longer renders there.
+### Admin tabs (`/admin`)
+`src/routes/_authenticated/admin.index.tsx` already uses `Tabs` for Taxonomy / Stores / Customers / Users. Confirm every previous sidebar destination is present as a tab; add any missing tab to that existing `Tabs` block.
 
-## 4. Build out Intelligence sub-pages
+### Intelligence tabs (`/intelligence`)
+`src/routes/_authenticated/intelligence.tsx` already renders a `Tabs` header around an `<Outlet />`. Expand the `TABS` array so every current sub-page is a tab:
+- Overview → `/intelligence`
+- Insights → `/intelligence/insights`
+- Analytics → `/analytics`
+- ROI → `/roi`
+- Trends → `/intelligence/trends`
+- Forecasting → `/intelligence/forecasting`
 
-Replace the current placeholders/thin pages with real content using existing data sources.
+Only the tab strip is expanded; sub-page contents are unchanged.
 
-- **Insights** (`intelligence.insights.tsx`) — already exists; audit and polish (OverallIntent + SignalContributions + OpportunityFeed already wired). No structural change unless empty states need work.
-- **Analytics** (`analytics.tsx` → repurpose) — build a real analytics view: scans over time (`ScanTrendsCard`), top products (`TopProductsCard`), customer growth (`CustomerGrowthCard`), heatmap.
-- **ROI** (`roi.tsx`) — exists; ensure it renders KPIs (revenue recovered, attribution counts) from `roi.functions.ts`. Add empty state.
-- **Trends** (`intelligence.trends.tsx`) — expand beyond current bucket lists: add a rising/falling leaderboard with sparkline-style score deltas.
-- **Forecasting** (`intelligence.forecasting.tsx`) — expand: show 7/14/30-day horizon summary tiles + the intent sections card grouped by horizon.
+## 5. Recolor infographic green accents to the logo colour
 
-Each page keeps its existing `requireFeature` gate and `head()` metadata, and follows the PageHeader + Card grid pattern used elsewhere.
+Logo colour is tokenised as `--mint` = `#C75984` (TAG pink). Repoint decorative greens to `var(--mint)`.
+
+- `src/components/dashboard/kpi-card.tsx` — swap `var(--success)` accent tone to `var(--mint)`.
+- `src/components/dashboard/customer-growth-card.tsx` — line stroke and legend colour from `var(--success)` to `var(--mint)`.
+- `src/components/dashboard/opportunity-feed.tsx` — replace `emerald-500/600/700` classes (badges, dots, TrendingUp icon, revenue cell) with the `bg-[color:var(--mint)]/15 text-[color:var(--mint)]` pattern already used elsewhere.
+- Sweep Briefing, Analytics, ROI, Trends, Forecasting for other `text-emerald-*`, `bg-emerald-*`, `--success`, `#25D366`, `--chart-2` used as brand accents and repoint to `--mint`.
+
+Keep true status-semantic greens (WhatsApp "delivered / sent", connection-online indicators) untouched — green there means status, not brand.
 
 ## Out of scope
 
-- No backend/schema changes.
-- No changes to nav order or tier gating.
-- No new server functions — reuse existing dashboard/intent/ROI data helpers.
+- No change to nav order, icons, or the mobile bottom bar.
+- No change to sub-page contents under Admin or Intelligence.

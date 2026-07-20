@@ -78,25 +78,14 @@ export const NAV: readonly NavItem[] = [
     title: "Intelligence",
     url: "/intelligence",
     icon: TrendingUp,
-    // NOTE: `/dashboard` matches this group too so the exec dashboard
-    // (which sits under Intelligence → Dashboard) highlights Intelligence
-    // in the sidebar, not the top-level Briefing.
-    match: ["/intelligence", "/analytics", "/roi", "/commerce", "/dashboard"],
-    // No group-level `feature` gate — locking the group hides its sub-items
-    // (the sidebar renders a single upgrade link instead of the collapsible).
-    // Sub-items can still be individually tier-locked if needed.
-    items: [
-      {
-        title: "Dashboard",
-        url: "/dashboard",
-        match: ["/dashboard"],
-        hiddenForRoles: ["sales_assistant"],
-      },
-      { title: "Insights", url: "/intelligence/insights", match: ["/intelligence/insights"] },
-      { title: "Analytics", url: "/analytics", match: ["/analytics"] },
-      { title: "ROI", url: "/commerce/roi", match: ["/commerce/roi", "/roi"] },
-      { title: "Trends", url: "/intelligence/trends", match: ["/intelligence/trends"] },
-      { title: "Forecasting", url: "/intelligence/forecasting", match: ["/intelligence/forecasting"] },
+    // NOTE: `/dashboard`, `/analytics`, `/roi` all light up Intelligence in
+    // the sidebar because those pages are Intelligence tabs now.
+    match: [
+      "/intelligence",
+      "/analytics",
+      "/roi",
+      "/commerce",
+      "/dashboard",
     ],
   },
   {
@@ -107,13 +96,8 @@ export const NAV: readonly NavItem[] = [
     match: ["/admin", "/stores", "/customers"],
     exact: true,
     adminOnly: true,
-    items: [
-      { title: "Taxonomy", url: "/admin?tab=taxonomy", match: ["/admin"] },
-      { title: "Stores", url: "/admin?tab=stores", match: ["/admin", "/stores"] },
-      { title: "Customers", url: "/admin?tab=customers", match: ["/admin", "/customers"] },
-      { title: "Users", url: "/admin?tab=users", match: ["/admin"] },
-    ],
   },
+
   {
     title: "Pricing",
     url: "/admin/pricing",
