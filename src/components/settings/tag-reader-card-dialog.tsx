@@ -92,7 +92,7 @@ export function TagReaderCardDialog({ open, onOpenChange, readerUrl }: Props) {
         const qy = top + 66;
         doc.setFillColor(255, 200, 40);
         doc.roundedRect(qx - 5, qy - 5, qrSize + 10, qrSize + 10, 3, 3, "F");
-        doc.setFillColor(255);
+        doc.setFillColor(255, 255, 255);
         doc.rect(qx - 1, qy - 1, qrSize + 2, qrSize + 2, "F");
         if (qrDataUrl) {
           doc.addImage(qrDataUrl, "PNG", qx, qy, qrSize, qrSize);
