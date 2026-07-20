@@ -463,6 +463,148 @@ async function lookupSerperImage(input: {
   return null;
 }
 
+// ----- Candidate-returning Serper + GPT Vision verification --------------
+// Instead of blindly trusting the largest Serper hit, gather the top N
+// candidates and ask a vision model which one actually depicts this
+// product. This catches wrong pack sizes, unrelated stock photos, and
+// category thumbnails that dominate Google Images.
+
+const MAX_CANDIDATES = 6;
+
+async function serperImageCandidates(apiKey: string, query: string): Promise<string[]> {
+  try {
+    const res = await fetchWithTimeout("https://google.serper.dev/images", {
+      method: "POST",
+      headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ q: query, num: 20, safe: "active", imgSize: "large" }),
+    });
+    if (!res.ok) return [];
+    const json: any = await res.json();
+    const items: any[] = Array.isArray(json?.images) ? json.images : [];
+    const isImageUrl = (u: string) =>
+      u.startsWith("https://") && /\.(jpe?g|png|webp)(\?|$)/i.test(u);
+    const ranked = items
+      .map((item) => ({
+        link: typeof item?.imageUrl === "string" ? item.imageUrl : null,
+        width: Number(item?.imageWidth) || 0,
+        height: Number(item?.imageHeight) || 0,
+      }))
+      .filter((c): c is { link: string; width: number; height: number } =>
+        !!c.link && c.link.startsWith("https://"),
+      )
+      .sort((a, b) => b.width * b.height - a.width * a.height);
+    const good = ranked.filter((c) => isImageUrl(c.link) && c.width >= MIN_QUALITY_PX);
+    const pool = good.length ? good : ranked.filter((c) => isImageUrl(c.link));
+    return (pool.length ? pool : ranked).slice(0, MAX_CANDIDATES).map((c) => c.link);
+  } catch {
+    return [];
+  }
+}
+
+async function lookupSerperImageCandidates(input: {
+  gtin: string | null;
+  name: string;
+  brand: string | null;
+}): Promise<string[]> {
+  const apiKey = process.env.SERPER_API_KEY;
+  if (!apiKey) return [];
+  const nameQuery = [input.brand, input.name].filter(Boolean).join(" ").trim();
+  const cleanGtin = input.gtin?.replace(/\D/g, "") ?? "";
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const push = (urls: string[]) => {
+    for (const u of urls) {
+      if (out.length >= MAX_CANDIDATES) break;
+      if (!seen.has(u)) {
+        seen.add(u);
+        out.push(u);
+      }
+    }
+  };
+  if (cleanGtin) push(await serperImageCandidates(apiKey, `"${cleanGtin}"`));
+  if (out.length < MAX_CANDIDATES && nameQuery.length >= 3) {
+    push(await serperImageCandidates(apiKey, nameQuery));
+  }
+  return out;
+}
+
+async function pickBestCandidateWithVision(
+  candidates: string[],
+  target: { name: string; brand: string | null; gtin: string | null; categoryName?: string | null },
+): Promise<string | null> {
+  if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0];
+  const apiKey = process.env.LOVABLE_API_KEY;
+  // No AI available — degrade gracefully to the largest candidate (already
+  // first in the ranked list).
+  if (!apiKey) return candidates[0];
+
+  const descriptor = [target.brand, target.name].filter(Boolean).join(" ");
+  const prompt =
+    `You are verifying product photos for a retail catalog. The target product is:\n` +
+    `- Name: ${target.name}\n` +
+    (target.brand ? `- Brand: ${target.brand}\n` : "") +
+    (target.gtin ? `- GTIN/barcode: ${target.gtin}\n` : "") +
+    (target.categoryName ? `- Category: ${target.categoryName}\n` : "") +
+    `\nBelow are ${candidates.length} candidate images (indexed 0..${candidates.length - 1}).\n` +
+    `Pick the ONE that clearly depicts "${descriptor}" as the primary subject on a clean background if possible. ` +
+    `Prefer official pack shots over lifestyle photos, and reject any image that clearly shows a different product, ` +
+    `a different pack size only if a matching one exists, a category thumbnail, or a watermarked listing preview. ` +
+    `If none of the candidates convincingly depict this product, return index -1.\n` +
+    `Respond with strict JSON: {"index": <number>, "confidence": <0..1>, "reason": "<short>"}`;
+
+  const content: any[] = [{ type: "text", text: prompt }];
+  candidates.forEach((url, i) => {
+    content.push({ type: "text", text: `Candidate ${i}:` });
+    content.push({ type: "image_url", image_url: { url } });
+  });
+
+  try {
+    const res = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-5-mini",
+        messages: [{ role: "user", content }],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) {
+      console.warn(`[vision-verify] HTTP ${res.status} — falling back to top candidate`);
+      return candidates[0];
+    }
+    const json: any = await res.json();
+    const raw = json?.choices?.[0]?.message?.content;
+    if (typeof raw !== "string") return candidates[0];
+    let parsed: any;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return candidates[0];
+    }
+    const idx = Number(parsed?.index);
+    const conf = Number(parsed?.confidence);
+    if (!Number.isFinite(idx) || idx < 0 || idx >= candidates.length) {
+      // Model rejected all — do not use a bad image; upstream will fall
+      // through to AI-generated / brand-logo / placeholder.
+      console.info(`[vision-verify] rejected all ${candidates.length} candidates (${parsed?.reason ?? ""})`);
+      return null;
+    }
+    if (Number.isFinite(conf) && conf < 0.35) {
+      console.info(`[vision-verify] low confidence ${conf} — rejecting`);
+      return null;
+    }
+    return candidates[idx];
+  } catch (e: any) {
+    console.warn("[vision-verify] failed", e?.message ?? e);
+    return candidates[0];
+  }
+}
+
+
 // ----- Open Food Facts lookup with GTIN normalisations + search fallback --
 
 async function offFetch(url: string): Promise<any | null> {
