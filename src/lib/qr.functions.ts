@@ -137,7 +137,22 @@ export async function generateForProduct(
     .eq("status", "active")
     .maybeSingle();
   if (gtinClash && gtinClash.product_id !== productId) {
-    throw new Error("This GTIN already has an active QR code on another of your products.");
+    // Structured error so the UI can offer a merge flow instead of just
+    // showing a dead-end toast.
+    const { data: other } = await supabase
+      .from("products")
+      .select("id, name, sku")
+      .eq("id", gtinClash.product_id)
+      .maybeSingle();
+    throw new Error(
+      JSON.stringify({
+        code: "GTIN_CLASH",
+        gtin: gtin14,
+        otherProductId: gtinClash.product_id,
+        otherProductName: other?.name ?? "another product",
+        otherProductSku: other?.sku ?? null,
+      }),
+    );
   }
 
   // Retire existing active row if regenerating — checked, unlike before: an

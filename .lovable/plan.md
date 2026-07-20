@@ -1,47 +1,48 @@
-## 1. Settings screen — spacing + Tag Barcode Reader card
+## What's happening
 
-`src/routes/_authenticated/settings.tsx` (Workspace tab):
+**"This GTIN already has an active QR code on another of your products"**
+Your retailer has two (or more) product rows carrying the same GTIN. QR uniqueness is scoped per (retailer, GTIN), so only one product can hold the active QR — the code refuses to reassign it silently. Root cause is duplicate product rows, not the QR flow itself.
 
-- Increase the vertical gap between the "Brand" card and the "Danger zone" card (change the wrapper from the current default spacing to `space-y-8` / `mt-8` so the two frames breathe like the reference image).
-- Add a new **Tag Barcode Reader** card, positioned top-right of the Workspace tab (two-column grid on `md+`, single column on mobile: left column keeps Brand, right column stacks the new Reader card above empty space). Card contents:
-  - Small heading "Tag Barcode Reader" + short description ("Print a shelf card so shoppers can scan any barcode with their phone camera").
-  - Live QR preview (reuse `QrPreview` from `src/components/qr/qr-preview.tsx`) encoding the absolute URL of the new reader route: `${origin}/tools/barcode-reader`.
-  - Primary button **View Tag Barcode Reader** → opens a modal showing the fold-out shelf card preview (see §2).
-  - Secondary button **Download PDF** → triggers the same PDF generation directly.
+**Why enrichment / product image feel slow**
+- **AI enrichment** runs in the background. When a QR is generated, the product is pushed onto `passport_enrichment_queue`. Nothing runs the job until `POST /api/public/hooks/passport-tick` is called (pg_cron or external scheduler drains it in batches of 5, up to 20/tick). If the cron isn't firing (or fires infrequently), items sit in the queue showing "pending" indefinitely.
+- **Product image** is resolved inline during QR generation on a best-effort basis (retailer URL → Open Food Facts → Serper Google Images → AI). Each external call has its own network latency and any failure is swallowed so QR generation isn't blocked — that's why the image can stay on "pending" while everything else looks fine.
+- **In short**: the delay is scheduler cadence + external API round-trips, not the AI model itself. Explanation only — no AI changes.
 
-## 2. Fold-out shelf card (preview + PDF)
+## Fix for the GTIN clash — Force merge duplicates
 
-New component `src/components/settings/tag-reader-card-dialog.tsx`:
+1. **Return structured clash info from `generateForProduct`** (`src/lib/qr.functions.ts`)
+   Instead of throwing a plain string, throw an error whose message is a JSON payload the UI can parse: `{ code: "GTIN_CLASH", gtin, otherProductId, otherProductName }`. Look up the other product's name in the same query.
 
-- Dialog with an on-screen SVG preview of a landscape fold-out card, styled to match the uploaded reference (dark panel, bold "SCAN QR CODE USING PHONE CAMERA" caption, large QR, arrow accent, Tag logo top).
-- Faint vertical **fold lines** rendered as dashed light-grey strokes at the two fold positions (tri-fold) so the printer knows where to score.
-- Buttons: **Print** (browser print of the preview) and **Download PDF**.
-- PDF generation client-side using `jspdf` (already common) — A4 landscape, three panels separated by dashed fold guides, TAG logo (import from `@/assets/Tag_logo_pink_horizontal.png`), QR rendered via `qrcode` package (`toDataURL`, already used in `qr-preview.tsx`), same URL as the Settings card.
-- File name: `tag-barcode-reader-card.pdf`.
+2. **Handle the clash in `ProductQrPanel`** (`src/components/qr/product-qr-panel.tsx`)
+   - Parse the error in `onError`. If `code === "GTIN_CLASH"`, open an AlertDialog titled "Duplicate GTIN detected" naming the other product and offering **"Merge duplicates"** as primary (plus Cancel).
+   - The dialog opens the existing `MergeProductsSearchDialog` prefilled: current product as survivor (target), clashing product pre-selected as source, search box pre-filled with the shared GTIN.
+   - After merge succeeds, auto-retry `generate.mutate(false)` so QR is produced against the surviving row.
 
-## 3. Public barcode-reader page
+3. **Small refactor to `MergeProductsSearchDialog`** to accept optional `initialTargetId`, `initialSourceIds`, and `initialSearch` props (defaults preserve current behaviour).
 
-New route `src/routes/tools.barcode-reader.tsx` (public, no auth):
+## Sidebar highlight bug — only one item may appear "active" at a time
 
-- Full-screen page: centered Tag logo (wordmark) + heading "Tag Barcode Reader" + short instructions.
-- 1D barcode scanner using the existing dependency stack in `src/components/products/barcode-scanner-dialog.tsx` (reuse the same ZXing/BarcodeDetector logic factored into a reusable `<BarcodeReader onDetect={...} />` component if convenient, otherwise inline).
-- On detect: show the decoded value, a "Scan again" button, and a "Look up product" link that navigates to `/passport/{gtin}` when the code looks like a GTIN.
-- `head()` with proper title/description; mobile-first layout (camera view + result panel).
+The reference screenshot shows **both** "Inventory" (black pill) and "Admin" (pink outline) rendered as active at the same time. That's wrong — exactly one nav item should be highlighted for the current route.
 
-## 4. Hero page logo (about.tsx)
+Cause: in `src/lib/nav.ts` the Admin item's `match` array includes `"/admin"`, which also matches `/admin/inventory` because `isNavActive` uses `pathname.startsWith(p + "/")`. So on `/admin/inventory/*` both Inventory (matches `/admin/inventory`) and Admin (matches `/admin`) return active.
 
-- Move the Tag wordmark **above** the H1 headline inside the hero `<section>` (currently only shown inside `MarketingHeader`).
-- Render at **150%** of the current header wordmark size (use `TagLogo variant="wordmark"` with an explicit `heightClass` — e.g. current `h-[31.2rem]` header size × 1.5 is too large, so scale the intended hero baseline: use `heightClass="h-[18rem]"` centered, with `mb-6` before the H1). Exact class picked so aspect ratio is preserved (image is `w-auto object-contain`).
-- Keep the header's existing logo untouched (previously fixed so it doesn't jump between pages).
+Fix in `src/lib/nav.ts`:
+- Remove `"/admin"` from Admin's `match` and replace with the specific admin sub-paths that are not also inventory: keep `"/stores"` and add tab-only routes. Since Admin's real destinations are `/admin?tab=…` (same pathname `/admin`), narrow the match to **exactly** `/admin` (no descendants) by adding an `exact?: boolean` flag on `NavItem` and honouring it in `isNavActive`:
+  ```
+  export function isNavActive(item, pathname) {
+    return item.match.some((p) =>
+      item.exact ? pathname === p : pathname === p || pathname.startsWith(p + "/"),
+    );
+  }
+  ```
+  Mark the Admin nav item `exact: true`. Inventory keeps `startsWith` behaviour so drill-downs stay highlighted.
+- Also drop `"/stores"` from Admin's `match` if it doesn't collide with any other top-level item (it doesn't) — keep it, but Admin becomes active only when pathname is exactly `/admin` or exactly `/stores`.
 
-## 5. In-app top-left logo (+30%)
-
-- `src/routes/_authenticated/route.tsx` line 66: replace `<TagLogo variant="wordmark" size="sm" />` with an explicit `heightClass` that is 30% larger than the current `size="sm"` (`h-[4.8rem]` → `h-[6.24rem]`). Keep aspect ratio (image already uses `w-auto`).
-- Verify the top nav row height / alignment still looks correct; nudge padding only if the taller logo forces the nav to grow.
+Result: on `/admin/inventory/:id` only Inventory highlights; on `/admin?tab=users` only Admin highlights.
 
 ## Technical notes
 
-- Reader URL: derive at render time from `window.location.origin` so the QR works in preview, published, and custom-domain deployments.
-- `jspdf` may need to be added (`bun add jspdf`); if already present, reuse. Logo embedded as PNG data URL (fetch the imported asset via a hidden `<img>` → canvas, or bundle a small base64).
-- No backend/schema changes. No changes to auth or RLS.
-- No design-system token changes; all colors via existing tokens except the shelf card art which is intentionally styled (dark panel, yellow QR frame) to match the printed reference.
+- Error transport: TanStack server-fn errors serialise `.message` to the client, so JSON-in-message is the simplest reliable channel.
+- The existing per-retailer unique index (`product_qr_assets_active_gtin_uidx`) stays as source of truth; merge archives the losing product, freeing the GTIN so the retry succeeds cleanly.
+- No database migrations, no changes to AI enrichment or image resolution logic.
+- Files touched: `src/lib/qr.functions.ts`, `src/components/qr/product-qr-panel.tsx`, `src/components/settings/merge-products-search-dialog.tsx`, `src/lib/nav.ts`.
