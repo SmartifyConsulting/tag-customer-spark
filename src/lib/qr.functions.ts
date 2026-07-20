@@ -343,12 +343,20 @@ export const generateProductQr = createServerFn({ method: "POST" })
       .object({
         productId: z.string().uuid(),
         force: z.boolean().optional().default(false),
+        storeId: z.string().uuid().nullable().optional(),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    return await generateForProduct(context.supabase, context.userId, data.productId, data.force);
+    return await generateForProduct(
+      context.supabase,
+      context.userId,
+      data.productId,
+      data.force,
+      data.storeId ?? null,
+    );
   });
+
 
 // Back-compat: existing callers (bulk dialog, imports, product row menu) keep
 // working. Template is accepted but ignored — GS1 Digital Link is canonical.
