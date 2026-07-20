@@ -674,5 +674,7 @@ export const getBriefing = createServerFn({ method: "GET" })
       buckets,
       unread,
       totalTagged: buckets.reduce((n, b) => n + b.products.length, 0),
+      greetingName,
+
     };
   });
