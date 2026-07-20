@@ -192,3 +192,15 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
+
+// Convenience helpers so nav filters and delete buttons don't have to
+// duplicate the role list in every consumer.
+export function useIsAdmin() {
+  const { hasRole } = useAuth();
+  return hasRole("super_admin") || hasRole("retail_admin") || hasRole("store_manager");
+}
+
+export function useIsSuperAdmin() {
+  const { hasRole } = useAuth();
+  return hasRole("super_admin");
+}
