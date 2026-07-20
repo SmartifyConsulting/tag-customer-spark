@@ -31,11 +31,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="hidden border-r-0 overflow-visible md:flex">
-      <SidebarHeader className="relative h-[9rem] flex-row items-center justify-center overflow-visible bg-sidebar p-0">
-        {collapsed ? (
-          <TagLogo variant="icon" size="sm" />
-        ) : (
-          <TagLogo variant="wordmark" heightClass="h-[8.84rem]" />
+      <SidebarHeader className="relative flex-row items-center justify-center overflow-visible bg-sidebar p-0 py-2">
+        {!collapsed && (
+          <TagLogo variant="wordmark" heightClass="h-[10.608rem]" />
         )}
       </SidebarHeader>
 
