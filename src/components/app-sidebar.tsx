@@ -31,7 +31,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="hidden border-r-0 overflow-visible md:flex">
-      <SidebarHeader className="bg-sidebar p-0" />
+      <SidebarHeader className="bg-sidebar h-20 p-0" />
 
       <SidebarContent className="px-1.5 pb-3 pt-4">
         <SidebarGroup>
