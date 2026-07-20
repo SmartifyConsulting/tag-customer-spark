@@ -103,7 +103,9 @@ export async function generateForProduct(
   userId: string,
   productId: string,
   force: boolean,
+  storeId?: string | null,
 ): Promise<ActiveQr> {
+
   const { data: product, error: pErr } = await supabase
     .from("products")
     .select("id, retailer_id, name, sku, gtin, barcode_type")
