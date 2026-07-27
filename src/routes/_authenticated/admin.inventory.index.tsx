@@ -407,6 +407,18 @@ function InventoryAdminPage() {
                 <SelectItem value="untagged">Untagged only</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value="all">Any status</SelectItem>
+              </SelectContent>
+            </Select>
+
             {!q.isLoading && (
               <span className="text-sm text-muted-foreground">
                 {rows.length} shown · {taggedCount} tagged · {rows.length - taggedCount} untagged
