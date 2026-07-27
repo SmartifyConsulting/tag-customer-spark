@@ -27,16 +27,27 @@ export const getProductFormOptions = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const retailerId = await resolveRetailerId(supabase, userId);
-    if (!retailerId) return { categories: [], stores: [], retailerId: null };
-    const [{ data: cats }, { data: stores }] = await Promise.all([
+    if (!retailerId) return { categories: [], stores: [], retailerId: null, defaultStoreId: null };
+    const [{ data: cats }, { data: stores }, { data: staffStore }] = await Promise.all([
       supabase
         .from("product_categories")
         .select("id, name")
         .eq("retailer_id", retailerId)
         .order("name"),
       supabase.from("stores").select("id, name").eq("retailer_id", retailerId).order("name"),
+      supabase
+        .from("staff")
+        .select("store_id")
+        .eq("retailer_id", retailerId)
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .not("store_id", "is", null)
+        .limit(1)
+        .maybeSingle(),
     ]);
-    return { categories: cats ?? [], stores: stores ?? [], retailerId };
+    const storeList = stores ?? [];
+    const defaultStoreId = staffStore?.store_id ?? (storeList.length === 1 ? storeList[0].id : null);
+    return { categories: cats ?? [], stores: storeList, retailerId, defaultStoreId };
   });
 
 export const lookupBarcode = createServerFn({ method: "POST" })
