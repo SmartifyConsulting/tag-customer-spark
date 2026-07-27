@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+// Barcode (GTIN-8 / 12 / 13 / 14) validation with GS1 check digit.
+export function isValidGtin(input: string): boolean {
+  const digits = String(input).replace(/\D/g, "");
+  if (![8, 12, 13, 14].includes(digits.length)) return false;
+  const g = digits.padStart(14, "0");
+  let sum = 0;
+  for (let i = 0; i < 13; i++) {
+    sum += Number(g[i]) * (i % 2 === 0 ? 3 : 1);
+  }
+  return (10 - (sum % 10)) % 10 === Number(g[13]);
+}
+
+
+
 export const productInputSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
   sku: z.string().trim().min(1, "SKU is required").max(80),
