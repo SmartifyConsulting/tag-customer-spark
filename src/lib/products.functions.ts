@@ -88,13 +88,19 @@ export const listProducts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => listProductsSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) {
+      return { rows: [], total: 0, page: data.page, pageSize: data.pageSize };
+    }
+
     let q = supabase
       .from("products")
       .select(
         "id, name, sku, brand, status, price_cents, sale_price_cents, currency, stock_qty, low_stock_threshold, images, image_url, promotion_start_date, promotion_end_date, color, size, updated_at, intent_score, intent_score_trend, intent_score_confidence, category:product_categories!products_category_id_fkey(id,name), store:stores(id,name)",
         { count: "exact" },
-      );
+      )
+      .eq("retailer_id", retailerId);
 
     if (data.search) {
       const s = data.search.replace(/[%_]/g, "");
@@ -104,9 +110,13 @@ export const listProducts = createServerFn({ method: "POST" })
     if (data.category_id) q = q.eq("category_id", data.category_id);
     if (data.brand_id) q = q.eq("brand_id", data.brand_id);
     if (data.store_id) q = q.eq("store_id", data.store_id);
-    // A product is "tagged" once a GS1 QR asset has been generated for it.
-    const { data: qrRows } = await supabase.from("product_qr_assets").select("product_id");
-    const taggedIds = new Set<string>((qrRows ?? []).map((r: any) => r.product_id));
+    // A product is "tagged" only after a real scan has been recorded, not
+    // merely because its Digital Identity / QR asset has been generated.
+    const { data: scanRows } = await supabase
+      .from("qr_scans")
+      .select("product_id")
+      .eq("retailer_id", retailerId);
+    const taggedIds = new Set<string>((scanRows ?? []).map((r: any) => r.product_id));
     if (data.tagged === "tagged") {
       q = q.in(
         "id",
