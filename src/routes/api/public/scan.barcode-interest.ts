@@ -50,17 +50,21 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
         const e164 = phone.number;
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { findActiveProductByGtin } = await import("@/lib/gtin-lookup.server");
 
-        const { data: product } = await supabaseAdmin
-          .from("products")
-          .select("id, retailer_id, store_id, name, image_url, hero_image, thumbnail_url")
-          .eq("gtin", gtin14)
-          .eq("status", "active")
-          .maybeSingle();
+        // Must match the passport page's resolution exactly (padded/unpadded
+        // GTIN + SKU fallback) — matching only the padded 14-digit form made
+        // this return "Product not found" for pages that loaded fine.
+        const product = await findActiveProductByGtin(
+          supabaseAdmin,
+          gtin14,
+          "id, retailer_id, store_id, name, image_url, hero_image, thumbnail_url",
+        );
 
         if (!product) {
           return jsonRes({ ok: false, error: "Product not found" }, 404);
         }
+
 
         const productName = (product as any).name ?? "this product";
         const productImage =
