@@ -1,11 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ImagePlus, Loader2, ScanLine, X } from "lucide-react";
+import { Check, ImagePlus, Loader2, ScanLine, X } from "lucide-react";
+import { centsToRandInput, randToCents } from "@/lib/format";
 import { BarcodeScannerDialog } from "@/components/products/barcode-scanner-dialog";
+
 import {
   Dialog,
   DialogContent,
