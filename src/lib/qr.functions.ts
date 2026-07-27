@@ -337,7 +337,10 @@ export async function generateForProduct(
     digital_link_url: inserted.digital_link_url,
     png_url: publicStorageUrl(inserted.png_path),
     svg_url: publicStorageUrl(inserted.svg_path),
+    store_id: inserted.store_id ?? effectiveStoreId ?? null,
+    store_name: inserted.store_name ?? effectiveStoreName ?? null,
   };
+
 }
 
 export const generateProductQr = createServerFn({ method: "POST" })
