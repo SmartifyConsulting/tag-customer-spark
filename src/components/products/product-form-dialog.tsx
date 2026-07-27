@@ -276,20 +276,32 @@ export function ProductFormDialog({
 
           <Section title="Pricing">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <Field label="Price (cents) *">
+              <Field label="Price (R) *">
                 <Input
                   type="number"
+                  step="0.01"
                   min={0}
-                  {...form.register("price_cents", { valueAsNumber: true })}
+                  value={centsToRandInput(form.watch("price_cents"))}
+                  onChange={(e) =>
+                    form.setValue("price_cents", randToCents(e.target.value), {
+                      shouldDirty: true,
+                    })
+                  }
                 />
               </Field>
-              <Field label="Sale price (cents)">
+              <Field label="Sale price (R)">
                 <Input
                   type="number"
+                  step="0.01"
                   min={0}
-                  {...form.register("sale_price_cents", {
-                    setValueAs: (v) => (v === "" || v == null ? null : Number(v)),
-                  })}
+                  value={centsToRandInput(form.watch("sale_price_cents"))}
+                  onChange={(e) =>
+                    form.setValue(
+                      "sale_price_cents",
+                      e.target.value === "" ? null : randToCents(e.target.value),
+                      { shouldDirty: true },
+                    )
+                  }
                 />
               </Field>
               <Field label="Currency">
@@ -297,6 +309,7 @@ export function ProductFormDialog({
               </Field>
             </div>
           </Section>
+
 
           <Section title="Inventory & variants">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
