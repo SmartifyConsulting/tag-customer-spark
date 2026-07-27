@@ -632,13 +632,41 @@ export const setProductImages = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("products")
-      .update({ images: data.images, image_url: data.images[0]?.url ?? null })
-      .eq("id", data.id);
+    // A retailer-uploaded image is authoritative: it must win over anything
+    // the resolver found (Serper/OFF/AI). Previously only `image_url` was
+    // written, so `hero_image`/`thumbnail_url` kept rendering the resolved
+    // photo, and the next resolve run overwrote the upload because
+    // image_status was still "official".
+    const primary = data.images[0]?.url ?? null;
+    const gallery = data.images.map((img, i) => ({
+      url: img.url,
+      role: i === 0 ? "primary" : "gallery",
+      kind: "image",
+      source: "retailer_upload",
+      license: "retailer",
+    }));
+    const patch: Record<string, unknown> = { images: data.images, image_url: primary };
+    if (primary) {
+      patch.hero_image = primary;
+      patch.thumbnail_url = primary;
+      patch.image_status = "retailer";
+      patch.image_source = "retailer_upload";
+      patch.image_updated_at = new Date().toISOString();
+      patch.image_gallery = gallery;
+    }
+    const { error } = await context.supabase.from("products").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    if (primary) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin
+        .from("product_passports")
+        .update({ hero_image: primary, thumbnail: primary, image_gallery: gallery })
+        .eq("product_id", data.id);
+    }
     return { ok: true };
   });
+
 
 export const updateStock = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
