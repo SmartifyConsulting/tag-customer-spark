@@ -460,13 +460,29 @@ export function ProductFormDialog({
             </div>
           </Section>
 
-          <DialogFooter className="mt-4 gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={save.isPending}>
-              {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save product
-            </Button>
+          <DialogFooter className="mt-4 items-center gap-2 sm:justify-between">
+            <span className="text-xs text-muted-foreground">
+              {autoState === "saving" ? (
+                <span className="inline-flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+                </span>
+              ) : autoState === "saved" ? (
+                <span className="inline-flex items-center gap-1 text-emerald-600">
+                  <Check className="h-3 w-3" /> Saved automatically
+                </span>
+              ) : null}
+            </span>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                {autoState === "saved" ? "Close" : "Cancel"}
+              </Button>
+              <Button type="submit" disabled={save.isPending}>
+                {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save product
+              </Button>
+            </div>
           </DialogFooter>
+
         </form>
       </DialogContent>
       <BarcodeScannerDialog
