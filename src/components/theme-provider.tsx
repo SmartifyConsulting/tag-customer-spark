@@ -18,9 +18,13 @@ function getSystemTheme(): "light" | "dark" {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  // Default is LIGHT, never "system": following the OS meant the app flipped
+  // to dark on its own (sunset / auto dark mode). Dark only applies when the
+  // user explicitly picks it in the theme toggle.
   const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "system";
-    return (localStorage.getItem(STORAGE_KEY) as Theme) || "system";
+    if (typeof window === "undefined") return "light";
+    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    return stored === "dark" || stored === "light" || stored === "system" ? stored : "light";
   });
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
 

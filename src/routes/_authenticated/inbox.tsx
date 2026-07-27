@@ -314,6 +314,12 @@ function ConversationPane({ id }: { id: string }) {
   const c = data.conversation;
   const customer = c.customer;
   const assignedStaff = staff?.find((s: any) => s.user_id === c.assigned_to);
+  // Most recent product the customer scanned/asked about — shown in the thread
+  // header so staff instantly know what the conversation is about.
+  const latestInterest = (data.interests ?? [])[0] as any | undefined;
+  const latestProduct = latestInterest?.product;
+  const latestProductImage =
+    latestProduct?.hero_image ?? latestProduct?.image_url ?? latestProduct?.thumbnail_url ?? null;
 
   return (
     <>
@@ -326,7 +332,24 @@ function ConversationPane({ id }: { id: string }) {
           <div className="flex-1 min-w-0">
             <div className="font-medium truncate">{customer?.full_name ?? customer?.whatsapp_e164}</div>
             <div className="text-xs text-muted-foreground truncate">{customer?.whatsapp_e164}</div>
+            {latestProduct && (
+              <div className="mt-1 flex items-center gap-1.5 min-w-0">
+                {latestProductImage ? (
+                  <img src={latestProductImage} alt="" className="h-5 w-5 rounded object-cover" />
+                ) : null}
+                <span className="text-xs truncate">
+                  <span className="text-muted-foreground">Interested in </span>
+                  <span className="font-medium">
+                    {latestProduct.display_name ?? latestProduct.name}
+                  </span>
+                  {latestProduct.gtin ? (
+                    <span className="text-muted-foreground"> · {latestProduct.gtin}</span>
+                  ) : null}
+                </span>
+              </div>
+            )}
           </div>
+
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

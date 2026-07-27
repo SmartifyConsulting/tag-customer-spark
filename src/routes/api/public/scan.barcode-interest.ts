@@ -153,30 +153,83 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
             .eq("id", existingWatch.id);
         }
 
-        // Open or refresh conversation
+        // Open or refresh the conversation. The subject and an inbound system
+        // message carry the product context so the Inbox shows WHAT the
+        // customer scanned, not just that someone opted in.
+        let storeName: string | null = null;
+        if ((product as any).store_id) {
+          const { data: store } = await supabaseAdmin
+            .from("stores")
+            .select("name")
+            .eq("id", (product as any).store_id)
+            .maybeSingle();
+          storeName = (store as any)?.name ?? null;
+        }
+
+        const subject = `Interested in ${productName}`;
+        const scanLine =
+          `📷 Scanned ${productName} (barcode ${gtin14.replace(/^0+/, "")})` +
+          (storeName ? ` at ${storeName}` : "") +
+          ` and asked to be notified on WhatsApp.`;
+
         const { data: convo } = await supabaseAdmin
           .from("conversations")
-          .select("id")
+          .select("id, tags")
           .eq("customer_id", customerId)
           .eq("retailer_id", (product as any).retailer_id)
           .maybeSingle();
-        if (!convo) {
-          await supabaseAdmin.from("conversations").insert({
-            customer_id: customerId,
+
+        let conversationId = (convo as any)?.id as string | undefined;
+        if (!conversationId) {
+          const { data: newConvo } = await supabaseAdmin
+            .from("conversations")
+            .insert({
+              customer_id: customerId,
+              retailer_id: (product as any).retailer_id,
+              store_id: (product as any).store_id,
+              status: "open",
+              subject,
+              tags: storeName ? [storeName] : [],
+            })
+            .select("id")
+            .single();
+          conversationId = (newConvo as any)?.id;
+        } else {
+          const tags = Array.from(
+            new Set([...(((convo as any).tags as string[]) ?? []), ...(storeName ? [storeName] : [])]),
+          );
+          await supabaseAdmin
+            .from("conversations")
+            .update({ subject, tags, status: "open" })
+            .eq("id", conversationId);
+        }
+
+        if (conversationId) {
+          await supabaseAdmin.from("conversation_messages").insert({
+            conversation_id: conversationId,
             retailer_id: (product as any).retailer_id,
-            store_id: (product as any).store_id,
-            status: "open",
-            subject: "Opted in via barcode scan",
+            direction: "inbound",
+            body: scanLine,
+            media_url: productImage || null,
+            status: "delivered",
+            sent_at: now,
           });
         }
 
         // Fire-and-forget "product speaking" WhatsApp — never block opt-in on
         // send failure. This is the customer's first-ever WhatsApp message from
         // us, so it's business-initiated and needs the approved Content
-        // Template (header = product photo, body var 2 = product name).
+        // Template `tag_product_scan` (header = product photo, body var 2 =
+        // product name). Without TWILIO_TEMPLATE_BARCODE_SCAN_SID we fall back
+        // to freeform, which WhatsApp silently drops outside the 24h window —
+        // so every outcome is now recorded on notification_history.
         try {
           const { sendWhatsApp } = await import("@/lib/whatsapp.server");
           const contentSid = process.env.TWILIO_TEMPLATE_BARCODE_SCAN_SID;
+          const fallbackBody =
+            `Hey, I'm the ${productName} you just scanned 😉 I'm still available and I'll keep you ` +
+            `updated if anything changes — like a price drop, someone else showing interest, or if I ` +
+            `become the last one available.`;
 
           const result = contentSid
             ? await sendWhatsApp({
@@ -189,18 +242,37 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
               })
             : await sendWhatsApp({
                 to: e164,
-                body:
-                  `Hey, I'm the ${productName} you just scanned 😉 I'm still available and I'll keep you ` +
-                  `updated if anything changes — like a price drop, someone else showing interest, or if I ` +
-                  `become the last one available.`,
+                body: fallbackBody,
                 mediaUrl: productImage || null,
               });
+
           if (!result.ok) {
             console.warn("[scan.barcode-interest] whatsapp send failed", result.status, result.error);
           }
+
+          await supabaseAdmin.from("notification_history").insert({
+            retailer_id: (product as any).retailer_id,
+            customer_id: customerId,
+            channel: "whatsapp",
+            payload: {
+              type: "barcode_scan",
+              product_id: (product as any).id,
+              template: contentSid ? "tag_product_scan" : null,
+              body: contentSid ? null : fallbackBody,
+            },
+            status: result.ok ? "sent" : "failed",
+            sent_at: result.ok ? new Date().toISOString() : null,
+            error: result.ok
+              ? null
+              : contentSid
+                ? result.error
+                : `${result.error ?? "send failed"} (no TWILIO_TEMPLATE_BARCODE_SCAN_SID configured — freeform sends are blocked outside the 24h window)`,
+            provider_message_sid: result.sid ?? null,
+          });
         } catch (e: any) {
           console.warn("[scan.barcode-interest] whatsapp send error", e?.message ?? e);
         }
+
 
         return jsonRes({ ok: true, customerId });
       },

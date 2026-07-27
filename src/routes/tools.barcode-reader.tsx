@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Loader2, RotateCcw, ScanLine } from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 import { TagLogo } from "@/components/tag-logo";
 import { Button } from "@/components/ui/button";
 
@@ -106,7 +106,17 @@ function BarcodeReaderPage() {
     };
   }, [detected, nonce]);
 
-  const looksLikeGtin = detected && /^\d{8,14}$/.test(detected);
+  const looksLikeGtin = !!detected && /^\d{8,14}$/.test(detected);
+
+  // A usable barcode goes straight to the product page — the shopper should
+  // never have to tap "Look up". Non-numeric codes keep the manual card.
+  useEffect(() => {
+    if (!detected || !looksLikeGtin) return;
+    const t = setTimeout(() => {
+      window.location.href = `/passport/${detected}`;
+    }, 400);
+    return () => clearTimeout(t);
+  }, [detected, looksLikeGtin]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -151,14 +161,12 @@ function BarcodeReaderPage() {
           <div className="mt-4 rounded-2xl border border-border bg-card p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Detected</p>
             <p className="mt-1 break-all font-mono text-lg font-semibold">{detected}</p>
+            {looksLikeGtin && (
+              <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Opening product…
+              </p>
+            )}
             <div className="mt-4 flex flex-wrap gap-2">
-              {looksLikeGtin && (
-                <Button asChild>
-                  <a href={`/passport/${detected}`}>
-                    <ScanLine className="mr-2 h-4 w-4" /> Look up product
-                  </a>
-                </Button>
-              )}
               <Button
                 variant="outline"
                 onClick={() => {
