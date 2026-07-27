@@ -32,18 +32,21 @@ export const getPublicScanBase = createServerFn({ method: "GET" }).handler(
     const { getRequestHost, getRequestHeader } = await import(
       "@tanstack/react-start/server"
     );
-    const envBase = process.env.PUBLIC_SITE_URL?.replace(/\/$/, "");
+    const { sanitiseSiteBase } = await import("./passport.server");
+    const envBase = sanitiseSiteBase(process.env.PUBLIC_SITE_URL);
     if (envBase) return { base: envBase };
     try {
       const host = getRequestHost();
       const proto = getRequestHeader("x-forwarded-proto") ?? "https";
-      if (host) return { base: `${proto}://${host}` };
+      const hostBase = sanitiseSiteBase(host ? `${proto}://${host}` : null);
+      if (hostBase) return { base: hostBase };
     } catch {
       /* not in request context */
     }
     return { base: "" };
   },
 );
+
 
 function publicStorageUrl(path: string) {
   const base = process.env.SUPABASE_URL?.replace(/\/$/, "") ?? "";
