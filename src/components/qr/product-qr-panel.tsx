@@ -47,6 +47,8 @@ export type ActiveQrAsset = {
   digital_link_url: string;
   png_url: string;
   svg_url: string;
+  store_id?: string | null;
+  store_name?: string | null;
 };
 
 type GtinClash = {
@@ -225,7 +227,8 @@ export function ProductQrPanel({
 
   return (
     <>
-    <section className="grid gap-6 rounded-xl border border-border bg-card p-6 md:grid-cols-[220px_minmax(0,1fr)]">
+    <section className="grid gap-6 rounded-xl border border-border bg-card p-6">
+      <div className="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)]">
       <div className="flex flex-col items-center gap-3">
         <div
           className="grid place-items-center rounded-xl border border-border bg-white p-3"
@@ -255,6 +258,16 @@ export function ProductQrPanel({
             {qr.gtin} · v{qr.version}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">Generated {generatedDate}</p>
+          <p className="mt-1 text-xs">
+            <span className="text-muted-foreground">Store identity: </span>
+            {qr.store_name ? (
+              <span className="font-medium">{qr.store_name}</span>
+            ) : (
+              <span className="text-amber-600">
+                Not assigned — regenerate with a branch selected
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <Button variant="outline" onClick={() => download(qr.png_url, `qr-${qr.gtin}.png`)}>
@@ -275,10 +288,32 @@ export function ProductQrPanel({
             <ExternalLink className="h-4 w-4" /> View Digital ID
           </a>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Resolver URL:{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{qr.resolver_url}</code>
+      </div>
+      </div>
+
+      {/* GS1 Digital Link details — full-width row below the QR so long
+          URLs are never clipped by the Digital Product ID frame. */}
+      <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3">
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          GS1 Digital Link
         </p>
+        <p className="mt-1 break-all font-mono text-xs">{qr.digital_link_url}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="break-all text-xs text-muted-foreground">
+            Resolver: <code className="rounded bg-muted px-1.5 py-0.5">{qr.resolver_url}</code>
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => {
+              navigator.clipboard?.writeText(qr.digital_link_url);
+              toast.success("Digital Link copied");
+            }}
+          >
+            Copy link
+          </Button>
+        </div>
       </div>
       <AlertDialog open={confirmRegen} onOpenChange={setConfirmRegen}>
         <AlertDialogContent>

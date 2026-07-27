@@ -12,7 +12,7 @@ type Props = {
     category_id?: string | null;
     digital_product_passport_id?: string | null;
   };
-  qr?: { active: boolean } | null;
+  qr?: { active: boolean; store_id?: string | null } | null;
   passport?: { status?: string | null; enrichment_status?: string | null } | null;
   // When true, render without the outer card chrome so this block can be
   // embedded inside another card (e.g. the product detail header card).
@@ -46,6 +46,11 @@ export function DigitalIdentityProgress({ product, qr, passport, embedded }: Pro
       pending: !product.image_status || product.image_status === "pending",
     },
     { key: "qr", label: "GS1 QR code generated", done: !!qr?.active },
+    {
+      key: "store",
+      label: "Store identity assigned",
+      done: !!qr?.active && !!qr?.store_id,
+    },
     {
       key: "passport",
       label: "Digital passport published",

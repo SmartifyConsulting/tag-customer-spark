@@ -63,13 +63,15 @@ export type ActiveQr = {
   digital_link_url: string;
   png_url: string;
   svg_url: string;
+  store_id: string | null;
+  store_name: string | null;
 };
 
 async function readActiveQr(supabase: any, productId: string): Promise<ActiveQr | null> {
   const { data } = await supabase
     .from("product_qr_assets")
     .select(
-      "id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path",
+      "id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path, store_id, store_name",
     )
     .eq("product_id", productId)
     .eq("status", "active")
@@ -86,6 +88,8 @@ async function readActiveQr(supabase: any, productId: string): Promise<ActiveQr 
     digital_link_url: data.digital_link_url,
     png_url: publicStorageUrl(data.png_path),
     svg_url: publicStorageUrl(data.svg_path),
+    store_id: data.store_id ?? null,
+    store_name: data.store_name ?? null,
   };
 }
 
@@ -333,7 +337,10 @@ export async function generateForProduct(
     digital_link_url: inserted.digital_link_url,
     png_url: publicStorageUrl(inserted.png_path),
     svg_url: publicStorageUrl(inserted.svg_path),
+    store_id: inserted.store_id ?? effectiveStoreId ?? null,
+    store_name: inserted.store_name ?? effectiveStoreName ?? null,
   };
+
 }
 
 export const generateProductQr = createServerFn({ method: "POST" })

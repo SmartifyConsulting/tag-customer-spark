@@ -250,7 +250,15 @@ export function ProductDetailView({
               <div className={canManage ? "pr-28" : ""}>
                 <DigitalIdentityProgress
                   product={p as any}
-                  qr={data.qr ? { active: (data.qr as any).status === "active" } : null}
+                  qr={
+                    data.qr
+                      ? {
+                          active: (data.qr as any).status === "active",
+                          store_id: (data.qr as any).store_id ?? null,
+                        }
+                      : null
+                  }
+
                   passport={(data as any).passport ?? null}
                   embedded
                 />
