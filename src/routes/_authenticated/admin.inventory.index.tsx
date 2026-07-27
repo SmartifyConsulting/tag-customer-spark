@@ -56,6 +56,8 @@ export const Route = createFileRoute("/_authenticated/admin/inventory/")({
 });
 
 type Tagged = "all" | "tagged" | "untagged";
+type StatusFilter = "all" | "active" | "draft" | "archived";
+
 
 function InventoryAdminPage() {
   const { hasRole } = useAuth();
