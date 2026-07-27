@@ -71,14 +71,17 @@ function InventoryAdminPage() {
   const [reenriching, setReenriching] = useState(false);
   const [search, setSearch] = useState("");
   const [tagged, setTagged] = useState<Tagged>("all");
+  // Inventory shows live stock by default; drafts/archived are opt-in.
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const params = useMemo(
-    () => ({ search, status: "all" as const, tagged, pageSize: 100 }),
-    [search, tagged],
+    () => ({ search, status: statusFilter, tagged, pageSize: 100 }),
+    [search, statusFilter, tagged],
   );
+
 
   const q = useQuery({
     queryKey: ["admin-inventory", params],
