@@ -140,12 +140,27 @@ export function ProductFormDialog({
     setImgs((prev) => prev.filter((_, idx) => idx !== i).map((m, idx) => ({ ...m, sort: idx })));
   }
 
+  // Auto-save: once a new product has a name (and SKU is derivable) it is
+  // created as a draft row and every later edit is written back on a short
+  // debounce, so closing the dialog never loses work.
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const effectiveId = productId ?? draftId;
+  const [autoState, setAutoState] = useState<"idle" | "saving" | "saved">("idle");
+  const lastSavedRef = useRef<string>("");
+  const autoBusyRef = useRef(false);
+
+  const buildPayload = (values: ProductInput) => ({
+    ...values,
+    sku: (values.sku ?? "").trim() || `SKU-${Date.now().toString(36).toUpperCase()}`,
+    images: imgs,
+  });
+
   const save = useMutation({
     mutationFn: async (values: ProductInput) => {
-      const payload = { ...values, images: imgs };
-      if (productId) {
-        await update({ data: { id: productId, patch: payload } });
-        return productId;
+      const payload = buildPayload(values);
+      if (effectiveId) {
+        await update({ data: { id: effectiveId, patch: payload } });
+        return effectiveId;
       }
       const { id } = await create({ data: payload });
       if (imgs.length) await setImages({ data: { id, images: imgs } });
@@ -153,12 +168,64 @@ export function ProductFormDialog({
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["products"] });
-      qc.invalidateQueries({ queryKey: ["product", productId] });
-      toast.success(productId ? "Product updated" : "Product created");
+      qc.invalidateQueries({ queryKey: ["product", effectiveId] });
+      toast.success(productId ? "Product updated" : "Product saved");
       onOpenChange(false);
     },
     onError: (e: any) => toast.error(e.message ?? "Save failed"),
   });
+
+  const watched = form.watch();
+  const watchKey = JSON.stringify({ v: watched, i: imgs });
+
+  useEffect(() => {
+    if (!open) return;
+    // Seed the baseline on open so simply opening an existing product does
+    // not immediately fire a pointless write.
+    if (!lastSavedRef.current) {
+      lastSavedRef.current = watchKey;
+      return;
+    }
+    if (watchKey === lastSavedRef.current) return;
+    const name = (watched.name ?? "").trim();
+    if (!name) return;
+    if (save.isPending) return;
+
+    const t = setTimeout(async () => {
+      if (autoBusyRef.current) return;
+      autoBusyRef.current = true;
+      const snapshot = watchKey;
+      try {
+        setAutoState("saving");
+        const payload = buildPayload(form.getValues());
+        if (effectiveId) {
+          await update({ data: { id: effectiveId, patch: payload } });
+        } else {
+          const { id } = await create({ data: payload });
+          setDraftId(id);
+          if (imgs.length) await setImages({ data: { id, images: imgs } });
+        }
+        lastSavedRef.current = snapshot;
+        setAutoState("saved");
+        qc.invalidateQueries({ queryKey: ["products"] });
+      } catch {
+        setAutoState("idle");
+      } finally {
+        autoBusyRef.current = false;
+      }
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [watchKey, open]);
+
+  // Reset auto-save bookkeeping whenever the dialog opens fresh.
+  useEffect(() => {
+    if (open) {
+      lastSavedRef.current = "";
+      setDraftId(null);
+      setAutoState("idle");
+    }
+  }, [open]);
+
 
   async function handleBarcode(code: string) {
     const current = form.getValues();
