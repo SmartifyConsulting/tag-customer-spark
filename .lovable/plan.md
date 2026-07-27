@@ -1,61 +1,33 @@
-## Note on the attached infographic
+## What I found
 
-The image referenced ("attached info graphic elements") didn't come through — nothing was attached. I've planned the Briefing redesign against the current layout and the elements we already discussed; re-attach the graphic and I'll match it exactly during implementation.
+- The QR asset for "Baby Blue Jumper" has `store_id` = null. The generator only auto-assigns a store when the retailer has exactly **one** store; this retailer has **7**, so it stays unassigned — and the existing-QR panel offers no way to pick a store (the store dropdown only appears before the first generation).
 
-## 1. Briefing page redesign
+## Changes
 
-Restructure `src/routes/_authenticated/briefing.tsx` into a clean infographic-style grid instead of the current stacked rows:
+### 1. Store identity actually gets assigned
+- Add the store selector to the **existing QR** view in `product-qr-panel.tsx`, next to Regenerate: pick a branch → regenerate assigns `store_id` + `store_name` in one step (no more "regenerate with a branch selected" dead end).
+- If the product record already has a `store_id`, pre-select and use it as the default instead of leaving null.
+- Show the unique store identifier next to the name: `Makro Woodmead · TAG-3C9F1FF9` (short stable ID derived from the store UUID), so scans/opt-ins tie back to a uniquely identified store.
+- "Store identity assigned" in the Digital Identity Build then ticks once a branch is set.
 
-```text
-+------------------------------------------------------+
-| [Tag Barcode Reader card]        Hello {Store} / logo |
-+----------------+----------------+--------------------+
-| Scans today    | Tagged today   | Unread WhatsApps   |
-+----------------+----------------+--------------------+
-| Scan activity heatmap (wide)    | Top intent list     |
-+----------------------------------+--------------------+
-| Tagged products (accordion: Today / Yesterday /       |
-| This week / This month — grouped by product + count)  |
-+------------------------------------------------------+
-| Unread WhatsApps needing a reply                      |
-+------------------------------------------------------+
-```
+### 2. GS1 Digital Link block, neatly under the Active badge
+- Move the GS1 Digital Link panel (Digital Link URL, Resolver, Copy link) into the **left column directly beneath the QR image and Active badge**, constrained to that column's width, monospace, wrapped, no overflow.
 
-- Equal-height cards, consistent padding, one card style throughout.
-- KPI tiles compact in a 3-up row; charts full width beneath.
-- Accordions collapsed by default.
+### 3. Buttons
+- `Download PNG` → **PNG**, `Download SVG` → **SVG**, `Print QR` → **Print** (icons kept).
 
-## 2. Tag Barcode Reader frame on the Dashboard
+### 4. GTIN frame fits its container
+- GTIN · Version / Generated / Store identity card gets min-width-0 + wrapping so the 14-digit GTIN and store line sit neatly inside the frame.
 
-Add a compact Tag Barcode Reader tile to the top of the Briefing/Dashboard, **left-aligned on the same row as the logo/greeting**:
-- Small card showing the reader QR code plus a "Open reader" action (opens `/tools/barcode-reader`) and "Print shelf card" (opens the existing fold-out card dialog).
-- Reuses the QR generation already in `tag-reader-card-dialog.tsx`, extracted into a small shared component so Settings and the Dashboard stay in sync.
+### 5. Auto-save while creating a product
+- In the product create dialog, once the minimum required field (name) is filled, silently create the product as a draft and keep auto-saving edits on a short debounce, switching the dialog into edit mode against the created row. A subtle "Saving… / Saved" indicator shows state; closing the dialog no longer loses work.
 
-## 3. Digital Identity Build — Store Identity Assigned step
+### 6. Prices in rands, not cents
+- All price entry and display switch to rand values: form inputs accept e.g. `249.99` (converted to/from `*_cents` at the boundary), and all UI labels/tables/cards render `R 249.99` rather than raw cent values. Database columns stay in cents (correct for money) — this is a presentation/input-conversion change across product, pricing, ROI and billing surfaces.
 
-Add a new checklist step to `src/components/qr/digital-identity-progress.tsx`: **"Store identity assigned"**, satisfied when the product's QR asset has a `store_id` / `store_name` attached.
-- The build/bulk-complete pipeline (`src/lib/qr.functions.ts`, `src/lib/products.functions.ts`) sets the store on the QR asset from the selected store, falling back to the product's home store, and to the retailer's only store for sole proprietors.
-- The step shows as incomplete (with a "Select store" prompt in the QR panel) when no store can be resolved, so scans always attribute to a branch and the opt-in phone capture is traceable.
-
-## 4. GS1 Digital Link placement
-
-In the product detail QR/Passport card (`src/components/qr/product-qr-panel.tsx`), move the GS1 Digital Link URL / GTIN block **below** the QR image as its own full-width row so it's no longer hidden behind the Digital Product ID frame. Long URLs wrap, with a copy button.
-
-## 5. Teal Jumper doesn't resolve when scanned
-
-Confirmed from the database: the stored GTIN is `2003584268734` — an auto-generated internal `200`-prefix barcode, not the real barcode you borrowed. The physically scanned code has no matching row, so lookup fails.
-
-Fix:
-- A user-entered GTIN becomes authoritative and is never re-derived or overwritten by the auto-assign / digital-identity build path.
-- After a GTIN change, regenerate the Digital Link URL and QR asset so `/passport/{gtin}` matches the scanned code.
-- Show a clear "no product found for {digits}" message on the passport page instead of a bare not-found.
-
-You'll then re-enter the borrowed barcode on Teal Jumper and it will resolve.
-
-## 6. Preview the TAG Reader in Lovable
-
-Besides the dashboard tile, add a live phone-framed preview of `/tools/barcode-reader` inside the shelf-card dialog. Camera access needs a real device permission grant; in the Lovable preview the frame shows the reader UI with a "camera unavailable" state, which is expected.
+### 7. Briefing page TAG Barcode Reader tile
+- Remove the card frame/border around the Tag Barcode Reader tile (transparent, borderless).
+- Double the QR code size within that tile (100% increase), keeping the layout in line with the logo row.
 
 ## Technical notes
-
-Files touched: `src/routes/_authenticated/briefing.tsx`, `src/components/qr/digital-identity-progress.tsx`, `src/components/qr/product-qr-panel.tsx`, `src/lib/qr.functions.ts`, `src/lib/products.functions.ts`, `src/components/products/product-form-dialog.tsx`, `src/components/settings/tag-reader-card-dialog.tsx`, `src/routes/_authenticated/settings.tsx`, plus a new shared reader-QR component. No database migration required.
+Files touched: `src/components/qr/product-qr-panel.tsx`, `src/components/products/product-detail-view.tsx`, `src/lib/qr.functions.ts`, `src/components/products/product-form-dialog.tsx`, `src/lib/format.ts` (rand formatting helper), price-rendering components, and `src/components/qr/tag-reader-tile.tsx`. No schema change.
