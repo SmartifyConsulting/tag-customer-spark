@@ -49,6 +49,10 @@ function AuthenticatedLayout() {
   // the Briefing page uses so it stays in sync ("Hello Makro Woodmead").
   const briefing = useQuery(briefingQueryOptions);
   const greetingName = briefing.data?.greetingName ?? null;
+  // The reader frame belongs on the dashboard/briefing surface only.
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const showReaderTile = pathname === "/briefing" || pathname === "/dashboard";
+
 
   const themeStyle: Record<string, string> = {};
   if (brandTheme?.background) themeStyle["--background"] = brandTheme.background;
@@ -75,12 +79,18 @@ function AuthenticatedLayout() {
         <AppSidebar />
         <SidebarInset className="bg-background">
           <header className="flex items-center justify-end gap-3 bg-background px-4 py-3 sm:px-6">
-            <SidebarTrigger className="md:hidden mr-auto" />
-            <div className="flex items-center gap-3">
+            <SidebarTrigger className="md:hidden" />
+            {showReaderTile && (
+              <div className="mr-auto hidden sm:block">
+                <TagReaderTile compact />
+              </div>
+            )}
+            <div className="ml-auto flex items-center gap-3">
               <ThemeToggle />
               <TagLogo variant="wordmark" heightClass="h-[10.608rem]" />
             </div>
           </header>
+
           <CommandPalette />
           <main className="flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10 md:pb-10">
             <div className="mx-auto w-full max-w-7xl">
