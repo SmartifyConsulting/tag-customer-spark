@@ -56,6 +56,8 @@ export const Route = createFileRoute("/_authenticated/admin/inventory/")({
 });
 
 type Tagged = "all" | "tagged" | "untagged";
+type StatusFilter = "all" | "active" | "draft" | "archived";
+
 
 function InventoryAdminPage() {
   const { hasRole } = useAuth();
@@ -71,14 +73,17 @@ function InventoryAdminPage() {
   const [reenriching, setReenriching] = useState(false);
   const [search, setSearch] = useState("");
   const [tagged, setTagged] = useState<Tagged>("all");
+  // Inventory shows live stock by default; drafts/archived are opt-in.
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const params = useMemo(
-    () => ({ search, status: "all" as const, tagged, pageSize: 100 }),
-    [search, tagged],
+    () => ({ search, status: statusFilter, tagged, pageSize: 100 }),
+    [search, statusFilter, tagged],
   );
+
 
   const q = useQuery({
     queryKey: ["admin-inventory", params],
@@ -407,6 +412,18 @@ function InventoryAdminPage() {
                 <SelectItem value="untagged">Untagged only</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value="all">Any status</SelectItem>
+              </SelectContent>
+            </Select>
+
             {!q.isLoading && (
               <span className="text-sm text-muted-foreground">
                 {rows.length} shown · {taggedCount} tagged · {rows.length - taggedCount} untagged
@@ -501,16 +518,17 @@ function InventoryAdminPage() {
                                 {[p.sku, p.brand].filter(Boolean).join(" · ")}
                               </div>
                             </div>
-                            <Badge variant="outline" className="capitalize">
-                              {p.status}
-                            </Badge>
-                            {p.is_tagged ? (
+                            {p.status !== "active" && (
+                              <Badge variant="outline" className="capitalize">
+                                {p.status}
+                              </Badge>
+                            )}
+                            {p.is_tagged && (
                               <Badge className="gap-1 bg-primary text-primary-foreground">
                                 <TagIcon className="h-3 w-3" /> Tagged
                               </Badge>
-                            ) : (
-                              <Badge variant="secondary">Untagged</Badge>
                             )}
+
                             <Badge variant="outline">{p.stock_qty ?? 0} qty</Badge>
                           </Link>
                         </li>

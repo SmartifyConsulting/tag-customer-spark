@@ -333,12 +333,16 @@ export const createProduct = createServerFn({ method: "POST" })
     if (!retailerId) throw new Error("No retailer assigned to your account");
     if (!(await canManage(supabase, userId, retailerId)))
       throw new Error("You don't have permission to add products");
+    const manualGtin = String((data as any).gtin ?? "").replace(/\D/g, "").trim();
     const insertPayload: any = {
       ...data,
+      gtin: manualGtin || null,
+      barcode_type: manualGtin ? `GTIN-${manualGtin.length}` : null,
       retailer_id: retailerId,
       created_by: userId,
       image_url: data.images[0]?.url ?? null,
     };
+
     const { data: row, error } = await supabase
       .from("products")
       .insert(insertPayload)
@@ -390,11 +394,44 @@ export const updateProduct = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), patch: productInputSchema.partial() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const patch: any = { ...data.patch };
     if (data.patch.images && data.patch.images.length) patch.image_url = data.patch.images[0].url;
+
+    // A manually entered barcode is authoritative. When it changes we retire
+    // the existing QR asset and regenerate so the printed code, the GS1
+    // Digital Link and the database can never drift apart.
+    let gtinChanged = false;
+    if ("gtin" in patch) {
+      const next = String(patch.gtin ?? "").replace(/\D/g, "");
+      const { data: before } = await supabase
+        .from("products")
+        .select("gtin")
+        .eq("id", data.id)
+        .maybeSingle();
+      const prev = String((before as any)?.gtin ?? "").replace(/\D/g, "");
+      gtinChanged = next !== prev;
+      patch.gtin = next || null;
+      patch.barcode_type = next ? `GTIN-${next.length}` : null;
+      if (gtinChanged) patch.digital_link_url = next ? `https://id.gs1.org/01/${next}` : null;
+    }
+
     const { error } = await supabase.from("products").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    if (gtinChanged) {
+      try {
+        await supabase
+          .from("product_qr_assets")
+          .update({ status: "retired" })
+          .eq("product_id", data.id)
+          .eq("status", "active");
+        const { generateForProduct } = await import("./qr.functions");
+        await generateForProduct(supabase, userId, data.id, false);
+      } catch (e: any) {
+        console.warn("[updateProduct] QR regeneration failed", e?.message ?? e);
+      }
+    }
 
     if ("price_cents" in patch || "sale_price_cents" in patch || "stock_qty" in patch) {
       const { processWatchlistEvents } = await import("@/lib/watchlist-dispatch.server");
@@ -405,6 +442,7 @@ export const updateProduct = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
 
 export const archiveProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

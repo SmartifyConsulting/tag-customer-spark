@@ -84,9 +84,12 @@ export const Route = createFileRoute("/api/public/s/$shortCode")({
           .update({ scan_count: ((tag as any).scan_count ?? 0) + 1, last_scanned_at: new Date().toISOString() })
           .eq("id", tag.id);
 
+        const { sanitiseSiteBase } = await import("@/lib/passport.server");
         const publicBase =
-          process.env.PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-          new URL(request.url).origin;
+          sanitiseSiteBase(process.env.PUBLIC_SITE_URL) ||
+          sanitiseSiteBase(new URL(request.url).origin) ||
+          "https://tag-tech.co.za";
+
         const forward = scannedStoreParam ? `?s=${encodeURIComponent(scannedStoreParam)}` : "";
         return new Response(null, {
           status: 302,

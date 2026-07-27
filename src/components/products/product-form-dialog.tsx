@@ -71,7 +71,9 @@ export function ProductFormDialog({
     () => ({
       name: "",
       sku: "",
+      gtin: "",
       brand: "",
+
       category_id: null,
       store_id: null,
       description: "",
@@ -235,13 +237,16 @@ export function ProductFormDialog({
 
   async function handleBarcode(code: string) {
     const current = form.getValues();
-    form.setValue("sku", code, { shouldDirty: true });
+    // A scanned code IS the product's barcode — it goes to GTIN, not SKU.
+    form.setValue("gtin", code, { shouldDirty: true, shouldValidate: true });
+    if (!(current.sku ?? "").trim()) form.setValue("sku", code, { shouldDirty: true });
     try {
       const res = await lookupFn({ data: { code } });
       if (!res.found || !res.product) {
-        toast.info(`SKU set to ${code}. No product match — fill fields manually.`);
+        toast.info(`Barcode set to ${code}. No product match — fill fields manually.`);
         return;
       }
+
       const p: any = res.product;
       const setIfEmpty = (key: keyof ProductInput, val: any) => {
         if (val == null || val === "") return;
@@ -295,8 +300,22 @@ export function ProductFormDialog({
             </Field>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="SKU *" error={form.formState.errors.sku?.message}>
+                <Input {...form.register("sku")} />
+              </Field>
+              <Field label="Brand"><Input {...form.register("brand")} /></Field>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field
+                label="Barcode (GTIN)"
+                error={form.formState.errors.gtin?.message as string | undefined}
+              >
                 <div className="flex gap-2">
-                  <Input {...form.register("sku")} className="flex-1" />
+                  <Input
+                    {...form.register("gtin")}
+                    inputMode="numeric"
+                    placeholder="e.g. 6004201004816"
+                    className="flex-1 font-mono"
+                  />
                   <Button
                     type="button"
                     variant="outline"
@@ -307,9 +326,12 @@ export function ProductFormDialog({
                     <span className="sr-only sm:not-sr-only sm:ml-2">Scan</span>
                   </Button>
                 </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  The real product barcode. Leave blank and one is generated for you.
+                </p>
               </Field>
-              <Field label="Brand"><Input {...form.register("brand")} /></Field>
             </div>
+
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Category">
                 <Select
@@ -353,9 +375,9 @@ export function ProductFormDialog({
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Field label="Price (R) *">
                 <Input
-                  type="number"
-                  step="0.01"
-                  min={0}
+                  type="text"
+                  inputMode="decimal"
+
                   value={centsToRandInput(form.watch("price_cents"))}
                   onChange={(e) =>
                     form.setValue("price_cents", randToCents(e.target.value), {
@@ -366,9 +388,9 @@ export function ProductFormDialog({
               </Field>
               <Field label="Sale price (R)">
                 <Input
-                  type="number"
-                  step="0.01"
-                  min={0}
+                  type="text"
+                  inputMode="decimal"
+
                   value={centsToRandInput(form.watch("sale_price_cents"))}
                   onChange={(e) =>
                     form.setValue(
