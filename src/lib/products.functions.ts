@@ -645,7 +645,7 @@ export const setProductImages = createServerFn({ method: "POST" })
       source: "retailer_upload",
       license: "retailer",
     }));
-    const patch: Record<string, unknown> = { images: data.images, image_url: primary };
+    const patch: Record<string, any> = { images: data.images, image_url: primary };
     if (primary) {
       patch.hero_image = primary;
       patch.thumbnail_url = primary;
@@ -654,7 +654,7 @@ export const setProductImages = createServerFn({ method: "POST" })
       patch.image_updated_at = new Date().toISOString();
       patch.image_gallery = gallery;
     }
-    const { error } = await context.supabase.from("products").update(patch).eq("id", data.id);
+    const { error } = await context.supabase.from("products").update(patch as never).eq("id", data.id);
     if (error) throw new Error(error.message);
 
     if (primary) {
@@ -685,7 +685,7 @@ export const updateStock = createServerFn({ method: "POST" })
     };
     if (data.low_stock_threshold !== undefined)
       patch.low_stock_threshold = data.low_stock_threshold;
-    const { error } = await context.supabase.from("products").update(patch).eq("id", data.id);
+    const { error } = await context.supabase.from("products").update(patch as never).eq("id", data.id);
     if (error) throw new Error(error.message);
 
     const { processWatchlistEvents } = await import("@/lib/watchlist-dispatch.server");
