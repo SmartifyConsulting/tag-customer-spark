@@ -112,7 +112,7 @@ export async function generateForProduct(
 
   const { data: product, error: pErr } = await supabase
     .from("products")
-    .select("id, retailer_id, name, sku, gtin, barcode_type")
+    .select("id, retailer_id, name, sku, gtin, barcode_type, store_id")
     .eq("id", productId)
     .maybeSingle();
   if (pErr) throw new Error(pErr.message);
@@ -128,9 +128,37 @@ export async function generateForProduct(
   }
   const gtin14 = toGtin14(rawGtin);
 
-  // Existing active QR for this product?
+  // Resolve store attribution — explicit storeId wins, then the product's
+  // assigned upload store, then the retailer's only store for sole operators.
+  let effectiveStoreId: string | null = storeId ?? product.store_id ?? null;
+  let effectiveStoreName: string | null = null;
+  if (effectiveStoreId) {
+    const { data: st } = await supabase
+      .from("stores")
+      .select("name")
+      .eq("id", effectiveStoreId)
+      .eq("retailer_id", product.retailer_id)
+      .maybeSingle();
+    if (!st) throw new Error("Selected store does not belong to this retailer.");
+    effectiveStoreName = (st as any).name;
+  } else {
+    const { data: stores } = await supabase
+      .from("stores")
+      .select("id, name")
+      .eq("retailer_id", product.retailer_id)
+      .limit(2);
+    if (stores && stores.length === 1) {
+      effectiveStoreId = stores[0].id;
+      effectiveStoreName = stores[0].name;
+    }
+  }
+
+  // Existing active QR for this product? Keep it only when the branch identity
+  // is already embedded; otherwise regenerate so future scans carry store ID.
   const existingOwn = await readActiveQr(supabase, productId);
-  if (existingOwn && !force) return existingOwn;
+  if (existingOwn && !force && (!effectiveStoreId || existingOwn.store_id === effectiveStoreId)) {
+    return existingOwn;
+  }
 
   // GTIN uniqueness is scoped per retailer (partial unique index also
   // protects us) — the same manufacturer GTIN is legitimately stocked by
@@ -177,31 +205,6 @@ export async function generateForProduct(
     if (retireErr) {
       throw new Error(`Could not retire the previous QR code: ${retireErr.message}`);
     }
-  }
-
-  // Resolve store attribution — explicit storeId wins, else the retailer's
-  // only store (silent), else null (retailer-wide QR for multi-store).
-  let effectiveStoreId: string | null = storeId ?? null;
-  let effectiveStoreName: string | null = null;
-  if (!effectiveStoreId) {
-    const { data: stores } = await supabase
-      .from("stores")
-      .select("id, name")
-      .eq("retailer_id", product.retailer_id)
-      .limit(2);
-    if (stores && stores.length === 1) {
-      effectiveStoreId = stores[0].id;
-      effectiveStoreName = stores[0].name;
-    }
-  } else {
-    const { data: st } = await supabase
-      .from("stores")
-      .select("name")
-      .eq("id", effectiveStoreId)
-      .eq("retailer_id", product.retailer_id)
-      .maybeSingle();
-    if (!st) throw new Error("Selected store does not belong to this retailer.");
-    effectiveStoreName = (st as any).name;
   }
 
   // Build GS1 Digital Link — the canonical GS1 URL points to id.gs1.org,
@@ -268,7 +271,7 @@ export async function generateForProduct(
       generated_by: userId,
       created_by: userId,
     })
-    .select("id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path")
+    .select("id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path, store_id, store_name")
     .single();
   if (insErr) throw new Error(insErr.message);
 

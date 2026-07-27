@@ -363,6 +363,17 @@ export const commitProductImport = createServerFn({ method: "POST" })
         country: s.country,
       }),
     );
+    const { data: staffStore } = await supabase
+      .from("staff")
+      .select("store_id")
+      .eq("retailer_id", retailerId)
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .not("store_id", "is", null)
+      .limit(1)
+      .maybeSingle();
+    const soleStoreId = (storeRows ?? []).length === 1 ? (storeRows as any[])[0].id : null;
+    const defaultUploadStoreId = staffStore?.store_id ?? soleStoreId ?? null;
     let storesCreated = 0;
 
     let created = 0;
@@ -429,7 +440,7 @@ export const commitProductImport = createServerFn({ method: "POST" })
           }
         }
 
-        let storeId: string | null = null;
+        let storeId: string | null = defaultUploadStoreId;
         if (row.store_name) {
           const key = row.store_name.toLowerCase();
           const found = storeByName.get(key);

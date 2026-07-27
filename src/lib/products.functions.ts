@@ -27,16 +27,27 @@ export const getProductFormOptions = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const retailerId = await resolveRetailerId(supabase, userId);
-    if (!retailerId) return { categories: [], stores: [], retailerId: null };
-    const [{ data: cats }, { data: stores }] = await Promise.all([
+    if (!retailerId) return { categories: [], stores: [], retailerId: null, defaultStoreId: null };
+    const [{ data: cats }, { data: stores }, { data: staffStore }] = await Promise.all([
       supabase
         .from("product_categories")
         .select("id, name")
         .eq("retailer_id", retailerId)
         .order("name"),
       supabase.from("stores").select("id, name").eq("retailer_id", retailerId).order("name"),
+      supabase
+        .from("staff")
+        .select("store_id")
+        .eq("retailer_id", retailerId)
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .not("store_id", "is", null)
+        .limit(1)
+        .maybeSingle(),
     ]);
-    return { categories: cats ?? [], stores: stores ?? [], retailerId };
+    const storeList = stores ?? [];
+    const defaultStoreId = staffStore?.store_id ?? (storeList.length === 1 ? storeList[0].id : null);
+    return { categories: cats ?? [], stores: storeList, retailerId, defaultStoreId };
   });
 
 export const lookupBarcode = createServerFn({ method: "POST" })
@@ -88,13 +99,19 @@ export const listProducts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => listProductsSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) {
+      return { rows: [], total: 0, page: data.page, pageSize: data.pageSize };
+    }
+
     let q = supabase
       .from("products")
       .select(
         "id, name, sku, brand, status, price_cents, sale_price_cents, currency, stock_qty, low_stock_threshold, images, image_url, promotion_start_date, promotion_end_date, color, size, updated_at, intent_score, intent_score_trend, intent_score_confidence, category:product_categories!products_category_id_fkey(id,name), store:stores(id,name)",
         { count: "exact" },
-      );
+      )
+      .eq("retailer_id", retailerId);
 
     if (data.search) {
       const s = data.search.replace(/[%_]/g, "");
@@ -104,9 +121,13 @@ export const listProducts = createServerFn({ method: "POST" })
     if (data.category_id) q = q.eq("category_id", data.category_id);
     if (data.brand_id) q = q.eq("brand_id", data.brand_id);
     if (data.store_id) q = q.eq("store_id", data.store_id);
-    // A product is "tagged" once a GS1 QR asset has been generated for it.
-    const { data: qrRows } = await supabase.from("product_qr_assets").select("product_id");
-    const taggedIds = new Set<string>((qrRows ?? []).map((r: any) => r.product_id));
+    // A product is "tagged" only after a real scan has been recorded, not
+    // merely because its Digital Identity / QR asset has been generated.
+    const { data: scanRows } = await supabase
+      .from("qr_scans")
+      .select("product_id")
+      .eq("retailer_id", retailerId);
+    const taggedIds = new Set<string>((scanRows ?? []).map((r: any) => r.product_id));
     if (data.tagged === "tagged") {
       q = q.in(
         "id",
@@ -347,10 +368,8 @@ export const createProduct = createServerFn({ method: "POST" })
     }
 
     // The manual "Add Product" form has no barcode field, so a product
-    // created here always starts with no GTIN — same gap import used to
-    // have before commitProductImport ran the barcode-to-QR pipeline
-    // inline. Do the same here, non-fatally, so a manually-added product
-    // shows up as tagged in Inventory without a separate manual step.
+    // created here often starts with no GTIN. Try to complete its Digital
+    // Identity non-fatally; it is still only "Tagged" after a customer scan.
     try {
       const { assignMissingBarcodesForRetailer } = await import("./barcode-assign.functions");
       await assignMissingBarcodesForRetailer(supabase, retailerId);
@@ -847,9 +866,16 @@ export const listIncompleteDigitalIdentityIds = createServerFn({ method: "GET" }
     if (!retailerId) return { ids: [] as string[] };
     const { data: prods } = await supabase
       .from("products")
-      .select("id, gtin, image_status, qr_status, normalised_at")
+      .select("id, gtin, image_status, qr_status, normalised_at, store_id")
       .eq("retailer_id", retailerId)
       .eq("status", "active");
+    const { data: qrAssets } = await supabase
+      .from("product_qr_assets")
+      .select("product_id, store_id")
+      .eq("retailer_id", retailerId)
+      .eq("status", "active");
+    const qrStoreMap = new Map<string, string | null>();
+    for (const q of qrAssets ?? []) qrStoreMap.set(q.product_id, q.store_id ?? null);
     const { data: passports } = await supabase
       .from("product_passports")
       .select("product_id, enrichment_status")
@@ -862,7 +888,7 @@ export const listIncompleteDigitalIdentityIds = createServerFn({ method: "GET" }
       if (!gtin) continue; // can't complete without GTIN
       const needsNormalise = !p.normalised_at;
       const needsImg = !p.image_status || p.image_status === "pending";
-      const needsQr = p.qr_status !== "active";
+      const needsQr = p.qr_status !== "active" || (p.store_id && qrStoreMap.get(p.id) !== p.store_id);
       const needsEnrich = (enrichMap.get(p.id) ?? "pending") !== "complete";
       if (needsNormalise || needsImg || needsQr || needsEnrich) ids.push(p.id);
     }

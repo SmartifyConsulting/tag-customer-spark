@@ -101,6 +101,12 @@ export function ProductFormDialog({
     if (open) form.reset(defaults);
   }, [open, defaults, form]);
 
+  useEffect(() => {
+    if (!open || productId) return;
+    if (form.getValues("store_id") || !opts?.defaultStoreId) return;
+    form.setValue("store_id", opts.defaultStoreId, { shouldDirty: true });
+  }, [open, productId, opts?.defaultStoreId, form]);
+
   const [imgs, setImgs] = useState<Img[]>((initial?.images as Img[]) ?? []);
   useEffect(() => {
     if (open) setImgs((initial?.images as Img[]) ?? []);

@@ -1,33 +1,30 @@
-## What I found
+## Plan
 
-- The QR asset for "Baby Blue Jumper" has `store_id` = null. The generator only auto-assigns a store when the retailer has exactly **one** store; this retailer has **7**, so it stays unassigned — and the existing-QR panel offers no way to pick a store (the store dropdown only appears before the first generation).
+1. **Stop the product-update error**
+   - Add the missing backend policy/permission path for `intent_recompute_queue` so normal product edits can enqueue intent recalculation without throwing `new row violates row-level security policy`.
+   - Keep direct user access narrow: users should not browse or manually manage the queue; product triggers/functions should be the only app path that writes it.
 
-## Changes
+2. **Default Store to the uploader’s store**
+   - Product upload/import should use the branch/store associated with the uploader when the file row does not include a store/branch column.
+   - If the file explicitly contains a store/branch, that row’s store continues to win.
+   - If the uploader is not tied to a staff store, fall back to the existing behaviour: row store if present, sole-store default only when there is exactly one store, otherwise leave it unassigned for manual selection.
 
-### 1. Store identity actually gets assigned
-- Add the store selector to the **existing QR** view in `product-qr-panel.tsx`, next to Regenerate: pick a branch → regenerate assigns `store_id` + `store_name` in one step (no more "regenerate with a branch selected" dead end).
-- If the product record already has a `store_id`, pre-select and use it as the default instead of leaving null.
-- Show the unique store identifier next to the name: `Makro Woodmead · TAG-3C9F1FF9` (short stable ID derived from the store UUID), so scans/opt-ins tie back to a uniquely identified store.
-- "Store identity assigned" in the Digital Identity Build then ticks once a branch is set.
+3. **Fix Jumper / existing QR store identity**
+   - The Jumper currently has `product.store_id = Checkers Centurion`, but its active QR asset has `store_id = null`, so the Digital Identity checklist stays unticked.
+   - Update QR generation so an existing product’s `store_id` becomes the default QR store identity when regenerating or bulk-building QR assets.
+   - Add a small repair path for existing active QR assets: if the QR has no store but the product does, stamp the product’s store onto the QR asset so the checklist immediately reflects the real branch.
 
-### 2. GS1 Digital Link block, neatly under the Active badge
-- Move the GS1 Digital Link panel (Digital Link URL, Resolver, Copy link) into the **left column directly beneath the QR image and Active badge**, constrained to that column's width, monospace, wrapped, no overflow.
+4. **Correct “Tagged” semantics**
+   - A completed Digital Identity Build / active QR does **not** mean “Tagged”.
+   - Change inventory filtering/list labels so **Tagged = at least one real customer scan exists** for that product.
+   - Products with QR/Digital Identity complete but zero scans should remain untagged until someone scans the shelf/customer-facing QR.
 
-### 3. Buttons
-- `Download PNG` → **PNG**, `Download SVG` → **SVG**, `Print QR` → **Print** (icons kept).
-
-### 4. GTIN frame fits its container
-- GTIN · Version / Generated / Store identity card gets min-width-0 + wrapping so the 14-digit GTIN and store line sit neatly inside the frame.
-
-### 5. Auto-save while creating a product
-- In the product create dialog, once the minimum required field (name) is filled, silently create the product as a draft and keep auto-saving edits on a short debounce, switching the dialog into edit mode against the created row. A subtle "Saving… / Saved" indicator shows state; closing the dialog no longer loses work.
-
-### 6. Prices in rands, not cents
-- All price entry and display switch to rand values: form inputs accept e.g. `249.99` (converted to/from `*_cents` at the boundary), and all UI labels/tables/cards render `R 249.99` rather than raw cent values. Database columns stay in cents (correct for money) — this is a presentation/input-conversion change across product, pricing, ROI and billing surfaces.
-
-### 7. Briefing page TAG Barcode Reader tile
-- Remove the card frame/border around the Tag Barcode Reader tile (transparent, borderless).
-- Double the QR code size within that tile (100% increase), keeping the layout in line with the logo row.
+5. **Keep the Digital Identity UI consistent**
+   - Store Identity step should tick when the active QR has a store identifier.
+   - Ensure the QR panel displays the assigned store name and unique TAG store code neatly after the repair/regeneration.
 
 ## Technical notes
-Files touched: `src/components/qr/product-qr-panel.tsx`, `src/components/products/product-detail-view.tsx`, `src/lib/qr.functions.ts`, `src/components/products/product-form-dialog.tsx`, `src/lib/format.ts` (rand formatting helper), price-rendering components, and `src/components/qr/tag-reader-tile.tsx`. No schema change.
+
+- I confirmed the Jumper product has `store_id = Checkers Centurion`, active QR status, zero scans, and `qr.store_id = null`.
+- I confirmed the current product list marks `is_tagged` from `product_qr_assets`, which is why Digital Identity completion can look like “Tagged” before any scan.
+- I confirmed product edits update `products`, and the `products` trigger calls the intent recompute queue path; that is the error path to fix.
