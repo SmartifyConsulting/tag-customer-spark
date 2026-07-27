@@ -375,9 +375,9 @@ export function ProductFormDialog({
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Field label="Price (R) *">
                 <Input
-                  type="number"
-                  step="0.01"
-                  min={0}
+                  type="text"
+                  inputMode="decimal"
+
                   value={centsToRandInput(form.watch("price_cents"))}
                   onChange={(e) =>
                     form.setValue("price_cents", randToCents(e.target.value), {
