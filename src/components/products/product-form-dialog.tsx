@@ -71,7 +71,9 @@ export function ProductFormDialog({
     () => ({
       name: "",
       sku: "",
+      gtin: "",
       brand: "",
+
       category_id: null,
       store_id: null,
       description: "",
