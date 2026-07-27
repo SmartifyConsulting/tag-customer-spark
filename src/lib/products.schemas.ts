@@ -3,6 +3,17 @@ import { z } from "zod";
 export const productInputSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
   sku: z.string().trim().min(1, "SKU is required").max(80),
+  gtin: z
+    .string()
+    .trim()
+    .max(14)
+    .optional()
+    .nullable()
+    .refine(
+      (v) => !v || isValidGtin(v),
+      "Enter a valid 8, 12, 13 or 14 digit barcode (check digit must match)",
+    ),
+
   brand: z.string().trim().max(120).optional().nullable(),
   category_id: z.string().uuid().optional().nullable(),
   store_id: z.string().uuid().optional().nullable(),
