@@ -388,9 +388,9 @@ export function ProductFormDialog({
               </Field>
               <Field label="Sale price (R)">
                 <Input
-                  type="number"
-                  step="0.01"
-                  min={0}
+                  type="text"
+                  inputMode="decimal"
+
                   value={centsToRandInput(form.watch("sale_price_cents"))}
                   onChange={(e) =>
                     form.setValue(
