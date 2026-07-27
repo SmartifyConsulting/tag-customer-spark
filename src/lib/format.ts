@@ -33,6 +33,22 @@ export function formatMoney(
   }
 }
 
+// ---- Rand <-> cents helpers -------------------------------------------
+// Money is stored in cents in the database, but every input and label the
+// user touches is expressed in rands (major units).
+
+export function centsToRandInput(cents: number | null | undefined): string {
+  if (cents == null || Number.isNaN(cents)) return "";
+  return (cents / 100).toFixed(2);
+}
+
+export function randToCents(value: string | number | null | undefined): number {
+  if (value === "" || value == null) return 0;
+  const n = typeof value === "number" ? value : Number(String(value).replace(/[^0-9.-]/g, ""));
+  if (Number.isNaN(n)) return 0;
+  return Math.round(n * 100);
+}
+
 export function deviceLabel(d: string | null | undefined) {
   if (!d) return "Unknown";
   return d.charAt(0).toUpperCase() + d.slice(1);
