@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,8 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { getRetailerBranding } from "@/lib/branding.functions";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { briefingQueryOptions } from "@/lib/dashboard";
+import { TagReaderTile } from "@/components/qr/tag-reader-tile";
+
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
