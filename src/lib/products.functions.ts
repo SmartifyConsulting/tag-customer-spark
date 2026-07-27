@@ -857,9 +857,16 @@ export const listIncompleteDigitalIdentityIds = createServerFn({ method: "GET" }
     if (!retailerId) return { ids: [] as string[] };
     const { data: prods } = await supabase
       .from("products")
-      .select("id, gtin, image_status, qr_status, normalised_at")
+      .select("id, gtin, image_status, qr_status, normalised_at, store_id")
       .eq("retailer_id", retailerId)
       .eq("status", "active");
+    const { data: qrAssets } = await supabase
+      .from("product_qr_assets")
+      .select("product_id, store_id")
+      .eq("retailer_id", retailerId)
+      .eq("status", "active");
+    const qrStoreMap = new Map<string, string | null>();
+    for (const q of qrAssets ?? []) qrStoreMap.set(q.product_id, q.store_id ?? null);
     const { data: passports } = await supabase
       .from("product_passports")
       .select("product_id, enrichment_status")
@@ -872,7 +879,7 @@ export const listIncompleteDigitalIdentityIds = createServerFn({ method: "GET" }
       if (!gtin) continue; // can't complete without GTIN
       const needsNormalise = !p.normalised_at;
       const needsImg = !p.image_status || p.image_status === "pending";
-      const needsQr = p.qr_status !== "active";
+      const needsQr = p.qr_status !== "active" || (p.store_id && qrStoreMap.get(p.id) !== p.store_id);
       const needsEnrich = (enrichMap.get(p.id) ?? "pending") !== "complete";
       if (needsNormalise || needsImg || needsQr || needsEnrich) ids.push(p.id);
     }
