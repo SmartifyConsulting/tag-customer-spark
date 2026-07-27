@@ -333,12 +333,16 @@ export const createProduct = createServerFn({ method: "POST" })
     if (!retailerId) throw new Error("No retailer assigned to your account");
     if (!(await canManage(supabase, userId, retailerId)))
       throw new Error("You don't have permission to add products");
+    const manualGtin = String((data as any).gtin ?? "").replace(/\D/g, "").trim();
     const insertPayload: any = {
       ...data,
+      gtin: manualGtin || null,
+      barcode_type: manualGtin ? `GTIN-${manualGtin.length}` : null,
       retailer_id: retailerId,
       created_by: userId,
       image_url: data.images[0]?.url ?? null,
     };
+
     const { data: row, error } = await supabase
       .from("products")
       .insert(insertPayload)
