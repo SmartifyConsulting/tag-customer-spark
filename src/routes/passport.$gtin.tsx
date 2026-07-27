@@ -56,11 +56,29 @@ const getPublicProductByGtin = createServerFn({ method: "GET" })
       .order("created_at", { ascending: true })
       .limit(1);
 
-    const product = products?.[0] ?? null;
+    let product = products?.[0] ?? null;
+
+    // Fallback: some products were captured with the real barcode typed into
+    // the SKU field (before the form had a dedicated barcode input), so a
+    // scan of that barcode should still resolve to them.
+    if (!product) {
+      const { data: bySku } = await supabaseAdmin
+        .from("products")
+        .select(
+          "id, retailer_id, store_id, stock_qty, name, brand, description, gtin, image_url, thumbnail_url, hero_image, image_status, price_cents, sale_price_cents, currency, on_promotion, promotion_label",
+        )
+        .in("sku", gtinCandidates)
+        .eq("status", "active")
+        .order("created_at", { ascending: true })
+        .limit(1);
+      product = bySku?.[0] ?? null;
+    }
+
     if (!product) {
       console.warn("[passport] no product for gtin", { input: data.gtin, gtin14, tried: gtinCandidates });
       return { found: false as const, gtin: gtin14 };
     }
+
 
 
     // Self-heal: shell passport if missing
