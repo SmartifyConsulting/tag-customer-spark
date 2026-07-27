@@ -149,22 +149,67 @@ export const Route = createFileRoute("/api/public/scan/interest")({
             .eq("id", existingWatch.id);
         }
 
-        // Open or refresh conversation
+        // Open or refresh the conversation, carrying the scanned product into
+        // the Inbox thread (subject + first inbound message).
+        let storeName: string | null = null;
+        if (tag.store_id) {
+          const { data: store } = await supabaseAdmin
+            .from("stores")
+            .select("name")
+            .eq("id", tag.store_id)
+            .maybeSingle();
+          storeName = (store as any)?.name ?? null;
+        }
+
+        const subject = `Interested in ${productName}`;
+        const scanLine =
+          `📷 Scanned ${productName}` +
+          (storeName ? ` at ${storeName}` : "") +
+          ` and asked to be notified on WhatsApp.`;
+
         const { data: convo } = await supabaseAdmin
           .from("conversations")
-          .select("id")
+          .select("id, tags")
           .eq("customer_id", customerId)
           .eq("retailer_id", tag.retailer_id)
           .maybeSingle();
-        if (!convo) {
-          await supabaseAdmin.from("conversations").insert({
-            customer_id: customerId,
+
+        let conversationId = (convo as any)?.id as string | undefined;
+        if (!conversationId) {
+          const { data: newConvo } = await supabaseAdmin
+            .from("conversations")
+            .insert({
+              customer_id: customerId,
+              retailer_id: tag.retailer_id,
+              store_id: tag.store_id,
+              status: "open",
+              subject,
+              tags: storeName ? [storeName] : [],
+            })
+            .select("id")
+            .single();
+          conversationId = (newConvo as any)?.id;
+        } else {
+          const tags = Array.from(
+            new Set([...(((convo as any).tags as string[]) ?? []), ...(storeName ? [storeName] : [])]),
+          );
+          await supabaseAdmin
+            .from("conversations")
+            .update({ subject, tags, status: "open" })
+            .eq("id", conversationId);
+        }
+
+        if (conversationId) {
+          await supabaseAdmin.from("conversation_messages").insert({
+            conversation_id: conversationId,
             retailer_id: tag.retailer_id,
-            store_id: tag.store_id,
-            status: "open",
-            subject: "Opted in via QR scan",
+            direction: "inbound",
+            body: scanLine,
+            status: "delivered",
+            sent_at: now,
           });
         }
+
 
         // Fire-and-forget conversation-starter WhatsApp — never block opt-in on
         // send failure. This is the customer's first-ever WhatsApp message from
