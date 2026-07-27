@@ -237,13 +237,16 @@ export function ProductFormDialog({
 
   async function handleBarcode(code: string) {
     const current = form.getValues();
-    form.setValue("sku", code, { shouldDirty: true });
+    // A scanned code IS the product's barcode — it goes to GTIN, not SKU.
+    form.setValue("gtin", code, { shouldDirty: true, shouldValidate: true });
+    if (!(current.sku ?? "").trim()) form.setValue("sku", code, { shouldDirty: true });
     try {
       const res = await lookupFn({ data: { code } });
       if (!res.found || !res.product) {
-        toast.info(`SKU set to ${code}. No product match — fill fields manually.`);
+        toast.info(`Barcode set to ${code}. No product match — fill fields manually.`);
         return;
       }
+
       const p: any = res.product;
       const setIfEmpty = (key: keyof ProductInput, val: any) => {
         if (val == null || val === "") return;
