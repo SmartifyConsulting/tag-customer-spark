@@ -211,7 +211,7 @@ export const getProduct = createServerFn({ method: "POST" })
       supabase
         .from("product_qr_assets")
         .select(
-          "id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path",
+          "id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path, store_id, store_name",
         )
         .eq("product_id", data.id)
         .eq("status", "active")
