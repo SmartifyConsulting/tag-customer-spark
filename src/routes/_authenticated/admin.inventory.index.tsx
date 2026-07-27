@@ -501,16 +501,17 @@ function InventoryAdminPage() {
                                 {[p.sku, p.brand].filter(Boolean).join(" · ")}
                               </div>
                             </div>
-                            <Badge variant="outline" className="capitalize">
-                              {p.status}
-                            </Badge>
-                            {p.is_tagged ? (
+                            {p.status !== "active" && (
+                              <Badge variant="outline" className="capitalize">
+                                {p.status}
+                              </Badge>
+                            )}
+                            {p.is_tagged && (
                               <Badge className="gap-1 bg-primary text-primary-foreground">
                                 <TagIcon className="h-3 w-3" /> Tagged
                               </Badge>
-                            ) : (
-                              <Badge variant="secondary">Untagged</Badge>
                             )}
+
                             <Badge variant="outline">{p.stock_qty ?? 0} qty</Badge>
                           </Link>
                         </li>
