@@ -332,16 +332,22 @@ export async function enrichProductPassport(
   }
 }
 
-export function getPublicSiteBase(): string {
-  // Fall back to the live custom domain so a missing/mis-set PUBLIC_SITE_URL
-  // never regresses QR codes onto a defunct hostname (mypenguin.co.za was
-  // the previous default and left dead QR codes in the wild — see the
-  // one-shot resolver_url backfill migration that accompanies this change).
-  return (
-    process.env.PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-    "https://tag-tech.co.za"
-  );
+export const CANONICAL_SITE_BASE = "https://tag-tech.co.za";
+
+// mypenguin.co.za is the defunct previous hostname. Any configured value
+// still pointing there is ignored outright so QR codes can never regress
+// onto a dead domain again, no matter what the deployment env holds.
+export function sanitiseSiteBase(value: string | null | undefined): string | null {
+  const base = value?.trim().replace(/\/$/, "");
+  if (!base) return null;
+  if (/mypenguin\.co\.za/i.test(base)) return null;
+  return base;
 }
+
+export function getPublicSiteBase(): string {
+  return sanitiseSiteBase(process.env.PUBLIC_SITE_URL) ?? CANONICAL_SITE_BASE;
+}
+
 
 // Canonical public product URL — this is what the QR encodes. It's a normal
 // public page (never an API endpoint) so scans open directly to the Digital
