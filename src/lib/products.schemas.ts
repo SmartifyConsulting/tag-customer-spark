@@ -51,7 +51,9 @@ export type ProductInput = z.infer<typeof productInputSchema>;
 
 export const listProductsSchema = z.object({
   search: z.string().optional().default(""),
-  status: z.enum(["all", "active", "draft", "archived"]).optional().default("all"),
+  // Inventory views show only live products unless a status is asked for.
+  status: z.enum(["all", "active", "draft", "archived"]).optional().default("active"),
+
   category_id: z.string().uuid().optional().nullable(),
   brand_id: z.string().uuid().optional().nullable(),
   store_id: z.string().uuid().optional().nullable(),
