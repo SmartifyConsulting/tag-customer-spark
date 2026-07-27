@@ -368,10 +368,8 @@ export const createProduct = createServerFn({ method: "POST" })
     }
 
     // The manual "Add Product" form has no barcode field, so a product
-    // created here always starts with no GTIN — same gap import used to
-    // have before commitProductImport ran the barcode-to-QR pipeline
-    // inline. Do the same here, non-fatally, so a manually-added product
-    // shows up as tagged in Inventory without a separate manual step.
+    // created here often starts with no GTIN. Try to complete its Digital
+    // Identity non-fatally; it is still only "Tagged" after a customer scan.
     try {
       const { assignMissingBarcodesForRetailer } = await import("./barcode-assign.functions");
       await assignMissingBarcodesForRetailer(supabase, retailerId);

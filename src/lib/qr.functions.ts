@@ -271,7 +271,7 @@ export async function generateForProduct(
       generated_by: userId,
       created_by: userId,
     })
-    .select("id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path")
+    .select("id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path, store_id, store_name")
     .single();
   if (insErr) throw new Error(insErr.message);
 
