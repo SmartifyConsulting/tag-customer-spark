@@ -73,25 +73,34 @@ export function ProductQrPanel({
   productName,
   qr,
   dppId,
+  defaultStoreId,
 }: {
   productId: string;
   productName: string;
   qr: ActiveQrAsset | null;
   dppId?: string | null;
+  /** Store on the product record — used as the default QR attribution. */
+  defaultStoreId?: string | null;
 }) {
   const qc = useQueryClient();
   const generateFn = useServerFn(generateProductQr);
   const listStoresFn = useServerFn(listStores);
   const storesQ = useQuery({ queryKey: ["stores"], queryFn: () => listStoresFn() });
   const stores: Array<{ id: string; name: string }> = (storesQ.data as any)?.stores ?? [];
-  const [storeId, setStoreId] = useState<string | null>(null);
+  const [storeId, setStoreId] = useState<string | null>(
+    qr?.store_id ?? defaultStoreId ?? null,
+  );
   const [confirmRegen, setConfirmRegen] = useState(false);
   const [clash, setClash] = useState<GtinClash | null>(null);
   const [mergeOpen, setMergeOpen] = useState(false);
   const [autoRetryAfterMerge, setAutoRetryAfterMerge] = useState(false);
 
   const generate = useMutation({
-    mutationFn: (force: boolean) => generateFn({ data: { productId, force, storeId } }),
+    mutationFn: (force: boolean) =>
+      generateFn({
+        data: { productId, force, storeId: storeId ?? qr?.store_id ?? defaultStoreId ?? null },
+      }),
+
 
     onSuccess: (row: any) => {
       qc.setQueryData(["product", productId], (prev: any) => {
@@ -224,11 +233,25 @@ export function ProductQrPanel({
 
   const generatedDate = new Date(qr.generated_at).toLocaleString();
   const dppHref = dppId ? `/p/${dppId}` : qr.resolver_url;
+  const storeCode = qr.store_id ? `TAG-${qr.store_id.slice(0, 8).toUpperCase()}` : null;
 
   return (
     <>
-    <section className="grid gap-6 rounded-xl border border-border bg-card p-6">
-      <div className="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)]">
+    <section className="grid gap-4 rounded-xl border border-border bg-card p-5">
+      <header className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold">GS1 Digital Link QR</h2>
+          <p className="text-xs text-muted-foreground">
+            This product already has an active QR Code.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setConfirmRegen(true)}>
+          <RefreshCw className="mr-2 h-4 w-4" /> Regenerate
+        </Button>
+      </header>
+
+      {/* QR + Active badge, with the GS1 Digital Link details neatly stacked
+          directly underneath so nothing is clipped by the outer frame. */}
       <div className="flex flex-col items-center gap-3">
         <div
           className="grid place-items-center rounded-xl border border-border bg-white p-3"
@@ -240,81 +263,112 @@ export function ProductQrPanel({
           <Check className="h-3 w-3" /> Active
         </Badge>
       </div>
-      <div className="grid content-start gap-4">
-        <header className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">GS1 Digital Link QR</h2>
-            <p className="text-sm text-muted-foreground">
-              This product already has an active QR Code.
-            </p>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => setConfirmRegen(true)}>
-            <RefreshCw className="mr-2 h-4 w-4" /> Regenerate
-          </Button>
-        </header>
-        <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3 text-sm">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">GTIN · Version</p>
-          <p className="mt-0.5 break-words font-mono text-sm font-medium">
-            {qr.gtin} · v{qr.version}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">Generated {generatedDate}</p>
-          <p className="mt-1 text-xs">
-            <span className="text-muted-foreground">Store identity: </span>
-            {qr.store_name ? (
-              <span className="font-medium">{qr.store_name}</span>
-            ) : (
-              <span className="text-amber-600">
-                Not assigned — regenerate with a branch selected
-              </span>
-            )}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <Button variant="outline" onClick={() => download(qr.png_url, `qr-${qr.gtin}.png`)}>
-            <Download className="mr-2 h-4 w-4" /> Download PNG
-          </Button>
-          <Button variant="outline" onClick={() => download(qr.svg_url, `qr-${qr.gtin}.svg`)}>
-            <Download className="mr-2 h-4 w-4" /> Download SVG
-          </Button>
-          <Button variant="outline" onClick={() => printQr(qr.png_url, productName, qr.gtin)}>
-            <Printer className="mr-2 h-4 w-4" /> Print QR
-          </Button>
-          <a
-            href={dppHref}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
-          >
-            <ExternalLink className="h-4 w-4" /> View Digital ID
-          </a>
-        </div>
-      </div>
-      </div>
 
-      {/* GS1 Digital Link details — full-width row below the QR so long
-          URLs are never clipped by the Digital Product ID frame. */}
       <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3">
         <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
           GS1 Digital Link
         </p>
-        <p className="mt-1 break-all font-mono text-xs">{qr.digital_link_url}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="break-all text-xs text-muted-foreground">
-            Resolver: <code className="rounded bg-muted px-1.5 py-0.5">{qr.resolver_url}</code>
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            onClick={() => {
-              navigator.clipboard?.writeText(qr.digital_link_url);
-              toast.success("Digital Link copied");
-            }}
-          >
-            Copy link
-          </Button>
-        </div>
+        <p className="mt-1 break-all font-mono text-[11px] leading-relaxed">
+          {qr.digital_link_url}
+        </p>
+        <p className="mt-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+          Resolver
+        </p>
+        <p className="mt-0.5 break-all font-mono text-[11px] leading-relaxed text-muted-foreground">
+          {qr.resolver_url}
+        </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-2 h-7 px-2 text-xs"
+          onClick={() => {
+            navigator.clipboard?.writeText(qr.digital_link_url);
+            toast.success("Digital Link copied");
+          }}
+        >
+          Copy link
+        </Button>
       </div>
+
+      <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3 text-sm">
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">GTIN · Version</p>
+        <p className="mt-0.5 break-all font-mono text-sm font-medium">
+          {qr.gtin} · v{qr.version}
+        </p>
+        <p className="mt-1 break-words text-xs text-muted-foreground">Generated {generatedDate}</p>
+        <p className="mt-1 break-words text-xs">
+          <span className="text-muted-foreground">Store identity: </span>
+          {qr.store_name ? (
+            <span className="font-medium">
+              {qr.store_name}
+              {storeCode ? <span className="text-muted-foreground"> · {storeCode}</span> : null}
+            </span>
+          ) : (
+            <span className="text-amber-600">Not assigned</span>
+          )}
+        </p>
+      </div>
+
+      {/* Assign / change the branch this QR belongs to — regenerating with a
+          store selected stamps store_id + store_name onto the asset. */}
+      {stores.length > 0 && (
+        <div className="grid gap-2 rounded-lg border border-dashed border-border p-3">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            Store identity
+          </p>
+          <Select
+            value={storeId ?? qr.store_id ?? "__none__"}
+            onValueChange={(v) => setStoreId(v === "__none__" ? null : v)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Assign a branch…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">All stores (no attribution)</SelectItem>
+              {stores.map((s) => (
+                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={generate.isPending || !storeId || storeId === qr.store_id}
+            onClick={() => generate.mutate(true)}
+          >
+            {generate.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Assign store to QR
+          </Button>
+          <p className="text-[11px] text-muted-foreground">
+            Scans then attribute the customer's opt-in phone number to this branch.
+          </p>
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" onClick={() => download(qr.png_url, `qr-${qr.gtin}.png`)}>
+          <Download className="mr-2 h-4 w-4" /> PNG
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => download(qr.svg_url, `qr-${qr.gtin}.svg`)}>
+          <Download className="mr-2 h-4 w-4" /> SVG
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => printQr(qr.png_url, productName, qr.gtin)}>
+          <Printer className="mr-2 h-4 w-4" /> Print
+        </Button>
+        <a
+          href={dppHref}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
+        >
+          <ExternalLink className="h-4 w-4" /> View Digital ID
+        </a>
+      </div>
+
       <AlertDialog open={confirmRegen} onOpenChange={setConfirmRegen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -343,6 +397,7 @@ export function ProductQrPanel({
     </>
   );
 }
+
 
 function Fact({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (

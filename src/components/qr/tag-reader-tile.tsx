@@ -16,9 +16,10 @@ export function TagReaderTile({ compact = false }: { compact?: boolean }) {
 
   return (
     <>
-      <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-2 pr-3">
-        <QrPreview value={readerUrl} size={compact ? 56 : 96} />
+      <div className="flex items-center gap-3">
+        <QrPreview value={readerUrl} size={compact ? 112 : 192} />
         <div className="flex flex-col gap-1">
+
           <p className="text-xs font-semibold leading-tight">Tag Barcode Reader</p>
           <div className="flex flex-wrap items-center gap-1">
             <Button asChild size="sm" variant="outline" className="h-7 px-2 text-xs">

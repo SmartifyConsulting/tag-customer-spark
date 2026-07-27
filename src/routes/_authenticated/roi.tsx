@@ -212,9 +212,18 @@ function RoiSettingsCard({ data, onSaved }: { data: any; onSaved: () => void }) 
           </div>
         </div>
         <div className="space-y-2">
-          <Label>Cost per message (cents)</Label>
-          <Input type="number" value={current.cost_per_message_cents} onChange={(e) => patch({ cost_per_message_cents: parseInt(e.target.value || "0") })} />
+          <Label>Cost per message (R)</Label>
+          <Input
+            type="number"
+            step="0.01"
+            min={0}
+            value={(current.cost_per_message_cents / 100).toFixed(2)}
+            onChange={(e) =>
+              patch({ cost_per_message_cents: Math.round(parseFloat(e.target.value || "0") * 100) })
+            }
+          />
         </div>
+
         <div className="space-y-2">
           <Label>Default margin (0–1)</Label>
           <Input type="number" step="0.01" value={current.default_margin_pct} onChange={(e) => patch({ default_margin_pct: parseFloat(e.target.value || "0") })} />

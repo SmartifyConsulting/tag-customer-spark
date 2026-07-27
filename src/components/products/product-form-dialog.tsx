@@ -1,11 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ImagePlus, Loader2, ScanLine, X } from "lucide-react";
+import { Check, ImagePlus, Loader2, ScanLine, X } from "lucide-react";
+import { centsToRandInput, randToCents } from "@/lib/format";
 import { BarcodeScannerDialog } from "@/components/products/barcode-scanner-dialog";
+
 import {
   Dialog,
   DialogContent,
@@ -138,12 +140,27 @@ export function ProductFormDialog({
     setImgs((prev) => prev.filter((_, idx) => idx !== i).map((m, idx) => ({ ...m, sort: idx })));
   }
 
+  // Auto-save: once a new product has a name (and SKU is derivable) it is
+  // created as a draft row and every later edit is written back on a short
+  // debounce, so closing the dialog never loses work.
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const effectiveId = productId ?? draftId;
+  const [autoState, setAutoState] = useState<"idle" | "saving" | "saved">("idle");
+  const lastSavedRef = useRef<string>("");
+  const autoBusyRef = useRef(false);
+
+  const buildPayload = (values: ProductInput) => ({
+    ...values,
+    sku: (values.sku ?? "").trim() || `SKU-${Date.now().toString(36).toUpperCase()}`,
+    images: imgs,
+  });
+
   const save = useMutation({
     mutationFn: async (values: ProductInput) => {
-      const payload = { ...values, images: imgs };
-      if (productId) {
-        await update({ data: { id: productId, patch: payload } });
-        return productId;
+      const payload = buildPayload(values);
+      if (effectiveId) {
+        await update({ data: { id: effectiveId, patch: payload } });
+        return effectiveId;
       }
       const { id } = await create({ data: payload });
       if (imgs.length) await setImages({ data: { id, images: imgs } });
@@ -151,12 +168,64 @@ export function ProductFormDialog({
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["products"] });
-      qc.invalidateQueries({ queryKey: ["product", productId] });
-      toast.success(productId ? "Product updated" : "Product created");
+      qc.invalidateQueries({ queryKey: ["product", effectiveId] });
+      toast.success(productId ? "Product updated" : "Product saved");
       onOpenChange(false);
     },
     onError: (e: any) => toast.error(e.message ?? "Save failed"),
   });
+
+  const watched = form.watch();
+  const watchKey = JSON.stringify({ v: watched, i: imgs });
+
+  useEffect(() => {
+    if (!open) return;
+    // Seed the baseline on open so simply opening an existing product does
+    // not immediately fire a pointless write.
+    if (!lastSavedRef.current) {
+      lastSavedRef.current = watchKey;
+      return;
+    }
+    if (watchKey === lastSavedRef.current) return;
+    const name = (watched.name ?? "").trim();
+    if (!name) return;
+    if (save.isPending) return;
+
+    const t = setTimeout(async () => {
+      if (autoBusyRef.current) return;
+      autoBusyRef.current = true;
+      const snapshot = watchKey;
+      try {
+        setAutoState("saving");
+        const payload = buildPayload(form.getValues());
+        if (effectiveId) {
+          await update({ data: { id: effectiveId, patch: payload } });
+        } else {
+          const { id } = await create({ data: payload });
+          setDraftId(id);
+          if (imgs.length) await setImages({ data: { id, images: imgs } });
+        }
+        lastSavedRef.current = snapshot;
+        setAutoState("saved");
+        qc.invalidateQueries({ queryKey: ["products"] });
+      } catch {
+        setAutoState("idle");
+      } finally {
+        autoBusyRef.current = false;
+      }
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [watchKey, open]);
+
+  // Reset auto-save bookkeeping whenever the dialog opens fresh.
+  useEffect(() => {
+    if (open) {
+      lastSavedRef.current = "";
+      setDraftId(null);
+      setAutoState("idle");
+    }
+  }, [open]);
+
 
   async function handleBarcode(code: string) {
     const current = form.getValues();
@@ -276,20 +345,32 @@ export function ProductFormDialog({
 
           <Section title="Pricing">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <Field label="Price (cents) *">
+              <Field label="Price (R) *">
                 <Input
                   type="number"
+                  step="0.01"
                   min={0}
-                  {...form.register("price_cents", { valueAsNumber: true })}
+                  value={centsToRandInput(form.watch("price_cents"))}
+                  onChange={(e) =>
+                    form.setValue("price_cents", randToCents(e.target.value), {
+                      shouldDirty: true,
+                    })
+                  }
                 />
               </Field>
-              <Field label="Sale price (cents)">
+              <Field label="Sale price (R)">
                 <Input
                   type="number"
+                  step="0.01"
                   min={0}
-                  {...form.register("sale_price_cents", {
-                    setValueAs: (v) => (v === "" || v == null ? null : Number(v)),
-                  })}
+                  value={centsToRandInput(form.watch("sale_price_cents"))}
+                  onChange={(e) =>
+                    form.setValue(
+                      "sale_price_cents",
+                      e.target.value === "" ? null : randToCents(e.target.value),
+                      { shouldDirty: true },
+                    )
+                  }
                 />
               </Field>
               <Field label="Currency">
@@ -297,6 +378,7 @@ export function ProductFormDialog({
               </Field>
             </div>
           </Section>
+
 
           <Section title="Inventory & variants">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -378,13 +460,29 @@ export function ProductFormDialog({
             </div>
           </Section>
 
-          <DialogFooter className="mt-4 gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={save.isPending}>
-              {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save product
-            </Button>
+          <DialogFooter className="mt-4 items-center gap-2 sm:justify-between">
+            <span className="text-xs text-muted-foreground">
+              {autoState === "saving" ? (
+                <span className="inline-flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+                </span>
+              ) : autoState === "saved" ? (
+                <span className="inline-flex items-center gap-1 text-emerald-600">
+                  <Check className="h-3 w-3" /> Saved automatically
+                </span>
+              ) : null}
+            </span>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                {autoState === "saved" ? "Close" : "Cancel"}
+              </Button>
+              <Button type="submit" disabled={save.isPending}>
+                {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save product
+              </Button>
+            </div>
           </DialogFooter>
+
         </form>
       </DialogContent>
       <BarcodeScannerDialog
