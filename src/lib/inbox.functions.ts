@@ -76,7 +76,11 @@ export const getConversation = createServerFn({ method: "POST" })
 
     const { data: interests } = await supabase
       .from("customer_interests")
-      .select("id, created_at, status, product:products(id, name, image_url, price)")
+      // `price` is not a column on products (it's price_cents) — selecting it
+      // made this query error, so the thread never had any interest context.
+      .select(
+        "id, created_at, status, product:products(id, name, display_name, gtin, image_url, thumbnail_url, hero_image, price_cents, currency)",
+      )
       .eq("customer_id", convo.customer_id)
       .order("created_at", { ascending: false })
       .limit(20);
