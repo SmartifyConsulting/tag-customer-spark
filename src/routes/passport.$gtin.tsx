@@ -11,73 +11,34 @@ import "react-phone-number-input/style.css";
 
 // ------- Server: resolve product by GTIN, self-heal, log scan --------------
 
-function validGtin14(input: string): string | null {
-  const digits = input.replace(/\D/g, "");
-  if (![8, 12, 13, 14].includes(digits.length)) return null;
-  const g = digits.padStart(14, "0");
-  let sum = 0;
-  for (let i = 0; i < 13; i++) {
-    const d = Number(g[i]);
-    sum += d * (i % 2 === 0 ? 3 : 1);
-  }
-  const check = (10 - (sum % 10)) % 10;
-  if (check !== Number(g[13])) return null;
-  return g;
-}
+const PUBLIC_PRODUCT_SELECT =
+  "id, retailer_id, store_id, stock_qty, name, brand, description, gtin, image_url, thumbnail_url, hero_image, image_status, price_cents, sale_price_cents, currency, on_promotion, promotion_label";
 
 const getPublicProductByGtin = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ gtin: z.string() }).parse(d))
   .handler(async ({ data }) => {
+    const { validGtin14, findActiveProductByGtin, gtinCandidates } = await import(
+      "@/lib/gtin-lookup.server"
+    );
     const gtin14 = validGtin14(data.gtin);
     if (!gtin14) return { found: false as const, gtin: data.gtin };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // The same manufacturer GTIN can be stocked by multiple retailers, so
-    // this can legitimately match more than one row — .maybeSingle() would
-    // throw in that case. Bare /passport/{gtin} (no store context) can't
-    // disambiguate which retailer's copy the scanner meant, so it
-    // deterministically picks the oldest-registered match; a store-linked
-    // scan entry point (in progress) will resolve this precisely instead.
-    // GTINs can be stored in the DB as the raw input (12 / 13 / 14 digits)
-    // depending on the source, but the scanner always resolves them into a
-    // padded 14-digit form. Match against both so a QR encoded as e.g.
-    // `02007453265190` still finds a product stored as `2007453265190`.
-    const gtinCandidates = Array.from(
-      new Set([gtin14, gtin14.replace(/^0+/, "") || gtin14, gtin14.slice(1), gtin14.slice(2)]),
-    );
-    const { data: products } = await supabaseAdmin
-      .from("products")
-      .select(
-        "id, retailer_id, store_id, stock_qty, name, brand, description, gtin, image_url, thumbnail_url, hero_image, image_status, price_cents, sale_price_cents, currency, on_promotion, promotion_label",
-      )
-      .in("gtin", gtinCandidates)
-      .eq("status", "active")
-      .order("created_at", { ascending: true })
-      .limit(1);
-
-    let product = products?.[0] ?? null;
-
-    // Fallback: some products were captured with the real barcode typed into
-    // the SKU field (before the form had a dedicated barcode input), so a
-    // scan of that barcode should still resolve to them.
-    if (!product) {
-      const { data: bySku } = await supabaseAdmin
-        .from("products")
-        .select(
-          "id, retailer_id, store_id, stock_qty, name, brand, description, gtin, image_url, thumbnail_url, hero_image, image_status, price_cents, sale_price_cents, currency, on_promotion, promotion_label",
-        )
-        .in("sku", gtinCandidates)
-        .eq("status", "active")
-        .order("created_at", { ascending: true })
-        .limit(1);
-      product = bySku?.[0] ?? null;
-    }
+    // Shared with the WhatsApp opt-in endpoint so the two can never drift:
+    // matches padded/unpadded GTIN forms, then falls back to SKU for rows
+    // captured before the form had a dedicated barcode field.
+    const product = await findActiveProductByGtin(supabaseAdmin, gtin14, PUBLIC_PRODUCT_SELECT);
 
     if (!product) {
-      console.warn("[passport] no product for gtin", { input: data.gtin, gtin14, tried: gtinCandidates });
+      console.warn("[passport] no product for gtin", {
+        input: data.gtin,
+        gtin14,
+        tried: gtinCandidates(gtin14),
+      });
       return { found: false as const, gtin: gtin14 };
     }
+
 
 
 
