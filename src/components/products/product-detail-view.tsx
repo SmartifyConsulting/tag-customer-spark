@@ -278,7 +278,9 @@ export function ProductDetailView({
               productName={p.name}
               qr={data.qr as any}
               dppId={(p as any).digital_product_passport_id}
+              defaultStoreId={p.store?.id ?? null}
             />
+
 
           </div>
           <div>
