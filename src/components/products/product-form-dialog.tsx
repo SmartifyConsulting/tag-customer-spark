@@ -297,8 +297,22 @@ export function ProductFormDialog({
             </Field>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="SKU *" error={form.formState.errors.sku?.message}>
+                <Input {...form.register("sku")} />
+              </Field>
+              <Field label="Brand"><Input {...form.register("brand")} /></Field>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field
+                label="Barcode (GTIN)"
+                error={form.formState.errors.gtin?.message as string | undefined}
+              >
                 <div className="flex gap-2">
-                  <Input {...form.register("sku")} className="flex-1" />
+                  <Input
+                    {...form.register("gtin")}
+                    inputMode="numeric"
+                    placeholder="e.g. 6004201004816"
+                    className="flex-1 font-mono"
+                  />
                   <Button
                     type="button"
                     variant="outline"
@@ -309,9 +323,12 @@ export function ProductFormDialog({
                     <span className="sr-only sm:not-sr-only sm:ml-2">Scan</span>
                   </Button>
                 </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  The real product barcode. Leave blank and one is generated for you.
+                </p>
               </Field>
-              <Field label="Brand"><Input {...form.register("brand")} /></Field>
             </div>
+
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Category">
                 <Select
