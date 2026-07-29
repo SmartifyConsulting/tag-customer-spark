@@ -1,39 +1,31 @@
-## 1. Scanner jumps straight to the product
+## Goal
 
-`src/routes/tools.barcode-reader.tsx` currently stops at a "Detected / Look up product" card.
+Your Twilio credentials changed, so every WhatsApp send in the app is now authenticating with stale keys. We refresh the stored connection, then prove delivery end to end.
 
-- On a valid detection (8–14 digits), stop the camera and navigate immediately to `/passport/{code}`.
-- Keep a brief "Found 6004201004816 — opening…" state so the shopper sees what was read.
-- Non-numeric / unusable codes keep the current card with a "Scan again" button.
-- The passport page already handles "no match", so a bad barcode lands on its not-found state rather than a dead end.
+## What's connected today
 
-## 2. Background flipping between black and white
+- The app talks to Twilio through the Lovable connector gateway using the workspace connection named **Tag** (Twilio, API-key auth), already linked to this project.
+- All sends go through one helper (`src/lib/whatsapp.server.ts`), used by scan opt-ins, watchlist alerts, broadcasts and the inbound webhook. So one credential refresh fixes all paths.
+- The sender number comes from the `TWILIO_WHATSAPP_FROM` secret.
 
-`src/components/theme-provider.tsx` defaults to `system`, so the app follows the phone/OS dark-mode setting (including automatic sunset switching) — that's the ad-hoc black/white you're seeing.
+## Steps
 
-- Default to **light** when nothing is stored, and only use dark if the user explicitly picks it from the theme toggle.
-- Remove the `prefers-color-scheme` listener from the default path so the OS can never flip it mid-session.
-- Public pages (passport, barcode reader) render light always, so a shopper's dark phone doesn't change the shelf experience.
+1. **Reconnect the Twilio connection.** I open a reconnect card in chat; you paste the new credentials. Twilio's connector expects an **API Key SID + API Key Secret + Account SID** (created in Twilio Console → Account → API keys & tokens), not the raw Auth Token. If you only have the new Account SID + Auth Token, you can generate a Main API Key in that same screen — I'll wait for you.
+2. **Verify the credentials** with a non-destructive gateway credential check, so we know auth works before sending anything.
+3. **Confirm the sender number.** Check that `TWILIO_WHATSAPP_FROM` still matches the WhatsApp sender on the new account; update the secret if the number changed.
+4. **Send a live test message** to a phone number you give me, via the gateway, and report Twilio's exact status/error back.
+5. **Test the real flow.** Scan (or open) a tagged product, opt in with that same number, and confirm the conversation-starter WhatsApp arrives and the message lands in the Inbox.
 
-## 3. Inbox message doesn't say which product
+## Known blocker from last time
 
-Today the barcode opt-in only creates a bare conversation with subject "Opted in via barcode scan" and no message row — so the Inbox has nothing to show.
+Twilio previously returned error **20422 – region capability not available** for South African numbers on sender `+1 571 626 7022`. If the new account has the same restriction, the test will fail with that same code. Fix in Twilio Console → Messaging → Settings → **Geo Permissions**: enable South Africa. Worth enabling before step 4.
 
-In `src/routes/api/public/scan.barcode-interest.ts` (and the matching QR path in `scan.interest.ts`):
-- Set the conversation subject to the product name, e.g. `Interested in Baby Blue Jumper`.
-- Insert an inbound system message on the conversation: product name, barcode, store/branch, and time of scan — so the thread's first line is the scan itself.
-- Tag the conversation with the branch/store name so it's filterable.
-- Show the product thumbnail + name in the Inbox thread header (`src/routes/_authenticated/inbox.tsx`), driven by the existing `customer_interests` join already returned by `getConversation`.
+## Also worth checking (business-initiated sends)
 
-## 4. The tag_product_scan WhatsApp template never sent
+Outbound messages sent more than 24h after the customer's last inbound message need an approved Content Template. The app supports this via `TWILIO_TEMPLATE_CONVERSATION_STARTER_SID` and `TWILIO_TEMPLATE_BARCODE_SCAN_SID`. Template SIDs are per-account — if the new Twilio account is a different account (not just rotated keys on the same one), those SIDs are invalid and the templates must be recreated and the secrets updated. I'll check this in step 3.
 
-The code already prefers a Twilio Content Template for the scan message, but it reads `TWILIO_TEMPLATE_BARCODE_SCAN_SID` — that secret isn't set on this project, so it silently fell back to a freeform message. WhatsApp blocks business-initiated freeform outside a 24-hour window, which is why nothing arrived.
+## What I need from you
 
-- Look up the `tag_product_scan` template's Content SID (the `HX…` value) through the Twilio connection and store it as `TWILIO_TEMPLATE_BARCODE_SCAN_SID`. If it can't be read automatically, I'll ask you to paste the `HX…` SID from Twilio → Content Template Builder.
-- Verify the template's variable order matches what we send today (`{{1}}` = product image for the header, `{{2}}` = product name); if your template uses different placeholders, I'll align the code to it.
-- Add a visible failure trail: when a template send fails, record the Twilio error on `notification_history` so it shows up instead of failing silently.
-- Test end-to-end with a real scan on `6004201004816` and confirm the message lands.
-
-### Technical notes
-- Files touched: `tools.barcode-reader.tsx`, `theme-provider.tsx`, `scan.barcode-interest.ts`, `scan.interest.ts`, `inbox.functions.ts`, `inbox.tsx`.
-- No schema change needed — `conversation_messages` and `customer_interests` already carry everything required.
+- The new Twilio credentials (entered in the secure reconnect card, never in chat).
+- A WhatsApp number to send the test message to.
+- Whether this is the **same Twilio account with rotated keys**, or a **brand-new account**.
