@@ -65,9 +65,15 @@ function SettingsPage() {
           <TabsTrigger value="emails"><Mail className="mr-1 h-4 w-4" /> Emails</TabsTrigger>
           <TabsTrigger value="billing"><CreditCard className="mr-1 h-4 w-4" /> Billing</TabsTrigger>
           {isSuperAdmin && <TabsTrigger value="plan-admin"><CreditCard className="mr-1 h-4 w-4" /> Subscription plan admin</TabsTrigger>}
+          <TabsTrigger value="automations"><Zap className="mr-1 h-4 w-4" /> Automations</TabsTrigger>
           <TabsTrigger value="security"><ShieldCheck className="mr-1 h-4 w-4" /> Security</TabsTrigger>
           <TabsTrigger value="audit"><History className="mr-1 h-4 w-4" /> Audit log</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="automations">
+          <AutomationSettings />
+        </TabsContent>
+
 
         <TabsContent value="workspace" className="space-y-8">
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
