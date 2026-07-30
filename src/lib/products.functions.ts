@@ -697,6 +697,10 @@ export const updateStock = createServerFn({ method: "POST" })
     processWatchlistEvents(context.supabase, data.id).catch((e) =>
       console.warn("[updateStock] watchlist dispatch failed", e?.message ?? e),
     );
+    const { evaluateProduct } = await import("@/lib/notification-engine.server");
+    evaluateProduct(context.supabase, data.id).catch((e) =>
+      console.warn("[updateStock] notification engine failed", e?.message ?? e),
+    );
 
     return { ok: true };
   });
