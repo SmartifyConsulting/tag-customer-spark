@@ -215,6 +215,54 @@ export type Database = {
           },
         ]
       }
+      automation_settings: {
+        Row: {
+          automation_key: string
+          created_at: string
+          enabled: boolean
+          id: string
+          retailer_id: string
+          template_name: string
+          threshold: number | null
+          updated_at: string
+        }
+        Insert: {
+          automation_key: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          retailer_id: string
+          template_name?: string
+          threshold?: number | null
+          updated_at?: string
+        }
+        Update: {
+          automation_key?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          retailer_id?: string
+          template_name?: string
+          threshold?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_settings_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "automation_settings_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_events: {
         Row: {
           created_at: string
@@ -3227,13 +3275,26 @@ export type Database = {
           expires_at: string | null
           fired_count: number
           id: string
+          last_back_in_stock_sent: string | null
           last_fired_at: string | null
+          last_high_interest_sent: string | null
+          last_known_intent_score: number | null
+          last_known_price: number | null
+          last_known_stock: number | null
+          last_last_one_sent: string | null
+          last_low_stock_sent: string | null
+          last_notified_price: number | null
+          last_notified_stock: number | null
+          last_price_drop_sent: string | null
+          notifications_enabled: boolean
+          price_when_added: number | null
           product_id: string
           retailer_id: string
           status: Database["public"]["Enums"]["watchlist_status"]
           target_price_cents: number | null
           trigger: Database["public"]["Enums"]["watchlist_trigger"]
           updated_at: string
+          whatsapp_number: string | null
         }
         Insert: {
           channel?: string
@@ -3243,13 +3304,26 @@ export type Database = {
           expires_at?: string | null
           fired_count?: number
           id?: string
+          last_back_in_stock_sent?: string | null
           last_fired_at?: string | null
+          last_high_interest_sent?: string | null
+          last_known_intent_score?: number | null
+          last_known_price?: number | null
+          last_known_stock?: number | null
+          last_last_one_sent?: string | null
+          last_low_stock_sent?: string | null
+          last_notified_price?: number | null
+          last_notified_stock?: number | null
+          last_price_drop_sent?: string | null
+          notifications_enabled?: boolean
+          price_when_added?: number | null
           product_id: string
           retailer_id: string
           status?: Database["public"]["Enums"]["watchlist_status"]
           target_price_cents?: number | null
           trigger?: Database["public"]["Enums"]["watchlist_trigger"]
           updated_at?: string
+          whatsapp_number?: string | null
         }
         Update: {
           channel?: string
@@ -3259,13 +3333,26 @@ export type Database = {
           expires_at?: string | null
           fired_count?: number
           id?: string
+          last_back_in_stock_sent?: string | null
           last_fired_at?: string | null
+          last_high_interest_sent?: string | null
+          last_known_intent_score?: number | null
+          last_known_price?: number | null
+          last_known_stock?: number | null
+          last_last_one_sent?: string | null
+          last_low_stock_sent?: string | null
+          last_notified_price?: number | null
+          last_notified_stock?: number | null
+          last_price_drop_sent?: string | null
+          notifications_enabled?: boolean
+          price_when_added?: number | null
           product_id?: string
           retailer_id?: string
           status?: Database["public"]["Enums"]["watchlist_status"]
           target_price_cents?: number | null
           trigger?: Database["public"]["Enums"]["watchlist_trigger"]
           updated_at?: string
+          whatsapp_number?: string | null
         }
         Relationships: [
           {
