@@ -73,6 +73,7 @@ import { Route as ApiPublicSShortCodeRouteImport } from './routes/api/public/s.$
 import { Route as ApiPublicHooksPassportTickRouteImport } from './routes/api/public/hooks.passport-tick'
 import { Route as ApiPublicHooksNotificationsTickRouteImport } from './routes/api/public/hooks.notifications-tick'
 import { Route as ApiPublicHooksIntentTickRouteImport } from './routes/api/public/hooks.intent-tick'
+import { Route as ApiPublicHooksDailySummaryRouteImport } from './routes/api/public/hooks.daily-summary'
 import { Route as ApiPublic01GtinRouteImport } from './routes/api/public/01.$gtin'
 import { Route as AuthenticatedAdminInventoryProductIdRouteImport } from './routes/_authenticated/admin.inventory.$productId'
 
@@ -422,6 +423,12 @@ const ApiPublicHooksIntentTickRoute =
     path: '/api/public/hooks/intent-tick',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksDailySummaryRoute =
+  ApiPublicHooksDailySummaryRouteImport.update({
+    id: '/api/public/hooks/daily-summary',
+    path: '/api/public/hooks/daily-summary',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublic01GtinRoute = ApiPublic01GtinRouteImport.update({
   id: '/api/public/01/$gtin',
   path: '/api/public/01/$gtin',
@@ -490,6 +497,7 @@ export interface FileRoutesByFullPath {
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
+  '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
@@ -554,6 +562,7 @@ export interface FileRoutesByTo {
   '/products': typeof AuthenticatedProductsIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
+  '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
@@ -623,6 +632,7 @@ export interface FileRoutesById {
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
+  '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
@@ -692,6 +702,7 @@ export interface FileRouteTypes {
     | '/products/'
     | '/admin/inventory/$productId'
     | '/api/public/01/$gtin'
+    | '/api/public/hooks/daily-summary'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
     | '/api/public/hooks/passport-tick'
@@ -756,6 +767,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/admin/inventory/$productId'
     | '/api/public/01/$gtin'
+    | '/api/public/hooks/daily-summary'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
     | '/api/public/hooks/passport-tick'
@@ -824,6 +836,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products/'
     | '/_authenticated/admin/inventory/$productId'
     | '/api/public/01/$gtin'
+    | '/api/public/hooks/daily-summary'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
     | '/api/public/hooks/passport-tick'
@@ -857,6 +870,7 @@ export interface RootRouteChildren {
   ScanShortCodeRoute: typeof ScanShortCodeRoute
   ToolsBarcodeReaderRoute: typeof ToolsBarcodeReaderRoute
   ApiPublic01GtinRoute: typeof ApiPublic01GtinRoute
+  ApiPublicHooksDailySummaryRoute: typeof ApiPublicHooksDailySummaryRoute
   ApiPublicHooksIntentTickRoute: typeof ApiPublicHooksIntentTickRoute
   ApiPublicHooksNotificationsTickRoute: typeof ApiPublicHooksNotificationsTickRoute
   ApiPublicHooksPassportTickRoute: typeof ApiPublicHooksPassportTickRoute
@@ -1318,6 +1332,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksIntentTickRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/daily-summary': {
+      id: '/api/public/hooks/daily-summary'
+      path: '/api/public/hooks/daily-summary'
+      fullPath: '/api/public/hooks/daily-summary'
+      preLoaderRoute: typeof ApiPublicHooksDailySummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/01/$gtin': {
       id: '/api/public/01/$gtin'
       path: '/api/public/01/$gtin'
@@ -1504,6 +1525,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScanShortCodeRoute: ScanShortCodeRoute,
   ToolsBarcodeReaderRoute: ToolsBarcodeReaderRoute,
   ApiPublic01GtinRoute: ApiPublic01GtinRoute,
+  ApiPublicHooksDailySummaryRoute: ApiPublicHooksDailySummaryRoute,
   ApiPublicHooksIntentTickRoute: ApiPublicHooksIntentTickRoute,
   ApiPublicHooksNotificationsTickRoute: ApiPublicHooksNotificationsTickRoute,
   ApiPublicHooksPassportTickRoute: ApiPublicHooksPassportTickRoute,
