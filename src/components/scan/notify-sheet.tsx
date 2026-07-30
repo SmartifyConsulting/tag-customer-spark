@@ -117,13 +117,21 @@ function NotifyForm({
         <div className="mb-3 grid h-14 w-14 place-items-center rounded-full bg-[color:var(--success)]/15 text-[color:var(--success)]">
           <CheckCircle2 className="h-7 w-7" />
         </div>
-        <h3 className="text-lg font-semibold">You're on the list</h3>
+        <h3 className="text-lg font-semibold">You're now watching this product</h3>
         <p className="mt-2 text-sm text-muted-foreground max-w-xs">
-          {retailerName} will WhatsApp you when {productName} goes on sale, restocks, or gets a promo.
+          {retailerName} will WhatsApp you if:
         </p>
+        <ul className="mt-2 space-y-1 text-sm text-muted-foreground text-left">
+          <li>• Price drops</li>
+          <li>• Stock runs low</li>
+          <li>• It's the last one remaining</li>
+          <li>• It comes back into stock</li>
+          <li>• Interest increases</li>
+        </ul>
         <Button className="mt-5 w-full" onClick={() => onOpenChange(false)}>
           Done
         </Button>
+
       </motion.div>
     );
   }

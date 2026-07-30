@@ -1,31 +1,76 @@
-## Goal
+# Notification Engine (built on the existing watchlists system)
 
-Your Twilio credentials changed, so every WhatsApp send in the app is now authenticating with stale keys. We refresh the stored connection, then prove delivery end to end.
+Twilio is delivery only. All rules, thresholds and dedupe live in TAG.
 
-## What's connected today
+> **Security note:** you pasted a raw Twilio Auth Token in chat. Please rotate it in the Twilio console — I won't store it in code. Twilio credentials are already supplied to the app through the existing connector (`TWILIO_API_KEY` + gateway), and the sender number lives in the `TWILIO_WHATSAPP_FROM` secret, which I'll update to `+17374038456` (sandbox `+14155238886` as an optional test override).
 
-- The app talks to Twilio through the Lovable connector gateway using the workspace connection named **Tag** (Twilio, API-key auth), already linked to this project.
-- All sends go through one helper (`src/lib/whatsapp.server.ts`), used by scan opt-ins, watchlist alerts, broadcasts and the inbound webhook. So one credential refresh fixes all paths.
-- The sender number comes from the `TWILIO_WHATSAPP_FROM` secret.
+## 1. Database — extend `watchlists` (no second watch table)
 
-## Steps
+New columns on `watchlists`:
 
-1. **Reconnect the Twilio connection.** I open a reconnect card in chat; you paste the new credentials. Twilio's connector expects an **API Key SID + API Key Secret + Account SID** (created in Twilio Console → Account → API keys & tokens), not the raw Auth Token. If you only have the new Account SID + Auth Token, you can generate a Main API Key in that same screen — I'll wait for you.
-2. **Verify the credentials** with a non-destructive gateway credential check, so we know auth works before sending anything.
-3. **Confirm the sender number.** Check that `TWILIO_WHATSAPP_FROM` still matches the WhatsApp sender on the new account; update the secret if the number changed.
-4. **Send a live test message** to a phone number you give me, via the gateway, and report Twilio's exact status/error back.
-5. **Test the real flow.** Scan (or open) a tagged product, opt in with that same number, and confirm the conversation-starter WhatsApp arrives and the message lands in the Inbox.
+| Column | Purpose |
+|---|---|
+| `price_when_added` | Price (cents) when the customer started watching |
+| `last_known_price`, `last_known_stock` | Last values the engine observed |
+| `last_notified_price`, `last_notified_stock` | Dedupe for price / stock messages |
+| `last_known_intent_score`, `last_interest_notification` | Dedupe + re-arm for high interest |
+| `notifications_enabled` (default true) | Customer opt-out |
+| `whatsapp_number` | Snapshot at watch time; falls back to `customers.whatsapp_e164` |
+| `last_price_drop_sent`, `last_low_stock_sent`, `last_last_one_sent`, `last_back_in_stock_sent`, `last_high_interest_sent` | Per-rule send stamps |
 
-## Known blocker from last time
+Backfilled from current product values. Existing RLS, `watchlist_events`, triggers and the `/watchlists` screen keep working.
 
-Twilio previously returned error **20422 – region capability not available** for South African numbers on sender `+1 571 626 7022`. If the new account has the same restriction, the test will fail with that same code. Fix in Twilio Console → Messaging → Settings → **Geo Permissions**: enable South Africa. Worth enabling before step 4.
+New table `automation_settings` (one row per retailer, per automation): `automation_key`, `enabled`, `threshold`, `template_name`, timestamps. Manager-only write via `can_manage_retailer`, with GRANTs.
 
-## Also worth checking (business-initiated sends)
+## 2. Watch process
 
-Outbound messages sent more than 24h after the customer's last inbound message need an approved Content Template. The app supports this via `TWILIO_TEMPLATE_CONVERSATION_STARTER_SID` and `TWILIO_TEMPLATE_BARCODE_SCAN_SID`. Template SIDs are per-account — if the new Twilio account is a different account (not just rotated keys on the same one), those SIDs are invalid and the templates must be recreated and the secrets updated. I'll check this in step 3.
+On QR scan → "Watch Product": create or refresh a `watchlists` row snapshotting customer, product, WhatsApp number, price, stock, intent score, date. Confirmation copy shown to the customer:
 
-## What I need from you
+```text
+You're now watching this product.
+We'll notify you if:
+ • Price drops
+ • Stock runs low
+ • It's the last one remaining
+ • It comes back into stock
+ • Interest increases
+```
 
-- The new Twilio credentials (entered in the secure reconnect card, never in chat).
-- A WhatsApp number to send the test message to.
-- Whether this is the **same Twilio account with rotated keys**, or a **brand-new account**.
+## 3. Architecture — four separate modules
+
+```text
+Product Watch Repository   src/lib/watch-repository.server.ts   all watchlists reads/writes
+Notification Engine        src/lib/notification-engine.server.ts  pure rules, no Twilio
+WhatsApp Service           src/lib/whatsapp-service.server.ts   templateName + to + vars -> send
+Automation Settings        src/lib/automation-settings.functions.ts + settings UI tab
+```
+
+The engine returns `Decision { rule, watchId, templateName, variables }` and calls the WhatsApp Service — never Twilio directly. The WhatsApp Service resolves a template name to its approved Content SID (from secrets), calls the existing `sendWhatsApp()`, and knows nothing about rules. Adding a sixth notification type = one new `check*` method + one settings row.
+
+## 4. Rules
+
+- **Price drop** — effective price < `price_when_added` and < `last_notified_price`.
+- **Low stock** — stock ≤ threshold (setting, default 3). Re-arms only after stock rises back above the threshold.
+- **Last one** — stock exactly 1. Sends once; re-arms only after stock increases.
+- **Back in stock** — stock goes 0 → >0. Sends once; re-arms only after stock returns to 0.
+- **High interest** — `products.intent_score` crosses the configured threshold. Re-arms only after it drops back below.
+
+Every rule is skipped when the automation is disabled, `notifications_enabled` is false, the watch isn't active, or the customer isn't subscribed. Dedupe stamps are written only after a successful send.
+
+## 5. Automation Settings page
+
+New Settings tab listing: Price Drop, Low Stock, Last One Remaining, Back In Stock, High Interest, Daily Intent Summary. Each row: enable/disable toggle, threshold input (where applicable), template name, and a live "template not yet approved in Twilio" warning when the SID is missing.
+
+## 6. Daily manager summary
+
+Evening `pg_cron` job → `/api/public/hooks/daily-summary`. Per retailer, sends the `daily_summary` template to the manager's WhatsApp with: products scanned today, highest intent-score product, products with price changes, low stock, back in stock, sold out, total notifications sent.
+
+## 7. Triggering
+
+- Immediately after any product price/stock/intent write (product save, imports, bulk edits, intent recompute).
+- Periodically via the existing tick route, catching externally-changed data.
+
+## Technical notes
+
+- Templates: I'll list the approved Content Templates on your Twilio account via the connector, map the ones that exist, and give you exact body text to submit for the missing ones (`price_drop`, `low_stock`, `last_one`, `back_in_stock`, `high_interest`, `daily_summary`). Missing SIDs fall back to freeform (24h window only) and are logged, never silent.
+- TypeScript throughout, small components, business logic in `.server.ts` services, UI purely presentational, each flow commented.

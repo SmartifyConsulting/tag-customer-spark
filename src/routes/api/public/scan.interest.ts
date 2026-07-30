@@ -123,31 +123,27 @@ export const Route = createFileRoute("/api/public/scan/interest")({
         }
 
         // Watch this product for price/stock changes — "I'm interested" means
-        // "notify me of any update" (sale, restock, or low-stock). Reactivates
-        // a previously-fired or cancelled watch on a repeat scan.
-        const { data: existingWatch } = await supabaseAdmin
-          .from("watchlists")
-          .select("id, status")
-          .eq("customer_id", customerId)
-          .eq("product_id", tag.product_id)
-          .eq("trigger", "any_update")
+        // "notify me of any update". Snapshots the current price/stock so the
+        // Notification Engine measures changes from this moment.
+        const { data: watchedProduct } = await supabaseAdmin
+          .from("products")
+          .select("price_cents, sale_price_cents, stock_qty, intent_score")
+          .eq("id", tag.product_id)
           .maybeSingle();
 
-        if (!existingWatch) {
-          await supabaseAdmin.from("watchlists").insert({
-            retailer_id: tag.retailer_id,
-            customer_id: customerId,
-            product_id: tag.product_id,
-            trigger: "any_update",
-            channel: "whatsapp",
-            status: "active",
-          });
-        } else if (existingWatch.status !== "active") {
-          await supabaseAdmin
-            .from("watchlists")
-            .update({ status: "active" })
-            .eq("id", existingWatch.id);
-        }
+        const { createOrRefreshWatch } = await import("@/lib/watch-repository.server");
+        await createOrRefreshWatch(supabaseAdmin, {
+          retailerId: tag.retailer_id as string,
+          customerId,
+          productId: tag.product_id as string,
+          whatsappNumber: e164,
+          product: (watchedProduct as any) ?? {
+            price_cents: null,
+            sale_price_cents: null,
+            stock_qty: 0,
+            intent_score: 0,
+          },
+        });
 
         // Open or refresh the conversation, carrying the scanned product into
         // the Inbox thread (subject + first inbound message).

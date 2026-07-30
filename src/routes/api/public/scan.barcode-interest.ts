@@ -127,31 +127,27 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
             .eq("id", existingInterest.id);
         }
 
-        // Watch this product for price/stock changes — reactivates a
-        // previously-fired or cancelled watch on a repeat scan.
-        const { data: existingWatch } = await supabaseAdmin
-          .from("watchlists")
-          .select("id, status")
-          .eq("customer_id", customerId)
-          .eq("product_id", (product as any).id)
-          .eq("trigger", "any_update")
+        // Watch this product for price/stock changes, snapshotting the current
+        // price/stock for the Notification Engine.
+        const { data: watchedProduct } = await supabaseAdmin
+          .from("products")
+          .select("price_cents, sale_price_cents, stock_qty, intent_score")
+          .eq("id", (product as any).id)
           .maybeSingle();
 
-        if (!existingWatch) {
-          await supabaseAdmin.from("watchlists").insert({
-            retailer_id: (product as any).retailer_id,
-            customer_id: customerId,
-            product_id: (product as any).id,
-            trigger: "any_update",
-            channel: "whatsapp",
-            status: "active",
-          });
-        } else if (existingWatch.status !== "active") {
-          await supabaseAdmin
-            .from("watchlists")
-            .update({ status: "active" })
-            .eq("id", existingWatch.id);
-        }
+        const { createOrRefreshWatch } = await import("@/lib/watch-repository.server");
+        await createOrRefreshWatch(supabaseAdmin, {
+          retailerId: (product as any).retailer_id,
+          customerId,
+          productId: (product as any).id,
+          whatsappNumber: e164,
+          product: (watchedProduct as any) ?? {
+            price_cents: null,
+            sale_price_cents: null,
+            stock_qty: 0,
+            intent_score: 0,
+          },
+        });
 
         // Open or refresh the conversation. The subject and an inbound system
         // message carry the product context so the Inbox shows WHAT the
