@@ -11,6 +11,14 @@ export const Route = createFileRoute("/api/public/hooks/notifications-tick")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const now = Date.now();
 
+        // Notification Engine sweep — catches product changes made outside the
+        // app (bulk imports, stock syncs, intent-score recomputes).
+        const { sweepAllWatchedProducts } = await import("@/lib/notification-engine.server");
+        await sweepAllWatchedProducts(supabaseAdmin).catch((e) =>
+          console.warn("[notifications-tick] engine sweep failed", e?.message ?? e),
+        );
+
+
         // queued -> sent
         await supabaseAdmin
           .from("notification_history")
