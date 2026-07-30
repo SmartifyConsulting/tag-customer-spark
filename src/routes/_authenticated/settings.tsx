@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { Settings as SettingsIcon, Building2, CreditCard, ShieldCheck, History, Mail, Send, CheckCircle2, Upload, Copy, ExternalLink } from "lucide-react";
+import { Settings as SettingsIcon, Building2, CreditCard, ShieldCheck, History, Mail, Send, CheckCircle2, Upload, Copy, ExternalLink, Zap } from "lucide-react";
+import { AutomationSettings } from "@/components/settings/automation-settings";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
