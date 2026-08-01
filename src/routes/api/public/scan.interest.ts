@@ -213,30 +213,27 @@ export const Route = createFileRoute("/api/public/scan/interest")({
         // Template (freeform only works once they've messaged us first) —
         // falls back to freeform if the template isn't configured yet.
         try {
-          const { sendWhatsApp } = await import("@/lib/whatsapp.server");
+          const { sendTemplate } = await import("@/lib/whatsapp-service.server");
           const firstName = parsed.name.split(/\s+/)[0] || parsed.name;
-          const siteUrl = process.env.SITE_URL ?? "https://tag-customer-spark.lovable.app";
+          const siteUrl = process.env.SITE_URL ?? "https://tag-tech.co.za";
           const productUrl = `${siteUrl}/scan/${parsed.shortCode}`;
-          const contentSid = process.env.TWILIO_TEMPLATE_CONVERSATION_STARTER_SID;
 
-          const result = contentSid
-            ? await sendWhatsApp({
-                to: e164,
-                contentSid,
-                contentVariables: {
-                  "1": retailerLogo,
-                  "2": firstName,
-                  "3": productName,
-                  "4": retailerName,
-                  "5": productUrl,
-                },
-              })
-            : await sendWhatsApp({
-                to: e164,
-                body:
-                  `Hi ${firstName} 👋 You're subscribed to updates for ${productName} at ${retailerName}. ` +
-                  `We'll ping you when it goes on sale, restocks, or has a promo. Reply STOP to unsubscribe.`,
-              });
+          const result = await sendTemplate({
+            templateName: "conversation_starter",
+            to: e164,
+            variables: {
+              "1": retailerLogo,
+              "2": firstName,
+              "3": productName,
+              "4": retailerName,
+              "5": productUrl,
+            },
+            headerImageUrl: retailerLogo || null,
+            fallbackBody:
+              `Hi ${firstName} 👋 You're subscribed to updates for ${productName} at ${retailerName}. ` +
+              `We'll ping you when it goes on sale, restocks, or has a promo. Reply STOP to unsubscribe.`,
+          });
+
           if (!result.ok) {
             console.warn("[scan.interest] whatsapp send failed", result.status, result.error);
           }

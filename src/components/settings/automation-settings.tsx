@@ -49,6 +49,12 @@ export function AutomationSettings() {
         <p className="text-sm text-muted-foreground">
           Automations decide when Tag WhatsApps a customer who is watching a product. Tag owns the rules —
           WhatsApp only delivers the approved template.
+          {data?.provider ? (
+            <>
+              {" "}Delivery provider:{" "}
+              <span className="font-medium capitalize text-foreground">{data.provider}</span>.
+            </>
+          ) : null}
         </p>
       </div>
 

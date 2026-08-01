@@ -1,25 +1,35 @@
-// Server-only Twilio WhatsApp helper. Routes all sends through the Lovable
-// connector gateway using TWILIO_API_KEY + LOVABLE_API_KEY.
+// Server-only WhatsApp send helper.
+//
+// Delivery provider is pluggable:
+//   - "infobip" (default when Infobip secrets exist) → direct Infobip API
+//   - "twilio"  → Lovable connector gateway (TWILIO_API_KEY + LOVABLE_API_KEY)
+// Set WHATSAPP_PROVIDER to force one explicitly.
 //
 // Import ONLY from server code (createServerFn handlers, server routes,
 // or other .server.ts modules). The `.server` suffix keeps it out of the
 // client bundle.
 
+import { isInfobipConfigured, sendInfobipWhatsApp } from "@/lib/whatsapp-infobip.server";
+
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
+
+export type WhatsAppProvider = "infobip" | "twilio";
 
 export type SendWhatsAppInput = {
   to: string;           // E.164, e.g. "+27821234567" (with or without whatsapp: prefix)
-  // Freeform text send. Required unless `contentSid` is given instead — WhatsApp
+  // Freeform text send. Required unless a template is given instead — WhatsApp
   // only allows freeform sends within 24h of the customer's last inbound
-  // message; anything else needs an approved Content Template (see contentSid).
+  // message; anything else needs an approved template.
   body?: string;
   mediaUrl?: string | null;
-  // Send a pre-approved Twilio Content Template instead of freeform text —
-  // required for business-initiated messages outside the 24h session window
-  // (e.g. an automated price-drop/restock alert). `contentVariables` keys are
-  // the template's numbered placeholders as strings, e.g. {"1": "...", "2": "..."}.
+  // --- Twilio approved-template addressing ---
   contentSid?: string;
   contentVariables?: Record<string, string>;
+  // --- Infobip approved-template addressing ---
+  templateName?: string;
+  templateLanguage?: string;
+  placeholders?: string[];
+  headerImageUrl?: string | null;
 };
 
 export type SendWhatsAppResult = {
@@ -34,7 +44,30 @@ function normalizeWhatsApp(num: string): string {
   return trimmed.startsWith("whatsapp:") ? trimmed : `whatsapp:${trimmed}`;
 }
 
-export async function sendWhatsApp({
+/** Which delivery provider outbound WhatsApp currently uses. */
+export function activeWhatsAppProvider(): WhatsAppProvider {
+  const forced = process.env.WHATSAPP_PROVIDER?.trim().toLowerCase();
+  if (forced === "twilio") return "twilio";
+  if (forced === "infobip") return "infobip";
+  return isInfobipConfigured() ? "infobip" : "twilio";
+}
+
+export async function sendWhatsApp(input: SendWhatsAppInput): Promise<SendWhatsAppResult> {
+  if (activeWhatsAppProvider() === "infobip") {
+    return sendInfobipWhatsApp({
+      to: input.to,
+      body: input.body,
+      mediaUrl: input.mediaUrl,
+      templateName: input.templateName,
+      templateLanguage: input.templateLanguage,
+      placeholders: input.placeholders,
+      headerImageUrl: input.headerImageUrl,
+    });
+  }
+  return sendTwilioWhatsApp(input);
+}
+
+async function sendTwilioWhatsApp({
   to,
   body,
   mediaUrl,
@@ -49,7 +82,7 @@ export async function sendWhatsApp({
     return {
       ok: false,
       status: 500,
-      error: "Twilio WhatsApp is not configured",
+      error: "WhatsApp delivery is not configured",
     };
   }
   if (!contentSid && !body) {
