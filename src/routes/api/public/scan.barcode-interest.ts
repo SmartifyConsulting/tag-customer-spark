@@ -214,33 +214,25 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
 
         // Fire-and-forget "product speaking" WhatsApp — never block opt-in on
         // send failure. This is the customer's first-ever WhatsApp message from
-        // us, so it's business-initiated and needs the approved Content
-        // Template `tag_product_scan` (header = product photo, body var 2 =
-        // product name). Without TWILIO_TEMPLATE_BARCODE_SCAN_SID we fall back
-        // to freeform, which WhatsApp silently drops outside the 24h window —
-        // so every outcome is now recorded on notification_history.
+        // us, so it's business-initiated and needs the approved template
+        // `tag_product_scan` (header = product photo, body var = product name).
+        // If the template isn't available we fall back to freeform, which
+        // WhatsApp silently drops outside the 24h window — so every outcome is
+        // recorded on notification_history.
         try {
-          const { sendWhatsApp } = await import("@/lib/whatsapp.server");
-          const contentSid = process.env.TWILIO_TEMPLATE_BARCODE_SCAN_SID;
+          const { sendTemplate } = await import("@/lib/whatsapp-service.server");
           const fallbackBody =
             `Hey, I'm the ${productName} you just scanned 😉 I'm still available and I'll keep you ` +
             `updated if anything changes — like a price drop, someone else showing interest, or if I ` +
             `become the last one available.`;
 
-          const result = contentSid
-            ? await sendWhatsApp({
-                to: e164,
-                contentSid,
-                contentVariables: {
-                  "1": productImage,
-                  "2": productName,
-                },
-              })
-            : await sendWhatsApp({
-                to: e164,
-                body: fallbackBody,
-                mediaUrl: productImage || null,
-              });
+          const result = await sendTemplate({
+            templateName: "barcode_scan",
+            to: e164,
+            variables: { "1": productImage, "2": productName },
+            headerImageUrl: productImage || null,
+            fallbackBody,
+          });
 
           if (!result.ok) {
             console.warn("[scan.barcode-interest] whatsapp send failed", result.status, result.error);
@@ -253,18 +245,15 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
             payload: {
               type: "barcode_scan",
               product_id: (product as any).id,
-              template: contentSid ? "tag_product_scan" : null,
-              body: contentSid ? null : fallbackBody,
+              template: "tag_product_scan",
+              body: fallbackBody,
             },
             status: result.ok ? "sent" : "failed",
             sent_at: result.ok ? new Date().toISOString() : null,
-            error: result.ok
-              ? null
-              : contentSid
-                ? result.error
-                : `${result.error ?? "send failed"} (no TWILIO_TEMPLATE_BARCODE_SCAN_SID configured — freeform sends are blocked outside the 24h window)`,
+            error: result.ok ? null : result.error,
             provider_message_sid: result.sid ?? null,
           });
+
         } catch (e: any) {
           console.warn("[scan.barcode-interest] whatsapp send error", e?.message ?? e);
         }
