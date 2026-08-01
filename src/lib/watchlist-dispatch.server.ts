@@ -8,7 +8,7 @@
 // TWILIO_TEMPLATE_SALE_SID / TWILIO_TEMPLATE_RESTOCK_SID /
 // TWILIO_TEMPLATE_LOWSTOCK_SID. The retailer's logo is passed as the
 // template's header image so each retailer's messages still look branded.
-import { sendWhatsApp } from "@/lib/whatsapp.server";
+import { sendTemplate } from "@/lib/whatsapp-service.server";
 import { formatMoney } from "@/lib/format";
 
 type EventType = "sale" | "back_in_stock" | "low_stock";
