@@ -17,11 +17,14 @@ export const listAutomationSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
+    const { activeWhatsAppProvider } = await import("@/lib/whatsapp.server");
+    const provider = activeWhatsAppProvider();
+
     const retailerId = await resolveRetailerId(supabase, userId);
-    if (!retailerId) return { settings: [] };
+    if (!retailerId) return { settings: [], provider };
 
     const { getAutomationSettingsList } = await import("@/lib/automation.server");
-    return { settings: await getAutomationSettingsList(supabase, retailerId) };
+    return { settings: await getAutomationSettingsList(supabase, retailerId), provider };
   });
 
 export const saveAutomationSetting = createServerFn({ method: "POST" })
