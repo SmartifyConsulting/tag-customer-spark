@@ -1,76 +1,79 @@
-# Switch WhatsApp delivery from Twilio to Meta WhatsApp Cloud API
+# Switch WhatsApp delivery from Twilio to Infobip
 
-Yes — this is a contained change. Every outbound WhatsApp send in TAG already
-goes through one file (`src/lib/whatsapp.server.ts`), and all template logic
-goes through `src/lib/whatsapp-service.server.ts`. The Notification Engine,
-daily summary, broadcasts and scan opt-ins call those helpers, so they do not
-change at all. Only the delivery layer and the inbound webhook are replaced.
+Good news: every outbound WhatsApp send in TAG already funnels through one
+file (`src/lib/whatsapp.server.ts`), and all template resolution through
+`src/lib/whatsapp-service.server.ts`. The Notification Engine, daily summary,
+broadcasts, watchlist dispatch and scan opt-ins call those two helpers, so
+none of the business logic changes. Only the delivery layer and the inbound
+webhook are replaced.
 
-## What you need from Meta first
+## What I need from you
 
-1. A Meta Business account with WhatsApp Business Platform enabled.
-2. A WhatsApp Business phone number (or the free test number to start).
-3. From the Meta app dashboard:
-   - **Phone Number ID** (not the phone number itself)
-   - **WhatsApp Business Account ID**
-   - **Permanent access token** (System User token, never the temporary 24h one)
-   - A **webhook verify token** you invent yourself
-4. Message templates created and approved in Meta Business Manager. Meta uses
-   **template names** (e.g. `price_drop`) rather than Twilio Content SIDs —
-   which actually simplifies our config.
-
-I will request these as secrets once you confirm; nothing is hardcoded.
+1. **Infobip API key** — I'll request it via the secure secret form.
+2. **Your Infobip base URL** — each account gets a personal one, shown on the
+   Infobip dashboard homepage, e.g. `xyz123.api.infobip.com`.
+3. **Your WhatsApp sender number** — the number registered to your Infobip
+   WhatsApp account (E.164, e.g. `+27...`). During testing this can be the
+   Infobip demo sender.
+4. Template names you have registered/approved in Infobip. Infobip uses
+   **template names + a language code** rather than Twilio Content SIDs,
+   which simplifies our config.
 
 ## Changes
 
 ### 1. New delivery adapter
-`src/lib/whatsapp-meta.server.ts` — posts to
-`https://graph.facebook.com/v21.0/{PHONE_NUMBER_ID}/messages` with the
-permanent token. Supports text, media and template messages with positional
-body parameters plus optional header image.
+`src/lib/whatsapp-infobip.server.ts`:
+- Free-form text → `POST {BASE_URL}/whatsapp/1/message/text`
+- Media → `.../message/image`
+- Approved template → `POST {BASE_URL}/whatsapp/1/message/template`
+- Auth header `Authorization: App {INFOBIP_API_KEY}`.
+- Normalises Infobip's response (`messages[0].messageId`, `status.groupName`)
+  into the existing `{ ok, status, sid, error }` shape, and surfaces Infobip's
+  own error text rather than a generic failure.
 
 ### 2. Provider switch in `whatsapp.server.ts`
-`sendWhatsApp()` keeps its exact signature and result shape
-(`{ ok, status, sid, error }`) but routes to Meta when
-`WHATSAPP_PROVIDER=meta` (default once configured), falling back to Twilio if
-Meta secrets are absent. Nothing that calls it needs editing.
+`sendWhatsApp()` keeps its exact signature and result type but routes to
+Infobip when `WHATSAPP_PROVIDER=infobip` (the default once the Infobip secrets
+exist), falling back to the current Twilio gateway path otherwise. Nothing
+that calls it needs editing.
 
 ### 3. Templates by name, not SID
-`whatsapp-service.server.ts` stops resolving `TWILIO_TEMPLATE_*_SID` when in
-Meta mode and passes the template name straight through
+`whatsapp-service.server.ts` gains an Infobip branch: instead of resolving
+`TWILIO_TEMPLATE_*_SID`, it passes the template name straight through
 (`price_drop`, `low_stock`, `last_one`, `back_in_stock`, `high_interest`,
-`daily_summary`, `tag_product_scan`). Variables map to Meta's numbered body
-parameters in the same order we already use. `watchlist-dispatch.server.ts`
-and the two scan routes switch to `sendTemplate({ templateName })` instead of
-reading SIDs directly.
+`daily_summary`, `tag_product_scan`) with a language code (default `en`) and
+our existing ordered variables as Infobip `placeholders`. Header image, where
+a template has one, maps to the template header media URL.
+`watchlist-dispatch.server.ts` and the two scan routes switch from reading
+SIDs directly to `sendTemplate({ templateName })`.
 
-### 4. Inbound webhook
-New `src/routes/api/public/webhooks/meta-whatsapp.ts`:
-- `GET` — Meta's subscription handshake using the verify token.
-- `POST` — verifies the `X-Hub-Signature-256` HMAC against the app secret,
-  then reuses the same conversation/message-logging logic the Twilio webhook
-  uses today (inbound messages, plus delivery/read status updates, which Meta
-  reports natively — better than the simulated tick we run now).
+### 4. Inbound + delivery webhooks
+New `src/routes/api/public/webhooks/infobip.ts`:
+- Inbound customer replies → reuse the same conversation/message logging the
+  Twilio webhook does today (so the Inbox keeps working unchanged).
+- Delivery reports (`SENT / DELIVERED / READ / REJECTED`) → update
+  `notification_history` with real statuses, replacing today's simulated
+  `queued → sent → delivered → read` tick.
+- Secured with a shared secret we generate and you paste into the Infobip
+  webhook config (Infobip has no HMAC signature, so a secret query parameter
+  or custom header is the standard approach).
 
-Callback URL to paste into Meta: `https://tag-tech.co.za/api/public/webhooks/meta-whatsapp`
+Webhook URL for Infobip: `https://tag-tech.co.za/api/public/webhooks/infobip`
 
-The Twilio webhook and helper stay in place, unused, so you can flip back by
-changing one setting.
+The Twilio helper and webhook stay in place, unused, so flipping back is one
+setting change.
 
 ### 5. Settings visibility
-The Automations tab shows which provider is active and warns per automation
-when its template name is missing, same as today.
+The Automations tab shows which provider is active and flags any automation
+whose template name isn't configured — same behaviour as today.
 
 ## Technical notes
 
-- Secrets: `META_WHATSAPP_TOKEN`, `META_WHATSAPP_PHONE_NUMBER_ID`,
-  `META_WHATSAPP_BUSINESS_ID`, `META_WHATSAPP_VERIFY_TOKEN`,
-  `META_WHATSAPP_APP_SECRET`, `WHATSAPP_PROVIDER`.
-- Meta calls go direct over HTTPS from server code — no connector gateway,
-  which removes the Twilio API-key/Auth-token confusion you hit.
-- The 24h session window rule is identical on Meta: business-initiated
-  messages must use an approved template.
-- No geo-permission blocking like Twilio's `20422` — South African numbers
-  work as soon as the number is verified.
-- Delivery-status webhooks let us replace the simulated
-  `queued → sent → delivered → read` promotion with real Meta statuses.
+- Secrets: `INFOBIP_API_KEY`, `INFOBIP_BASE_URL`, `INFOBIP_WHATSAPP_SENDER`,
+  `INFOBIP_WEBHOOK_SECRET`, `WHATSAPP_PROVIDER`.
+- Calls go direct over HTTPS from server code — no connector gateway, which
+  removes the Twilio API-key vs Auth-token confusion you hit.
+- The WhatsApp 24-hour session rule is a Meta platform rule, so it still
+  applies on Infobip: business-initiated messages need an approved template.
+- No Twilio-style geo-permission block (`20422`) — South African destinations
+  work once your sender is registered.
