@@ -69,11 +69,18 @@ export async function sendTemplate(input: SendTemplateInput): Promise<SendWhatsA
   const provider = activeWhatsAppProvider();
 
   if (provider === "infobip") {
+    // Twilio templates carry the header image as numbered variable "1".
+    // Infobip takes it as a separate header, so strip it from placeholders.
+    let variables = input.variables;
+    if (input.headerImageUrl && variables?.["1"] === input.headerImageUrl) {
+      const { "1": _omit, ...rest } = variables;
+      variables = rest;
+    }
     const result = await sendWhatsApp({
       to: input.to,
       templateName: resolveInfobipTemplateName(input.templateName),
       templateLanguage: process.env.INFOBIP_TEMPLATE_LANGUAGE ?? "en",
-      placeholders: toPlaceholders(input.variables),
+      placeholders: toPlaceholders(variables),
       headerImageUrl: input.headerImageUrl ?? null,
     });
 

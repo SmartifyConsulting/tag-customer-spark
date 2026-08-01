@@ -69,12 +69,11 @@ async function processOne(supabase: any, event: any, product: any): Promise<void
   const headerImage = retailer?.logo_url || product.thumbnail_url || product.image_url || "";
   const retailerName = retailer?.name || "Tag";
 
-  const sidByType: Record<EventType, string | undefined> = {
-    sale: process.env.TWILIO_TEMPLATE_SALE_SID,
-    back_in_stock: process.env.TWILIO_TEMPLATE_RESTOCK_SID,
-    low_stock: process.env.TWILIO_TEMPLATE_LOWSTOCK_SID,
+  const templateByType: Record<EventType, string> = {
+    sale: "sale",
+    back_in_stock: "back_in_stock",
+    low_stock: "low_stock",
   };
-  const contentSid = sidByType[type];
 
   let body: string | undefined;
   let contentVariables: Record<string, string> | undefined;
@@ -92,9 +91,13 @@ async function processOne(supabase: any, event: any, product: any): Promise<void
     contentVariables = { "1": headerImage, "2": retailerName, "3": productName, "4": String(event.payload.stock_qty ?? "") };
   }
 
-  const result = contentSid
-    ? await sendWhatsApp({ to: customer.whatsapp_e164, contentSid, contentVariables })
-    : await sendWhatsApp({ to: customer.whatsapp_e164, body }); // fallback: freeform (only works within 24h session window)
+  const result = await sendTemplate({
+    templateName: templateByType[type],
+    to: customer.whatsapp_e164,
+    variables: contentVariables,
+    headerImageUrl: headerImage || null,
+    fallbackBody: body, // freeform fallback only works within the 24h session window
+  });
 
   const { data: history } = await supabase
     .from("notification_history")
