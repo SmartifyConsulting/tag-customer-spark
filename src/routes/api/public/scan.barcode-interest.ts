@@ -207,6 +207,8 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
             direction: "inbound",
             body: scanLine,
             media_url: productImage || null,
+            // Customer-originated: never an internal staff note.
+            is_internal: false,
             status: "delivered",
             sent_at: now,
           });

@@ -201,6 +201,8 @@ export const Route = createFileRoute("/api/public/scan/interest")({
             retailer_id: tag.retailer_id,
             direction: "inbound",
             body: scanLine,
+            // Customer-originated: never an internal staff note.
+            is_internal: false,
             status: "delivered",
             sent_at: now,
           });
