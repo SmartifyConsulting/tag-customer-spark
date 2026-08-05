@@ -399,7 +399,7 @@ function NotifyBar({ gtin, productName }: { gtin: string; productName: string })
           <CheckCircle2 className="h-5 w-5" />
         </div>
         <p className="text-sm">
-          You're all set — {productName} will WhatsApp you if anything changes.
+          You're now following {productName} — we'll WhatsApp you if anything changes.
         </p>
       </div>
     );
@@ -407,7 +407,7 @@ function NotifyBar({ gtin, productName }: { gtin: string; productName: string })
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 rounded-2xl border bg-card p-4">
-      <p className="text-sm font-medium">Notify me on WhatsApp</p>
+      <p className="text-sm font-medium">Follow this product</p>
       <p className="mt-0.5 text-xs text-muted-foreground">
         One WhatsApp if this drops in price, restocks, or is almost gone.
       </p>
@@ -427,7 +427,7 @@ function NotifyBar({ gtin, productName }: { gtin: string; productName: string })
         ) : (
           <>
             <MessageCircle className="mr-2 h-4 w-4" />
-            Notify me on WhatsApp
+            Follow Me
           </>
         )}
       </Button>

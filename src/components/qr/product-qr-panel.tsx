@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -15,7 +15,6 @@ import {
   Check,
   Download,
   ExternalLink,
-  GitMerge,
   Loader2,
   Printer,
   QrCode as QrIcon,
@@ -34,7 +33,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { generateProductQr } from "@/lib/qr.functions";
-import { MergeProductsSearchDialog } from "@/components/settings/merge-products-search-dialog";
 
 export type ActiveQrAsset = {
   id: string;
@@ -47,26 +45,9 @@ export type ActiveQrAsset = {
   digital_link_url: string;
   png_url: string;
   svg_url: string;
-  store_id?: string | null;
-  store_name?: string | null;
+  store_id: string | null;
+  store_name: string | null;
 };
-
-type GtinClash = {
-  gtin: string;
-  otherProductId: string;
-  otherProductName: string;
-  otherProductSku: string | null;
-};
-
-function parseClash(message: string): GtinClash | null {
-  try {
-    const parsed = JSON.parse(message);
-    if (parsed?.code === "GTIN_CLASH") return parsed as GtinClash;
-  } catch {
-    /* not a structured error */
-  }
-  return null;
-}
 
 export function ProductQrPanel({
   productId,
@@ -91,17 +72,19 @@ export function ProductQrPanel({
     qr?.store_id ?? defaultStoreId ?? null,
   );
   const [confirmRegen, setConfirmRegen] = useState(false);
-  const [clash, setClash] = useState<GtinClash | null>(null);
-  const [mergeOpen, setMergeOpen] = useState(false);
-  const [autoRetryAfterMerge, setAutoRetryAfterMerge] = useState(false);
+
+  // Store attribution is required, not optional — a scan needs to trace
+  // back to the physical store the item was in, even for a single-store
+  // retailer, so default to a real store rather than leaving it unset.
+  useEffect(() => {
+    if (!storeId && stores.length > 0) setStoreId(stores[0].id);
+  }, [stores, storeId]);
 
   const generate = useMutation({
     mutationFn: (force: boolean) =>
       generateFn({
         data: { productId, force, storeId: storeId ?? qr?.store_id ?? defaultStoreId ?? null },
       }),
-
-
     onSuccess: (row: any) => {
       qc.setQueryData(["product", productId], (prev: any) => {
         if (!prev) return prev;
@@ -111,220 +94,135 @@ export function ProductQrPanel({
       toast.success("GS1 QR Code successfully generated.");
     },
     onError: (e: any) => {
-      const parsed = parseClash(e?.message ?? "");
-      if (parsed) {
-        setClash(parsed);
-        return;
-      }
       toast.error(e.message ?? "QR generation failed");
     },
   });
 
-
-  const clashDialogs = (
-    <>
-      <AlertDialog open={!!clash} onOpenChange={(v) => !v && setClash(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Duplicate GTIN detected</AlertDialogTitle>
-            <AlertDialogDescription>
-              GTIN <code className="rounded bg-muted px-1 py-0.5 text-xs">{clash?.gtin}</code>{" "}
-              already has an active QR code on{" "}
-              <strong>{clash?.otherProductName}</strong>
-              {clash?.otherProductSku ? ` (${clash.otherProductSku})` : ""}. These look like
-              duplicate product records. Merge them — <strong>{productName}</strong> will survive
-              and its QR will be generated automatically after the merge.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setAutoRetryAfterMerge(true);
-                setMergeOpen(true);
-                setClash(null);
-              }}
-            >
-              <GitMerge className="mr-2 h-4 w-4" /> Merge duplicates
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      <MergeProductsSearchDialog
-        open={mergeOpen}
-        onOpenChange={setMergeOpen}
-        initialSearch={clash?.gtin ?? ""}
-        initialTargetId={productId}
-        initialPreselected={
-          clash
-            ? [
-                { id: productId, name: productName },
-                { id: clash.otherProductId, name: clash.otherProductName, sku: clash.otherProductSku },
-              ]
-            : [{ id: productId, name: productName }]
-        }
-        onMerged={() => {
-          qc.invalidateQueries({ queryKey: ["product", productId] });
-          if (autoRetryAfterMerge) {
-            setAutoRetryAfterMerge(false);
-            generate.mutate(false);
-          }
-        }}
-      />
-    </>
-  );
-
   if (!qr) {
     return (
-      <>
-        <section className="grid gap-4 rounded-xl border border-border bg-card p-6">
-          <header className="flex items-center gap-2">
-            <QrIcon className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              QR status
-            </h2>
-          </header>
-          <div className="grid gap-4 rounded-xl border border-dashed border-border p-8 text-center">
-            <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-muted">
-              <QrIcon className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="font-medium">No QR yet for this product.</p>
-              <p className="text-sm text-muted-foreground">
-                Generate a GS1 Digital Link QR that preserves the product's GTIN.
-              </p>
-            </div>
-            <div className="mx-auto flex flex-wrap items-center justify-center gap-2">
-              {stores.length > 1 && (
-                <Select value={storeId ?? "__none__"} onValueChange={(v) => setStoreId(v === "__none__" ? null : v)}>
-                  <SelectTrigger className="w-[220px]">
-                    <SelectValue placeholder="Store attribution…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">All stores (no attribution)</SelectItem>
-                    {stores.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <Button onClick={() => generate.mutate(false)} disabled={generate.isPending}>
-                {generate.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <QrIcon className="mr-2 h-4 w-4" />
-                )}
-                Generate QR
-              </Button>
-            </div>
-            {stores.length > 1 && (
-              <p className="text-xs text-muted-foreground">
-                Pick the branch that will print this card so scans attribute the customer's opt-in to that store.
-              </p>
-            )}
-
+      <section className="grid gap-4 rounded-xl border border-border bg-card p-6">
+        <header className="flex items-center gap-2">
+          <QrIcon className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            QR status
+          </h2>
+        </header>
+        <div className="grid gap-4 rounded-xl border border-dashed border-border p-8 text-center">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-muted">
+            <QrIcon className="h-5 w-5 text-muted-foreground" />
           </div>
-        </section>
-        {clashDialogs}
-      </>
+          <div>
+            <p className="font-medium">No QR yet for this product.</p>
+            <p className="text-sm text-muted-foreground">
+              Generate a GS1 Digital Link QR that preserves the product's GTIN.
+            </p>
+          </div>
+          <div className="mx-auto flex flex-wrap items-center justify-center gap-2">
+            {stores.length > 1 && (
+              <Select value={storeId ?? undefined} onValueChange={(v) => setStoreId(v)}>
+                <SelectTrigger className="w-[220px]">
+                  <SelectValue placeholder="Store attribution…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stores.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button
+              onClick={() => generate.mutate(false)}
+              disabled={generate.isPending || (stores.length > 0 && !storeId)}
+            >
+              {generate.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <QrIcon className="mr-2 h-4 w-4" />
+              )}
+              Generate QR
+            </Button>
+          </div>
+          {stores.length > 1 && (
+            <p className="text-xs text-muted-foreground">
+              Pick the branch that will print this card so scans attribute the customer's opt-in to that store.
+            </p>
+          )}
+        </div>
+      </section>
     );
   }
-
 
   const generatedDate = new Date(qr.generated_at).toLocaleString();
   const dppHref = dppId ? `/p/${dppId}` : qr.resolver_url;
   const storeCode = qr.store_id ? `TAG-${qr.store_id.slice(0, 8).toUpperCase()}` : null;
 
   return (
-    <>
-    <section className="grid gap-4 rounded-xl border border-border bg-card p-5">
-      <header className="flex flex-wrap items-start justify-between gap-2">
+    <section className="grid gap-3 rounded-xl border border-border bg-card p-4">
+      <header className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold">GS1 Digital Link QR</h2>
-          <p className="text-xs text-muted-foreground">
-            This product already has an active QR Code.
-          </p>
+          <h2 className="text-sm font-semibold">GS1 Digital Link QR</h2>
+          <p className="text-xs text-muted-foreground">Active QR code for this product.</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setConfirmRegen(true)}>
-          <RefreshCw className="mr-2 h-4 w-4" /> Regenerate
+          <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Regenerate
         </Button>
       </header>
 
-      {/* QR + Active badge, with the GS1 Digital Link details neatly stacked
-          directly underneath so nothing is clipped by the outer frame. */}
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-2">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          QR Code
+        </p>
         <div
-          className="grid place-items-center rounded-xl border border-border bg-white p-3"
-          style={{ width: 220, height: 220 }}
+          className="grid place-items-center rounded-xl border border-border bg-white p-2"
+          style={{ width: 176, height: 176 }}
         >
-          <img src={qr.svg_url} alt={`QR for ${productName}`} className="h-[196px] w-[196px]" />
+          <img src={qr.svg_url} alt={`QR for ${productName}`} className="h-[156px] w-[156px]" />
         </div>
         <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600">
           <Check className="h-3 w-3" /> Active
         </Badge>
+        <div className="w-full max-w-[260px] space-y-1.5 rounded-lg border border-border bg-muted/30 p-3 text-center">
+          <p className="break-words font-mono text-sm font-semibold">
+            {qr.gtin} · v{qr.version}
+          </p>
+          <p className="text-xs text-muted-foreground">{generatedDate}</p>
+          <p className="text-xs">
+            {qr.store_name ? (
+              <span className="font-medium text-foreground">
+                Tagged at {qr.store_name}
+                {storeCode ? <span className="text-muted-foreground"> · {storeCode}</span> : null}
+              </span>
+            ) : (
+              <span className="font-medium text-amber-600">Store not assigned</span>
+            )}
+          </p>
+          <p className="break-all text-xs text-muted-foreground">{qr.resolver_url}</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-[11px]"
+            onClick={() => {
+              navigator.clipboard?.writeText(qr.digital_link_url);
+              toast.success("Digital Link copied");
+            }}
+          >
+            Copy GS1 Digital Link
+          </Button>
+        </div>
       </div>
 
-      <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3">
-        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-          GS1 Digital Link
-        </p>
-        <p className="mt-1 break-all font-mono text-[11px] leading-relaxed">
-          {qr.digital_link_url}
-        </p>
-        <p className="mt-2 text-[10px] uppercase tracking-wide text-muted-foreground">
-          Resolver
-        </p>
-        <p className="mt-0.5 break-all font-mono text-[11px] leading-relaxed text-muted-foreground">
-          {qr.resolver_url}
-        </p>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mt-2 h-7 px-2 text-xs"
-          onClick={() => {
-            navigator.clipboard?.writeText(qr.digital_link_url);
-            toast.success("Digital Link copied");
-          }}
-        >
-          Copy link
-        </Button>
-      </div>
-
-      <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3 text-sm">
-        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">GTIN · Version</p>
-        <p className="mt-0.5 break-all font-mono text-sm font-medium">
-          {qr.gtin} · v{qr.version}
-        </p>
-        <p className="mt-1 break-words text-xs text-muted-foreground">Generated {generatedDate}</p>
-        <p className="mt-1 break-words text-xs">
-          <span className="text-muted-foreground">Store identity: </span>
-          {qr.store_name ? (
-            <span className="font-medium">
-              {qr.store_name}
-              {storeCode ? <span className="text-muted-foreground"> · {storeCode}</span> : null}
-            </span>
-          ) : (
-            <span className="text-amber-600">Not assigned</span>
-          )}
-        </p>
-      </div>
-
-      {/* Assign / change the branch this QR belongs to — regenerating with a
-          store selected stamps store_id + store_name onto the asset. */}
-      {stores.length > 0 && (
+      {/* Reassign the branch this QR belongs to — regenerating with a
+          different store stamps the new store_id/store_name onto the asset. */}
+      {stores.length > 1 && (
         <div className="grid gap-2 rounded-lg border border-dashed border-border p-3">
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Store identity
+            Reassign store
           </p>
-          <Select
-            value={storeId ?? qr.store_id ?? "__none__"}
-            onValueChange={(v) => setStoreId(v === "__none__" ? null : v)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Assign a branch…" />
+          <Select value={storeId ?? undefined} onValueChange={(v) => setStoreId(v)}>
+            <SelectTrigger className="h-8 w-full text-xs">
+              <SelectValue placeholder="Pick a branch…" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__none__">All stores (no attribution)</SelectItem>
               {stores.map((s) => (
                 <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
               ))}
@@ -343,32 +241,28 @@ export function ProductQrPanel({
             )}
             Assign store to QR
           </Button>
-          <p className="text-[11px] text-muted-foreground">
-            Scans then attribute the customer's opt-in phone number to this branch.
-          </p>
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Button variant="outline" size="sm" onClick={() => download(qr.png_url, `qr-${qr.gtin}.png`)}>
-          <Download className="mr-2 h-4 w-4" /> PNG
+          <Download className="mr-1.5 h-3.5 w-3.5" /> PNG
         </Button>
         <Button variant="outline" size="sm" onClick={() => download(qr.svg_url, `qr-${qr.gtin}.svg`)}>
-          <Download className="mr-2 h-4 w-4" /> SVG
+          <Download className="mr-1.5 h-3.5 w-3.5" /> SVG
         </Button>
         <Button variant="outline" size="sm" onClick={() => printQr(qr.png_url, productName, qr.gtin)}>
-          <Printer className="mr-2 h-4 w-4" /> Print
+          <Printer className="mr-1.5 h-3.5 w-3.5" /> Print QR
         </Button>
         <a
           href={dppHref}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
+          className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
         >
-          <ExternalLink className="h-4 w-4" /> View Digital ID
+          <ExternalLink className="h-3.5 w-3.5" /> Digital ID
         </a>
       </div>
-
       <AlertDialog open={confirmRegen} onOpenChange={setConfirmRegen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -393,18 +287,6 @@ export function ProductQrPanel({
         </AlertDialogContent>
       </AlertDialog>
     </section>
-    {clashDialogs}
-    </>
-  );
-}
-
-
-function Fact({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`mt-0.5 break-words font-medium ${mono ? "font-mono text-sm" : ""}`}>{value}</p>
-    </div>
   );
 }
 

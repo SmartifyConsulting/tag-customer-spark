@@ -13,6 +13,7 @@ import {
   Tag as TagIcon,
   Trash2,
   Upload,
+  Users,
   X,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -72,7 +73,9 @@ function InventoryAdminPage() {
   const qc = useQueryClient();
   const [reenriching, setReenriching] = useState(false);
   const [search, setSearch] = useState("");
-  const [tagged, setTagged] = useState<Tagged>("all");
+  // Untagged by default — most products haven't been scanned by a customer
+  // yet, so that's the state that actually needs attention on first load.
+  const [tagged, setTagged] = useState<Tagged>("untagged");
   // Inventory shows live stock by default; drafts/archived are opt-in.
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const [createOpen, setCreateOpen] = useState(false);
@@ -326,7 +329,7 @@ function InventoryAdminPage() {
     <div className="space-y-6">
       <PageHeader
         title="Inventory"
-        description="Every uploaded product, tagged or not. The main Inventory screen only shows tagged items — review and tag the rest here."
+        description="Every uploaded product. A product becomes tagged once a customer scans its QR code in-store — untagged items are shown first."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -525,10 +528,14 @@ function InventoryAdminPage() {
                             )}
                             {p.is_tagged && (
                               <Badge className="gap-1 bg-primary text-primary-foreground">
-                                <TagIcon className="h-3 w-3" /> Tagged
+                                <TagIcon className="h-3 w-3" /> Tagged · {p.scan_count}
                               </Badge>
                             )}
-
+                            {p.following_count > 0 && (
+                              <Badge variant="outline" className="gap-1 border-[color:var(--mint)]/50 text-[color:var(--mint)]">
+                                <Users className="h-3 w-3" /> {p.following_count} following
+                              </Badge>
+                            )}
                             <Badge variant="outline">{p.stock_qty ?? 0} qty</Badge>
                           </Link>
                         </li>

@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useTier } from "@/hooks/use-tier";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, useIsAdmin, useIsSuperAdmin } from "@/hooks/use-auth";
 import { UserMenu } from "@/components/user-menu";
 import { NAV, isNavActive, type NavItem } from "@/lib/nav";
 
@@ -27,6 +27,15 @@ export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { hasFeature } = useTier();
   const { primaryRole } = useAuth();
+  const isAdmin = useIsAdmin();
+  const isSuperAdmin = useIsSuperAdmin();
+  // A nav item whose destination gates on a role the user doesn't have
+  // used to still render (and highlight active) here, then bounce the user
+  // to /dashboard on click — confusing. Filter to what they can actually
+  // open instead.
+  const visibleNav = NAV.filter(
+    (item) => (!item.adminOnly || isAdmin) && (!item.superAdminOnly || isSuperAdmin),
+  );
   const isActive = (item: NavItem) => isNavActive(item, pathname);
 
   return (
@@ -37,7 +46,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV.map((item) => {
+              {visibleNav.map((item) => {
                 const active = isActive(item);
                 const locked = item.feature ? !hasFeature(item.feature) : false;
                 const linkProps = locked

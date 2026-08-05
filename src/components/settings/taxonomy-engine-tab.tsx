@@ -454,7 +454,7 @@ function TemplatePickerDialog({
         </DialogHeader>
         <div className="space-y-3">
           <button
-            className="flex w-full items-center justify-between rounded-lg border border-dashed px-4 py-3 text-left hover:bg-accent"
+            className="flex w-full items-center justify-between rounded-lg border border-dashed px-4 py-3 text-left hover:bg-accent hover:text-accent-foreground"
             onClick={onPickBlank}
           >
             <span className="font-medium">Start blank</span>
@@ -501,7 +501,7 @@ function AttributePicker({
           {available.map((a) => (
             <button
               key={a.key}
-              className="block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent"
+              className="block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
               onClick={() => {
                 onPick(a.key);
                 closeAll();
@@ -534,7 +534,7 @@ function AttributePicker({
             </form>
           ) : (
             <button
-              className="block w-full rounded px-2 py-1.5 text-left text-sm text-primary hover:bg-accent"
+              className="block w-full rounded px-2 py-1.5 text-left text-sm text-primary hover:bg-accent hover:text-accent-foreground"
               onClick={() => setCustomOpen(true)}
             >
               <Plus className="mr-1 inline h-3 w-3" /> Custom level…
@@ -674,7 +674,7 @@ function TaxonomyPreview({
       <div className="mb-3 flex flex-wrap items-center gap-1 text-xs">
         <button
           onClick={() => setPath([])}
-          className="rounded px-2 py-1 hover:bg-accent"
+          className="rounded px-2 py-1 hover:bg-accent hover:text-accent-foreground"
         >
           All
         </button>
@@ -683,7 +683,7 @@ function TaxonomyPreview({
             <ChevronRight className="h-3 w-3 text-muted-foreground" />
             <button
               onClick={() => setPath((cur) => cur.slice(0, i + 1))}
-              className="rounded px-2 py-1 hover:bg-accent"
+              className="rounded px-2 py-1 hover:bg-accent hover:text-accent-foreground"
             >
               {p.label}
             </button>
@@ -724,7 +724,7 @@ function TaxonomyPreview({
                     { attribute_key: currentLevel!.attribute_key, value: g.value, label: g.label },
                   ])
                 }
-                className="flex w-full items-center justify-between rounded-lg border bg-background px-3 py-2 text-left text-sm hover:bg-accent"
+                className="flex w-full items-center justify-between rounded-lg border bg-background px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
               >
                 <span className="truncate">{g.label}</span>
                 <Badge variant="secondary" className="text-[10px]">{g.count}</Badge>

@@ -70,16 +70,10 @@ export type ActiveQr = {
   store_name: string | null;
 };
 
-async function readActiveQr(supabase: any, productId: string): Promise<ActiveQr | null> {
-  const { data } = await supabase
-    .from("product_qr_assets")
-    .select(
-      "id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path, store_id, store_name",
-    )
-    .eq("product_id", productId)
-    .eq("status", "active")
-    .maybeSingle();
-  if (!data) return null;
+const ACTIVE_QR_COLUMNS =
+  "id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path, store_id, store_name";
+
+function mapActiveQr(data: any): ActiveQr {
   return {
     id: data.id,
     product_id: data.product_id,
@@ -94,6 +88,37 @@ async function readActiveQr(supabase: any, productId: string): Promise<ActiveQr 
     store_id: data.store_id ?? null,
     store_name: data.store_name ?? null,
   };
+}
+
+export async function readActiveQr(supabase: any, productId: string): Promise<ActiveQr | null> {
+  let { data } = await supabase
+    .from("product_qr_assets")
+    .select(ACTIVE_QR_COLUMNS)
+    .eq("product_id", productId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (!data) {
+    // No QR asset of this product's own — it may share a barcode with a
+    // product row in another store (see generateForProduct's GTIN-clash
+    // handling), in which case it uses that product's active QR.
+    const { data: product } = await supabase
+      .from("products")
+      .select("gtin, retailer_id")
+      .eq("id", productId)
+      .maybeSingle();
+    if (product?.gtin) {
+      const { data: shared } = await supabase
+        .from("product_qr_assets")
+        .select(ACTIVE_QR_COLUMNS)
+        .eq("gtin", product.gtin)
+        .eq("retailer_id", product.retailer_id)
+        .eq("status", "active")
+        .maybeSingle();
+      data = shared;
+    }
+  }
+  if (!data) return null;
+  return mapActiveQr(data);
 }
 
 export const getProductQr = createServerFn({ method: "POST" })
@@ -165,31 +190,26 @@ export async function generateForProduct(
 
   // GTIN uniqueness is scoped per retailer (partial unique index also
   // protects us) — the same manufacturer GTIN is legitimately stocked by
-  // multiple retailers, so each gets their own resolver for it.
+  // multiple retailers, so each gets their own resolver for it. Within one
+  // retailer, though, the same GTIN showing up on a second product row is
+  // normal now that stock can be tracked per store (same physical item,
+  // split across store-level rows) — the physical barcode is identical, so
+  // it must resolve to the one existing passport rather than erroring or
+  // spawning a second QR for the same item. No rows are merged; the second
+  // product just shares the first one's active QR asset.
   const { data: gtinClash } = await supabase
     .from("product_qr_assets")
-    .select("id, product_id")
+    .select(ACTIVE_QR_COLUMNS)
     .eq("gtin", gtin14)
     .eq("retailer_id", product.retailer_id)
     .eq("status", "active")
     .maybeSingle();
   if (gtinClash && gtinClash.product_id !== productId) {
-    // Structured error so the UI can offer a merge flow instead of just
-    // showing a dead-end toast.
-    const { data: other } = await supabase
+    await supabase
       .from("products")
-      .select("id, name, sku")
-      .eq("id", gtinClash.product_id)
-      .maybeSingle();
-    throw new Error(
-      JSON.stringify({
-        code: "GTIN_CLASH",
-        gtin: gtin14,
-        otherProductId: gtinClash.product_id,
-        otherProductName: other?.name ?? "another product",
-        otherProductSku: other?.sku ?? null,
-      }),
-    );
+      .update({ qr_status: "active", digital_link_url: gtinClash.digital_link_url })
+      .eq("id", productId);
+    return mapActiveQr(gtinClash);
   }
 
   // Retire existing active row if regenerating — checked, unlike before: an
@@ -274,7 +294,7 @@ export async function generateForProduct(
       generated_by: userId,
       created_by: userId,
     })
-    .select("id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path, store_id, store_name")
+    .select(ACTIVE_QR_COLUMNS)
     .single();
   if (insErr) throw new Error(insErr.message);
 
@@ -332,21 +352,7 @@ export async function generateForProduct(
     /* enrichment queue best-effort */
   }
 
-  return {
-    id: inserted.id,
-    product_id: inserted.product_id,
-    gtin: inserted.gtin,
-    status: inserted.status,
-    version: inserted.version,
-    generated_at: inserted.generated_at,
-    resolver_url: inserted.resolver_url,
-    digital_link_url: inserted.digital_link_url,
-    png_url: publicStorageUrl(inserted.png_path),
-    svg_url: publicStorageUrl(inserted.svg_path),
-    store_id: inserted.store_id ?? effectiveStoreId ?? null,
-    store_name: inserted.store_name ?? effectiveStoreName ?? null,
-  };
-
+  return mapActiveQr(inserted);
 }
 
 export const generateProductQr = createServerFn({ method: "POST" })

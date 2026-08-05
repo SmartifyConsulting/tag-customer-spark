@@ -35,6 +35,21 @@ export function DigitalIdentityProgress({ product, qr, passport, embedded }: Pro
       done: !!product.category_id,
       pending: !product.category_id,
     },
+    { key: "qr", label: "GS1 QR code generated", done: !!qr?.active },
+    {
+      key: "passport",
+      label: "Digital passport published",
+      done: passport?.status === "published",
+    },
+    // Required even for a single-store retailer — a scan needs to trace
+    // back to the physical store the item was tagged at (e.g. for
+    // in-store returns/exchanges), so this is never silently skipped.
+    {
+      key: "store",
+      label: "Store attribution assigned",
+      done: !!qr?.store_id,
+      pending: !!qr?.active && !qr?.store_id,
+    },
     {
       key: "image",
       label: "Product image resolved",
@@ -44,17 +59,6 @@ export function DigitalIdentityProgress({ product, qr, passport, embedded }: Pro
           product.image_status,
         ),
       pending: !product.image_status || product.image_status === "pending",
-    },
-    { key: "qr", label: "GS1 QR code generated", done: !!qr?.active },
-    {
-      key: "store",
-      label: "Store identity assigned",
-      done: !!qr?.active && !!qr?.store_id,
-    },
-    {
-      key: "passport",
-      label: "Digital passport published",
-      done: passport?.status === "published",
     },
     {
       key: "enrichment",

@@ -85,7 +85,8 @@ function sleep(ms: number) {
 // "Sole proprietor" placeholder) and customers arrive later via
 // WhatsApp scans, so making people upload two more spreadsheets at
 // setup time was pure friction.
-type Step = "welcome" | "system" | "connecting" | "file" | "importing" | "done";
+type Step = "welcome" | "system" | "connecting" | "file" | "importing" | "taxonomy" | "done";
+type TaxonomyLevel = { attribute_key: string; label: string; hidden: boolean };
 
 const EPHEMERAL_STEPS: Step[] = ["connecting", "importing"];
 const BACK_BUTTON_STEPS: Step[] = ["system", "file"];
@@ -116,6 +117,10 @@ function SetupWizard() {
   const [storeSummary, setStoreSummary] = useState<{ created: boolean; storeCount: number } | null>(
     null,
   );
+  const [taxonomyResult, setTaxonomyResult] = useState<{
+    templateName: string;
+    levels: TaxonomyLevel[];
+  } | null>(null);
   const [importLabel, setImportLabel] = useState("");
   const [importProgress, setImportProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -183,6 +188,10 @@ function SetupWizard() {
       try {
         let created = 0;
         let updated = 0;
+        // Tracked locally (not just via setTaxonomyResult) so the
+        // navigation decision below doesn't read a stale closure over
+        // React's async state batching.
+        let detectedTaxonomy: { templateName: string; levels: TaxonomyLevel[] } | null = null;
         const DESC_CHUNK = 5;
         setImportProgress(2);
         for (let i = 0; i < rows.length; i += DESC_CHUNK) {
@@ -193,6 +202,16 @@ function SetupWizard() {
           const res = await commitFn({ data: { rows: chunk } });
           created += res.created;
           updated += res.updated;
+          // Auto-detection only fires once, on whichever chunk creates the
+          // very first taxonomy profile — later chunks see one already
+          // exists and report applied:false, so only overwrite on a hit.
+          if ((res as any).taxonomyProfileApplied && (res as any).taxonomyLevels) {
+            detectedTaxonomy = {
+              templateName: (res as any).taxonomyProfileName ?? "General Merchandise",
+              levels: (res as any).taxonomyLevels,
+            };
+            setTaxonomyResult(detectedTaxonomy);
+          }
           setImportProgress(2 + Math.round((done / rows.length) * 20));
         }
         if (cancelled) return;
@@ -253,7 +272,7 @@ function SetupWizard() {
         setImportLabel("All done — your products are ready.");
         setResult({ created, updated });
         await sleep(500);
-        if (!cancelled) goTo("done");
+        if (!cancelled) goTo(detectedTaxonomy ? "taxonomy" : "done");
       } catch {
         if (!cancelled)
           toast.error("We hit a snag getting your products ready — please try again.");
@@ -312,6 +331,13 @@ function SetupWizard() {
             )}
             {step === "importing" && (
               <ImportingStep label={importLabel} progress={importProgress} />
+            )}
+            {step === "taxonomy" && taxonomyResult && (
+              <TaxonomyStep
+                templateName={taxonomyResult.templateName}
+                levels={taxonomyResult.levels}
+                onNext={() => goTo("done")}
+              />
             )}
             {step === "done" && (
               <DoneStep
@@ -475,6 +501,48 @@ function ProgressLine({ label, done, active }: { label: string; done: boolean; a
       >
         {label}
       </span>
+    </div>
+  );
+}
+
+function TaxonomyStep({
+  templateName,
+  levels,
+  onNext,
+}: {
+  templateName: string;
+  levels: TaxonomyLevel[];
+  onNext: () => void;
+}) {
+  const shown = levels.filter((l) => !l.hidden);
+  const skipped = levels.filter((l) => l.hidden);
+  return (
+    <div className="space-y-6 text-center">
+      <div>
+        <h1 className="text-xl font-bold tracking-tight">We've organised your products</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Based on your file, this looks like a <strong>{templateName}</strong> catalogue — here's
+          how we'll group things.
+        </p>
+      </div>
+      <ul className="space-y-2 rounded-xl border bg-muted/30 p-4 text-left">
+        {shown.map((l) => (
+          <li key={l.attribute_key} className="flex items-center gap-2 text-sm">
+            <Check className="h-4 w-4 shrink-0 text-primary" />
+            <span>{l.label}</span>
+          </li>
+        ))}
+      </ul>
+      {skipped.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {skipped.map((l) => l.label).join(", ")} {skipped.length === 1 ? "wasn't" : "weren't"} in
+          your file, so we've left {skipped.length === 1 ? "it" : "them"} out for now — you can add{" "}
+          {skipped.length === 1 ? "it" : "them"} anytime in Admin › Taxonomy.
+        </p>
+      )}
+      <Button size="lg" className="w-full" onClick={onNext}>
+        Looks good
+      </Button>
     </div>
   );
 }

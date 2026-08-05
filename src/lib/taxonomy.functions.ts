@@ -409,12 +409,33 @@ async function detectTaxonomyTemplateIdViaAI(rows: DetectableRow[]): Promise<str
  * once they have any taxonomy profile (auto-created or hand-built), this is
  * a no-op so it never overrides deliberate configuration.
  */
+// Structural levels are always kept — the category tree gets populated by
+// AI/keyword auto-categorisation regardless of what columns the import had.
+// Everything else is only shown if the import actually carried that data;
+// "gender" and any "custom:*" attribute (e.g. Model Number, Dosage Form)
+// have no column in the import schema at all yet, so they'd sit permanently
+// empty otherwise — better to start hidden than promise a level with no way
+// to ever fill it in.
+const ALWAYS_VISIBLE_KEYS = new Set(["department", "category", "subcategory", "product"]);
+
+function levelHasData(attributeKey: string, rows: DetectableRow[]): boolean {
+  if (ALWAYS_VISIBLE_KEYS.has(attributeKey)) return true;
+  if (attributeKey === "brand") return rows.some((r) => !!r.brand);
+  if (attributeKey === "size") return rows.some((r) => !!r.size);
+  if (attributeKey === "color") return rows.some((r) => !!r.color);
+  return false; // "gender", "custom:*" — no import column exists for these yet
+}
+
 export async function autoDetectTaxonomyProfile(opts: {
   supabase: any;
   retailerId: string;
   userId?: string;
   rows: DetectableRow[];
-}): Promise<{ applied: boolean; templateName?: string }> {
+}): Promise<{
+  applied: boolean;
+  templateName?: string;
+  levels?: { attribute_key: string; label: string; hidden: boolean }[];
+}> {
   const { supabase, retailerId, userId, rows } = opts;
 
   const { count } = await supabase
@@ -448,19 +469,24 @@ export async function autoDetectTaxonomyProfile(opts: {
     .single();
   if (error || !profile) return { applied: false };
 
-  const levelRows = template.levels.map((l, idx) => ({
+  const levels = template.levels.map((l) => ({
+    attribute_key: l.attribute_key,
+    label: l.label,
+    hidden: !levelHasData(l.attribute_key, rows),
+  }));
+  const levelRows = levels.map((l, idx) => ({
     profile_id: profile.id,
     position: idx,
     attribute_key: l.attribute_key,
     label: l.label,
-    hidden: false,
+    hidden: l.hidden,
   }));
   const { error: lvlErr } = await supabase.from("taxonomy_levels").insert(levelRows as any);
   if (lvlErr) {
     const rowsNoHidden = levelRows.map(({ hidden, ...rest }) => rest);
     await supabase.from("taxonomy_levels").insert(rowsNoHidden);
   }
-  return { applied: true, templateName: template.name };
+  return { applied: true, templateName: template.name, levels };
 }
 
 // Seed all built-in sector templates (Fashion & Apparel, Grocery, Pharmacy, …)

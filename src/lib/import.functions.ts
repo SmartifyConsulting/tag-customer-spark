@@ -12,9 +12,14 @@ const rowSchema = z.object({
   category_name: z.string().optional().nullable(),
   color: z.string().optional().nullable(),
   size: z.string().optional().nullable(),
-  price_cents: z.number().int().min(0).default(0),
+  // Nullable rather than defaulted here — commitProductImport needs to tell
+  // "file has no price/stock column" apart from "file says 0", so a merge
+  // import doesn't zero out an existing product's price just because this
+  // particular file didn't carry one. Null is coalesced to 0 at insert time
+  // and (for overwrite mode) at update time too.
+  price_cents: z.number().int().min(0).nullable().optional(),
   sale_price_cents: z.number().int().min(0).optional().nullable(),
-  stock_qty: z.number().int().min(0).default(0),
+  stock_qty: z.number().int().min(0).nullable().optional(),
   currency: z.string().length(3).default("ZAR"),
   // ERPs typically expose this as a plant/site/branch/location code (SAP
   // WERKS, Oracle inventory org, Dynamics warehouse, POS store master row).
@@ -315,9 +320,9 @@ function normaliseRow(r: any): ImportRow | null {
     category_name: r.category_name ? String(r.category_name) : null,
     color: r.color ? String(r.color) : null,
     size: r.size ? String(r.size) : null,
-    price_cents: priceToCents(r.price ?? r.price_cents ?? 0),
+    price_cents: r.price != null || r.price_cents != null ? priceToCents(r.price ?? r.price_cents) : null,
     sale_price_cents: r.sale_price != null ? priceToCents(r.sale_price) : null,
-    stock_qty: Number(r.stock ?? r.stock_qty ?? 0) || 0,
+    stock_qty: r.stock != null || r.stock_qty != null ? Number(r.stock ?? r.stock_qty) || 0 : null,
     currency: (r.currency ? String(r.currency) : "ZAR").toUpperCase().slice(0, 3),
     store_name: r.store_name ? String(r.store_name).trim() || null : null,
     store_city: r.store_city ? String(r.store_city).trim() || null : null,
@@ -329,9 +334,21 @@ function normaliseRow(r: any): ImportRow | null {
 
 export const commitProductImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ rows: z.array(rowSchema).min(1).max(500) }).parse(d))
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        rows: z.array(rowSchema).min(1).max(500),
+        // merge: only fields the file actually provided are written, so a
+        // partial re-export (e.g. a stock-only refresh) can't blank out
+        // fields it doesn't carry. overwrite: this file is treated as the
+        // authoritative full record — blanks replace existing values.
+        mode: z.enum(["merge", "overwrite"]).default("merge"),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { mode } = data;
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer assigned");
 
@@ -375,6 +392,33 @@ export const commitProductImport = createServerFn({ method: "POST" })
     const soleStoreId = (storeRows ?? []).length === 1 ? (storeRows as any[])[0].id : null;
     const defaultUploadStoreId = staffStore?.store_id ?? soleStoreId ?? null;
     let storesCreated = 0;
+
+    // Rows with no store/branch column (single-shop merchants) must still
+    // land on a concrete store — leaving store_id null would let the same
+    // barcode+description slip past the products_retailer_gtin_description_store_key
+    // constraint (Postgres never treats NULL = NULL as a match), so every
+    // "no store info" row across the whole import shares one placeholder
+    // store instead. Same name as ensureRetailerHasStore's post-import
+    // fallback, so the two don't create two different placeholders.
+    let defaultStoreId: string | null = null;
+    async function getDefaultStoreId(): Promise<string> {
+      if (defaultStoreId) return defaultStoreId;
+      const existing = storeByName.get("sole proprietor");
+      if (existing) {
+        defaultStoreId = existing.id;
+        return defaultStoreId;
+      }
+      const { data: newStore, error } = await supabase
+        .from("stores")
+        .insert({ retailer_id: retailerId, name: "Sole proprietor", status: "active" } as any)
+        .select("id")
+        .single();
+      if (error) throw new Error(`Failed creating default store: ${error.message}`);
+      defaultStoreId = newStore.id;
+      storeByName.set("sole proprietor", { id: newStore.id, city: null, province: null, country: null });
+      storesCreated++;
+      return defaultStoreId;
+    }
 
     let created = 0;
     let updated = 0;
@@ -471,16 +515,39 @@ export const commitProductImport = createServerFn({ method: "POST" })
             }
           }
         }
+        if (!storeId) storeId = await getDefaultStoreId();
 
         const canonicalGs1 = row.gtin ? `https://id.gs1.org/01/${row.gtin}` : null;
+        // Never null — description sits in the composite uniqueness
+        // constraint alongside gtin/store, and Postgres never treats
+        // NULL = NULL as a match, so a blank description would silently
+        // exempt a row from duplicate detection.
+        const description = row.description || row.name;
 
-        // Upsert product by (retailer, sku)
-        const { data: existing } = await supabase
+        // Match by (retailer, sku) first — the stable identifier most
+        // re-imports carry. Fall back to the natural key (gtin +
+        // description + store) for a file that assigned a new SKU to a
+        // product already on file, so it updates in place instead of
+        // tripping the unique constraint as a fresh insert.
+        let existing: { id: string } | null = null;
+        const { data: bySku } = await supabase
           .from("products")
           .select("id")
           .eq("retailer_id", retailerId)
           .eq("sku", row.sku)
           .maybeSingle();
+        existing = bySku ?? null;
+        if (!existing && row.gtin) {
+          const { data: byNaturalKey } = await supabase
+            .from("products")
+            .select("id")
+            .eq("retailer_id", retailerId)
+            .eq("gtin", row.gtin)
+            .eq("description", description)
+            .eq("store_id", storeId)
+            .maybeSingle();
+          existing = byNaturalKey ?? null;
+        }
 
         const payload: any = {
           retailer_id: retailerId,
@@ -488,9 +555,9 @@ export const commitProductImport = createServerFn({ method: "POST" })
           name: row.name,
           sku: row.sku,
           brand: row.brand,
-          description: row.description,
+          description,
           category_id: categoryId,
-          ...(storeId ? { store_id: storeId } : {}),
+          store_id: storeId,
           suggested_category_id: categoryId,
           category_confidence: categoryConfidence,
           color: row.color,
@@ -506,20 +573,35 @@ export const commitProductImport = createServerFn({ method: "POST" })
         };
 
         let productId: string;
-        if (existing) {
-          const { error } = await supabase.from("products").update(payload).eq("id", existing.id);
-          if (error) throw new Error(error.message);
-          productId = existing.id;
-          updated++;
-        } else {
-          const { data: inserted, error } = await supabase
-            .from("products")
-            .insert(payload)
-            .select("id")
-            .single();
-          if (error) throw new Error(error.message);
-          productId = inserted.id;
-          created++;
+        try {
+          if (existing) {
+            const updatePayload =
+              mode === "overwrite"
+                ? { ...payload, price_cents: payload.price_cents ?? 0, stock_qty: payload.stock_qty ?? 0 }
+                : Object.fromEntries(
+                    Object.entries(payload).filter(([, v]) => v !== null && v !== undefined),
+                  );
+            const { error } = await supabase.from("products").update(updatePayload).eq("id", existing.id);
+            if (error) throw new Error(error.message);
+            productId = existing.id;
+            updated++;
+          } else {
+            const { data: inserted, error } = await supabase
+              .from("products")
+              .insert({ ...payload, price_cents: payload.price_cents ?? 0, stock_qty: payload.stock_qty ?? 0 })
+              .select("id")
+              .single();
+            if (error) throw new Error(error.message);
+            productId = inserted.id;
+            created++;
+          }
+        } catch (e: any) {
+          if (e?.message?.includes("products_retailer_gtin_description_store_key")) {
+            throw new Error(
+              `${row.sku}: a product with this barcode already exists in this store — skipped.`,
+            );
+          }
+          throw e;
         }
 
         // Image resolution and QR generation deliberately do NOT happen here
@@ -574,6 +656,7 @@ export const commitProductImport = createServerFn({ method: "POST" })
       errors,
       taxonomyProfileApplied: taxonomy.applied,
       taxonomyProfileName: taxonomy.templateName ?? null,
+      taxonomyLevels: taxonomy.levels ?? null,
       storesCreated,
       brandsCreated,
       brandLogosFetched,

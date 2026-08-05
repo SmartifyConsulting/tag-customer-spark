@@ -101,10 +101,14 @@ export const NAV: readonly NavItem[] = [
 
   {
     title: "Pricing",
-    url: "/admin/pricing",
+    url: "/upgrade",
     icon: DollarSign,
-    match: ["/admin/pricing"],
-    superAdminOnly: true,
+    // Every retailer's own subscribe/compare-plans page — not the
+    // super_admin console at /admin/pricing (that's TAG staff managing
+    // every retailer's plan, a different audience entirely; pointing this
+    // nav item there was what caused the "redirects to Dashboard while
+    // Pricing stays highlighted" confusion for non-super-admin users).
+    match: ["/upgrade"],
   },
 ] as const;
 

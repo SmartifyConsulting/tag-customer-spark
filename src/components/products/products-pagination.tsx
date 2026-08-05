@@ -46,7 +46,7 @@ export function ProductsPagination({
                 "grid h-9 w-9 place-items-center rounded-lg text-sm font-medium transition-colors",
                 p === page
                   ? "bg-primary text-primary-foreground"
-                  : "border border-border bg-card text-foreground hover:bg-accent",
+                  : "border border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground",
               )}
             >
               {p}

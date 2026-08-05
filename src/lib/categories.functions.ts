@@ -176,7 +176,12 @@ Pick the single best existing_category_id from the list. If NONE reasonably fit,
       method: "POST",
       headers: { "content-type": "application/json", "Lovable-API-Key": key },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        // Category classification is a judgment call made from thin input
+        // (often just a bare product name) — the flash tier guessed wrong
+        // on sparse data (e.g. "Sunlight Dishwashing Liquid" -> "Coffee").
+        // gpt-5.5 is already trusted for the harder passport-enrichment
+        // task; trading some latency/cost here for fewer bad guesses.
+        model: "openai/gpt-5.5",
         response_format: { type: "json_object" },
         messages: [
           {

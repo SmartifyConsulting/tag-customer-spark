@@ -81,20 +81,6 @@ export function ProductDetailView({
       .then((res) => {
         qc.invalidateQueries({ queryKey: ["product", productId] });
         if (res.errors.length === 0) return;
-        const qrErr = res.errors.find((e: any) => e.step === "qr");
-        if (qrErr) {
-          try {
-            const parsed = JSON.parse(qrErr.message);
-            if (parsed?.code === "GTIN_CLASH") {
-              toast.error(
-                `Duplicate GTIN with "${parsed.otherProductName ?? "another product"}". Open the QR panel below to merge.`,
-              );
-              return;
-            }
-          } catch {
-            /* not structured — fall through */
-          }
-        }
         const first = res.errors[0];
         toast.error(`Digital identity build didn't finish — ${first.step}: ${first.message}`);
       })
@@ -258,7 +244,6 @@ export function ProductDetailView({
                         }
                       : null
                   }
-
                   passport={(data as any).passport ?? null}
                   embedded
                 />
@@ -270,9 +255,6 @@ export function ProductDetailView({
         {/* Merged QR + Passport card */}
         <div id="product-qr" className="grid gap-6 rounded-xl border border-border bg-card p-5 md:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
           <div>
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              QR Status
-            </p>
             <ProductQrPanel
               productId={productId}
               productName={p.name}

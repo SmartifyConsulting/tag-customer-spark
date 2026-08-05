@@ -187,7 +187,7 @@ export function DynamicTaxonomyBrowser() {
         <span className="mx-2 text-muted-foreground">·</span>
         <button
           onClick={() => setPath([])}
-          className="rounded px-2 py-1 font-medium hover:bg-accent"
+          className="rounded px-2 py-1 font-medium hover:bg-accent hover:text-accent-foreground"
         >
           All
         </button>
@@ -196,7 +196,7 @@ export function DynamicTaxonomyBrowser() {
             <ChevronRight className="h-3 w-3 text-muted-foreground" />
             <button
               onClick={() => setPath((cur) => cur.slice(0, i + 1))}
-              className="rounded px-2 py-1 hover:bg-accent"
+              className="rounded px-2 py-1 hover:bg-accent hover:text-accent-foreground"
             >
               {p.label}
             </button>
@@ -267,7 +267,7 @@ export function DynamicTaxonomyBrowser() {
               <Link
                 to="/products/$productId"
                 params={{ productId: p.id }}
-                className="flex items-center gap-3 px-3 py-2 hover:bg-accent"
+                className="flex items-center gap-3 px-3 py-2 hover:bg-accent hover:text-accent-foreground"
               >
                 <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md bg-muted">
                   {p.image_url ? (

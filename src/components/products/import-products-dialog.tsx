@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ArrowRight, Barcode, FileUp, Loader2, QrCode, Sparkles } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,7 @@ export function ImportProductsDialog({
   const [processing, setProcessing] = useState(false);
   const [label, setLabel] = useState("");
   const [progress, setProgress] = useState(0);
+  const [mode, setMode] = useState<"merge" | "overwrite">("merge");
 
   const preview = useMutation({
     mutationFn: async (f: File) => {
@@ -103,7 +105,7 @@ export function ImportProductsDialog({
         const chunk = rows.slice(i, i + IMPORT_CHUNK);
         const done = Math.min(i + chunk.length, rows.length);
         setLabel(`Importing products… ${done} / ${rows.length}`);
-        const res = await commitFn({ data: { rows: chunk } });
+        const res = await commitFn({ data: { rows: chunk, mode } });
         created += res.created;
         updated += res.updated;
         failed += res.failed;
@@ -251,6 +253,30 @@ export function ImportProductsDialog({
                 Choose different file
               </Button>
             </div>
+            <RadioGroup
+              value={mode}
+              onValueChange={(v) => setMode(v as "merge" | "overwrite")}
+              className="grid gap-2 rounded-xl border bg-muted/30 p-3 sm:grid-cols-2"
+            >
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <RadioGroupItem value="merge" className="mt-0.5" />
+                <span>
+                  <span className="font-medium">Merge</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Update matching products, keep existing fields this file doesn't include
+                  </span>
+                </span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <RadioGroupItem value="overwrite" className="mt-0.5" />
+                <span>
+                  <span className="font-medium">Overwrite</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Replace matching products entirely with this file's data
+                  </span>
+                </span>
+              </label>
+            </RadioGroup>
             <ScrollArea className="max-h-[420px] rounded-xl border">
               <Table>
                 <TableHeader>
@@ -277,9 +303,9 @@ export function ImportProductsDialog({
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {(r.price_cents / 100).toFixed(2)} {r.currency}
+                        {((r.price_cents ?? 0) / 100).toFixed(2)} {r.currency}
                       </TableCell>
-                      <TableCell className="text-right">{r.stock_qty}</TableCell>
+                      <TableCell className="text-right">{r.stock_qty ?? 0}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -1,13 +1,17 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { Check, Lock, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import { Check, ExternalLink, Loader2, Lock, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTier } from "@/hooks/use-tier";
 import { FEATURE_META, FEATURE_MIN_TIER, TIER_LABEL, type TagTier, type TierFeatureKey } from "@/lib/tier";
-import { PLANS, SELF_SERVE_PLANS, formatZar } from "@/lib/billing/pricing";
+import { PLANS, SELF_SERVE_PLANS, priceCents, formatZar, formatUsd, type PlanId, type Cycle } from "@/lib/billing/pricing";
+import { createPayfastCheckout, createPaypalOrder, capturePaypalOrder } from "@/lib/billing.functions";
 
 const searchSchema = z.object({
   feature: z
@@ -63,7 +67,71 @@ const MATRIX: Row[] = [
 function UpgradePage() {
   const { feature } = Route.useSearch();
   const { tier } = useTier();
+  const qc = useQueryClient();
   const meta = feature ? FEATURE_META[feature as TierFeatureKey] : null;
+
+  const [cycle, setCycle] = useState<Cycle>("monthly");
+  const initialSelected: PlanId = (SELF_SERVE_PLANS as string[]).includes(tier) ? (tier as PlanId) : "starter";
+  const [selectedPlan, setSelectedPlan] = useState<PlanId>(initialSelected);
+  const [payBusy, setPayBusy] = useState<null | "payfast" | "paypal">(null);
+
+  const selectedZar = priceCents(selectedPlan, cycle, "ZAR");
+  const selectedUsd = priceCents(selectedPlan, cycle, "USD");
+  const cycleSuffix = cycle === "annual" ? "yr" : "mo";
+
+  const startPayfast = async () => {
+    setPayBusy("payfast");
+    try {
+      const origin = window.location.origin;
+      const { redirect_url } = await createPayfastCheckout({
+        data: {
+          plan: selectedPlan,
+          cycle,
+          return_url: `${origin}/settings?tab=billing&paid=1`,
+          cancel_url: `${origin}/settings?tab=billing&cancelled=1`,
+          notify_url: `${origin}/api/public/webhooks/payfast-itn`,
+        },
+      });
+      window.location.href = redirect_url;
+    } catch (e) {
+      toast.error((e as Error).message);
+      setPayBusy(null);
+    }
+  };
+
+  const startPaypal = async () => {
+    setPayBusy("paypal");
+    try {
+      const origin = window.location.origin;
+      const { order_id, approve_url } = await createPaypalOrder({
+        data: {
+          plan: selectedPlan,
+          cycle,
+          return_url: `${origin}/settings?tab=billing&paid=1`,
+          cancel_url: `${origin}/settings?tab=billing&cancelled=1`,
+        },
+      });
+      if (!approve_url) throw new Error("PayPal did not return an approval URL");
+      const popup = window.open(approve_url, "paypal", "width=520,height=720");
+      const iv = setInterval(async () => {
+        if (popup && popup.closed) {
+          clearInterval(iv);
+          try {
+            await capturePaypalOrder({ data: { order_id } });
+            toast.success("Payment captured — your plan is being upgraded.");
+            qc.invalidateQueries({ queryKey: ["my-subscription"] });
+          } catch (e) {
+            toast.error((e as Error).message);
+          } finally {
+            setPayBusy(null);
+          }
+        }
+      }, 700);
+    } catch (e) {
+      toast.error((e as Error).message);
+      setPayBusy(null);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -95,12 +163,33 @@ function UpgradePage() {
         </Card>
       )}
 
+      <div className="flex items-center justify-end">
+        <div className="inline-flex rounded-lg border p-1 text-sm">
+          <button
+            className={`rounded-md px-3 py-1 ${cycle === "monthly" ? "bg-[color:var(--mint)] text-white" : "text-muted-foreground"}`}
+            onClick={() => setCycle("monthly")}
+          >
+            Monthly
+          </button>
+          <button
+            className={`rounded-md px-3 py-1 ${cycle === "annual" ? "bg-[color:var(--mint)] text-white" : "text-muted-foreground"}`}
+            onClick={() => setCycle("annual")}
+          >
+            Annual · save 17%
+          </button>
+        </div>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {TIERS.map((t) => {
           const p = PLANS[t];
-          const price = t === "enterprise" ? "Custom/branch" : `${formatZar(p.monthly_zar_cents)}/mo`;
-          return (
-            <Card key={t} className={`flex flex-col rounded-2xl ${tier === t ? "border-[color:var(--mint)]" : ""} ${t === "enterprise" ? "bg-slate-950 text-slate-50" : ""}`}>
+          const isSelfServe = (SELF_SERVE_PLANS as string[]).includes(t);
+          const price = t === "enterprise" ? "Custom/branch" : `${formatZar(priceCents(t as PlanId, cycle, "ZAR"))}/${cycleSuffix}`;
+          const selected = isSelfServe && selectedPlan === t;
+          const card = (
+            <Card
+              className={`flex h-full flex-col rounded-2xl transition-shadow ${selected ? "ring-2 ring-[color:var(--mint)]" : ""} ${tier === t ? "border-[color:var(--mint)]" : ""} ${t === "enterprise" ? "bg-slate-950 text-slate-50" : ""}`}
+            >
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className={t === "enterprise" ? "text-slate-50" : undefined}>{p.name}</CardTitle>
@@ -121,8 +210,44 @@ function UpgradePage() {
               </CardContent>
             </Card>
           );
+          return isSelfServe ? (
+            <button key={t} type="button" onClick={() => setSelectedPlan(t as PlanId)} className="text-left">
+              {card}
+            </button>
+          ) : (
+            <div key={t}>{card}</div>
+          );
         })}
       </div>
+
+      <Card className="rounded-2xl border-[color:var(--mint)]/40">
+        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">Selected plan</p>
+            <p className="text-base font-semibold">
+              {PLANS[selectedPlan].name} · {cycle === "annual" ? "Annual" : "Monthly"}
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                {formatZar(selectedZar)}/{cycleSuffix}
+                {selectedUsd > 0 && <> · {formatUsd(selectedUsd)}/{cycleSuffix}</>}
+              </span>
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              className="bg-[color:var(--mint)] text-white hover:bg-[color:var(--mint)]/90"
+              onClick={startPayfast}
+              disabled={payBusy !== null}
+            >
+              {payBusy === "payfast" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Subscribe via PayFast · {formatZar(selectedZar)}/{cycleSuffix}
+            </Button>
+            <Button variant="outline" onClick={startPaypal} disabled={payBusy !== null}>
+              {payBusy === "paypal" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
+              Subscribe via PayPal · {formatUsd(selectedUsd)}/{cycleSuffix}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="rounded-2xl">
         <CardHeader>
@@ -132,13 +257,17 @@ function UpgradePage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="max-h-[520px] overflow-auto rounded-b-xl">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Feature</th>
+                <tr className="text-left text-xs uppercase tracking-wide">
+                  <th className="sticky top-0 z-10 bg-[color:var(--mint)] px-4 py-3 font-medium text-white">
+                    Feature
+                  </th>
                   {TIERS.map((t) => (
-                    <th key={t} className="px-4 py-3 font-medium">{PLANS[t].name.replace("Tag ", "")}</th>
+                    <th key={t} className="sticky top-0 z-10 bg-[color:var(--mint)] px-4 py-3 font-medium text-white">
+                      {PLANS[t].name.replace("Tag ", "")}
+                    </th>
                   ))}
                 </tr>
               </thead>

@@ -121,13 +121,32 @@ export const listProducts = createServerFn({ method: "POST" })
     if (data.category_id) q = q.eq("category_id", data.category_id);
     if (data.brand_id) q = q.eq("brand_id", data.brand_id);
     if (data.store_id) q = q.eq("store_id", data.store_id);
-    // A product is "tagged" only after a real scan has been recorded, not
-    // merely because its Digital Identity / QR asset has been generated.
+    // A product is "tagged" once a customer has actually scanned its QR code
+    // in the physical world — QR generation just makes tagging possible, it
+    // doesn't mean anyone has scanned it yet.
     const { data: scanRows } = await supabase
       .from("qr_scans")
       .select("product_id")
       .eq("retailer_id", retailerId);
-    const taggedIds = new Set<string>((scanRows ?? []).map((r: any) => r.product_id));
+    const scanCounts = new Map<string, number>();
+    (scanRows ?? []).forEach((r: any) => {
+      scanCounts.set(r.product_id, (scanCounts.get(r.product_id) ?? 0) + 1);
+    });
+    const taggedIds = new Set<string>(scanCounts.keys());
+
+    // "Following" count — how many customers currently have an active
+    // watch on this product (opted in via the passport page's Follow Me
+    // button). Surfaced per-row so retailers can see interest building up
+    // without opening each product individually.
+    const { data: interestRows } = await supabase
+      .from("customer_interests")
+      .select("product_id")
+      .eq("retailer_id", retailerId)
+      .eq("status", "active");
+    const followingCounts = new Map<string, number>();
+    (interestRows ?? []).forEach((r: any) => {
+      followingCounts.set(r.product_id, (followingCounts.get(r.product_id) ?? 0) + 1);
+    });
     if (data.tagged === "tagged") {
       q = q.in(
         "id",
@@ -173,7 +192,12 @@ export const listProducts = createServerFn({ method: "POST" })
     if (data.low_stock) {
       filtered = filtered.filter((p: any) => p.stock_qty <= (p.low_stock_threshold ?? 0));
     }
-    filtered = filtered.map((p: any) => ({ ...p, is_tagged: taggedIds.has(p.id) }));
+    filtered = filtered.map((p: any) => ({
+      ...p,
+      is_tagged: taggedIds.has(p.id),
+      scan_count: scanCounts.get(p.id) ?? 0,
+      following_count: followingCounts.get(p.id) ?? 0,
+    }));
 
     return {
       rows: filtered,
@@ -218,8 +242,10 @@ export const getProduct = createServerFn({ method: "POST" })
 
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
+    const { readActiveQr } = await import("./qr.functions");
+
     const [
-      { data: qr },
+      qr,
       { data: passport },
       { count: scans30 },
       { count: scansTotal },
@@ -229,14 +255,7 @@ export const getProduct = createServerFn({ method: "POST" })
       { data: recoveries },
       { data: trend },
     ] = await Promise.all([
-      supabase
-        .from("product_qr_assets")
-        .select(
-          "id, product_id, gtin, status, version, generated_at, resolver_url, digital_link_url, png_path, svg_path, store_id, store_name",
-        )
-        .eq("product_id", data.id)
-        .eq("status", "active")
-        .maybeSingle(),
+      readActiveQr(supabase, data.id),
       supabase
         .from("product_passports")
         .select("dpp_id, status, enrichment_status, visibility, updated_at")
@@ -296,20 +315,9 @@ export const getProduct = createServerFn({ method: "POST" })
       deviceCounts[dev] = (deviceCounts[dev] ?? 0) + 1;
     });
 
-    const storageBase =
-      (process.env.SUPABASE_URL ?? "").replace(/\/$/, "") +
-      "/storage/v1/object/public/qr-artifacts/";
-    const qrEnriched = qr
-      ? {
-          ...qr,
-          png_url: storageBase + (qr as any).png_path,
-          svg_url: storageBase + (qr as any).svg_path,
-        }
-      : null;
-
     return {
       product,
-      qr: qrEnriched,
+      qr,
       passport: passport ?? null,
       analytics: {
         scans30: scans30 ?? 0,
@@ -795,48 +803,35 @@ export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
         }
 
         // 1. QR + shell passport + image (generateForProduct handles all three)
-        let qrClashed = false;
         try {
           await generateForProduct(supabase, userId, pid, data.force);
         } catch (e: any) {
-          const msg = e?.message ?? "QR failed";
-          // Detect the structured GTIN clash — image + enrichment cannot
-          // succeed until the user merges the duplicate, so skip them
-          // instead of cascading two more misleading "failed" errors.
-          try {
-            const parsed = JSON.parse(msg);
-            if (parsed?.code === "GTIN_CLASH") qrClashed = true;
-          } catch {
-            /* not structured */
-          }
-          results.errors.push({ productId: pid, step: "qr", message: msg });
+          results.errors.push({ productId: pid, step: "qr", message: e?.message ?? "QR failed" });
         }
 
-        if (!qrClashed) {
-          // 2. Image resolver (in case QR path skipped it)
-          try {
-            await resolveAndSyncProductImage({ supabase, productId: pid });
-          } catch (e: any) {
-            results.errors.push({
-              productId: pid,
-              step: "image",
-              message: e?.message ?? "Image failed",
-            });
-          }
+        // 2. Image resolver (in case QR path skipped it)
+        try {
+          await resolveAndSyncProductImage({ supabase, productId: pid });
+        } catch (e: any) {
+          results.errors.push({
+            productId: pid,
+            step: "image",
+            message: e?.message ?? "Image failed",
+          });
+        }
 
-          // 3. Passport enrichment
-          try {
-            const r = await enrichProductPassport(supabaseAdmin, pid, { overwrite: false });
-            if (!r.ok) {
-              results.errors.push({ productId: pid, step: "enrichment", message: r.error });
-            }
-          } catch (e: any) {
-            results.errors.push({
-              productId: pid,
-              step: "enrichment",
-              message: e?.message ?? "Enrichment failed",
-            });
+        // 3. Passport enrichment
+        try {
+          const r = await enrichProductPassport(supabaseAdmin, pid, { overwrite: false });
+          if (!r.ok) {
+            results.errors.push({ productId: pid, step: "enrichment", message: r.error });
           }
+        } catch (e: any) {
+          results.errors.push({
+            productId: pid,
+            step: "enrichment",
+            message: e?.message ?? "Enrichment failed",
+          });
         }
 
         results.succeeded++;
