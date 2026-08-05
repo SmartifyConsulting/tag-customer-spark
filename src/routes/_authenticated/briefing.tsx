@@ -156,12 +156,12 @@ function BriefingPage() {
                 <li key={c.conversation_id}>
                   <Link to="/inbox" className="flex items-start gap-3 py-3 hover:bg-muted/40">
                     <div className="min-w-0 flex-1">
-                      <p className="flex items-center gap-2 text-sm font-medium">
+                      <div className="flex items-center gap-2 text-sm font-medium">
                         <span className="truncate">
                           {c.customer_name || c.customer_phone || "Unknown"}
                         </span>
                         <Badge className="ml-auto shrink-0">{c.unread_count}</Badge>
-                      </p>
+                      </div>
                       {c.last_message && (
                         <p className="line-clamp-2 text-xs text-muted-foreground">
                           {c.last_message}
