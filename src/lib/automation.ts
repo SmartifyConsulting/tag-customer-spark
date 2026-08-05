@@ -59,9 +59,9 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     key: "high_interest",
     label: "High interest",
     description:
-      "Message watchers when the product's Intent Score crosses the threshold. Re-arms when it drops back below.",
-    threshold: 75,
-    thresholdLabel: "Notify when Intent Score exceeds",
+      "Message watchers when at least this many other customers are also actively interested in the same product. Re-arms when the count drops back below.",
+    threshold: 1,
+    thresholdLabel: "Notify when at least this many other people are interested",
     templateName: "high_interest",
   },
   {

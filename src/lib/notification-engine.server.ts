@@ -7,12 +7,14 @@
 //   low_stock      stock below threshold; re-arms once stock rises above it
 //   last_one       stock is exactly 1; re-arms once stock increases
 //   back_in_stock  stock went 0 -> >0; re-arms once stock hits 0 again
-//   high_interest  intent score crosses threshold; re-arms when it drops below
+//   high_interest  >= N other customers actively interested in the same
+//                  product; re-arms when the count drops back below N
 
 import { formatMoney } from "@/lib/format";
 import { AUTOMATION_BY_KEY, type AutomationKey } from "@/lib/automation";
 import { getAutomationSettingsMap } from "@/lib/automation.server";
 import {
+  countOtherActiveInterest,
   effectivePrice,
   isContactable,
   listActiveWatchers,
@@ -147,13 +149,13 @@ export function checkBackInStock(
 export function checkHighInterest(
   watch: WatchRow,
   product: Product,
-  ctx: { retailerName: string; headerImage: string; threshold: number },
+  ctx: { retailerName: string; headerImage: string; threshold: number; otherInterestCount: number },
 ): NotificationDecision | null {
-  const score = Number(product.intent_score ?? 0);
-  if (score <= ctx.threshold) return null;
-  // Re-arm rule: the score must have dipped below the threshold since the
-  // previous high-interest message.
-  if (watch.last_high_interest_sent && Number(watch.last_known_intent_score ?? 0) > ctx.threshold) return null;
+  const count = ctx.otherInterestCount;
+  if (count < ctx.threshold) return null;
+  // Re-arm rule: the count must have dropped back below the threshold since
+  // the previous high-interest message.
+  if (watch.last_high_interest_sent && Number(watch.last_known_interest_count ?? 0) >= ctx.threshold) return null;
 
   const productName = product.display_name || product.name;
   return {
@@ -163,9 +165,12 @@ export function checkHighInterest(
       "1": ctx.headerImage,
       "2": ctx.retailerName,
       "3": productName,
-      "4": String(Math.round(score)),
+      "4": String(count),
     },
-    fallbackBody: `📈 ${ctx.retailerName}: ${productName} is getting a lot of attention right now. If you want it, don't wait.`,
+    fallbackBody:
+      count === 1
+        ? `📈 ${ctx.retailerName}: someone else is looking at ${productName} too — the one you're watching. If you want it, don't wait.`
+        : `📈 ${ctx.retailerName}: ${count} other people are looking at ${productName} — the one you're watching. If you want it, don't wait.`,
     patch: { last_high_interest_sent: new Date().toISOString() },
   };
 }
@@ -229,10 +234,13 @@ export async function evaluateProduct(supabase: any, productId: string): Promise
       });
       if (d) decisions.push(d);
     }
+    let otherInterestCount = 0;
     if (settings.high_interest.enabled) {
+      otherInterestCount = await countOtherActiveInterest(supabase, p.id, watch.customer_id);
       const d = checkHighInterest(watch, p, {
         ...ctxBase,
-        threshold: Number(settings.high_interest.threshold ?? AUTOMATION_BY_KEY.high_interest.threshold ?? 75),
+        threshold: Number(settings.high_interest.threshold ?? AUTOMATION_BY_KEY.high_interest.threshold ?? 1),
+        otherInterestCount,
       });
       if (d) decisions.push(d);
     }
@@ -243,7 +251,7 @@ export async function evaluateProduct(supabase: any, productId: string): Promise
     }
 
     // Always advance the snapshot so rules re-arm correctly next time.
-    await updateSnapshot(supabase, watch.id, product as ProductSnapshot);
+    await updateSnapshot(supabase, watch.id, product as ProductSnapshot, otherInterestCount);
   }
 
   return { sent };

@@ -16,6 +16,7 @@ export type WatchRow = {
   last_known_price: number | null;
   last_known_stock: number | null;
   last_known_intent_score: number | null;
+  last_known_interest_count: number | null;
   last_notified_price: number | null;
   last_notified_stock: number | null;
   last_price_drop_sent: string | null;
@@ -28,7 +29,7 @@ export type WatchRow = {
 
 const WATCH_COLUMNS =
   "id, retailer_id, customer_id, product_id, status, notifications_enabled, whatsapp_number, " +
-  "price_when_added, last_known_price, last_known_stock, last_known_intent_score, " +
+  "price_when_added, last_known_price, last_known_stock, last_known_intent_score, last_known_interest_count, " +
   "last_notified_price, last_notified_stock, last_price_drop_sent, last_low_stock_sent, " +
   "last_last_one_sent, last_back_in_stock_sent, last_high_interest_sent, " +
   "customer:customers(id, full_name, whatsapp_e164, status)";
@@ -131,15 +132,15 @@ export async function updateSnapshot(
   supabase: any,
   watchId: string,
   product: ProductSnapshot,
+  otherInterestCount?: number,
 ): Promise<void> {
-  await supabase
-    .from("watchlists")
-    .update({
-      last_known_price: effectivePrice(product),
-      last_known_stock: product.stock_qty ?? 0,
-      last_known_intent_score: product.intent_score ?? 0,
-    })
-    .eq("id", watchId);
+  const patch: Record<string, unknown> = {
+    last_known_price: effectivePrice(product),
+    last_known_stock: product.stock_qty ?? 0,
+    last_known_intent_score: product.intent_score ?? 0,
+  };
+  if (otherInterestCount !== undefined) patch.last_known_interest_count = otherInterestCount;
+  await supabase.from("watchlists").update(patch).eq("id", watchId);
 }
 
 /** Resolves the number to message for a watch row. */
@@ -152,4 +153,23 @@ export function isContactable(watch: WatchRow): boolean {
   if (!watcherPhone(watch)) return false;
   if (watch.customer && watch.customer.status !== "subscribed") return false;
   return true;
+}
+
+/**
+ * How many OTHER customers currently have an active interest in this
+ * product — the literal "someone else is looking at this too" signal for
+ * the high_interest rule, as opposed to the derived Intent Score.
+ */
+export async function countOtherActiveInterest(
+  supabase: any,
+  productId: string,
+  excludingCustomerId: string,
+): Promise<number> {
+  const { count } = await supabase
+    .from("customer_interests")
+    .select("id", { count: "exact", head: true })
+    .eq("product_id", productId)
+    .eq("status", "active")
+    .neq("customer_id", excludingCustomerId);
+  return count ?? 0;
 }
