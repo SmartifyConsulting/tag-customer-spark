@@ -115,10 +115,35 @@ export const sendReply = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: convo } = await supabase
       .from("conversations")
-      .select("retailer_id")
+      .select("retailer_id, customer_id, customer:customers(whatsapp_e164, status)")
       .eq("id", data.conversation_id)
       .maybeSingle();
     if (!convo) throw new Error("Not found");
+
+    // Internal notes are staff-only by design — never dispatched to WhatsApp.
+    let sent = false;
+    let sendError: string | null = null;
+    let status: "sent" | "failed" = "sent";
+
+    if (!data.is_internal) {
+      const customer = (convo as any).customer;
+      const phone = customer?.whatsapp_e164 as string | null | undefined;
+      if (!phone || customer?.status !== "subscribed") {
+        status = "failed";
+        sendError = phone ? "Customer is unsubscribed" : "No WhatsApp number on file";
+      } else {
+        const { sendWhatsApp } = await import("@/lib/whatsapp.server");
+        const result = await sendWhatsApp({ to: phone, body: data.body });
+        if (result.ok) {
+          sent = true;
+        } else {
+          status = "failed";
+          sendError = result.error ?? "Send failed";
+        }
+      }
+    } else {
+      sent = true; // Internal notes don't need to "send" anywhere to count as successful.
+    }
 
     const { error } = await supabase.from("conversation_messages").insert({
       conversation_id: data.conversation_id,
@@ -128,7 +153,7 @@ export const sendReply = createServerFn({ method: "POST" })
       is_internal: data.is_internal,
       author_user_id: userId,
       created_by: userId,
-      status: "sent",
+      status,
       sent_at: new Date().toISOString(),
     });
 
@@ -139,7 +164,7 @@ export const sendReply = createServerFn({ method: "POST" })
         .update({ unread_count: 0, last_message_at: new Date().toISOString() })
         .eq("id", data.conversation_id);
     }
-    return { ok: true };
+    return { ok: true, sent, error: sendError };
   });
 
 export const updateConversation = createServerFn({ method: "POST" })

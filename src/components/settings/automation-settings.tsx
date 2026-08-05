@@ -109,6 +109,11 @@ export function AutomationSettings() {
                   onChange={(e) => update({ template_name: e.target.value })}
                   className="font-mono text-xs"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Must exactly match a template already approved in your Infobip WhatsApp
+                  Business account. A mismatch falls back to plain text — which only reaches
+                  the customer if they messaged you in the last 24 hours.
+                </p>
               </div>
 
               <Button

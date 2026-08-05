@@ -259,9 +259,15 @@ function ConversationPane({ id }: { id: string }) {
     if (!text.trim() || sending) return;
     setSending(true);
     try {
-      await replyFn({ data: { conversation_id: id, body: text.trim(), is_internal: isInternal } });
-      setText("");
+      const res = await replyFn({
+        data: { conversation_id: id, body: text.trim(), is_internal: isInternal },
+      });
       await qc.invalidateQueries({ queryKey: ["conversation", id] });
+      if (res.sent) {
+        setText("");
+      } else {
+        toast.error(res.error ?? "Message wasn't delivered to WhatsApp");
+      }
     } finally {
       setSending(false);
     }

@@ -7,7 +7,14 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/api/public/hooks/notifications-tick")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
+        const cronSecret = process.env.CRON_SECRET;
+        if (cronSecret) {
+          const sent = request.headers.get("x-cron-secret");
+          if (sent !== cronSecret) {
+            return new Response("Unauthorized", { status: 401 });
+          }
+        }
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const now = Date.now();
 
