@@ -201,15 +201,16 @@ export async function evaluateProduct(supabase: any, productId: string): Promise
     getAutomationSettingsMap(supabase, (product as Product).retailer_id),
   ]);
 
+  const retailerLogo = (retailer as Retailer | null)?.logo_url ?? "";
   const ctxBase = {
     retailerName: (retailer as Retailer | null)?.name ?? "Tag",
-    // Product photo is the header on the tag_* templates; the retailer logo is
-    // only a fallback when the product has no image at all.
+    // Product photo is the IMAGE header on the tag_* templates; the retailer
+    // logo is only a fallback. It must be a public https URL or WhatsApp
+    // rejects the template.
     headerImage:
-      (product as Product).thumbnail_url ||
-      (product as Product).image_url ||
-      (retailer as Retailer | null)?.logo_url ||
-      "",
+      [(product as Product).thumbnail_url, (product as Product).image_url, retailerLogo].find((u) =>
+        isPublicMediaUrl(u),
+      ) ?? "",
   };
 
   let sent = 0;
@@ -219,24 +220,14 @@ export async function evaluateProduct(supabase: any, productId: string): Promise
     const decisions: NotificationDecision[] = [];
     const p = product as Product;
 
+    // Only three alerts exist after opt-in: price change, other interest and
+    // last unit. Those are the approved templates on the sender.
     if (settings.price_drop.enabled) {
       const d = checkPriceDrop(watch, p, ctxBase);
       if (d) decisions.push(d);
     }
-    if (settings.back_in_stock.enabled) {
-      const d = checkBackInStock(watch, p, ctxBase);
-      if (d) decisions.push(d);
-    }
     if (settings.last_one.enabled) {
       const d = checkLastOne(watch, p, ctxBase);
-      if (d) decisions.push(d);
-    }
-    // "Last one" already covers stock === 1, so skip the duplicate low-stock ping.
-    if (settings.low_stock.enabled && !decisions.some((x) => x.rule === "last_one")) {
-      const d = checkLowStock(watch, p, {
-        ...ctxBase,
-        threshold: Number(settings.low_stock.threshold ?? AUTOMATION_BY_KEY.low_stock.threshold ?? 3),
-      });
       if (d) decisions.push(d);
     }
     let otherInterestCount = 0;
@@ -249,6 +240,7 @@ export async function evaluateProduct(supabase: any, productId: string): Promise
       });
       if (d) decisions.push(d);
     }
+
 
     for (const decision of decisions) {
       const ok = await dispatch(supabase, decision, p, settings[decision.rule].template_name);
