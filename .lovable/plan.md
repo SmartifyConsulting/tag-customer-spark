@@ -31,21 +31,27 @@ After opting in, the customer receives only these three alerts:
    - Update the scan send to match that definition exactly rather than relying on generic numbered variables and a global language assumption.
    - Validate that the product image is a public HTTPS media URL before including it; handle the approved no-image shape explicitly if the template permits it.
 
-2. **Add explicit contracts for all TAG templates**
+2. **Activate the watch at opt-in**
+   - Create the watch as `active` when Follow Me is submitted, snapshotting price and stock at that moment as the alert baseline.
+   - Remove the paused-until-button-tap dependency so alerts work even if the confirmation message fails.
+   - Keep the WhatsApp reply buttons working for commit, take-it-slow and unsubscribe, but they are no longer required for activation.
+
+3. **Add explicit contracts for all TAG templates**
    - Define the expected language, header type, and ordered placeholders for `tag_scan_v5`, `tag_valuechange`, `tag_interest`, and `tag_lastunit` in one server-side template registry.
    - Build provider payloads from those contracts so a body value cannot accidentally be treated as a media parameter or sent in the wrong order.
    - Fail clearly before sending when a required template parameter is missing; do not use freeform fallback for business-initiated alerts outside WhatsApp’s 24-hour session window.
+   - Restrict post-opt-in sends to the three alert templates only.
 
-3. **Track real delivery outcomes**
+4. **Track real delivery outcomes**
    - Keep the initial API acceptance as `queued`, not `sent`.
    - Update notification history from Infobip delivery callbacks to `delivered`, `read`, or `failed`, preserving code `7008` and its description for support visibility.
-   - Ensure a rejected initial template leaves the watch paused and displays the exact actionable failure in Automations.
+   - Surface the exact provider failure reason in Automations.
 
-4. **Verify the complete customer flow**
-   - Send a live `tag_scan_v5` test using the Baby Blue Jumper and confirm it reaches `DELIVERED` rather than only `PENDING_ENROUTE`.
-   - Tap **Keep an eye on me** and confirm the corresponding watch becomes active.
-   - Reduce the product price and confirm `tag_valuechange` is accepted and delivered with the correct image and values.
-   - Exercise the interest and last-unit template payload builders to ensure they conform to their approved definitions as well.
+5. **Verify the complete customer flow**
+   - Scan the Baby Blue Jumper, enter the number, tap Follow Me, and confirm the watch is created active.
+   - Confirm the `tag_scan_v5` confirmation reaches `DELIVERED` rather than only `PENDING_ENROUTE`.
+   - Reduce the price and confirm `tag_valuechange` is delivered with the correct image and values.
+   - Exercise the interest and last-unit builders against their approved definitions.
 
 ## Technical scope
 
@@ -54,6 +60,7 @@ Primary files:
 - `src/lib/whatsapp-service.server.ts`
 - a focused server-only TAG template contract module
 - `src/routes/api/public/scan.barcode-interest.ts`
+- `src/lib/watch-repository.server.ts`
 - `src/routes/api/public/webhooks/infobip.ts`
 - `src/lib/notification-engine.server.ts`
 
