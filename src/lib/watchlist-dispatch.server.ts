@@ -66,38 +66,32 @@ async function processOne(supabase: any, event: any, product: any): Promise<void
   }
 
   const productName = product.display_name || product.name;
-  const headerImage = retailer?.logo_url || product.thumbnail_url || product.image_url || "";
   const retailerName = retailer?.name || "Tag";
+  // IMAGE header on the tag_* templates — product photo first, retailer logo
+  // as fallback, and it must be a public https URL.
+  const headerImage =
+    [product.thumbnail_url, product.image_url, retailer?.logo_url].find((u) => isPublicMediaUrl(u)) ?? "";
 
-  const templateByType: Record<EventType, string> = {
-    sale: "sale",
-    back_in_stock: "back_in_stock",
-    low_stock: "low_stock",
-  };
-
-  let body: string | undefined;
-  let contentVariables: Record<string, string> | undefined;
-
-  if (type === "sale") {
-    const newPrice = formatMoney(event.payload.new_price_cents, product.currency);
-    const oldPrice = formatMoney(event.payload.old_price_cents, product.currency);
-    body = `🏷️ ${retailerName}: ${productName} just dropped to ${newPrice} (was ${oldPrice}). You watched this one — grab it before it's gone!`;
-    contentVariables = { "1": headerImage, "2": retailerName, "3": productName, "4": `${newPrice} (was ${oldPrice})` };
-  } else if (type === "back_in_stock") {
-    body = `✅ ${retailerName}: ${productName} is back in stock! You asked us to let you know.`;
-    contentVariables = { "1": headerImage, "2": retailerName, "3": productName };
-  } else {
-    body = `⚠️ ${retailerName}: only ${event.payload.stock_qty ?? "a few"} left of ${productName} — the one you're watching. Don't miss out.`;
-    contentVariables = { "1": headerImage, "2": retailerName, "3": productName, "4": String(event.payload.stock_qty ?? "") };
+  // Only price changes have an approved template on this path. Restock and
+  // low-stock alerts are handled by the notification engine's approved
+  // templates, so skip them here rather than sending something WhatsApp
+  // will reject.
+  if (type !== "sale") {
+    await supabase.from("watchlist_events").update({ status: "skipped" }).eq("id", event.id);
+    return;
   }
 
+  const newPrice = formatMoney(event.payload.new_price_cents, product.currency);
+  const oldPrice = formatMoney(event.payload.old_price_cents, product.currency);
+  const body = `🏷️ ${retailerName}: ${productName} just dropped to ${newPrice} (was ${oldPrice}). You watched this one — grab it before it's gone!`;
+
   const result = await sendTemplate({
-    templateName: templateByType[type],
+    templateName: "tag_valuechange",
     to: customer.whatsapp_e164,
-    variables: contentVariables,
+    variables: { oldPrice, newPrice },
     headerImageUrl: headerImage || null,
-    fallbackBody: body, // freeform fallback only works within the 24h session window
   });
+
 
   const { data: history } = await supabase
     .from("notification_history")
