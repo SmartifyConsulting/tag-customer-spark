@@ -8,6 +8,7 @@ import {
   sendWhatsApp,
   type SendWhatsAppResult,
 } from "@/lib/whatsapp.server";
+import { buildTemplatePayload } from "@/lib/whatsapp-templates.server";
 
 /**
  * Maps an approved template name to the environment variable holding its
