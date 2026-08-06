@@ -49,6 +49,26 @@ Watch created + consent recorded
    If Infobip rejects a send because a placeholder count differs, that is the signal the
    template expects a different order and I will correct it against the rejection.
 
+6. **Every button on every template is handled.** The alert templates carry reply
+   buttons and each one means something different:
+   - **"Let's do this or I'm coming to get you"** — the customer is committing to buy.
+     Their interest is marked converted and a pending sale is logged against the
+     product for the retailer to fulfil, exactly like the existing collection/delivery
+     intent path. The conversation is flagged in the Inbox so staff can act on it.
+   - **"I need more time"** — undecided. The watch stays active and keeps listening,
+     nothing is marked as lost, and a note lands in the conversation so staff know the
+     customer is still deciding. A short quiet period is applied so we don't ping them
+     about the same product again immediately.
+   - **"Let's just be friends"** — unsubscribe from *that product only*. The watch is
+     cancelled and no further alerts go out for it. The customer stays subscribed for
+     other products they scan, and their WhatsApp opt-in is untouched. Only the
+     existing STOP keyword unsubscribes them entirely.
+
+   Button replies arrive on the same webhook as text, so matching is
+   case- and punctuation-insensitive on the button label. The product is resolved from
+   the most recent alert we sent that number, so the right watch is acted on.
+
+
 ## Technical notes
 
 - `src/routes/api/public/scan.barcode-interest.ts`: send template `tag_scan_v5`;
