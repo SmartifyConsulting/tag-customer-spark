@@ -288,7 +288,8 @@ async function dispatch(
       product_id: product.id,
       body: decision.fallbackBody,
     },
-    status: result.ok ? "sent" : "failed",
+    // Provider acceptance is not delivery; the Infobip webhook promotes this.
+    status: result.ok ? "queued" : "failed",
     sent_at: result.ok ? new Date().toISOString() : null,
     error: result.ok ? null : result.error,
     provider_message_sid: (result as any).sid ?? null,
