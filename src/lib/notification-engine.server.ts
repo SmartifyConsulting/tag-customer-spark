@@ -120,12 +120,14 @@ export function checkLastOne(
   return {
     rule: "last_one",
     watch,
-    variables: { "1": productName },
+    // tag_lastunit body has no variables.
+    variables: {},
     headerImageUrl: ctx.headerImage || null,
     fallbackBody: `🔥 ${ctx.retailerName}: this is the LAST ONE of ${productName}. Don't miss it.`,
     patch: { last_last_one_sent: new Date().toISOString(), last_notified_stock: 1 },
   };
 }
+
 
 export function checkBackInStock(
   watch: WatchRow,
@@ -164,7 +166,8 @@ export function checkHighInterest(
   return {
     rule: "high_interest",
     watch,
-    variables: { "1": productName, "2": String(count) },
+    // tag_interest body has no variables.
+    variables: {},
     headerImageUrl: ctx.headerImage || null,
     fallbackBody:
       count === 1
@@ -173,6 +176,7 @@ export function checkHighInterest(
     patch: { last_high_interest_sent: new Date().toISOString() },
   };
 }
+
 
 // ------------------------------------------------------------ evaluation ----
 
