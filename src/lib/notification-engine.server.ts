@@ -25,6 +25,7 @@ import {
   type WatchRow,
 } from "@/lib/watch-repository.server";
 import { sendTemplate } from "@/lib/whatsapp-service.server";
+import { isPublicMediaUrl } from "@/lib/whatsapp-templates.server";
 
 type Product = ProductSnapshot & {
   id: string;
