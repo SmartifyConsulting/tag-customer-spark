@@ -59,6 +59,11 @@ export async function createOrRefreshWatch(
     productId: string;
     whatsappNumber: string | null;
     product: ProductSnapshot;
+    /**
+     * A scan alone is not consent. Pass false to record the watch in a paused
+     * state until the customer taps "Keep an eye on me" on the scan template.
+     */
+    active?: boolean;
   },
 ): Promise<string | null> {
   const snapshot = {
@@ -67,8 +72,8 @@ export async function createOrRefreshWatch(
     last_known_price: effectivePrice(input.product),
     last_known_stock: input.product.stock_qty ?? 0,
     last_known_intent_score: input.product.intent_score ?? 0,
-    notifications_enabled: true,
-    status: "active" as const,
+    notifications_enabled: input.active !== false,
+    status: input.active === false ? "paused" : "active",
   };
 
   const { data: existing } = await supabase
@@ -172,4 +177,70 @@ export async function countOtherActiveInterest(
     .eq("status", "active")
     .neq("customer_id", excludingCustomerId);
   return count ?? 0;
+}
+
+/**
+ * The customer tapped "Keep an eye on me" on the scan template. Activates the
+ * paused watch and re-snapshots price/stock so alerts measure from this moment.
+ */
+export async function activateWatch(
+  supabase: any,
+  watchId: string,
+  product: ProductSnapshot,
+): Promise<void> {
+  await supabase
+    .from("watchlists")
+    .update({
+      status: "active",
+      notifications_enabled: true,
+      price_when_added: effectivePrice(product),
+      last_known_price: effectivePrice(product),
+      last_known_stock: product.stock_qty ?? 0,
+      last_known_intent_score: product.intent_score ?? 0,
+    })
+    .eq("id", watchId);
+}
+
+/** "It's not you, it's me" — stop alerts for this product only. */
+export async function cancelWatch(supabase: any, watchId: string): Promise<void> {
+  await supabase
+    .from("watchlists")
+    .update({ status: "cancelled", notifications_enabled: false })
+    .eq("id", watchId);
+}
+
+/**
+ * "Let's just take it slow" — keep watching, but stay quiet for a while so we
+ * do not re-ping about the same product immediately.
+ */
+export async function deferWatch(supabase: any, watchId: string): Promise<void> {
+  const now = new Date().toISOString();
+  await supabase
+    .from("watchlists")
+    .update({
+      status: "active",
+      notifications_enabled: true,
+      last_price_drop_sent: now,
+      last_high_interest_sent: now,
+      last_last_one_sent: now,
+      last_low_stock_sent: now,
+    })
+    .eq("id", watchId);
+}
+
+/** The watch a button reply refers to, for a given customer + product. */
+export async function findWatch(
+  supabase: any,
+  customerId: string,
+  productId: string,
+): Promise<{ id: string; retailer_id: string } | null> {
+  const { data } = await supabase
+    .from("watchlists")
+    .select("id, retailer_id")
+    .eq("customer_id", customerId)
+    .eq("product_id", productId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as any) ?? null;
 }

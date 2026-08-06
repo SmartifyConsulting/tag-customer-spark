@@ -22,6 +22,69 @@ const UNSUBSCRIBE_KEYWORDS = new Set([
 
 const MARKETING_OPT_IN_BUTTON_TEXT = "YES, KEEP ME POSTED";
 
+/** Uppercase, strip punctuation, collapse spaces — button labels vary by template. */
+function normalizeButton(raw: unknown): string {
+  return String(raw ?? "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+type ButtonAction = "watch" | "commit" | "defer" | "unsubscribe";
+
+/** Every reply button across the tag_* templates, and what it means. */
+const BUTTON_ACTIONS: Record<string, ButtonAction> = {
+  "KEEP AN EYE ON ME": "watch",
+  "LETS DO THIS OR IM COMING TO GET YOU": "commit",
+  "LETS DO THIS": "commit",
+  "LETS JUST TAKE IT SLOW": "defer",
+  "I NEED MORE TIME": "defer",
+  "ITS NOT YOU ITS ME": "unsubscribe",
+  "LETS JUST BE FRIENDS": "unsubscribe",
+};
+
+/** Drops a line into the customer's conversation so staff see what happened. */
+async function logConversationNote(
+  supabaseAdmin: any,
+  customer: { id: string; retailer_id: string },
+  body: string,
+): Promise<void> {
+  let { data: convo } = await supabaseAdmin
+    .from("conversations")
+    .select("id")
+    .eq("customer_id", customer.id)
+    .eq("retailer_id", customer.retailer_id)
+    .maybeSingle();
+
+  if (!convo) {
+    const { data: ins } = await supabaseAdmin
+      .from("conversations")
+      .insert({
+        customer_id: customer.id,
+        retailer_id: customer.retailer_id,
+        status: "open",
+        subject: "WhatsApp reply",
+      })
+      .select("id")
+      .single();
+    convo = ins;
+  }
+  if (!convo?.id) return;
+
+  await supabaseAdmin.from("conversation_messages").insert({
+    conversation_id: convo.id,
+    retailer_id: customer.retailer_id,
+    direction: "inbound",
+    channel: "whatsapp",
+    body,
+    is_internal: false,
+    status: "delivered",
+    sent_at: new Date().toISOString(),
+  });
+}
+
+
 function secretMatches(provided: string, expected: string): boolean {
   try {
     const a = Buffer.from(provided);
@@ -155,9 +218,14 @@ export const Route = createFileRoute("/api/public/webhooks/infobip")({
             .maybeSingle();
           if (!customer) continue;
 
+          const button = normalizeButton(rawBody);
+          const action = BUTTON_ACTIONS[button];
+
           // Quick-reply purchase intent on an alert template.
-          if (body === "COLLECTION" || body === "DELIVERY") {
-            const fulfillment = body === "COLLECTION" ? "collection" : "delivery";
+          if (action || body === "COLLECTION" || body === "DELIVERY") {
+            const fulfillment =
+              body === "DELIVERY" ? "delivery" : body === "COLLECTION" ? "collection" : null;
+
             const { data: lastNotif } = await supabaseAdmin
               .from("notification_history")
               .select("id, payload, created_at")
@@ -168,13 +236,48 @@ export const Route = createFileRoute("/api/public/webhooks/infobip")({
               .maybeSingle();
 
             const productId = (lastNotif?.payload as any)?.product_id as string | undefined;
-            if (productId) {
-              const { data: product } = await supabaseAdmin
-                .from("products")
-                .select("price_cents, sale_price_cents, currency")
-                .eq("id", productId)
-                .maybeSingle();
+            if (!productId) continue;
 
+            const { data: product } = await supabaseAdmin
+              .from("products")
+              .select("id, name, display_name, price_cents, sale_price_cents, currency, stock_qty, intent_score")
+              .eq("id", productId)
+              .maybeSingle();
+
+            const productName =
+              (product as any)?.display_name || (product as any)?.name || "the product";
+
+            const watchRepo = await import("@/lib/watch-repository.server");
+            const watch = await watchRepo.findWatch(supabaseAdmin, customer.id, productId);
+
+            let note: string | null = null;
+
+            if (action === "watch") {
+              // "Keep an eye on me" — this tap IS the opt-in.
+              if (watch && product) {
+                await watchRepo.activateWatch(supabaseAdmin, watch.id, product as any);
+              }
+              await supabaseAdmin
+                .from("customers")
+                .update({
+                  status: "subscribed",
+                  notify_consent_at: new Date().toISOString(),
+                } as any)
+                .eq("id", customer.id);
+              note = `✅ Opted in to updates on ${productName} ("Keep an eye on me").`;
+            } else if (action === "defer") {
+              if (watch) await watchRepo.deferWatch(supabaseAdmin, watch.id);
+              note = `🕒 Still deciding on ${productName} — asked us to take it slow.`;
+            } else if (action === "unsubscribe") {
+              if (watch) await watchRepo.cancelWatch(supabaseAdmin, watch.id);
+              await supabaseAdmin
+                .from("customer_interests")
+                .update({ status: "expired" } as any)
+                .eq("customer_id", customer.id)
+                .eq("product_id", productId);
+              note = `🚫 Unsubscribed from updates on ${productName} (this product only).`;
+            } else {
+              // "Let's do this…" or a collection/delivery quick reply — a commitment to buy.
               await supabaseAdmin
                 .from("customer_interests")
                 .update({ status: "converted" } as any)
@@ -186,14 +289,21 @@ export const Route = createFileRoute("/api/public/webhooks/infobip")({
                 customer_id: customer.id,
                 product_id: productId,
                 notification_id: lastNotif?.id ?? null,
-                amount_cents: product?.sale_price_cents ?? product?.price_cents ?? 0,
-                currency: product?.currency ?? "ZAR",
+                amount_cents:
+                  (product as any)?.sale_price_cents ?? (product as any)?.price_cents ?? 0,
+                currency: (product as any)?.currency ?? "ZAR",
                 status: "pending",
-                fulfillment,
+                fulfillment: fulfillment ?? "collection",
               } as any);
+              note = `🛒 Committed to buy ${productName} — ready for the store to fulfil.`;
+            }
+
+            if (note) {
+              await logConversationNote(supabaseAdmin, customer, note);
             }
             continue;
           }
+
 
           // Free-form reply → log into the customer's conversation.
           let { data: convo } = await supabaseAdmin

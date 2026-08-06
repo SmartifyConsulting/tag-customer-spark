@@ -41,8 +41,10 @@ type Retailer = { id: string; name: string | null; logo_url: string | null };
 export type NotificationDecision = {
   rule: AutomationKey;
   watch: WatchRow;
-  /** Numbered variables for the approved template. */
+  /** Numbered body placeholders for the approved template. */
   variables: Record<string, string>;
+  /** Media header for the template (the scanned product's photo). */
+  headerImageUrl: string | null;
   fallbackBody: string;
   /** Columns to persist once the send succeeds (dedupe bookkeeping). */
   patch: Record<string, unknown>;
@@ -73,7 +75,9 @@ export function checkPriceDrop(
   return {
     rule: "price_drop",
     watch,
-    variables: { "1": ctx.headerImage, "2": ctx.retailerName, "3": productName, "4": newPrice, "5": oldPrice },
+    // tag_valuechange: 1 = reduced price, 2 = product name, 3 = price at scan time.
+    variables: { "1": newPrice, "2": productName, "3": oldPrice },
+    headerImageUrl: ctx.headerImage || null,
     fallbackBody: `🏷️ ${ctx.retailerName}: ${productName} dropped to ${newPrice} (was ${oldPrice}). You're watching this one — grab it before it's gone!`,
     patch: { last_notified_price: current, last_price_drop_sent: new Date().toISOString() },
   };
@@ -95,12 +99,8 @@ export function checkLowStock(
   return {
     rule: "low_stock",
     watch,
-    variables: {
-      "1": ctx.headerImage,
-      "2": ctx.retailerName,
-      "3": productName,
-      "4": String(stock),
-    },
+    variables: { "1": productName, "2": String(stock) },
+    headerImageUrl: ctx.headerImage || null,
     fallbackBody: `⚠️ ${ctx.retailerName}: only ${stock} left of ${productName} — the one you're watching.`,
     patch: { last_low_stock_sent: new Date().toISOString(), last_notified_stock: stock },
   };
@@ -119,7 +119,8 @@ export function checkLastOne(
   return {
     rule: "last_one",
     watch,
-    variables: { "1": ctx.headerImage, "2": ctx.retailerName, "3": productName },
+    variables: { "1": productName },
+    headerImageUrl: ctx.headerImage || null,
     fallbackBody: `🔥 ${ctx.retailerName}: this is the LAST ONE of ${productName}. Don't miss it.`,
     patch: { last_last_one_sent: new Date().toISOString(), last_notified_stock: 1 },
   };
@@ -140,7 +141,8 @@ export function checkBackInStock(
   return {
     rule: "back_in_stock",
     watch,
-    variables: { "1": ctx.headerImage, "2": ctx.retailerName, "3": productName },
+    variables: { "1": productName },
+    headerImageUrl: ctx.headerImage || null,
     fallbackBody: `✅ ${ctx.retailerName}: ${productName} is back in stock! You asked us to let you know.`,
     patch: { last_back_in_stock_sent: new Date().toISOString(), last_notified_stock: stock },
   };
@@ -161,12 +163,8 @@ export function checkHighInterest(
   return {
     rule: "high_interest",
     watch,
-    variables: {
-      "1": ctx.headerImage,
-      "2": ctx.retailerName,
-      "3": productName,
-      "4": String(count),
-    },
+    variables: { "1": productName, "2": String(count) },
+    headerImageUrl: ctx.headerImage || null,
     fallbackBody:
       count === 1
         ? `📈 ${ctx.retailerName}: someone else is looking at ${productName} too — the one you're watching. If you want it, don't wait.`
@@ -200,10 +198,12 @@ export async function evaluateProduct(supabase: any, productId: string): Promise
 
   const ctxBase = {
     retailerName: (retailer as Retailer | null)?.name ?? "Tag",
+    // Product photo is the header on the tag_* templates; the retailer logo is
+    // only a fallback when the product has no image at all.
     headerImage:
-      (retailer as Retailer | null)?.logo_url ||
       (product as Product).thumbnail_url ||
       (product as Product).image_url ||
+      (retailer as Retailer | null)?.logo_url ||
       "",
   };
 
@@ -272,6 +272,7 @@ async function dispatch(
       templateName,
       to,
       variables: decision.variables,
+      headerImageUrl: decision.headerImageUrl,
       fallbackBody: decision.fallbackBody,
     });
   } catch (e: any) {

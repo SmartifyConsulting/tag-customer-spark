@@ -127,8 +127,9 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
             .eq("id", existingInterest.id);
         }
 
-        // Watch this product for price/stock changes, snapshotting the current
-        // price/stock for the Notification Engine.
+        // Record the watch, but PAUSED — scanning is not consent. It only goes
+        // live when the customer taps "Keep an eye on me" on the scan template
+        // (handled in the Infobip webhook).
         const { data: watchedProduct } = await supabaseAdmin
           .from("products")
           .select("price_cents, sale_price_cents, stock_qty, intent_score")
@@ -141,6 +142,7 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
           customerId,
           productId: (product as any).id,
           whatsappNumber: e164,
+          active: false,
           product: (watchedProduct as any) ?? {
             price_cents: null,
             sale_price_cents: null,
@@ -148,6 +150,7 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
             intent_score: 0,
           },
         });
+
 
         // Open or refresh the conversation. The subject and an inbound system
         // message carry the product context so the Inbox shows WHAT the
@@ -217,7 +220,8 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
         // Fire-and-forget "product speaking" WhatsApp — never block opt-in on
         // send failure. This is the customer's first-ever WhatsApp message from
         // us, so it's business-initiated and needs the approved template
-        // `tag_product_scan` (header = product photo, body var = product name).
+        // `tag_scan_v5` (header = product photo, body var = product name).
+        // Its "Keep an eye on me" button is what actually activates the watch.
         // If the template isn't available we fall back to freeform, which
         // WhatsApp silently drops outside the 24h window — so every outcome is
         // recorded on notification_history.
@@ -229,9 +233,9 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
             `become the last one available.`;
 
           const result = await sendTemplate({
-            templateName: "barcode_scan",
+            templateName: "tag_scan_v5",
             to: e164,
-            variables: { "1": productImage, "2": productName },
+            variables: { "1": productName },
             headerImageUrl: productImage || null,
             fallbackBody,
           });
@@ -247,9 +251,10 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
             payload: {
               type: "barcode_scan",
               product_id: (product as any).id,
-              template: "tag_product_scan",
+              template: "tag_scan_v5",
               body: fallbackBody,
             },
+
             status: result.ok ? "sent" : "failed",
             sent_at: result.ok ? new Date().toISOString() : null,
             error: result.ok ? null : result.error,
