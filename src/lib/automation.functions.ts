@@ -21,11 +21,51 @@ export const listAutomationSettings = createServerFn({ method: "POST" })
     const provider = activeWhatsAppProvider();
 
     const retailerId = await resolveRetailerId(supabase, userId);
-    if (!retailerId) return { settings: [], provider };
+    if (!retailerId) return { settings: [], provider, lastFailure: null };
 
     const { getAutomationSettingsList } = await import("@/lib/automation.server");
-    return { settings: await getAutomationSettingsList(supabase, retailerId), provider };
+
+    // Surface the most recent delivery failure so a broken sender/API key is
+    // visible here instead of showing up as silence on the customer's phone.
+    const [settings, { data: lastSent }, { data: lastFailed }] = await Promise.all([
+      getAutomationSettingsList(supabase, retailerId),
+      supabase
+        .from("notification_history")
+        .select("created_at")
+        .eq("retailer_id", retailerId)
+        .eq("status", "sent")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("notification_history")
+        .select("created_at, error, payload")
+        .eq("retailer_id", retailerId)
+        .eq("status", "failed")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    // Only warn when the failure is the LATEST outcome — an old failure that a
+    // later successful send has superseded is noise.
+    const stillBroken =
+      lastFailed &&
+      (!lastSent || new Date(lastFailed.created_at) > new Date(lastSent.created_at));
+
+    return {
+      settings,
+      provider,
+      lastFailure: stillBroken
+        ? {
+            at: lastFailed.created_at as string,
+            error: (lastFailed.error as string) ?? "Unknown error",
+            template: ((lastFailed.payload as any)?.template as string) ?? null,
+          }
+        : null,
+    };
   });
+
 
 export const saveAutomationSetting = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
