@@ -75,12 +75,13 @@ export function checkPriceDrop(
   return {
     rule: "price_drop",
     watch,
-    // tag_valuechange: 1 = reduced price, 2 = product name, 3 = price at scan time.
-    variables: { "1": newPrice, "2": productName, "3": oldPrice },
+    // tag_valuechange body: "My price has dropped from {{1}} to {{2}}".
+    variables: { oldPrice, newPrice },
     headerImageUrl: ctx.headerImage || null,
     fallbackBody: `🏷️ ${ctx.retailerName}: ${productName} dropped to ${newPrice} (was ${oldPrice}). You're watching this one — grab it before it's gone!`,
     patch: { last_notified_price: current, last_price_drop_sent: new Date().toISOString() },
   };
+
 }
 
 export function checkLowStock(
