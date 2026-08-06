@@ -10,7 +10,19 @@ The current scan flow sends:
 - header: an IMAGE containing the scanned product image
 - body placeholders: one value containing the product name
 
-Because the initial scan message is rejected, the customer never receives **Keep an eye on me**, the product watch remains paused, and a later price reduction correctly produces no alert.
+Because the initial scan message is rejected, the customer receives nothing at all after opting in, and a later price reduction produces no alert.
+
+## Corrected opt-in model
+
+Opt-in happens on the web page: tapping **Follow Me** after entering the phone number IS the consent. From that moment the watch must be created **active** — no WhatsApp button tap is required to activate it.
+
+After opting in, the customer receives only these three alerts:
+- `tag_interest` — other customers show interest in the product
+- `tag_valuechange` — the price drops
+- `tag_lastunit` — only one unit remains
+
+`tag_scan_v5` becomes a simple confirmation of the opt-in, not an activation gate.
+
 
 ## Implementation
 
