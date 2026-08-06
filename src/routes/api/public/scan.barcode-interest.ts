@@ -127,9 +127,8 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
             .eq("id", existingInterest.id);
         }
 
-        // Record the watch, but PAUSED — scanning is not consent. It only goes
-        // live when the customer taps "Keep an eye on me" on the scan template
-        // (handled in the Infobip webhook).
+        // Tapping "Follow Me" after entering the number IS the opt-in, so the
+        // watch goes live immediately. Alerts are measured from this snapshot.
         const { data: watchedProduct } = await supabaseAdmin
           .from("products")
           .select("price_cents, sale_price_cents, stock_qty, intent_score")
@@ -142,7 +141,7 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
           customerId,
           productId: (product as any).id,
           whatsappNumber: e164,
-          active: false,
+          active: true,
           product: (watchedProduct as any) ?? {
             price_cents: null,
             sale_price_cents: null,
@@ -150,6 +149,7 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
             intent_score: 0,
           },
         });
+
 
 
         // Open or refresh the conversation. The subject and an inbound system
