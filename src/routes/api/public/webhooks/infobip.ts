@@ -22,6 +22,69 @@ const UNSUBSCRIBE_KEYWORDS = new Set([
 
 const MARKETING_OPT_IN_BUTTON_TEXT = "YES, KEEP ME POSTED";
 
+/** Uppercase, strip punctuation, collapse spaces — button labels vary by template. */
+function normalizeButton(raw: unknown): string {
+  return String(raw ?? "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+type ButtonAction = "watch" | "commit" | "defer" | "unsubscribe";
+
+/** Every reply button across the tag_* templates, and what it means. */
+const BUTTON_ACTIONS: Record<string, ButtonAction> = {
+  "KEEP AN EYE ON ME": "watch",
+  "LETS DO THIS OR IM COMING TO GET YOU": "commit",
+  "LETS DO THIS": "commit",
+  "LETS JUST TAKE IT SLOW": "defer",
+  "I NEED MORE TIME": "defer",
+  "ITS NOT YOU ITS ME": "unsubscribe",
+  "LETS JUST BE FRIENDS": "unsubscribe",
+};
+
+/** Drops a line into the customer's conversation so staff see what happened. */
+async function logConversationNote(
+  supabaseAdmin: any,
+  customer: { id: string; retailer_id: string },
+  body: string,
+): Promise<void> {
+  let { data: convo } = await supabaseAdmin
+    .from("conversations")
+    .select("id")
+    .eq("customer_id", customer.id)
+    .eq("retailer_id", customer.retailer_id)
+    .maybeSingle();
+
+  if (!convo) {
+    const { data: ins } = await supabaseAdmin
+      .from("conversations")
+      .insert({
+        customer_id: customer.id,
+        retailer_id: customer.retailer_id,
+        status: "open",
+        subject: "WhatsApp reply",
+      })
+      .select("id")
+      .single();
+    convo = ins;
+  }
+  if (!convo?.id) return;
+
+  await supabaseAdmin.from("conversation_messages").insert({
+    conversation_id: convo.id,
+    retailer_id: customer.retailer_id,
+    direction: "inbound",
+    channel: "whatsapp",
+    body,
+    is_internal: false,
+    status: "delivered",
+    sent_at: new Date().toISOString(),
+  });
+}
+
+
 function secretMatches(provided: string, expected: string): boolean {
   try {
     const a = Buffer.from(provided);
