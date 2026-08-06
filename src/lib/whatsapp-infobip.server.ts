@@ -43,6 +43,12 @@ function baseUrl(raw: string): string {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
+function apiKeyValue(raw: string): string {
+  // Infobip's examples show the complete `Authorization: App <key>` value.
+  // Accept either that copied form or the bare key without producing `App App ...`.
+  return raw.trim().replace(/^App\s+/i, "");
+}
+
 export function isInfobipConfigured(): boolean {
   return Boolean(
     process.env.INFOBIP_API_KEY &&
@@ -107,7 +113,7 @@ export async function sendInfobipWhatsApp(
     const resp = await fetch(`${baseUrl(rawBase)}${path}`, {
       method: "POST",
       headers: {
-        Authorization: `App ${apiKey}`,
+        Authorization: `App ${apiKeyValue(apiKey)}`,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
