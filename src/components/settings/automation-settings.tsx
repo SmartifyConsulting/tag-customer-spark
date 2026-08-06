@@ -44,6 +44,24 @@ export function AutomationSettings() {
 
   return (
     <div className="space-y-4">
+      {data?.lastFailure ? (
+        <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+          <div className="text-sm">
+            <p className="font-medium text-destructive">Last WhatsApp send failed</p>
+            <p className="text-muted-foreground">
+              {data.lastFailure.template ? (
+                <>Template <span className="font-medium text-foreground">{data.lastFailure.template}</span> — </>
+              ) : null}
+              {data.lastFailure.error}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {new Date(data.lastFailure.at).toLocaleString()} · check the WhatsApp sender number and API key.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-4">
         <Zap className="mt-0.5 h-4 w-4 text-primary" />
         <p className="text-sm text-muted-foreground">
