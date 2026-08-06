@@ -55,14 +55,15 @@ Watch created + consent recorded
      Their interest is marked converted and a pending sale is logged against the
      product for the retailer to fulfil, exactly like the existing collection/delivery
      intent path. The conversation is flagged in the Inbox so staff can act on it.
-   - **"I need more time"** — undecided. The watch stays active and keeps listening,
-     nothing is marked as lost, and a note lands in the conversation so staff know the
-     customer is still deciding. A short quiet period is applied so we don't ping them
-     about the same product again immediately.
-   - **"Let's just be friends"** — unsubscribe from *that product only*. The watch is
-     cancelled and no further alerts go out for it. The customer stays subscribed for
-     other products they scan, and their WhatsApp opt-in is untouched. Only the
-     existing STOP keyword unsubscribes them entirely.
+   - **"Let's just take it slow"** (also "I need more time") — undecided. The watch stays
+     active and keeps listening, nothing is marked as lost, and a note lands in the
+     conversation so staff know the customer is still deciding. A short quiet period is
+     applied so we don't ping them about the same product again immediately.
+   - **"It's not you, it's me"** (also "Let's just be friends") — unsubscribe from *that
+     product only*. The watch is cancelled and no further alerts go out for it. The
+     customer stays subscribed for other products they scan, and their WhatsApp opt-in is
+     untouched. Only the existing STOP keyword unsubscribes them entirely.
+
 
    Button replies arrive on the same webhook as text, so matching is
    case- and punctuation-insensitive on the button label. The product is resolved from
