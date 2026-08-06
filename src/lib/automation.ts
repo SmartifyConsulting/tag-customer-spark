@@ -29,7 +29,7 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     description:
       "Message every watcher when the price falls below what it was when they scanned the product.",
     threshold: null,
-    templateName: "price_drop",
+    templateName: "tag_valuechange",
   },
   {
     key: "low_stock",
@@ -46,7 +46,7 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     label: "Last one remaining",
     description: "Message watchers when exactly one unit is left. Sends once until stock increases again.",
     threshold: null,
-    templateName: "last_one",
+    templateName: "tag_lastunit",
   },
   {
     key: "back_in_stock",
@@ -62,7 +62,7 @@ export const AUTOMATIONS: AutomationDefinition[] = [
       "Message watchers when at least this many other customers are also actively interested in the same product. Re-arms when the count drops back below.",
     threshold: 1,
     thresholdLabel: "Notify when at least this many other people are interested",
-    templateName: "high_interest",
+    templateName: "tag_interest",
   },
   {
     key: "daily_summary",
