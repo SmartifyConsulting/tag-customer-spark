@@ -42,7 +42,7 @@ export const Route = createFileRoute("/api/public/scan/interest")({
 
         const { data: tag } = await supabaseAdmin
           .from("qr_tags")
-          .select("id, product_id, retailer_id, store_id, is_active, product:products(name), retailer:retailers(name, logo_url)")
+          .select("id, product_id, retailer_id, store_id, is_active, product:products(name, thumbnail_url, image_url), retailer:retailers(name, logo_url)")
           .eq("short_code", parsed.shortCode)
           .maybeSingle();
 
