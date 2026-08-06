@@ -42,7 +42,7 @@ export const Route = createFileRoute("/api/public/scan/interest")({
 
         const { data: tag } = await supabaseAdmin
           .from("qr_tags")
-          .select("id, product_id, retailer_id, store_id, is_active, product:products(name), retailer:retailers(name, logo_url)")
+          .select("id, product_id, retailer_id, store_id, is_active, product:products(name, thumbnail_url, image_url), retailer:retailers(name, logo_url)")
           .eq("short_code", parsed.shortCode)
           .maybeSingle();
 
@@ -209,31 +209,24 @@ export const Route = createFileRoute("/api/public/scan/interest")({
         }
 
 
-        // Fire-and-forget conversation-starter WhatsApp — never block opt-in on
-        // send failure. This is the customer's first-ever WhatsApp message from
-        // us, so it's business-initiated and needs an approved Content
-        // Template (freeform only works once they've messaged us first) —
-        // falls back to freeform if the template isn't configured yet.
+        // Confirmation WhatsApp for the web opt-in. Business-initiated, so it
+        // must be the approved `tag_scan_v5` template: IMAGE header, no body
+        // variables. Never block opt-in on a send failure.
         try {
           const { sendTemplate } = await import("@/lib/whatsapp-service.server");
-          const firstName = parsed.name.split(/\s+/)[0] || parsed.name;
-          const siteUrl = process.env.SITE_URL ?? "https://tag-tech.co.za";
-          const productUrl = `${siteUrl}/scan/${parsed.shortCode}`;
+          const { isPublicMediaUrl } = await import("@/lib/whatsapp-templates.server");
+
+          const headerImage =
+            [
+              (tag as any).product?.thumbnail_url,
+              (tag as any).product?.image_url,
+              retailerLogo,
+            ].find((u: string | null) => isPublicMediaUrl(u)) ?? null;
 
           const result = await sendTemplate({
-            templateName: "conversation_starter",
+            templateName: "tag_scan_v5",
             to: e164,
-            variables: {
-              "1": retailerLogo,
-              "2": firstName,
-              "3": productName,
-              "4": retailerName,
-              "5": productUrl,
-            },
-            headerImageUrl: retailerLogo || null,
-            fallbackBody:
-              `Hi ${firstName} 👋 You're subscribed to updates for ${productName} at ${retailerName}. ` +
-              `We'll ping you when it goes on sale, restocks, or has a promo. Reply STOP to unsubscribe.`,
+            headerImageUrl: headerImage,
           });
 
           if (!result.ok) {
@@ -242,6 +235,7 @@ export const Route = createFileRoute("/api/public/scan/interest")({
         } catch (e: any) {
           console.warn("[scan.interest] whatsapp send error", e?.message ?? e);
         }
+
 
         return jsonRes({ ok: true, customerId });
       },

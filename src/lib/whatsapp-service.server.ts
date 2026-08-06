@@ -8,6 +8,7 @@ import {
   sendWhatsApp,
   type SendWhatsAppResult,
 } from "@/lib/whatsapp.server";
+import { buildTemplatePayload } from "@/lib/whatsapp-templates.server";
 
 /**
  * Maps an approved template name to the environment variable holding its
@@ -54,9 +55,13 @@ function toPlaceholders(variables?: Record<string, string>): string[] {
 export type SendTemplateInput = {
   templateName: string;
   to: string;
-  /** Numbered placeholders exactly as defined in the approved template. */
+  /**
+   * Named values for the approved template's placeholders (see
+   * whatsapp-templates.server.ts). Numbered keys are still accepted for the
+   * Twilio path, which addresses templates by Content SID.
+   */
   variables?: Record<string, string>;
-  /** Optional media header for templates that define one. */
+  /** Media header for templates that define one. */
   headerImageUrl?: string | null;
   /**
    * Plain-text used only when no template is configured for the provider.
@@ -69,31 +74,31 @@ export async function sendTemplate(input: SendTemplateInput): Promise<SendWhatsA
   const provider = activeWhatsAppProvider();
 
   if (provider === "infobip") {
-    // Twilio templates carry the header image as numbered variable "1".
-    // Infobip takes it as a separate header, so strip it from placeholders.
-    let variables = input.variables;
-    if (input.headerImageUrl && variables?.["1"] === input.headerImageUrl) {
-      const { "1": _omit, ...rest } = variables;
-      variables = rest;
-    }
-    const result = await sendWhatsApp({
-      to: input.to,
-      templateName: resolveInfobipTemplateName(input.templateName),
-      templateLanguage: process.env.INFOBIP_TEMPLATE_LANGUAGE ?? "en",
-      placeholders: toPlaceholders(variables),
-      headerImageUrl: input.headerImageUrl ?? null,
-    });
+    // Build strictly from the approved template contract. A mismatched
+    // placeholder count or a missing image header is accepted by the API and
+    // then rejected by WhatsApp (code 7008), so fail loudly here instead.
+    const built = buildTemplatePayload(
+      resolveInfobipTemplateName(input.templateName),
+      input.variables ?? {},
+      input.headerImageUrl ?? null,
+    );
 
-    // If the template isn't registered/approved yet, still try to reach the
-    // customer inside an open 24h session rather than dropping the message.
-    if (!result.ok && input.fallbackBody) {
-      console.warn(
-        `[whatsapp-service] Infobip template "${input.templateName}" failed (${result.error}) — falling back to freeform`,
-      );
-      return sendWhatsApp({ to: input.to, body: input.fallbackBody });
+    if (!built.ok) {
+      console.error(`[whatsapp-service] ${built.error}`);
+      return { ok: false, status: 400, error: built.error };
     }
-    return result;
+
+    // No freeform fallback here: these sends are business-initiated and
+    // WhatsApp drops freeform outside the customer's 24h session window.
+    return sendWhatsApp({
+      to: input.to,
+      templateName: built.templateName,
+      templateLanguage: process.env.INFOBIP_TEMPLATE_LANGUAGE ?? built.language,
+      placeholders: built.placeholders,
+      headerImageUrl: built.headerImageUrl,
+    });
   }
+
 
   const contentSid = resolveTemplateSid(input.templateName);
 

@@ -47,9 +47,10 @@ export function effectivePrice(product: ProductSnapshot): number | null {
 }
 
 /**
- * Called when a customer chooses "Watch product" after a scan. Creates the
- * watch or reactivates an existing one, always re-snapshotting the price/stock
- * so future notifications are measured from THIS moment.
+ * Called when a customer taps "Follow Me" on the scan page — that submission
+ * IS the opt-in. Creates the watch or reactivates an existing one, always
+ * re-snapshotting the price/stock so future notifications are measured from
+ * THIS moment.
  */
 export async function createOrRefreshWatch(
   supabase: any,
@@ -59,10 +60,7 @@ export async function createOrRefreshWatch(
     productId: string;
     whatsappNumber: string | null;
     product: ProductSnapshot;
-    /**
-     * A scan alone is not consent. Pass false to record the watch in a paused
-     * state until the customer taps "Keep an eye on me" on the scan template.
-     */
+    /** Defaults to active — the web opt-in is the consent. */
     active?: boolean;
   },
 ): Promise<string | null> {
@@ -75,6 +73,7 @@ export async function createOrRefreshWatch(
     notifications_enabled: input.active !== false,
     status: input.active === false ? "paused" : "active",
   };
+
 
   const { data: existing } = await supabase
     .from("watchlists")

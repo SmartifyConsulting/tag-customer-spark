@@ -33,9 +33,10 @@ function normalizeButton(raw: unknown): string {
 
 type ButtonAction = "watch" | "commit" | "defer" | "unsubscribe";
 
-/** Every reply button across the tag_* templates, and what it means. */
+/** Every reply button across the approved tag_* templates, and what it means. */
 const BUTTON_ACTIONS: Record<string, ButtonAction> = {
   "KEEP AN EYE ON ME": "watch",
+  "IM COMING TO GET YOU": "commit",
   "LETS DO THIS OR IM COMING TO GET YOU": "commit",
   "LETS DO THIS": "commit",
   "LETS JUST TAKE IT SLOW": "defer",
@@ -253,7 +254,8 @@ export const Route = createFileRoute("/api/public/webhooks/infobip")({
             let note: string | null = null;
 
             if (action === "watch") {
-              // "Keep an eye on me" — this tap IS the opt-in.
+              // Opt-in already happened on the web page; this simply
+              // re-confirms and re-baselines the watch.
               if (watch && product) {
                 await watchRepo.activateWatch(supabaseAdmin, watch.id, product as any);
               }

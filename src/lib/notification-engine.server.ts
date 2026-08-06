@@ -25,6 +25,7 @@ import {
   type WatchRow,
 } from "@/lib/watch-repository.server";
 import { sendTemplate } from "@/lib/whatsapp-service.server";
+import { isPublicMediaUrl } from "@/lib/whatsapp-templates.server";
 
 type Product = ProductSnapshot & {
   id: string;
@@ -75,12 +76,13 @@ export function checkPriceDrop(
   return {
     rule: "price_drop",
     watch,
-    // tag_valuechange: 1 = reduced price, 2 = product name, 3 = price at scan time.
-    variables: { "1": newPrice, "2": productName, "3": oldPrice },
+    // tag_valuechange body: "My price has dropped from {{1}} to {{2}}".
+    variables: { oldPrice, newPrice },
     headerImageUrl: ctx.headerImage || null,
     fallbackBody: `🏷️ ${ctx.retailerName}: ${productName} dropped to ${newPrice} (was ${oldPrice}). You're watching this one — grab it before it's gone!`,
     patch: { last_notified_price: current, last_price_drop_sent: new Date().toISOString() },
   };
+
 }
 
 export function checkLowStock(
@@ -119,12 +121,14 @@ export function checkLastOne(
   return {
     rule: "last_one",
     watch,
-    variables: { "1": productName },
+    // tag_lastunit body has no variables.
+    variables: {},
     headerImageUrl: ctx.headerImage || null,
     fallbackBody: `🔥 ${ctx.retailerName}: this is the LAST ONE of ${productName}. Don't miss it.`,
     patch: { last_last_one_sent: new Date().toISOString(), last_notified_stock: 1 },
   };
 }
+
 
 export function checkBackInStock(
   watch: WatchRow,
@@ -163,7 +167,8 @@ export function checkHighInterest(
   return {
     rule: "high_interest",
     watch,
-    variables: { "1": productName, "2": String(count) },
+    // tag_interest body has no variables.
+    variables: {},
     headerImageUrl: ctx.headerImage || null,
     fallbackBody:
       count === 1
@@ -172,6 +177,7 @@ export function checkHighInterest(
     patch: { last_high_interest_sent: new Date().toISOString() },
   };
 }
+
 
 // ------------------------------------------------------------ evaluation ----
 
@@ -196,15 +202,16 @@ export async function evaluateProduct(supabase: any, productId: string): Promise
     getAutomationSettingsMap(supabase, (product as Product).retailer_id),
   ]);
 
+  const retailerLogo = (retailer as Retailer | null)?.logo_url ?? "";
   const ctxBase = {
     retailerName: (retailer as Retailer | null)?.name ?? "Tag",
-    // Product photo is the header on the tag_* templates; the retailer logo is
-    // only a fallback when the product has no image at all.
+    // Product photo is the IMAGE header on the tag_* templates; the retailer
+    // logo is only a fallback. It must be a public https URL or WhatsApp
+    // rejects the template.
     headerImage:
-      (product as Product).thumbnail_url ||
-      (product as Product).image_url ||
-      (retailer as Retailer | null)?.logo_url ||
-      "",
+      [(product as Product).thumbnail_url, (product as Product).image_url, retailerLogo].find((u) =>
+        isPublicMediaUrl(u),
+      ) ?? "",
   };
 
   let sent = 0;
@@ -214,24 +221,14 @@ export async function evaluateProduct(supabase: any, productId: string): Promise
     const decisions: NotificationDecision[] = [];
     const p = product as Product;
 
+    // Only three alerts exist after opt-in: price change, other interest and
+    // last unit. Those are the approved templates on the sender.
     if (settings.price_drop.enabled) {
       const d = checkPriceDrop(watch, p, ctxBase);
       if (d) decisions.push(d);
     }
-    if (settings.back_in_stock.enabled) {
-      const d = checkBackInStock(watch, p, ctxBase);
-      if (d) decisions.push(d);
-    }
     if (settings.last_one.enabled) {
       const d = checkLastOne(watch, p, ctxBase);
-      if (d) decisions.push(d);
-    }
-    // "Last one" already covers stock === 1, so skip the duplicate low-stock ping.
-    if (settings.low_stock.enabled && !decisions.some((x) => x.rule === "last_one")) {
-      const d = checkLowStock(watch, p, {
-        ...ctxBase,
-        threshold: Number(settings.low_stock.threshold ?? AUTOMATION_BY_KEY.low_stock.threshold ?? 3),
-      });
       if (d) decisions.push(d);
     }
     let otherInterestCount = 0;
@@ -244,6 +241,7 @@ export async function evaluateProduct(supabase: any, productId: string): Promise
       });
       if (d) decisions.push(d);
     }
+
 
     for (const decision of decisions) {
       const ok = await dispatch(supabase, decision, p, settings[decision.rule].template_name);
@@ -290,7 +288,8 @@ async function dispatch(
       product_id: product.id,
       body: decision.fallbackBody,
     },
-    status: result.ok ? "sent" : "failed",
+    // Provider acceptance is not delivery; the Infobip webhook promotes this.
+    status: result.ok ? "queued" : "failed",
     sent_at: result.ok ? new Date().toISOString() : null,
     error: result.ok ? null : result.error,
     provider_message_sid: (result as any).sid ?? null,
