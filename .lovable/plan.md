@@ -86,5 +86,11 @@ Watch created + consent recorded
 - `checkPriceDrop` variable block reordered to `{1: new price, 2: product name,
   3: price_when_added}`; header image switches from retailer logo to product photo for
   these three rules.
-- No schema changes needed — `watchlists` already has `notifications_enabled`, status,
-  and the snapshot/dedupe columns.
+- Webhook button router: normalise the inbound button text (uppercase, strip
+  punctuation) and dispatch to one of four handlers — opt-in, commit, defer, per-product
+  unsubscribe — reusing the existing `sales_recoveries` / `customer_interests` writes for
+  the commit path.
+- No schema changes needed — `watchlists` already has `notifications_enabled`, status
+  (`active` / `paused` / `cancelled`), and the snapshot/dedupe columns; the defer quiet
+  period reuses the existing `last_*_sent` timestamps.
+
