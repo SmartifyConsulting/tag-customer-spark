@@ -217,27 +217,33 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
           });
         }
 
-        // Fire-and-forget "product speaking" WhatsApp — never block opt-in on
-        // send failure. This is the customer's first-ever WhatsApp message from
-        // us, so it's business-initiated and needs the approved template
-        // `tag_scan_v5` (header = product photo, body var = product name).
-        // Its "Keep an eye on me" button is what actually activates the watch.
-        // If the template isn't available we fall back to freeform, which
-        // WhatsApp silently drops outside the 24h window — so every outcome is
-        // recorded on notification_history.
+        // Confirmation WhatsApp. The customer has already opted in on the web
+        // page, so this only confirms it — the approved `tag_scan_v5` body has
+        // no variables and an IMAGE header, which must be a public https URL.
+        // Never block the opt-in on a send failure; record every outcome.
         try {
           const { sendTemplate } = await import("@/lib/whatsapp-service.server");
-          const fallbackBody =
-            `Hey, I'm the ${productName} you just scanned 😉 I'm still available and I'll keep you ` +
-            `updated if anything changes — like a price drop, someone else showing interest, or if I ` +
-            `become the last one available.`;
+          const { isPublicMediaUrl } = await import("@/lib/whatsapp-templates.server");
+
+          let headerImage = isPublicMediaUrl(productImage) ? productImage : null;
+          if (!headerImage) {
+            const { data: retailer } = await supabaseAdmin
+              .from("retailers")
+              .select("logo_url")
+              .eq("id", (product as any).retailer_id)
+              .maybeSingle();
+            const logo = (retailer as any)?.logo_url ?? null;
+            headerImage = isPublicMediaUrl(logo) ? logo : null;
+          }
+
+          const historyBody =
+            `Confirmed watch on ${productName}. We'll message you about price changes, ` +
+            `other interest, and the last unit.`;
 
           const result = await sendTemplate({
             templateName: "tag_scan_v5",
             to: e164,
-            variables: { "1": productName },
-            headerImageUrl: productImage || null,
-            fallbackBody,
+            headerImageUrl: headerImage,
           });
 
           if (!result.ok) {
@@ -252,14 +258,17 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
               type: "barcode_scan",
               product_id: (product as any).id,
               template: "tag_scan_v5",
-              body: fallbackBody,
+              body: historyBody,
             },
 
-            status: result.ok ? "sent" : "failed",
+            // Provider acceptance is not delivery — the Infobip webhook
+            // promotes this to delivered/read or marks it failed.
+            status: result.ok ? "queued" : "failed",
             sent_at: result.ok ? new Date().toISOString() : null,
             error: result.ok ? null : result.error,
             provider_message_sid: result.sid ?? null,
           });
+
 
         } catch (e: any) {
           console.warn("[scan.barcode-interest] whatsapp send error", e?.message ?? e);
