@@ -693,31 +693,35 @@ export const ownershipInsights = createServerFn({ method: "POST" })
         .limit(200),
     ]);
 
-    const out = await callAI({
-      system:
-        "You are an ownership assistant. Given a household's owned products and recent purchases, return practical insights. Never estimate resale value and never suggest trade-ins. Focus on duplicate purchases, replacement timing, servicing, expiring warranties, recall/safety notices, and compatible accessory suggestions.",
-      prompt: `Today: ${new Date().toISOString().slice(0, 10)}\nOwned products: ${JSON.stringify(owned ?? [])}\nRecent purchase lines: ${JSON.stringify(items ?? [])}`,
-      schema: z.object({
-        insights: z
-          .array(
+    const KINDS = ["duplicate", "replacement", "servicing", "warranty", "recall", "accessory"] as const;
+    try {
+      const out = await callAI({
+        system:
+          "You are an ownership assistant. Given a household's owned products and recent purchases, return practical insights as JSON. Never estimate resale value and never suggest trade-ins. Focus on duplicate purchases, replacement timing, servicing, expiring warranties, recall/safety notices, and compatible accessory suggestions. Each insight needs kind (one of duplicate, replacement, servicing, warranty, recall, accessory), title, detail, and optionally product. Return at most 10. If there is nothing useful, return an empty array.",
+        prompt: `Today: ${new Date().toISOString().slice(0, 10)}\nOwned products: ${JSON.stringify(owned ?? [])}\nRecent purchase lines: ${JSON.stringify(items ?? [])}`,
+        schema: z.object({
+          insights: z.array(
             z.object({
-              kind: z.enum([
-                "duplicate",
-                "replacement",
-                "servicing",
-                "warranty",
-                "recall",
-                "accessory",
-              ]),
+              kind: z.string(),
               title: z.string(),
               detail: z.string(),
-              product: z.string().optional(),
+              product: z.string().nullable().optional(),
             }),
-          )
-          .max(10),
-      }),
-    });
-    return out;
+          ),
+        }),
+      });
+      const insights = (out.insights ?? []).slice(0, 10).map((i) => ({
+        kind: (KINDS as readonly string[]).includes(i.kind) ? i.kind : "replacement",
+        title: i.title,
+        detail: i.detail,
+        product: i.product ?? undefined,
+      }));
+      return { insights };
+    } catch {
+      // AI output can occasionally miss the schema — degrade to no insights instead of breaking the page.
+      return { insights: [] as Array<{ kind: string; title: string; detail: string; product?: string }> };
+    }
+
   });
 
 export const suggestAccessories = createServerFn({ method: "POST" })
