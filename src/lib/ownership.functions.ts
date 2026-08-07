@@ -1121,3 +1121,102 @@ export const globalOwnershipSearch = createServerFn({ method: "POST" })
 
     return hits;
   });
+
+// ── Lifecycle alerts ─────────────────────────────────────────────────────
+// Deterministic, no AI: receipt received, warranty expiring, return window
+// ending, price drop after purchase, product recall.
+
+export const lifecycleAlerts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context as any;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) return [];
+
+    const now = Date.now();
+    const [{ data: receipts }, { data: owned }, { data: items }] = await Promise.all([
+      supabase
+        .from("receipts")
+        .select("id, receipt_number, issued_at")
+        .eq("retailer_id", retailerId)
+        .order("issued_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("owned_products")
+        .select("id, name, recall_notice, warranties:warranties(expires_on)")
+        .eq("retailer_id", retailerId),
+      supabase
+        .from("purchase_items")
+        .select(
+          "id, name, unit_price_cents, return_window_days, product_id, purchase:purchases(purchased_at), product:products(price_cents, sale_price_cents)",
+        )
+        .eq("retailer_id", retailerId)
+        .limit(300),
+    ]);
+
+    type Alert = { kind: string; title: string; detail: string; tone: "ok" | "soon" | "expired" | "info" };
+    const alerts: Alert[] = [];
+
+    for (const r of (receipts ?? []) as any[]) {
+      const age = (now - new Date(r.issued_at).getTime()) / 86400000;
+      if (age <= 3) {
+        alerts.push({
+          kind: "Receipt received",
+          title: r.receipt_number,
+          detail: `Issued ${new Date(r.issued_at).toLocaleDateString()}`,
+          tone: "ok",
+        });
+      }
+    }
+
+    for (const o of (owned ?? []) as any[]) {
+      const expires = (o.warranties ?? [])[0]?.expires_on;
+      if (expires) {
+        const days = Math.round((new Date(expires).getTime() - now) / 86400000);
+        if (days >= 0 && days <= 30) {
+          alerts.push({
+            kind: "Warranty expiring",
+            title: o.name,
+            detail: `${days} day(s) of cover left`,
+            tone: "soon",
+          });
+        }
+      }
+      if (o.recall_notice) {
+        alerts.push({
+          kind: "Product recall",
+          title: o.name,
+          detail: o.recall_notice,
+          tone: "expired",
+        });
+      }
+    }
+
+    for (const i of (items ?? []) as any[]) {
+      const purchasedAt = i.purchase?.purchased_at ? new Date(i.purchase.purchased_at).getTime() : null;
+      if (purchasedAt) {
+        const endsIn = Math.round(
+          (purchasedAt + (i.return_window_days ?? 30) * 86400000 - now) / 86400000,
+        );
+        if (endsIn >= 0 && endsIn <= 5) {
+          alerts.push({
+            kind: "Return window ending",
+            title: i.name,
+            detail: `${endsIn} day(s) left to return`,
+            tone: "soon",
+          });
+        }
+      }
+      const nowPrice = i.product?.sale_price_cents ?? i.product?.price_cents;
+      if (nowPrice && i.unit_price_cents && nowPrice < i.unit_price_cents) {
+        alerts.push({
+          kind: "Price drop after purchase",
+          title: i.name,
+          detail: `Now ${((i.unit_price_cents - nowPrice) / 100).toFixed(2)} cheaper than you paid`,
+          tone: "info",
+        });
+      }
+    }
+
+    return alerts.slice(0, 20);
+  });
