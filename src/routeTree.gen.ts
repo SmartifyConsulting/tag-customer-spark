@@ -90,6 +90,7 @@ import { Route as ApiPublicSShortCodeRouteImport } from './routes/api/public/s.$
 import { Route as ApiPublicHooksPassportTickRouteImport } from './routes/api/public/hooks.passport-tick'
 import { Route as ApiPublicHooksNotificationsTickRouteImport } from './routes/api/public/hooks.notifications-tick'
 import { Route as ApiPublicHooksIntentTickRouteImport } from './routes/api/public/hooks.intent-tick'
+import { Route as ApiPublicHooksInfobipAuthProbeRouteImport } from './routes/api/public/hooks.infobip-auth-probe'
 import { Route as ApiPublicHooksDailySummaryRouteImport } from './routes/api/public/hooks.daily-summary'
 import { Route as ApiPublic01GtinRouteImport } from './routes/api/public/01.$gtin'
 import { Route as AuthenticatedOwnershipPurchasesPurchaseIdRouteImport } from './routes/_authenticated/ownership.purchases.$purchaseId'
@@ -542,6 +543,12 @@ const ApiPublicHooksIntentTickRoute =
     path: '/api/public/hooks/intent-tick',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksInfobipAuthProbeRoute =
+  ApiPublicHooksInfobipAuthProbeRouteImport.update({
+    id: '/api/public/hooks/infobip-auth-probe',
+    path: '/api/public/hooks/infobip-auth-probe',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksDailySummaryRoute =
   ApiPublicHooksDailySummaryRouteImport.update({
     id: '/api/public/hooks/daily-summary',
@@ -645,6 +652,7 @@ export interface FileRoutesByFullPath {
   '/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
+  '/api/public/hooks/infobip-auth-probe': typeof ApiPublicHooksInfobipAuthProbeRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
@@ -725,6 +733,7 @@ export interface FileRoutesByTo {
   '/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
+  '/api/public/hooks/infobip-auth-probe': typeof ApiPublicHooksInfobipAuthProbeRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
@@ -814,6 +823,7 @@ export interface FileRoutesById {
   '/_authenticated/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
+  '/api/public/hooks/infobip-auth-probe': typeof ApiPublicHooksInfobipAuthProbeRoute
   '/api/public/hooks/intent-tick': typeof ApiPublicHooksIntentTickRoute
   '/api/public/hooks/notifications-tick': typeof ApiPublicHooksNotificationsTickRoute
   '/api/public/hooks/passport-tick': typeof ApiPublicHooksPassportTickRoute
@@ -903,6 +913,7 @@ export interface FileRouteTypes {
     | '/ownership/purchases/$purchaseId'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/daily-summary'
+    | '/api/public/hooks/infobip-auth-probe'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
     | '/api/public/hooks/passport-tick'
@@ -983,6 +994,7 @@ export interface FileRouteTypes {
     | '/ownership/purchases/$purchaseId'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/daily-summary'
+    | '/api/public/hooks/infobip-auth-probe'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
     | '/api/public/hooks/passport-tick'
@@ -1071,6 +1083,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ownership/purchases/$purchaseId'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/daily-summary'
+    | '/api/public/hooks/infobip-auth-probe'
     | '/api/public/hooks/intent-tick'
     | '/api/public/hooks/notifications-tick'
     | '/api/public/hooks/passport-tick'
@@ -1108,6 +1121,7 @@ export interface RootRouteChildren {
   ToolsBarcodeReaderRoute: typeof ToolsBarcodeReaderRoute
   ApiPublic01GtinRoute: typeof ApiPublic01GtinRoute
   ApiPublicHooksDailySummaryRoute: typeof ApiPublicHooksDailySummaryRoute
+  ApiPublicHooksInfobipAuthProbeRoute: typeof ApiPublicHooksInfobipAuthProbeRoute
   ApiPublicHooksIntentTickRoute: typeof ApiPublicHooksIntentTickRoute
   ApiPublicHooksNotificationsTickRoute: typeof ApiPublicHooksNotificationsTickRoute
   ApiPublicHooksPassportTickRoute: typeof ApiPublicHooksPassportTickRoute
@@ -1689,6 +1703,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksIntentTickRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/infobip-auth-probe': {
+      id: '/api/public/hooks/infobip-auth-probe'
+      path: '/api/public/hooks/infobip-auth-probe'
+      fullPath: '/api/public/hooks/infobip-auth-probe'
+      preLoaderRoute: typeof ApiPublicHooksInfobipAuthProbeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/daily-summary': {
       id: '/api/public/hooks/daily-summary'
       path: '/api/public/hooks/daily-summary'
@@ -1988,6 +2009,7 @@ const rootRouteChildren: RootRouteChildren = {
   ToolsBarcodeReaderRoute: ToolsBarcodeReaderRoute,
   ApiPublic01GtinRoute: ApiPublic01GtinRoute,
   ApiPublicHooksDailySummaryRoute: ApiPublicHooksDailySummaryRoute,
+  ApiPublicHooksInfobipAuthProbeRoute: ApiPublicHooksInfobipAuthProbeRoute,
   ApiPublicHooksIntentTickRoute: ApiPublicHooksIntentTickRoute,
   ApiPublicHooksNotificationsTickRoute: ApiPublicHooksNotificationsTickRoute,
   ApiPublicHooksPassportTickRoute: ApiPublicHooksPassportTickRoute,
@@ -2002,13 +2024,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

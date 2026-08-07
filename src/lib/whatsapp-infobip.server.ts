@@ -31,7 +31,7 @@ export type InfobipSendResult = {
 };
 
 export type InfobipRuntimeDiagnostic = {
-  keyBinding: "INFOBIP_API_KEY_V2" | "INFOBIP_API_KEY";
+  keyBinding: string;
   keyFingerprint: string;
   keyLength: number;
   normalizedAppPrefix: boolean;
@@ -40,7 +40,20 @@ export type InfobipRuntimeDiagnostic = {
   apiHost: string;
   senderSuffix: string;
   responseRequestId?: string;
+  /** Every distinct credential binding this runtime could see, in try order. */
+  availableBindings?: string[];
+  /** Bindings actually attempted before this result (auth retry evidence). */
+  attemptedBindings?: string[];
+  /** Provider HTTP status on failure. */
+  httpStatus?: number;
+  /** Infobip's own error identifier, e.g. "UNAUTHORIZED". */
+  providerMessageId?: string;
+  /** Truncated raw provider error body (never contains our credentials). */
+  rawErrorBody?: string;
 };
+
+
+
 
 type RuntimeConfig = {
   apiKey: string;
@@ -48,6 +61,10 @@ type RuntimeConfig = {
   sender: string;
   diagnostic: InfobipRuntimeDiagnostic;
 };
+
+/** Candidate credential bindings, in preference order. */
+const KEY_BINDINGS = ["INFOBIP_API_KEY_V2", "INFOBIP_API_KEY"] as const;
+
 
 function normalizeNumber(num: string): string {
   const trimmed = num.trim();
@@ -88,46 +105,66 @@ async function fingerprint(value: string): Promise<string> {
     .join("");
 }
 
-async function readRuntimeConfig(): Promise<RuntimeConfig | null> {
-  // Read inside the request operation. Do not move these values to module scope:
-  // production secret bindings can be refreshed independently of this bundle.
-  // V2 is a versioned binding created to escape a production platform binding
-  // that remained pinned to an older INFOBIP_API_KEY value after replacement.
-  // Keep the original name as a fallback for existing environments.
-  const v2ApiKey = process.env.INFOBIP_API_KEY_V2;
-  const rawApiKey = v2ApiKey ?? process.env.INFOBIP_API_KEY;
+/**
+ * Resolves every distinct Infobip credential this runtime can see, in
+ * preference order and de-duplicated by value.
+ *
+ * Different execution contexts (authenticated server functions vs the public
+ * `/api/public/*` routes) can be handed different secret bindings. Silently
+ * picking the first name present meant one path authenticated with a current
+ * key and the other with a superseded one. We now enumerate them, record which
+ * binding was used, and fall through to the next candidate on an auth
+ * rejection instead of failing the customer's confirmation.
+ */
+async function readRuntimeConfigs(): Promise<RuntimeConfig[]> {
+  // Read inside the request operation. Do not move these values to module
+  // scope: bindings are injected per request in the deployed runtime.
   const rawBaseUrl = process.env.INFOBIP_BASE_URL;
   const rawSender = process.env.INFOBIP_WHATSAPP_SENDER;
-  if (!rawApiKey || !rawBaseUrl || !rawSender) return null;
+  if (!rawBaseUrl || !rawSender) return [];
 
-  const unwrappedKey = unwrapQuotes(rawApiKey);
-  const hadAppPrefix = /^(?:App\s+)+/i.test(unwrappedKey.value);
-  const apiKey = unwrappedKey.value.replace(/^(?:App\s+)+/i, "").trim();
-  const normalizedWhitespace = apiKey !== rawApiKey;
   const normalizedUrl = normalizeBaseUrl(rawBaseUrl);
   const sender = normalizeNumber(unwrapQuotes(rawSender).value);
   const apiHost = new URL(normalizedUrl).hostname;
 
-  return {
-    apiKey,
-    baseUrl: normalizedUrl,
-    sender,
-    diagnostic: {
-      keyBinding: v2ApiKey ? "INFOBIP_API_KEY_V2" : "INFOBIP_API_KEY",
-      keyFingerprint: await fingerprint(apiKey),
-      keyLength: apiKey.length,
-      normalizedAppPrefix: hadAppPrefix,
-      normalizedWrappingQuotes: unwrappedKey.changed,
-      normalizedWhitespace,
-      apiHost,
-      senderSuffix: sender.slice(-4),
-    },
-  };
+  const configs: RuntimeConfig[] = [];
+  const seen = new Set<string>();
+
+  for (const binding of KEY_BINDINGS) {
+    const raw = process.env[binding];
+    if (!raw) continue;
+
+    const unwrappedKey = unwrapQuotes(raw);
+    const hadAppPrefix = /^(?:App\s+)+/i.test(unwrappedKey.value);
+    const apiKey = unwrappedKey.value.replace(/^(?:App\s+)+/i, "").trim();
+    if (!apiKey || seen.has(apiKey)) continue;
+    seen.add(apiKey);
+
+    configs.push({
+      apiKey,
+      baseUrl: normalizedUrl,
+      sender,
+      diagnostic: {
+        keyBinding: binding,
+        keyFingerprint: await fingerprint(apiKey),
+        keyLength: apiKey.length,
+        normalizedAppPrefix: hadAppPrefix,
+        normalizedWrappingQuotes: unwrappedKey.changed,
+        normalizedWhitespace: apiKey !== raw,
+        apiHost,
+        senderSuffix: sender.slice(-4),
+      },
+    });
+  }
+
+  const availableBindings = configs.map((c) => c.diagnostic.keyBinding);
+  for (const config of configs) config.diagnostic.availableBindings = availableBindings;
+  return configs;
 }
 
 export function isInfobipConfigured(): boolean {
   return Boolean(
-    process.env.INFOBIP_API_KEY &&
+    (process.env.INFOBIP_API_KEY_V2 || process.env.INFOBIP_API_KEY) &&
       process.env.INFOBIP_BASE_URL &&
       process.env.INFOBIP_WHATSAPP_SENDER,
   );
@@ -136,10 +173,45 @@ export function isInfobipConfigured(): boolean {
 export async function sendInfobipWhatsApp(
   input: InfobipSendInput,
 ): Promise<InfobipSendResult> {
-  const config = await readRuntimeConfig();
-  if (!config) {
-    return { ok: false, status: 500, error: "Infobip WhatsApp is not configured" };
+  const configs = await readRuntimeConfigs();
+  if (configs.length === 0) {
+    return {
+      ok: false,
+      status: 500,
+      error:
+        "Infobip WhatsApp credential binding is missing in this runtime (no API key, base URL or sender)",
+    };
   }
+
+  const attempted: string[] = [];
+  let last: InfobipSendResult | null = null;
+
+  for (const config of configs) {
+    attempted.push(config.diagnostic.keyBinding);
+    const result = await sendWithConfig(config, input, [...attempted]);
+    if (result.ok) return result;
+    last = result;
+    // Only an authentication rejection is worth retrying with another binding;
+    // template or recipient errors would fail identically on every key.
+    const isAuthFailure =
+      result.status === 401 ||
+      result.status === 403 ||
+      /invalid login details|unauthorized/i.test(result.error ?? "");
+    if (!isAuthFailure) break;
+    console.warn(
+      `[infobip] ${config.diagnostic.keyBinding} rejected (${result.status}) — trying next binding`,
+    );
+  }
+
+  return last!;
+}
+
+async function sendWithConfig(
+  config: RuntimeConfig,
+  input: InfobipSendInput,
+  attemptedBindings: string[],
+): Promise<InfobipSendResult> {
+
 
   const to = normalizeNumber(input.to);
   const sender = config.sender;
@@ -199,7 +271,11 @@ export async function sendInfobipWhatsApp(
       resp.headers.get("x-correlation-id") ??
       resp.headers.get("x-infobip-request-id") ??
       undefined;
-    const diagnostic = { ...config.diagnostic, responseRequestId };
+    const diagnostic: InfobipRuntimeDiagnostic = {
+      ...config.diagnostic,
+      responseRequestId,
+      attemptedBindings,
+    };
     let json: any = null;
     try {
       json = text ? JSON.parse(text) : null;
@@ -216,10 +292,18 @@ export async function sendInfobipWhatsApp(
       undefined;
 
     if (!resp.ok || groupName === "REJECTED") {
+      // Rejections are the case we cannot reproduce outside production, so
+      // capture Infobip's own identifiers here. None of this is secret and it
+      // is exactly what Infobip support needs to trace the request.
+      diagnostic.httpStatus = resp.status;
+      diagnostic.providerMessageId =
+        json?.requestError?.serviceException?.messageId ?? message?.status?.name ?? undefined;
+      diagnostic.rawErrorBody = text?.slice(0, 300);
       const msg = providerError ?? text?.slice(0, 300) ?? `HTTP ${resp.status}`;
       console.error("[infobip] send failed", resp.status, msg, diagnostic);
       return { ok: false, status: resp.status || 502, error: msg, diagnostic };
     }
+
 
     console.info("[infobip] send accepted", resp.status, message?.messageId, diagnostic);
     return { ok: true, status: resp.status, sid: message?.messageId, diagnostic };
@@ -229,7 +313,8 @@ export async function sendInfobipWhatsApp(
       ok: false,
       status: 0,
       error: e?.message ?? "Network error",
-      diagnostic: config.diagnostic,
+      diagnostic: { ...config.diagnostic, attemptedBindings },
     };
   }
+
 }
