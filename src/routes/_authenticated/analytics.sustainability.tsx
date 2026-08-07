@@ -18,14 +18,12 @@ import {
   Award,
   Coins,
   Download,
-  Droplets,
   FileText,
   Info,
   Leaf,
   Recycle,
   Sparkles,
   Trees,
-  Zap,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
