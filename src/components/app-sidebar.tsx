@@ -19,7 +19,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useTier } from "@/hooks/use-tier";
 import { useAuth, useIsAdmin, useIsSuperAdmin } from "@/hooks/use-auth";
 import { UserMenu } from "@/components/user-menu";
-import { NAV, isNavActive, type NavItem } from "@/lib/nav";
+import { navForPersona, isNavActive, PERSONA_LABEL, type NavItem } from "@/lib/nav";
+import { usePersona } from "@/hooks/use-persona";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -29,11 +30,14 @@ export function AppSidebar() {
   const { primaryRole } = useAuth();
   const isAdmin = useIsAdmin();
   const isSuperAdmin = useIsSuperAdmin();
+  // Two personas over one backend — TAG Retail for staff, TAG Wallet for
+  // shoppers. See lib/nav.ts for why the lists stay separate.
+  const persona = usePersona();
   // A nav item whose destination gates on a role the user doesn't have
   // used to still render (and highlight active) here, then bounce the user
   // to /dashboard on click — confusing. Filter to what they can actually
   // open instead.
-  const visibleNav = NAV.filter(
+  const visibleNav = navForPersona(persona).filter(
     (item) => (!item.adminOnly || isAdmin) && (!item.superAdminOnly || isSuperAdmin),
   );
   const isActive = (item: NavItem) => isNavActive(item, pathname);
