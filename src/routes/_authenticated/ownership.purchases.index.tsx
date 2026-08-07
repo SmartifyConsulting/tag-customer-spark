@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Archive, Download, FileSpreadsheet, Search, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
+import { LifecycleAlerts } from "@/components/ownership/lifecycle-alerts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,8 @@ function PurchasesPage() {
         description="Every purchase captured digitally — the bridge between discovery and ownership."
         actions={<RecordPurchaseDialog />}
       />
+
+      <LifecycleAlerts />
 
       <Tabs defaultValue="purchases" className="space-y-6">
         <TabsList>

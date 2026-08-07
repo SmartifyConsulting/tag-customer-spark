@@ -139,3 +139,21 @@ export function Barcode({ value, height = 64 }: { value: string; height?: number
     </svg>
   );
 }
+
+// Receipt lifecycle state. Issuing states are stored on the receipt; the
+// returned / refunded / warranty-registered states are derived server-side.
+const RECEIPT_STATUS: Record<string, { label: string; tone: "ok" | "soon" | "expired" | "muted" | "info" }> = {
+  paper: { label: "Paper", tone: "muted" },
+  digital: { label: "Digital", tone: "ok" },
+  synced: { label: "Synced", tone: "ok" },
+  pending: { label: "Pending", tone: "soon" },
+  failed: { label: "Failed", tone: "expired" },
+  returned: { label: "Returned", tone: "soon" },
+  refunded: { label: "Refunded", tone: "expired" },
+  warranty_registered: { label: "Warranty registered", tone: "info" },
+};
+
+export function ReceiptStatusBadge({ status }: { status?: string | null }) {
+  const s = RECEIPT_STATUS[status ?? "digital"] ?? RECEIPT_STATUS["digital"]!;
+  return <StatusBadge tone={s.tone}>{s.label}</StatusBadge>;
+}

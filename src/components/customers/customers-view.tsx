@@ -41,6 +41,7 @@ import {
   deleteCustomer,
   markCustomersViewed,
 } from "@/lib/customers.functions";
+import { ClientOwnershipTabs } from "@/components/ownership/client-ownership";
 import { CustomerFormDialog } from "@/components/customers/customer-form-dialog";
 import { ImportCustomersDialog } from "@/components/customers/import-customers-dialog";
 import { OnboardingTour } from "@/components/onboarding-tour";
@@ -371,6 +372,9 @@ function CustomerDrawer({ id, onClose }: { id: string | null; onClose: () => voi
               <Stat label="Interests" value={detail.data!.interests.length} />
               <Stat label="Recoveries" value={detail.data!.recoveries.length} />
             </div>
+            <Section title="Ownership record">
+              <ClientOwnershipTabs customerId={c.id} />
+            </Section>
             <Section title="Interests">
               {detail.data!.interests.length === 0 ? (
                 <p className="text-sm text-muted-foreground">None yet.</p>

@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatusBadge } from "@/components/ownership/shared";
+import { ReceiptStatusBadge, StatusBadge } from "@/components/ownership/shared";
 import { exportCsv, exportExcel, exportTablePdf } from "@/components/ownership/export";
 import { formatMoney } from "@/lib/format";
 import { listReceipts, updateReceipt } from "@/lib/ownership.functions";
@@ -144,6 +144,7 @@ function ReceiptsPage() {
                     {(r.purchase?.items ?? []).length} item(s)
                   </p>
                 </div>
+                <ReceiptStatusBadge status={r.status} />
                 {r.category && <StatusBadge tone="info">{r.category}</StatusBadge>}
                 {r.is_archived && <StatusBadge tone="muted">Archived</StatusBadge>}
                 <p className="font-semibold">{formatMoney(r.purchase?.total_cents ?? 0)}</p>
