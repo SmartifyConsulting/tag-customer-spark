@@ -262,7 +262,7 @@ async function sendWithConfig(
       resp.headers.get("x-correlation-id") ??
       resp.headers.get("x-infobip-request-id") ??
       undefined;
-    const diagnostic = { ...config.diagnostic, responseRequestId };
+    const diagnostic = { ...config.diagnostic, responseRequestId, attemptedBindings };
     let json: any = null;
     try {
       json = text ? JSON.parse(text) : null;
