@@ -1,6 +1,5 @@
 import {
   LayoutDashboard,
-  Tag,
   Users,
   TrendingUp,
   Inbox,
@@ -13,6 +12,11 @@ import {
   ShieldCheck as WarrantyIcon,
   Undo2,
   Wallet,
+  ShoppingBag,
+  Search,
+  FileText,
+  Radar,
+  Eye,
 } from "lucide-react";
 
 import type { TierFeatureKey } from "@/lib/tier";
@@ -43,41 +47,27 @@ export type NavItem = {
   superAdminOnly?: boolean;
 };
 
-// ─── Left sidebar nav ───────────────────────────────────────────────────
-// Pointers to keep the two dashboards / customers home from drifting again:
+// ─── Information architecture ───────────────────────────────────────────
+// TAG is one platform with four sections, not two separate apps:
 //
-//   • **Briefing** (`/briefing`) is the personalised HOME page — tagged
-//     products this week / last week / month buckets, plus unread WhatsApp
-//     conversations that need a reply. It's what the user sees right after
-//     signing in. It is NOT the exec KPI dashboard.
+//   PRODUCT    — the retailer's catalogue intelligence (staff only)
+//   PURCHASE   — the transaction record: purchases, digital receipts, returns
+//   OWNERSHIP  — what the shopper owns after the sale: products, household,
+//                warranties, documents, TAG ID
+//   BUSINESS   — analytics, ROI, sustainability, admin (staff only)
 //
-//   • **Intelligence → Dashboard** (`/dashboard`) is the exec KPI view
-//     (scans, revenue recovered, heatmap, top products). It lives under
-//     Intelligence because it's an analytics surface, not a daily action
-//     surface. Do not promote it back to the top level.
-//
-//   • **Customers** lives under Admin now (not top-level) — it's a
-//     configuration surface (bulk import, delete, edit) rather than an
-//     everyday destination like Messages/Inventory. If you're tempted to
-//     hoist it back to the top nav, remember why it moved: the top nav is
-//     limited to daily-use destinations.
-//
-//   • **Inventory** is `/admin/inventory` (yes, the URL sits under /admin,
-//     but the item is top-level because inventory is an every-day
-//     destination). Keep it here; don't move it under Admin.
-//
-// ─── Persona split ──────────────────────────────────────────────────────
-// The platform now has two front doors over one backend:
-//
-//   • **TAG Retail**  — staff-facing: POS/QR management, receipt delivery,
-//     store analytics, sustainability, customer engagement.
-//   • **TAG Wallet**  — consumer-facing: digital receipts, purchases, my
-//     products, warranties, returns, household inventory.
-//
-// A signed-in user with any retail role gets TAG Retail; everyone else
-// (shoppers with a TAG ID and no staff role) gets TAG Wallet. Don't mix the
-// two lists back together — the whole point is that each surface stays
-// focused on one audience.
+// PURCHASE and OWNERSHIP are visible to EVERY signed-in user, because a
+// staff member is also a shopper. PRODUCT and BUSINESS are staff-only.
+// Don't reintroduce a binary "retail vs wallet" split of the whole nav —
+// section-level gating is what lets one account do both.
+export type NavSection = {
+  id: "product" | "purchase" | "ownership" | "business";
+  label: string;
+  staffOnly?: boolean;
+  items: readonly NavItem[];
+};
+
+// Back-compat: a couple of surfaces still ask "which front door is this?".
 export type Persona = "retail" | "wallet";
 
 export const PERSONA_LABEL: Record<Persona, string> = {
@@ -89,104 +79,108 @@ export function personaFromRoles(roles: readonly string[] | undefined): Persona 
   return roles && roles.length > 0 ? "retail" : "wallet";
 }
 
-export const RETAIL_NAV: readonly NavItem[] = [
+export const NAV_SECTIONS: readonly NavSection[] = [
   {
-    title: "Briefing",
-    url: "/briefing",
-    icon: LayoutDashboard,
-    match: ["/briefing"],
-  },
-  {
-    title: "Inventory",
-    url: "/admin/inventory",
-    icon: Boxes,
-    match: ["/admin/inventory", "/products"],
-  },
-  { title: "Messages", url: "/inbox", icon: Inbox, match: ["/inbox"] },
-
-  {
-    title: "Analytics",
-    url: "/intelligence",
-    icon: TrendingUp,
-    match: [
-      "/intelligence",
-      "/analytics",
-      "/roi",
-      "/commerce",
-      "/dashboard",
-    ],
+    id: "product",
+    label: "Product",
+    staffOnly: true,
     items: [
-      { title: "Overview", url: "/intelligence", match: ["/intelligence"] },
-      { title: "Insights", url: "/intelligence/insights", match: ["/intelligence/insights"] },
-      { title: "Analytics", url: "/analytics", match: ["/analytics"] },
-      { title: "ROI", url: "/roi", match: ["/roi"] },
-      { title: "Sustainability", url: "/analytics/sustainability", match: ["/analytics/sustainability"] },
+      { title: "Dashboard", url: "/briefing", icon: LayoutDashboard, match: ["/briefing"] },
+      {
+        title: "Products",
+        url: "/admin/inventory",
+        icon: Boxes,
+        match: ["/admin/inventory", "/products"],
+      },
+      { title: "Intent Engine", url: "/intelligence/intent", icon: Radar, match: ["/intelligence/intent", "/intent"] },
+      { title: "Watchlists", url: "/watchlists", icon: Eye, match: ["/watchlists"] },
+      { title: "Messages", url: "/inbox", icon: Inbox, match: ["/inbox"] },
     ],
   },
-
   {
-    title: "Admin",
-    url: "/admin",
-    icon: ShieldCheck,
-    // Exact-only — see NavItem.exact above.
-    match: ["/admin", "/stores", "/customers"],
-    exact: true,
-    adminOnly: true,
+    id: "purchase",
+    label: "Purchase",
+    items: [
+      { title: "Purchases", url: "/ownership/purchases", icon: ShoppingBag, match: ["/ownership/purchases"] },
+      { title: "Receipts", url: "/purchase/receipts", icon: ReceiptText, match: ["/purchase/receipts"] },
+      { title: "Search", url: "/purchase/search", icon: Search, match: ["/purchase/search"] },
+      { title: "Returns", url: "/ownership/returns", icon: Undo2, match: ["/ownership/returns"] },
+    ],
   },
-
   {
-    title: "Pricing",
-    url: "/upgrade",
-    icon: DollarSign,
-    // Every retailer's own subscribe/compare-plans page — not the
-    // super_admin console at /admin/pricing (that's TAG staff managing
-    // every retailer's plan, a different audience entirely; pointing this
-    // nav item there was what caused the "redirects to Dashboard while
-    // Pricing stays highlighted" confusion for non-super-admin users).
-    match: ["/upgrade"],
+    id: "ownership",
+    label: "Ownership",
+    items: [
+      { title: "My Products", url: "/ownership/products", icon: Boxes, match: ["/ownership/products"] },
+      { title: "Household", url: "/ownership/household", icon: Home, match: ["/ownership/household"] },
+      { title: "Warranties", url: "/ownership/warranties", icon: WarrantyIcon, match: ["/ownership/warranties"] },
+      { title: "Documents", url: "/ownership/documents", icon: FileText, match: ["/ownership/documents"] },
+      { title: "TAG ID", url: "/ownership/tag-id", icon: Wallet, match: ["/ownership/tag-id"] },
+    ],
+  },
+  {
+    id: "business",
+    label: "Business",
+    staffOnly: true,
+    items: [
+      {
+        title: "Analytics",
+        url: "/intelligence",
+        icon: TrendingUp,
+        match: ["/intelligence", "/analytics", "/roi", "/commerce", "/dashboard"],
+        items: [
+          { title: "Overview", url: "/intelligence", match: ["/intelligence"] },
+          { title: "Insights", url: "/intelligence/insights", match: ["/intelligence/insights"] },
+          { title: "Analytics", url: "/analytics", match: ["/analytics"] },
+          { title: "ROI", url: "/roi", match: ["/roi"] },
+          { title: "Sustainability", url: "/analytics/sustainability", match: ["/analytics/sustainability"] },
+        ],
+      },
+      {
+        title: "Admin",
+        url: "/admin",
+        icon: ShieldCheck,
+        // Exact-only — see NavItem.exact above.
+        match: ["/admin", "/stores", "/customers"],
+        exact: true,
+        adminOnly: true,
+      },
+      {
+        title: "Pricing",
+        url: "/upgrade",
+        icon: DollarSign,
+        // Every retailer's own subscribe/compare-plans page — not the
+        // super_admin console at /admin/pricing.
+        match: ["/upgrade"],
+      },
+    ],
   },
 ] as const;
 
-// TAG Wallet — the consumer surface. Ownership sub-pages are promoted to
-// top-level rows here because they *are* the app for a shopper.
-export const WALLET_NAV: readonly NavItem[] = [
-  { title: "Receipts", url: "/ownership/purchases", icon: ReceiptText, match: ["/ownership/purchases"] },
-  { title: "My Products", url: "/ownership/products", icon: Boxes, match: ["/ownership/products"] },
-  { title: "Household", url: "/ownership/household", icon: Home, match: ["/ownership/household"] },
-  { title: "Warranties", url: "/ownership/warranties", icon: WarrantyIcon, match: ["/ownership/warranties"] },
-  { title: "Returns", url: "/ownership/returns", icon: Undo2, match: ["/ownership/returns"] },
-  { title: "TAG ID", url: "/ownership/tag-id", icon: Wallet, match: ["/ownership/tag-id"] },
-] as const;
-
-export function navForPersona(persona: Persona): readonly NavItem[] {
-  return persona === "wallet" ? WALLET_NAV : RETAIL_NAV;
+export function sectionsForUser(isStaff: boolean): readonly NavSection[] {
+  return NAV_SECTIONS.filter((s) => !s.staffOnly || isStaff);
 }
 
-// Back-compat alias — retail is the default surface.
-export const NAV = RETAIL_NAV;
-
-// Mobile bottom nav — dropdowns don't fit on a bar, so we surface four
-// everyday destinations per persona.
-export const RETAIL_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
-  { title: "Briefing", url: "/briefing", icon: LayoutDashboard, match: ["/briefing"] },
-  { title: "Messages", url: "/inbox", icon: Inbox, match: ["/inbox"] },
-  { title: "Inventory", url: "/admin/inventory", icon: Tag, match: ["/admin/inventory", "/products"] },
+// Mobile bottom nav — dropdowns don't fit on a bar, so we surface the
+// everyday destinations for each audience.
+export const STAFF_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
+  { title: "Dashboard", url: "/briefing", icon: LayoutDashboard, match: ["/briefing"] },
+  { title: "Products", url: "/admin/inventory", icon: Boxes, match: ["/admin/inventory", "/products"] },
+  { title: "Receipts", url: "/purchase/receipts", icon: ReceiptText, match: ["/purchase/receipts"] },
   { title: "Impact", url: "/analytics/sustainability", icon: Leaf, match: ["/analytics/sustainability"] },
-  { title: "Customers", url: "/admin?tab=customers", icon: Users, match: ["/admin", "/customers"] },
+  { title: "Customers", url: "/admin?tab=customers", icon: Users, match: ["/customers"] },
 ] as const;
 
-export const WALLET_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
-  { title: "Receipts", url: "/ownership/purchases", icon: ReceiptText, match: ["/ownership/purchases"] },
+export const SHOPPER_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
+  { title: "Receipts", url: "/purchase/receipts", icon: ReceiptText, match: ["/purchase/receipts"] },
   { title: "Products", url: "/ownership/products", icon: Boxes, match: ["/ownership/products"] },
   { title: "Warranties", url: "/ownership/warranties", icon: WarrantyIcon, match: ["/ownership/warranties"] },
   { title: "TAG ID", url: "/ownership/tag-id", icon: Wallet, match: ["/ownership/tag-id"] },
 ] as const;
 
-export function mobileNavForPersona(persona: Persona): readonly Omit<NavItem, "items">[] {
-  return persona === "wallet" ? WALLET_MOBILE_NAV : RETAIL_MOBILE_NAV;
+export function mobileNavForUser(isStaff: boolean): readonly Omit<NavItem, "items">[] {
+  return isStaff ? STAFF_MOBILE_NAV : SHOPPER_MOBILE_NAV;
 }
-
-export const MOBILE_NAV = RETAIL_MOBILE_NAV;
 
 export function isNavActive(
   item: { match: readonly string[]; exact?: boolean },
