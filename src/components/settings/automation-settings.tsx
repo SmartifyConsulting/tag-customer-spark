@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, Loader2, Zap } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Send, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -9,16 +9,20 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AUTOMATIONS, type AutomationSetting } from "@/lib/automation";
-import { listAutomationSettings, saveAutomationSetting } from "@/lib/automation.functions";
+import { listAutomationSettings, saveAutomationSetting, testInfobipDelivery } from "@/lib/automation.functions";
+import { useAuth } from "@/hooks/use-auth";
 
 export function AutomationSettings() {
   const qc = useQueryClient();
+  const { roles } = useAuth();
+  const isSuperAdmin = roles.includes("super_admin");
   const { data, isLoading } = useQuery({
     queryKey: ["automation-settings"],
     queryFn: () => listAutomationSettings(),
   });
 
   const [draft, setDraft] = useState<Record<string, AutomationSetting>>({});
+  const [testRecipient, setTestRecipient] = useState("");
 
   useEffect(() => {
     if (!data?.settings) return;
@@ -32,6 +36,15 @@ export function AutomationSettings() {
       qc.invalidateQueries({ queryKey: ["automation-settings"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not save"),
+  });
+
+  const testDelivery = useMutation({
+    mutationFn: () => testInfobipDelivery({ data: { recipient: testRecipient } }),
+    onSuccess: (result) => {
+      if (result.ok) toast.success("Infobip accepted the test message");
+      else toast.error(result.error ?? "Infobip rejected the test message");
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not run delivery test"),
   });
 
   if (isLoading) {
@@ -75,6 +88,62 @@ export function AutomationSettings() {
           ) : null}
         </p>
       </div>
+
+      {isSuperAdmin && data?.provider === "infobip" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Live Infobip delivery test</CardTitle>
+            <CardDescription>
+              Sends tag_scan_v5 through the same runtime adapter used by Follow Me and barcode scans.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                aria-label="WhatsApp test recipient"
+                value={testRecipient}
+                onChange={(event) => setTestRecipient(event.target.value)}
+                placeholder="+27 82 123 4567"
+                inputMode="tel"
+              />
+              <Button
+                onClick={() => testDelivery.mutate()}
+                disabled={testDelivery.isPending || testRecipient.trim().length < 8}
+              >
+                {testDelivery.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
+                Send test
+              </Button>
+            </div>
+
+            {testDelivery.data ? (
+              <div className="rounded-lg border bg-muted/30 p-4 text-sm">
+                <div className="flex items-center gap-2 font-medium">
+                  {testDelivery.data.ok ? (
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                  )}
+                  {testDelivery.data.ok ? "Accepted by Infobip" : "Rejected by Infobip"}
+                </div>
+                <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+                  <div><dt className="text-muted-foreground">HTTP status</dt><dd>{testDelivery.data.status}</dd></div>
+                  <div><dt className="text-muted-foreground">Message ID</dt><dd className="break-all font-mono text-xs">{testDelivery.data.messageId ?? "—"}</dd></div>
+                  <div><dt className="text-muted-foreground">Key fingerprint</dt><dd className="font-mono text-xs">{testDelivery.data.diagnostic?.keyFingerprint ?? "—"}</dd></div>
+                  <div><dt className="text-muted-foreground">API host</dt><dd className="break-all font-mono text-xs">{testDelivery.data.diagnostic?.apiHost ?? "—"}</dd></div>
+                  <div><dt className="text-muted-foreground">Key length</dt><dd>{testDelivery.data.diagnostic?.keyLength ?? "—"}</dd></div>
+                  <div><dt className="text-muted-foreground">Sender suffix</dt><dd>••••{testDelivery.data.diagnostic?.senderSuffix ?? "—"}</dd></div>
+                  <div className="sm:col-span-2"><dt className="text-muted-foreground">Provider request ID</dt><dd className="break-all font-mono text-xs">{testDelivery.data.diagnostic?.responseRequestId ?? "—"}</dd></div>
+                </dl>
+                {testDelivery.data.error ? <p className="mt-3 text-destructive">{testDelivery.data.error}</p> : null}
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {AUTOMATIONS.map((def) => {
         const current = draft[def.key];
