@@ -3553,8 +3553,6 @@ export type Database = {
         Args: { _retailer_id?: string }
         Returns: number
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       ai_insight_kind:

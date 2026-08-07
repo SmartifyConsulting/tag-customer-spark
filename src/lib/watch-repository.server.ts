@@ -16,7 +16,6 @@ export type WatchRow = {
   last_known_price: number | null;
   last_known_stock: number | null;
   last_known_intent_score: number | null;
-  last_known_interest_count: number | null;
   last_notified_price: number | null;
   last_notified_stock: number | null;
   last_price_drop_sent: string | null;
@@ -29,7 +28,7 @@ export type WatchRow = {
 
 const WATCH_COLUMNS =
   "id, retailer_id, customer_id, product_id, status, notifications_enabled, whatsapp_number, " +
-  "price_when_added, last_known_price, last_known_stock, last_known_intent_score, last_known_interest_count, " +
+  "price_when_added, last_known_price, last_known_stock, last_known_intent_score, " +
   "last_notified_price, last_notified_stock, last_price_drop_sent, last_low_stock_sent, " +
   "last_last_one_sent, last_back_in_stock_sent, last_high_interest_sent, " +
   "customer:customers(id, full_name, whatsapp_e164, status)";
@@ -75,20 +74,25 @@ export async function createOrRefreshWatch(
   };
 
 
-  const { data: existing } = await supabase
+  const { data: existing, error: lookupError } = await supabase
     .from("watchlists")
     .select("id")
     .eq("customer_id", input.customerId)
     .eq("product_id", input.productId)
     .eq("trigger", "any_update")
     .maybeSingle();
+  if (lookupError) throw new Error(`Could not find product watch: ${lookupError.message}`);
 
   if (existing) {
-    await supabase.from("watchlists").update(snapshot).eq("id", existing.id);
+    const { error: updateError } = await supabase
+      .from("watchlists")
+      .update(snapshot)
+      .eq("id", existing.id);
+    if (updateError) throw new Error(`Could not activate product watch: ${updateError.message}`);
     return existing.id as string;
   }
 
-  const { data: created } = await supabase
+  const { data: created, error: createError } = await supabase
     .from("watchlists")
     .insert({
       retailer_id: input.retailerId,
@@ -100,18 +104,21 @@ export async function createOrRefreshWatch(
     })
     .select("id")
     .maybeSingle();
+  if (createError) throw new Error(`Could not create product watch: ${createError.message}`);
+  if (!created?.id) throw new Error("Could not create product watch");
 
-  return (created as any)?.id ?? null;
+  return created.id as string;
 }
 
 /** Every active, notifiable watcher of a product. */
 export async function listActiveWatchers(supabase: any, productId: string): Promise<WatchRow[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("watchlists")
     .select(WATCH_COLUMNS)
     .eq("product_id", productId)
     .eq("status", "active")
     .eq("notifications_enabled", true);
+  if (error) throw new Error(`Could not load active product watches: ${error.message}`);
   return (data ?? []) as WatchRow[];
 }
 
@@ -143,7 +150,6 @@ export async function updateSnapshot(
     last_known_stock: product.stock_qty ?? 0,
     last_known_intent_score: product.intent_score ?? 0,
   };
-  if (otherInterestCount !== undefined) patch.last_known_interest_count = otherInterestCount;
   await supabase.from("watchlists").update(patch).eq("id", watchId);
 }
 
