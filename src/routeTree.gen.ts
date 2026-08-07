@@ -49,6 +49,7 @@ import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedOwnershipIndexRouteImport } from './routes/_authenticated/ownership.index'
 import { Route as AuthenticatedIntelligenceIndexRouteImport } from './routes/_authenticated/intelligence.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedPurchaseSearchRouteImport } from './routes/_authenticated/purchase.search'
 import { Route as AuthenticatedPurchaseReceiptsRouteImport } from './routes/_authenticated/purchase.receipts'
 import { Route as AuthenticatedProductsCompareRouteImport } from './routes/_authenticated/products.compare'
 import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products.$productId'
@@ -298,6 +299,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPurchaseSearchRoute =
+  AuthenticatedPurchaseSearchRouteImport.update({
+    id: '/search',
+    path: '/search',
+    getParentRoute: () => AuthenticatedPurchaseRoute,
+  } as any)
 const AuthenticatedPurchaseReceiptsRoute =
   AuthenticatedPurchaseReceiptsRouteImport.update({
     id: '/receipts',
@@ -619,6 +626,7 @@ export interface FileRoutesByFullPath {
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/purchase/receipts': typeof AuthenticatedPurchaseReceiptsRoute
+  '/purchase/search': typeof AuthenticatedPurchaseSearchRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/ownership/': typeof AuthenticatedOwnershipIndexRoute
@@ -697,6 +705,7 @@ export interface FileRoutesByTo {
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/purchase/receipts': typeof AuthenticatedPurchaseReceiptsRoute
+  '/purchase/search': typeof AuthenticatedPurchaseSearchRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/intelligence': typeof AuthenticatedIntelligenceIndexRoute
   '/ownership': typeof AuthenticatedOwnershipIndexRoute
@@ -784,6 +793,7 @@ export interface FileRoutesById {
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/products/compare': typeof AuthenticatedProductsCompareRoute
   '/_authenticated/purchase/receipts': typeof AuthenticatedPurchaseReceiptsRoute
+  '/_authenticated/purchase/search': typeof AuthenticatedPurchaseSearchRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/_authenticated/ownership/': typeof AuthenticatedOwnershipIndexRoute
@@ -871,6 +881,7 @@ export interface FileRouteTypes {
     | '/products/$productId'
     | '/products/compare'
     | '/purchase/receipts'
+    | '/purchase/search'
     | '/admin/'
     | '/intelligence/'
     | '/ownership/'
@@ -949,6 +960,7 @@ export interface FileRouteTypes {
     | '/products/$productId'
     | '/products/compare'
     | '/purchase/receipts'
+    | '/purchase/search'
     | '/admin'
     | '/intelligence'
     | '/ownership'
@@ -1035,6 +1047,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products/$productId'
     | '/_authenticated/products/compare'
     | '/_authenticated/purchase/receipts'
+    | '/_authenticated/purchase/search'
     | '/_authenticated/admin/'
     | '/_authenticated/intelligence/'
     | '/_authenticated/ownership/'
@@ -1375,6 +1388,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/purchase/search': {
+      id: '/_authenticated/purchase/search'
+      path: '/search'
+      fullPath: '/purchase/search'
+      preLoaderRoute: typeof AuthenticatedPurchaseSearchRouteImport
+      parentRoute: typeof AuthenticatedPurchaseRoute
     }
     '/_authenticated/purchase/receipts': {
       id: '/_authenticated/purchase/receipts'
@@ -1831,11 +1851,13 @@ const AuthenticatedProductsRouteWithChildren =
 
 interface AuthenticatedPurchaseRouteChildren {
   AuthenticatedPurchaseReceiptsRoute: typeof AuthenticatedPurchaseReceiptsRoute
+  AuthenticatedPurchaseSearchRoute: typeof AuthenticatedPurchaseSearchRoute
   AuthenticatedPurchaseIndexRoute: typeof AuthenticatedPurchaseIndexRoute
 }
 
 const AuthenticatedPurchaseRouteChildren: AuthenticatedPurchaseRouteChildren = {
   AuthenticatedPurchaseReceiptsRoute: AuthenticatedPurchaseReceiptsRoute,
+  AuthenticatedPurchaseSearchRoute: AuthenticatedPurchaseSearchRoute,
   AuthenticatedPurchaseIndexRoute: AuthenticatedPurchaseIndexRoute,
 }
 
