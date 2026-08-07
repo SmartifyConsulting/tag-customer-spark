@@ -13,13 +13,16 @@ const TABS = [
   { label: "ROI", to: "/roi" as const },
   { label: "Trends", to: "/intelligence/trends" as const },
   { label: "Forecasting", to: "/intelligence/forecasting" as const },
+  { label: "Sustainability", to: "/analytics/sustainability" as const },
 ];
 
 export function IntelligenceTabs() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const active =
     TABS.find((tab) =>
-      tab.to === "/intelligence" ? pathname === tab.to : pathname.startsWith(tab.to),
+      tab.to === "/intelligence" || tab.to === "/analytics"
+        ? pathname === tab.to
+        : pathname.startsWith(tab.to),
     )?.to ?? "/intelligence";
 
   return (
