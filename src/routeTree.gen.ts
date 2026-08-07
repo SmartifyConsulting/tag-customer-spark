@@ -44,6 +44,7 @@ import { Route as AuthenticatedCustomersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBriefingRouteImport } from './routes/_authenticated/briefing'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
+import { Route as AuthenticatedOwnershipIndexRouteImport } from './routes/_authenticated/ownership.index'
 import { Route as AuthenticatedIntelligenceIndexRouteImport } from './routes/_authenticated/intelligence.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedProductsCompareRouteImport } from './routes/_authenticated/products.compare'
@@ -254,6 +255,12 @@ const AuthenticatedProductsIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedProductsRoute,
+  } as any)
+const AuthenticatedOwnershipIndexRoute =
+  AuthenticatedOwnershipIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedOwnershipRoute,
   } as any)
 const AuthenticatedIntelligenceIndexRoute =
   AuthenticatedIntelligenceIndexRouteImport.update({
@@ -475,7 +482,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof AuthenticatedInboxRoute
   '/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/intent': typeof AuthenticatedIntentRoute
-  '/ownership': typeof AuthenticatedOwnershipRoute
+  '/ownership': typeof AuthenticatedOwnershipRouteWithChildren
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -508,6 +515,7 @@ export interface FileRoutesByFullPath {
   '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
+  '/ownership/': typeof AuthenticatedOwnershipIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
@@ -544,7 +552,6 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/intent': typeof AuthenticatedIntentRoute
-  '/ownership': typeof AuthenticatedOwnershipRoute
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
@@ -575,6 +582,7 @@ export interface FileRoutesByTo {
   '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/intelligence': typeof AuthenticatedIntelligenceIndexRoute
+  '/ownership': typeof AuthenticatedOwnershipIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
@@ -614,7 +622,7 @@ export interface FileRoutesById {
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/_authenticated/intent': typeof AuthenticatedIntentRoute
-  '/_authenticated/ownership': typeof AuthenticatedOwnershipRoute
+  '/_authenticated/ownership': typeof AuthenticatedOwnershipRouteWithChildren
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/roi': typeof AuthenticatedRoiRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -647,6 +655,7 @@ export interface FileRoutesById {
   '/_authenticated/products/compare': typeof AuthenticatedProductsCompareRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
+  '/_authenticated/ownership/': typeof AuthenticatedOwnershipIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
@@ -719,6 +728,7 @@ export interface FileRouteTypes {
     | '/products/compare'
     | '/admin/'
     | '/intelligence/'
+    | '/ownership/'
     | '/products/'
     | '/admin/inventory/$productId'
     | '/api/public/01/$gtin'
@@ -755,7 +765,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/inbox'
     | '/intent'
-    | '/ownership'
     | '/roi'
     | '/settings'
     | '/staff'
@@ -786,6 +795,7 @@ export interface FileRouteTypes {
     | '/products/compare'
     | '/admin'
     | '/intelligence'
+    | '/ownership'
     | '/products'
     | '/admin/inventory/$productId'
     | '/api/public/01/$gtin'
@@ -857,6 +867,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products/compare'
     | '/_authenticated/admin/'
     | '/_authenticated/intelligence/'
+    | '/_authenticated/ownership/'
     | '/_authenticated/products/'
     | '/_authenticated/admin/inventory/$productId'
     | '/api/public/01/$gtin'
@@ -1154,6 +1165,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/products/'
       preLoaderRoute: typeof AuthenticatedProductsIndexRouteImport
       parentRoute: typeof AuthenticatedProductsRoute
+    }
+    '/_authenticated/ownership/': {
+      id: '/_authenticated/ownership/'
+      path: '/'
+      fullPath: '/ownership/'
+      preLoaderRoute: typeof AuthenticatedOwnershipIndexRouteImport
+      parentRoute: typeof AuthenticatedOwnershipRoute
     }
     '/_authenticated/intelligence/': {
       id: '/_authenticated/intelligence/'
@@ -1453,6 +1471,20 @@ const AuthenticatedIntelligenceRouteWithChildren =
     AuthenticatedIntelligenceRouteChildren,
   )
 
+interface AuthenticatedOwnershipRouteChildren {
+  AuthenticatedOwnershipIndexRoute: typeof AuthenticatedOwnershipIndexRoute
+}
+
+const AuthenticatedOwnershipRouteChildren: AuthenticatedOwnershipRouteChildren =
+  {
+    AuthenticatedOwnershipIndexRoute: AuthenticatedOwnershipIndexRoute,
+  }
+
+const AuthenticatedOwnershipRouteWithChildren =
+  AuthenticatedOwnershipRoute._addFileChildren(
+    AuthenticatedOwnershipRouteChildren,
+  )
+
 interface AuthenticatedProductsRouteChildren {
   AuthenticatedProductsProductIdRoute: typeof AuthenticatedProductsProductIdRoute
   AuthenticatedProductsCompareRoute: typeof AuthenticatedProductsCompareRoute
@@ -1496,7 +1528,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedIntelligenceRoute: typeof AuthenticatedIntelligenceRouteWithChildren
   AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
-  AuthenticatedOwnershipRoute: typeof AuthenticatedOwnershipRoute
+  AuthenticatedOwnershipRoute: typeof AuthenticatedOwnershipRouteWithChildren
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedRoiRoute: typeof AuthenticatedRoiRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -1523,7 +1555,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedIntelligenceRoute: AuthenticatedIntelligenceRouteWithChildren,
   AuthenticatedIntentRoute: AuthenticatedIntentRoute,
-  AuthenticatedOwnershipRoute: AuthenticatedOwnershipRoute,
+  AuthenticatedOwnershipRoute: AuthenticatedOwnershipRouteWithChildren,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedRoiRoute: AuthenticatedRoiRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
