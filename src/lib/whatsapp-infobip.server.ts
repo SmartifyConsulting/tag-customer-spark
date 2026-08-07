@@ -292,7 +292,8 @@ async function sendWithConfig(
       ok: false,
       status: 0,
       error: e?.message ?? "Network error",
-      diagnostic: config.diagnostic,
+      diagnostic: { ...config.diagnostic, attemptedBindings },
     };
   }
+
 }
