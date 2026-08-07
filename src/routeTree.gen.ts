@@ -35,6 +35,7 @@ import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedRoiRouteImport } from './routes/_authenticated/roi'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
+import { Route as AuthenticatedOwnershipRouteImport } from './routes/_authenticated/ownership'
 import { Route as AuthenticatedIntentRouteImport } from './routes/_authenticated/intent'
 import { Route as AuthenticatedIntelligenceRouteImport } from './routes/_authenticated/intelligence'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
@@ -205,6 +206,11 @@ const AuthenticatedRoiRoute = AuthenticatedRoiRouteImport.update({
 const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedOwnershipRoute = AuthenticatedOwnershipRouteImport.update({
+  id: '/ownership',
+  path: '/ownership',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedIntentRoute = AuthenticatedIntentRouteImport.update({
@@ -469,6 +475,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof AuthenticatedInboxRoute
   '/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/intent': typeof AuthenticatedIntentRoute
+  '/ownership': typeof AuthenticatedOwnershipRoute
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -537,6 +544,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/intent': typeof AuthenticatedIntentRoute
+  '/ownership': typeof AuthenticatedOwnershipRoute
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
@@ -606,6 +614,7 @@ export interface FileRoutesById {
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/_authenticated/intent': typeof AuthenticatedIntentRoute
+  '/_authenticated/ownership': typeof AuthenticatedOwnershipRoute
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/roi': typeof AuthenticatedRoiRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -677,6 +686,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/intelligence'
     | '/intent'
+    | '/ownership'
     | '/products'
     | '/roi'
     | '/settings'
@@ -745,6 +755,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/inbox'
     | '/intent'
+    | '/ownership'
     | '/roi'
     | '/settings'
     | '/staff'
@@ -813,6 +824,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inbox'
     | '/_authenticated/intelligence'
     | '/_authenticated/intent'
+    | '/_authenticated/ownership'
     | '/_authenticated/products'
     | '/_authenticated/roi'
     | '/_authenticated/settings'
@@ -1078,6 +1090,13 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/products'
       preLoaderRoute: typeof AuthenticatedProductsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ownership': {
+      id: '/_authenticated/ownership'
+      path: '/ownership'
+      fullPath: '/ownership'
+      preLoaderRoute: typeof AuthenticatedOwnershipRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/intent': {
@@ -1477,6 +1496,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedIntelligenceRoute: typeof AuthenticatedIntelligenceRouteWithChildren
   AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
+  AuthenticatedOwnershipRoute: typeof AuthenticatedOwnershipRoute
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedRoiRoute: typeof AuthenticatedRoiRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -1503,6 +1523,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedIntelligenceRoute: AuthenticatedIntelligenceRouteWithChildren,
   AuthenticatedIntentRoute: AuthenticatedIntentRoute,
+  AuthenticatedOwnershipRoute: AuthenticatedOwnershipRoute,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedRoiRoute: AuthenticatedRoiRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
@@ -1561,13 +1582,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
