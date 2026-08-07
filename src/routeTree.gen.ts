@@ -83,6 +83,7 @@ import { Route as ApiPublicHooksIntentTickRouteImport } from './routes/api/publi
 import { Route as ApiPublicHooksDailySummaryRouteImport } from './routes/api/public/hooks.daily-summary'
 import { Route as ApiPublic01GtinRouteImport } from './routes/api/public/01.$gtin'
 import { Route as AuthenticatedOwnershipPurchasesPurchaseIdRouteImport } from './routes/_authenticated/ownership.purchases.$purchaseId'
+import { Route as AuthenticatedOwnershipProductsProductIdRouteImport } from './routes/_authenticated/ownership.products.$productId'
 import { Route as AuthenticatedAdminInventoryProductIdRouteImport } from './routes/_authenticated/admin.inventory.$productId'
 
 const TermsRoute = TermsRouteImport.update({
@@ -489,6 +490,12 @@ const AuthenticatedOwnershipPurchasesPurchaseIdRoute =
     path: '/$purchaseId',
     getParentRoute: () => AuthenticatedOwnershipPurchasesRoute,
   } as any)
+const AuthenticatedOwnershipProductsProductIdRoute =
+  AuthenticatedOwnershipProductsProductIdRouteImport.update({
+    id: '/$productId',
+    path: '/$productId',
+    getParentRoute: () => AuthenticatedOwnershipProductsRoute,
+  } as any)
 const AuthenticatedAdminInventoryProductIdRoute =
   AuthenticatedAdminInventoryProductIdRouteImport.update({
     id: '/$productId',
@@ -555,6 +562,7 @@ export interface FileRoutesByFullPath {
   '/ownership/': typeof AuthenticatedOwnershipIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
+  '/ownership/products/$productId': typeof AuthenticatedOwnershipProductsProductIdRoute
   '/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
@@ -625,6 +633,7 @@ export interface FileRoutesByTo {
   '/ownership': typeof AuthenticatedOwnershipIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
+  '/ownership/products/$productId': typeof AuthenticatedOwnershipProductsProductIdRoute
   '/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
@@ -703,6 +712,7 @@ export interface FileRoutesById {
   '/_authenticated/ownership/': typeof AuthenticatedOwnershipIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
+  '/_authenticated/ownership/products/$productId': typeof AuthenticatedOwnershipProductsProductIdRoute
   '/_authenticated/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
@@ -781,6 +791,7 @@ export interface FileRouteTypes {
     | '/ownership/'
     | '/products/'
     | '/admin/inventory/$productId'
+    | '/ownership/products/$productId'
     | '/ownership/purchases/$purchaseId'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/daily-summary'
@@ -851,6 +862,7 @@ export interface FileRouteTypes {
     | '/ownership'
     | '/products'
     | '/admin/inventory/$productId'
+    | '/ownership/products/$productId'
     | '/ownership/purchases/$purchaseId'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/daily-summary'
@@ -928,6 +940,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ownership/'
     | '/_authenticated/products/'
     | '/_authenticated/admin/inventory/$productId'
+    | '/_authenticated/ownership/products/$productId'
     | '/_authenticated/ownership/purchases/$purchaseId'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/daily-summary'
@@ -1500,6 +1513,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnershipPurchasesPurchaseIdRouteImport
       parentRoute: typeof AuthenticatedOwnershipPurchasesRoute
     }
+    '/_authenticated/ownership/products/$productId': {
+      id: '/_authenticated/ownership/products/$productId'
+      path: '/$productId'
+      fullPath: '/ownership/products/$productId'
+      preLoaderRoute: typeof AuthenticatedOwnershipProductsProductIdRouteImport
+      parentRoute: typeof AuthenticatedOwnershipProductsRoute
+    }
     '/_authenticated/admin/inventory/$productId': {
       id: '/_authenticated/admin/inventory/$productId'
       path: '/$productId'
@@ -1568,11 +1588,14 @@ const AuthenticatedIntelligenceRouteWithChildren =
   )
 
 interface AuthenticatedOwnershipProductsRouteChildren {
+  AuthenticatedOwnershipProductsProductIdRoute: typeof AuthenticatedOwnershipProductsProductIdRoute
   AuthenticatedOwnershipProductsIndexRoute: typeof AuthenticatedOwnershipProductsIndexRoute
 }
 
 const AuthenticatedOwnershipProductsRouteChildren: AuthenticatedOwnershipProductsRouteChildren =
   {
+    AuthenticatedOwnershipProductsProductIdRoute:
+      AuthenticatedOwnershipProductsProductIdRoute,
     AuthenticatedOwnershipProductsIndexRoute:
       AuthenticatedOwnershipProductsIndexRoute,
   }
