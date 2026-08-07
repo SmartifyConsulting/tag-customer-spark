@@ -59,6 +59,7 @@ import { Route as AuthenticatedOwnershipReturnsRouteImport } from './routes/_aut
 import { Route as AuthenticatedOwnershipPurchasesRouteImport } from './routes/_authenticated/ownership.purchases'
 import { Route as AuthenticatedOwnershipProductsRouteImport } from './routes/_authenticated/ownership.products'
 import { Route as AuthenticatedOwnershipHouseholdRouteImport } from './routes/_authenticated/ownership.household'
+import { Route as AuthenticatedOwnershipDocumentsRouteImport } from './routes/_authenticated/ownership.documents'
 import { Route as AuthenticatedOrganisationRolesRouteImport } from './routes/_authenticated/organisation.roles'
 import { Route as AuthenticatedIntelligenceTrendsRouteImport } from './routes/_authenticated/intelligence.trends'
 import { Route as AuthenticatedIntelligenceIntentRouteImport } from './routes/_authenticated/intelligence.intent'
@@ -359,6 +360,12 @@ const AuthenticatedOwnershipHouseholdRoute =
     path: '/household',
     getParentRoute: () => AuthenticatedOwnershipRoute,
   } as any)
+const AuthenticatedOwnershipDocumentsRoute =
+  AuthenticatedOwnershipDocumentsRouteImport.update({
+    id: '/documents',
+    path: '/documents',
+    getParentRoute: () => AuthenticatedOwnershipRoute,
+  } as any)
 const AuthenticatedOrganisationRolesRoute =
   AuthenticatedOrganisationRolesRouteImport.update({
     id: '/organisation/roles',
@@ -617,6 +624,7 @@ export interface FileRoutesByFullPath {
   '/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
   '/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
+  '/ownership/documents': typeof AuthenticatedOwnershipDocumentsRoute
   '/ownership/household': typeof AuthenticatedOwnershipHouseholdRoute
   '/ownership/products': typeof AuthenticatedOwnershipProductsRouteWithChildren
   '/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRouteWithChildren
@@ -698,6 +706,7 @@ export interface FileRoutesByTo {
   '/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
   '/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
+  '/ownership/documents': typeof AuthenticatedOwnershipDocumentsRoute
   '/ownership/household': typeof AuthenticatedOwnershipHouseholdRoute
   '/ownership/returns': typeof AuthenticatedOwnershipReturnsRoute
   '/ownership/tag-id': typeof AuthenticatedOwnershipTagIdRoute
@@ -784,6 +793,7 @@ export interface FileRoutesById {
   '/_authenticated/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
   '/_authenticated/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/_authenticated/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
+  '/_authenticated/ownership/documents': typeof AuthenticatedOwnershipDocumentsRoute
   '/_authenticated/ownership/household': typeof AuthenticatedOwnershipHouseholdRoute
   '/_authenticated/ownership/products': typeof AuthenticatedOwnershipProductsRouteWithChildren
   '/_authenticated/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRouteWithChildren
@@ -872,6 +882,7 @@ export interface FileRouteTypes {
     | '/intelligence/intent'
     | '/intelligence/trends'
     | '/organisation/roles'
+    | '/ownership/documents'
     | '/ownership/household'
     | '/ownership/products'
     | '/ownership/purchases'
@@ -953,6 +964,7 @@ export interface FileRouteTypes {
     | '/intelligence/intent'
     | '/intelligence/trends'
     | '/organisation/roles'
+    | '/ownership/documents'
     | '/ownership/household'
     | '/ownership/returns'
     | '/ownership/tag-id'
@@ -1038,6 +1050,7 @@ export interface FileRouteTypes {
     | '/_authenticated/intelligence/intent'
     | '/_authenticated/intelligence/trends'
     | '/_authenticated/organisation/roles'
+    | '/_authenticated/ownership/documents'
     | '/_authenticated/ownership/household'
     | '/_authenticated/ownership/products'
     | '/_authenticated/ownership/purchases'
@@ -1459,6 +1472,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnershipHouseholdRouteImport
       parentRoute: typeof AuthenticatedOwnershipRoute
     }
+    '/_authenticated/ownership/documents': {
+      id: '/_authenticated/ownership/documents'
+      path: '/documents'
+      fullPath: '/ownership/documents'
+      preLoaderRoute: typeof AuthenticatedOwnershipDocumentsRouteImport
+      parentRoute: typeof AuthenticatedOwnershipRoute
+    }
     '/_authenticated/organisation/roles': {
       id: '/_authenticated/organisation/roles'
       path: '/organisation/roles'
@@ -1804,6 +1824,7 @@ const AuthenticatedOwnershipPurchasesRouteWithChildren =
   )
 
 interface AuthenticatedOwnershipRouteChildren {
+  AuthenticatedOwnershipDocumentsRoute: typeof AuthenticatedOwnershipDocumentsRoute
   AuthenticatedOwnershipHouseholdRoute: typeof AuthenticatedOwnershipHouseholdRoute
   AuthenticatedOwnershipProductsRoute: typeof AuthenticatedOwnershipProductsRouteWithChildren
   AuthenticatedOwnershipPurchasesRoute: typeof AuthenticatedOwnershipPurchasesRouteWithChildren
@@ -1815,6 +1836,7 @@ interface AuthenticatedOwnershipRouteChildren {
 
 const AuthenticatedOwnershipRouteChildren: AuthenticatedOwnershipRouteChildren =
   {
+    AuthenticatedOwnershipDocumentsRoute: AuthenticatedOwnershipDocumentsRoute,
     AuthenticatedOwnershipHouseholdRoute: AuthenticatedOwnershipHouseholdRoute,
     AuthenticatedOwnershipProductsRoute:
       AuthenticatedOwnershipProductsRouteWithChildren,
