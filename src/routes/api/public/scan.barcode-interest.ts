@@ -267,7 +267,13 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
               product_id: (product as any).id,
               template: "tag_scan_v5",
               body: historyBody,
+              // Safe, non-secret evidence of WHICH credential binding this
+              // runtime used. The public route and the authenticated dashboard
+              // test are served by different execution contexts, so this is
+              // the only way to prove they share the same current credential.
+              delivery_diagnostic: result.diagnostic ?? null,
             },
+
 
             // Provider acceptance is not delivery — the Infobip webhook
             // promotes this to delivered/read or marks it failed.
