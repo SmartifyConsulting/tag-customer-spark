@@ -8,10 +8,11 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const cronSecret = process.env.CRON_SECRET;
-        if (!cronSecret || request.headers.get("x-cron-secret") !== cronSecret) {
+        const sharedSecret = process.env.CRON_SECRET ?? process.env.INFOBIP_WEBHOOK_SECRET;
+        if (!sharedSecret || request.headers.get("x-cron-secret") !== sharedSecret) {
           return new Response("Unauthorized", { status: 401 });
         }
+
 
         const rawKey = process.env.INFOBIP_API_KEY_V2 ?? process.env.INFOBIP_API_KEY ?? "";
         const key = rawKey.trim().replace(/^"|"$/g, "").replace(/^(?:App\s+)+/i, "").trim();
