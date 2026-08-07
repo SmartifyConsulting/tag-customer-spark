@@ -50,6 +50,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedProductsCompareRouteImport } from './routes/_authenticated/products.compare'
 import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products.$productId'
 import { Route as AuthenticatedOwnershipWarrantiesRouteImport } from './routes/_authenticated/ownership.warranties'
+import { Route as AuthenticatedOwnershipTagIdRouteImport } from './routes/_authenticated/ownership.tag-id'
 import { Route as AuthenticatedOwnershipReturnsRouteImport } from './routes/_authenticated/ownership.returns'
 import { Route as AuthenticatedOwnershipPurchasesRouteImport } from './routes/_authenticated/ownership.purchases'
 import { Route as AuthenticatedOwnershipProductsRouteImport } from './routes/_authenticated/ownership.products'
@@ -298,6 +299,12 @@ const AuthenticatedOwnershipWarrantiesRoute =
   AuthenticatedOwnershipWarrantiesRouteImport.update({
     id: '/warranties',
     path: '/warranties',
+    getParentRoute: () => AuthenticatedOwnershipRoute,
+  } as any)
+const AuthenticatedOwnershipTagIdRoute =
+  AuthenticatedOwnershipTagIdRouteImport.update({
+    id: '/tag-id',
+    path: '/tag-id',
     getParentRoute: () => AuthenticatedOwnershipRoute,
   } as any)
 const AuthenticatedOwnershipReturnsRoute =
@@ -578,6 +585,7 @@ export interface FileRoutesByFullPath {
   '/ownership/products': typeof AuthenticatedOwnershipProductsRouteWithChildren
   '/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRouteWithChildren
   '/ownership/returns': typeof AuthenticatedOwnershipReturnsRoute
+  '/ownership/tag-id': typeof AuthenticatedOwnershipTagIdRoute
   '/ownership/warranties': typeof AuthenticatedOwnershipWarrantiesRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
@@ -652,6 +660,7 @@ export interface FileRoutesByTo {
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/ownership/household': typeof AuthenticatedOwnershipHouseholdRoute
   '/ownership/returns': typeof AuthenticatedOwnershipReturnsRoute
+  '/ownership/tag-id': typeof AuthenticatedOwnershipTagIdRoute
   '/ownership/warranties': typeof AuthenticatedOwnershipWarrantiesRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
@@ -734,6 +743,7 @@ export interface FileRoutesById {
   '/_authenticated/ownership/products': typeof AuthenticatedOwnershipProductsRouteWithChildren
   '/_authenticated/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRouteWithChildren
   '/_authenticated/ownership/returns': typeof AuthenticatedOwnershipReturnsRoute
+  '/_authenticated/ownership/tag-id': typeof AuthenticatedOwnershipTagIdRoute
   '/_authenticated/ownership/warranties': typeof AuthenticatedOwnershipWarrantiesRoute
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/products/compare': typeof AuthenticatedProductsCompareRoute
@@ -816,6 +826,7 @@ export interface FileRouteTypes {
     | '/ownership/products'
     | '/ownership/purchases'
     | '/ownership/returns'
+    | '/ownership/tag-id'
     | '/ownership/warranties'
     | '/products/$productId'
     | '/products/compare'
@@ -890,6 +901,7 @@ export interface FileRouteTypes {
     | '/organisation/roles'
     | '/ownership/household'
     | '/ownership/returns'
+    | '/ownership/tag-id'
     | '/ownership/warranties'
     | '/products/$productId'
     | '/products/compare'
@@ -971,6 +983,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ownership/products'
     | '/_authenticated/ownership/purchases'
     | '/_authenticated/ownership/returns'
+    | '/_authenticated/ownership/tag-id'
     | '/_authenticated/ownership/warranties'
     | '/_authenticated/products/$productId'
     | '/_authenticated/products/compare'
@@ -1319,6 +1332,13 @@ declare module '@tanstack/react-router' {
       path: '/warranties'
       fullPath: '/ownership/warranties'
       preLoaderRoute: typeof AuthenticatedOwnershipWarrantiesRouteImport
+      parentRoute: typeof AuthenticatedOwnershipRoute
+    }
+    '/_authenticated/ownership/tag-id': {
+      id: '/_authenticated/ownership/tag-id'
+      path: '/tag-id'
+      fullPath: '/ownership/tag-id'
+      preLoaderRoute: typeof AuthenticatedOwnershipTagIdRouteImport
       parentRoute: typeof AuthenticatedOwnershipRoute
     }
     '/_authenticated/ownership/returns': {
@@ -1688,6 +1708,7 @@ interface AuthenticatedOwnershipRouteChildren {
   AuthenticatedOwnershipProductsRoute: typeof AuthenticatedOwnershipProductsRouteWithChildren
   AuthenticatedOwnershipPurchasesRoute: typeof AuthenticatedOwnershipPurchasesRouteWithChildren
   AuthenticatedOwnershipReturnsRoute: typeof AuthenticatedOwnershipReturnsRoute
+  AuthenticatedOwnershipTagIdRoute: typeof AuthenticatedOwnershipTagIdRoute
   AuthenticatedOwnershipWarrantiesRoute: typeof AuthenticatedOwnershipWarrantiesRoute
   AuthenticatedOwnershipIndexRoute: typeof AuthenticatedOwnershipIndexRoute
 }
@@ -1700,6 +1721,7 @@ const AuthenticatedOwnershipRouteChildren: AuthenticatedOwnershipRouteChildren =
     AuthenticatedOwnershipPurchasesRoute:
       AuthenticatedOwnershipPurchasesRouteWithChildren,
     AuthenticatedOwnershipReturnsRoute: AuthenticatedOwnershipReturnsRoute,
+    AuthenticatedOwnershipTagIdRoute: AuthenticatedOwnershipTagIdRoute,
     AuthenticatedOwnershipWarrantiesRoute:
       AuthenticatedOwnershipWarrantiesRoute,
     AuthenticatedOwnershipIndexRoute: AuthenticatedOwnershipIndexRoute,
