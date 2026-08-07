@@ -31,7 +31,7 @@ export type InfobipSendResult = {
 };
 
 export type InfobipRuntimeDiagnostic = {
-  keyBinding: "INFOBIP_API_KEY_V2" | "INFOBIP_API_KEY";
+  keyBinding: string;
   keyFingerprint: string;
   keyLength: number;
   normalizedAppPrefix: boolean;
@@ -40,6 +40,10 @@ export type InfobipRuntimeDiagnostic = {
   apiHost: string;
   senderSuffix: string;
   responseRequestId?: string;
+  /** Every distinct credential binding this runtime could see, in try order. */
+  availableBindings?: string[];
+  /** Bindings actually attempted before this result (auth retry evidence). */
+  attemptedBindings?: string[];
 };
 
 type RuntimeConfig = {
@@ -48,6 +52,10 @@ type RuntimeConfig = {
   sender: string;
   diagnostic: InfobipRuntimeDiagnostic;
 };
+
+/** Candidate credential bindings, in preference order. */
+const KEY_BINDINGS = ["INFOBIP_API_KEY_V2", "INFOBIP_API_KEY"] as const;
+
 
 function normalizeNumber(num: string): string {
   const trimmed = num.trim();
