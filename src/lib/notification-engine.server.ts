@@ -161,7 +161,7 @@ export function checkHighInterest(
   if (count < ctx.threshold) return null;
   // Re-arm rule: the count must have dropped back below the threshold since
   // the previous high-interest message.
-  if (watch.last_high_interest_sent && Number(watch.last_known_interest_count ?? 0) >= ctx.threshold) return null;
+  if (watch.last_high_interest_sent) return null;
 
   const productName = product.display_name || product.name;
   return {
