@@ -91,6 +91,27 @@ export const NAV: readonly NavItem[] = [
     ],
   },
 
+  // Ownership — the consumer-owned purchase and ownership record. Purchases
+  // and receipts (Phase 2) plus owned products, household and warranties
+  // (Phase 3) live here. Digital receipts, manuals, service history and
+  // product health are tabs inside these screens, not extra nav rows.
+  {
+    title: "Ownership",
+    url: "/ownership/purchases",
+    icon: ReceiptText,
+    match: ["/ownership"],
+    items: [
+      { title: "Purchases", url: "/ownership/purchases", match: ["/ownership/purchases"] },
+      { title: "My Products", url: "/ownership/products", match: ["/ownership/products"] },
+      { title: "Household", url: "/ownership/household", match: ["/ownership/household"] },
+      { title: "Warranties", url: "/ownership/warranties", match: ["/ownership/warranties"] },
+      { title: "Returns", url: "/ownership/returns", match: ["/ownership/returns"] },
+      { title: "TAG ID", url: "/ownership/tag-id", match: ["/ownership/tag-id"] },
+    ],
+  },
+
+
+
   {
     title: "Admin",
     url: "/admin",
