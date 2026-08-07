@@ -280,13 +280,38 @@ export const listReceipts = createServerFn({ method: "POST" })
     const { supabase, userId } = context as any;
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) return [];
-    const { data } = await supabase
-      .from("receipts")
-      .select("*, purchase:purchases(*, store:stores(name), items:purchase_items(*))")
-      .eq("retailer_id", retailerId)
-      .order("issued_at", { ascending: false });
-    return data ?? [];
+    const [{ data }, { data: returns }, { data: warranties }] = await Promise.all([
+      supabase
+        .from("receipts")
+        .select("*, purchase:purchases(*, store:stores(name), items:purchase_items(*))")
+        .eq("retailer_id", retailerId)
+        .order("issued_at", { ascending: false }),
+      supabase.from("product_returns").select("purchase_id, status").eq("retailer_id", retailerId),
+      supabase
+        .from("warranties")
+        .select("registered_at, owned:owned_products(purchase_item_id)")
+        .eq("retailer_id", retailerId)
+        .not("registered_at", "is", null),
+    ]);
+
+    const returnByPurchase = new Map<string, string>();
+    for (const r of (returns ?? []) as any[]) returnByPurchase.set(r.purchase_id, r.status);
+    const registeredItems = new Set(
+      ((warranties ?? []) as any[]).map((w) => w.owned?.purchase_item_id).filter(Boolean),
+    );
+
+    // Derived states always win over the stored issuing state.
+    return ((data ?? []) as any[]).map((r) => {
+      const ret = returnByPurchase.get(r.purchase_id);
+      const items = (r.purchase?.items ?? []) as any[];
+      let status = r.status ?? "digital";
+      if (items.some((i) => registeredItems.has(i.id))) status = "warranty_registered";
+      if (ret === "refunded") status = "refunded";
+      else if (ret && ret !== "rejected") status = "returned";
+      return { ...r, status };
+    });
   });
+
 
 export const updateReceipt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
