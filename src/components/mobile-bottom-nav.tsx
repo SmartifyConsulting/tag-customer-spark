@@ -1,10 +1,11 @@
 import { useRouterState } from "@tanstack/react-router";
-import { mobileNavForPersona, isNavActive } from "@/lib/nav";
-import { usePersona } from "@/hooks/use-persona";
+import { mobileNavForUser, isNavActive } from "@/lib/nav";
+import { useIsStaff } from "@/hooks/use-persona";
 
 export function MobileBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const items = mobileNavForPersona(usePersona());
+  const items = mobileNavForUser(useIsStaff());
+
 
   return (
     <nav
