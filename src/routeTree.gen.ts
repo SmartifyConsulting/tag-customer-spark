@@ -34,6 +34,7 @@ import { Route as AuthenticatedStoresRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedRoiRouteImport } from './routes/_authenticated/roi'
+import { Route as AuthenticatedPurchaseRouteImport } from './routes/_authenticated/purchase'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedOwnershipRouteImport } from './routes/_authenticated/ownership'
 import { Route as AuthenticatedIntentRouteImport } from './routes/_authenticated/intent'
@@ -43,10 +44,13 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedBriefingRouteImport } from './routes/_authenticated/briefing'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as AuthenticatedPurchaseIndexRouteImport } from './routes/_authenticated/purchase.index'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
 import { Route as AuthenticatedOwnershipIndexRouteImport } from './routes/_authenticated/ownership.index'
 import { Route as AuthenticatedIntelligenceIndexRouteImport } from './routes/_authenticated/intelligence.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedPurchaseSearchRouteImport } from './routes/_authenticated/purchase.search'
+import { Route as AuthenticatedPurchaseReceiptsRouteImport } from './routes/_authenticated/purchase.receipts'
 import { Route as AuthenticatedProductsCompareRouteImport } from './routes/_authenticated/products.compare'
 import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products.$productId'
 import { Route as AuthenticatedOwnershipWarrantiesRouteImport } from './routes/_authenticated/ownership.warranties'
@@ -55,6 +59,7 @@ import { Route as AuthenticatedOwnershipReturnsRouteImport } from './routes/_aut
 import { Route as AuthenticatedOwnershipPurchasesRouteImport } from './routes/_authenticated/ownership.purchases'
 import { Route as AuthenticatedOwnershipProductsRouteImport } from './routes/_authenticated/ownership.products'
 import { Route as AuthenticatedOwnershipHouseholdRouteImport } from './routes/_authenticated/ownership.household'
+import { Route as AuthenticatedOwnershipDocumentsRouteImport } from './routes/_authenticated/ownership.documents'
 import { Route as AuthenticatedOrganisationRolesRouteImport } from './routes/_authenticated/organisation.roles'
 import { Route as AuthenticatedIntelligenceTrendsRouteImport } from './routes/_authenticated/intelligence.trends'
 import { Route as AuthenticatedIntelligenceIntentRouteImport } from './routes/_authenticated/intelligence.intent'
@@ -215,6 +220,11 @@ const AuthenticatedRoiRoute = AuthenticatedRoiRouteImport.update({
   path: '/roi',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPurchaseRoute = AuthenticatedPurchaseRouteImport.update({
+  id: '/purchase',
+  path: '/purchase',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
   id: '/products',
   path: '/products',
@@ -261,6 +271,12 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPurchaseIndexRoute =
+  AuthenticatedPurchaseIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPurchaseRoute,
+  } as any)
 const AuthenticatedProductsIndexRoute =
   AuthenticatedProductsIndexRouteImport.update({
     id: '/',
@@ -284,6 +300,18 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPurchaseSearchRoute =
+  AuthenticatedPurchaseSearchRouteImport.update({
+    id: '/search',
+    path: '/search',
+    getParentRoute: () => AuthenticatedPurchaseRoute,
+  } as any)
+const AuthenticatedPurchaseReceiptsRoute =
+  AuthenticatedPurchaseReceiptsRouteImport.update({
+    id: '/receipts',
+    path: '/receipts',
+    getParentRoute: () => AuthenticatedPurchaseRoute,
+  } as any)
 const AuthenticatedProductsCompareRoute =
   AuthenticatedProductsCompareRouteImport.update({
     id: '/compare',
@@ -330,6 +358,12 @@ const AuthenticatedOwnershipHouseholdRoute =
   AuthenticatedOwnershipHouseholdRouteImport.update({
     id: '/household',
     path: '/household',
+    getParentRoute: () => AuthenticatedOwnershipRoute,
+  } as any)
+const AuthenticatedOwnershipDocumentsRoute =
+  AuthenticatedOwnershipDocumentsRouteImport.update({
+    id: '/documents',
+    path: '/documents',
     getParentRoute: () => AuthenticatedOwnershipRoute,
   } as any)
 const AuthenticatedOrganisationRolesRoute =
@@ -561,6 +595,7 @@ export interface FileRoutesByFullPath {
   '/intent': typeof AuthenticatedIntentRoute
   '/ownership': typeof AuthenticatedOwnershipRouteWithChildren
   '/products': typeof AuthenticatedProductsRouteWithChildren
+  '/purchase': typeof AuthenticatedPurchaseRouteWithChildren
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
@@ -589,6 +624,7 @@ export interface FileRoutesByFullPath {
   '/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
   '/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
+  '/ownership/documents': typeof AuthenticatedOwnershipDocumentsRoute
   '/ownership/household': typeof AuthenticatedOwnershipHouseholdRoute
   '/ownership/products': typeof AuthenticatedOwnershipProductsRouteWithChildren
   '/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRouteWithChildren
@@ -597,10 +633,13 @@ export interface FileRoutesByFullPath {
   '/ownership/warranties': typeof AuthenticatedOwnershipWarrantiesRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
+  '/purchase/receipts': typeof AuthenticatedPurchaseReceiptsRoute
+  '/purchase/search': typeof AuthenticatedPurchaseSearchRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/ownership/': typeof AuthenticatedOwnershipIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
+  '/purchase/': typeof AuthenticatedPurchaseIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/ownership/products/$productId': typeof AuthenticatedOwnershipProductsProductIdRoute
   '/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
@@ -667,16 +706,20 @@ export interface FileRoutesByTo {
   '/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
   '/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
+  '/ownership/documents': typeof AuthenticatedOwnershipDocumentsRoute
   '/ownership/household': typeof AuthenticatedOwnershipHouseholdRoute
   '/ownership/returns': typeof AuthenticatedOwnershipReturnsRoute
   '/ownership/tag-id': typeof AuthenticatedOwnershipTagIdRoute
   '/ownership/warranties': typeof AuthenticatedOwnershipWarrantiesRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
+  '/purchase/receipts': typeof AuthenticatedPurchaseReceiptsRoute
+  '/purchase/search': typeof AuthenticatedPurchaseSearchRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/intelligence': typeof AuthenticatedIntelligenceIndexRoute
   '/ownership': typeof AuthenticatedOwnershipIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
+  '/purchase': typeof AuthenticatedPurchaseIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/ownership/products/$productId': typeof AuthenticatedOwnershipProductsProductIdRoute
   '/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
@@ -721,6 +764,7 @@ export interface FileRoutesById {
   '/_authenticated/intent': typeof AuthenticatedIntentRoute
   '/_authenticated/ownership': typeof AuthenticatedOwnershipRouteWithChildren
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
+  '/_authenticated/purchase': typeof AuthenticatedPurchaseRouteWithChildren
   '/_authenticated/roi': typeof AuthenticatedRoiRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
@@ -749,6 +793,7 @@ export interface FileRoutesById {
   '/_authenticated/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
   '/_authenticated/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/_authenticated/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
+  '/_authenticated/ownership/documents': typeof AuthenticatedOwnershipDocumentsRoute
   '/_authenticated/ownership/household': typeof AuthenticatedOwnershipHouseholdRoute
   '/_authenticated/ownership/products': typeof AuthenticatedOwnershipProductsRouteWithChildren
   '/_authenticated/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRouteWithChildren
@@ -757,10 +802,13 @@ export interface FileRoutesById {
   '/_authenticated/ownership/warranties': typeof AuthenticatedOwnershipWarrantiesRoute
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/products/compare': typeof AuthenticatedProductsCompareRoute
+  '/_authenticated/purchase/receipts': typeof AuthenticatedPurchaseReceiptsRoute
+  '/_authenticated/purchase/search': typeof AuthenticatedPurchaseSearchRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/_authenticated/ownership/': typeof AuthenticatedOwnershipIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
+  '/_authenticated/purchase/': typeof AuthenticatedPurchaseIndexRoute
   '/_authenticated/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/_authenticated/ownership/products/$productId': typeof AuthenticatedOwnershipProductsProductIdRoute
   '/_authenticated/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
@@ -805,6 +853,7 @@ export interface FileRouteTypes {
     | '/intent'
     | '/ownership'
     | '/products'
+    | '/purchase'
     | '/roi'
     | '/settings'
     | '/staff'
@@ -833,6 +882,7 @@ export interface FileRouteTypes {
     | '/intelligence/intent'
     | '/intelligence/trends'
     | '/organisation/roles'
+    | '/ownership/documents'
     | '/ownership/household'
     | '/ownership/products'
     | '/ownership/purchases'
@@ -841,10 +891,13 @@ export interface FileRouteTypes {
     | '/ownership/warranties'
     | '/products/$productId'
     | '/products/compare'
+    | '/purchase/receipts'
+    | '/purchase/search'
     | '/admin/'
     | '/intelligence/'
     | '/ownership/'
     | '/products/'
+    | '/purchase/'
     | '/admin/inventory/$productId'
     | '/ownership/products/$productId'
     | '/ownership/purchases/$purchaseId'
@@ -911,16 +964,20 @@ export interface FileRouteTypes {
     | '/intelligence/intent'
     | '/intelligence/trends'
     | '/organisation/roles'
+    | '/ownership/documents'
     | '/ownership/household'
     | '/ownership/returns'
     | '/ownership/tag-id'
     | '/ownership/warranties'
     | '/products/$productId'
     | '/products/compare'
+    | '/purchase/receipts'
+    | '/purchase/search'
     | '/admin'
     | '/intelligence'
     | '/ownership'
     | '/products'
+    | '/purchase'
     | '/admin/inventory/$productId'
     | '/ownership/products/$productId'
     | '/ownership/purchases/$purchaseId'
@@ -964,6 +1021,7 @@ export interface FileRouteTypes {
     | '/_authenticated/intent'
     | '/_authenticated/ownership'
     | '/_authenticated/products'
+    | '/_authenticated/purchase'
     | '/_authenticated/roi'
     | '/_authenticated/settings'
     | '/_authenticated/staff'
@@ -992,6 +1050,7 @@ export interface FileRouteTypes {
     | '/_authenticated/intelligence/intent'
     | '/_authenticated/intelligence/trends'
     | '/_authenticated/organisation/roles'
+    | '/_authenticated/ownership/documents'
     | '/_authenticated/ownership/household'
     | '/_authenticated/ownership/products'
     | '/_authenticated/ownership/purchases'
@@ -1000,10 +1059,13 @@ export interface FileRouteTypes {
     | '/_authenticated/ownership/warranties'
     | '/_authenticated/products/$productId'
     | '/_authenticated/products/compare'
+    | '/_authenticated/purchase/receipts'
+    | '/_authenticated/purchase/search'
     | '/_authenticated/admin/'
     | '/_authenticated/intelligence/'
     | '/_authenticated/ownership/'
     | '/_authenticated/products/'
+    | '/_authenticated/purchase/'
     | '/_authenticated/admin/inventory/$productId'
     | '/_authenticated/ownership/products/$productId'
     | '/_authenticated/ownership/purchases/$purchaseId'
@@ -1235,6 +1297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRoiRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/purchase': {
+      id: '/_authenticated/purchase'
+      path: '/purchase'
+      fullPath: '/purchase'
+      preLoaderRoute: typeof AuthenticatedPurchaseRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/products': {
       id: '/_authenticated/products'
       path: '/products'
@@ -1298,6 +1367,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/purchase/': {
+      id: '/_authenticated/purchase/'
+      path: '/'
+      fullPath: '/purchase/'
+      preLoaderRoute: typeof AuthenticatedPurchaseIndexRouteImport
+      parentRoute: typeof AuthenticatedPurchaseRoute
+    }
     '/_authenticated/products/': {
       id: '/_authenticated/products/'
       path: '/'
@@ -1325,6 +1401,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/purchase/search': {
+      id: '/_authenticated/purchase/search'
+      path: '/search'
+      fullPath: '/purchase/search'
+      preLoaderRoute: typeof AuthenticatedPurchaseSearchRouteImport
+      parentRoute: typeof AuthenticatedPurchaseRoute
+    }
+    '/_authenticated/purchase/receipts': {
+      id: '/_authenticated/purchase/receipts'
+      path: '/receipts'
+      fullPath: '/purchase/receipts'
+      preLoaderRoute: typeof AuthenticatedPurchaseReceiptsRouteImport
+      parentRoute: typeof AuthenticatedPurchaseRoute
     }
     '/_authenticated/products/compare': {
       id: '/_authenticated/products/compare'
@@ -1380,6 +1470,13 @@ declare module '@tanstack/react-router' {
       path: '/household'
       fullPath: '/ownership/household'
       preLoaderRoute: typeof AuthenticatedOwnershipHouseholdRouteImport
+      parentRoute: typeof AuthenticatedOwnershipRoute
+    }
+    '/_authenticated/ownership/documents': {
+      id: '/_authenticated/ownership/documents'
+      path: '/documents'
+      fullPath: '/ownership/documents'
+      preLoaderRoute: typeof AuthenticatedOwnershipDocumentsRouteImport
       parentRoute: typeof AuthenticatedOwnershipRoute
     }
     '/_authenticated/organisation/roles': {
@@ -1727,6 +1824,7 @@ const AuthenticatedOwnershipPurchasesRouteWithChildren =
   )
 
 interface AuthenticatedOwnershipRouteChildren {
+  AuthenticatedOwnershipDocumentsRoute: typeof AuthenticatedOwnershipDocumentsRoute
   AuthenticatedOwnershipHouseholdRoute: typeof AuthenticatedOwnershipHouseholdRoute
   AuthenticatedOwnershipProductsRoute: typeof AuthenticatedOwnershipProductsRouteWithChildren
   AuthenticatedOwnershipPurchasesRoute: typeof AuthenticatedOwnershipPurchasesRouteWithChildren
@@ -1738,6 +1836,7 @@ interface AuthenticatedOwnershipRouteChildren {
 
 const AuthenticatedOwnershipRouteChildren: AuthenticatedOwnershipRouteChildren =
   {
+    AuthenticatedOwnershipDocumentsRoute: AuthenticatedOwnershipDocumentsRoute,
     AuthenticatedOwnershipHouseholdRoute: AuthenticatedOwnershipHouseholdRoute,
     AuthenticatedOwnershipProductsRoute:
       AuthenticatedOwnershipProductsRouteWithChildren,
@@ -1772,6 +1871,23 @@ const AuthenticatedProductsRouteWithChildren =
     AuthenticatedProductsRouteChildren,
   )
 
+interface AuthenticatedPurchaseRouteChildren {
+  AuthenticatedPurchaseReceiptsRoute: typeof AuthenticatedPurchaseReceiptsRoute
+  AuthenticatedPurchaseSearchRoute: typeof AuthenticatedPurchaseSearchRoute
+  AuthenticatedPurchaseIndexRoute: typeof AuthenticatedPurchaseIndexRoute
+}
+
+const AuthenticatedPurchaseRouteChildren: AuthenticatedPurchaseRouteChildren = {
+  AuthenticatedPurchaseReceiptsRoute: AuthenticatedPurchaseReceiptsRoute,
+  AuthenticatedPurchaseSearchRoute: AuthenticatedPurchaseSearchRoute,
+  AuthenticatedPurchaseIndexRoute: AuthenticatedPurchaseIndexRoute,
+}
+
+const AuthenticatedPurchaseRouteWithChildren =
+  AuthenticatedPurchaseRoute._addFileChildren(
+    AuthenticatedPurchaseRouteChildren,
+  )
+
 interface AuthenticatedAdminInventoryRouteChildren {
   AuthenticatedAdminInventoryProductIdRoute: typeof AuthenticatedAdminInventoryProductIdRoute
   AuthenticatedAdminInventoryIndexRoute: typeof AuthenticatedAdminInventoryIndexRoute
@@ -1800,6 +1916,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
   AuthenticatedOwnershipRoute: typeof AuthenticatedOwnershipRouteWithChildren
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
+  AuthenticatedPurchaseRoute: typeof AuthenticatedPurchaseRouteWithChildren
   AuthenticatedRoiRoute: typeof AuthenticatedRoiRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
@@ -1827,6 +1944,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIntentRoute: AuthenticatedIntentRoute,
   AuthenticatedOwnershipRoute: AuthenticatedOwnershipRouteWithChildren,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
+  AuthenticatedPurchaseRoute: AuthenticatedPurchaseRouteWithChildren,
   AuthenticatedRoiRoute: AuthenticatedRoiRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
@@ -1884,13 +2002,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

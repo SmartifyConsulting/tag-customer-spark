@@ -846,3 +846,22 @@ export const exportInventory = createServerFn({ method: "POST" })
       photo: p.image_url ?? "",
     }));
   });
+
+// ── Documents ────────────────────────────────────────────────────────────
+// Manuals, invoices, warranty certificates and service notes attached to
+// owned products. The OWNERSHIP section surfaces these in one place so a
+// shopper never hunts through individual product pages.
+
+export const listOwnershipDocuments = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context as any;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) return [];
+    const { data } = await supabase
+      .from("product_documents")
+      .select("*, product:owned_products(id, name, brand, category, image_url)")
+      .eq("retailer_id", retailerId)
+      .order("created_at", { ascending: false });
+    return data ?? [];
+  });
