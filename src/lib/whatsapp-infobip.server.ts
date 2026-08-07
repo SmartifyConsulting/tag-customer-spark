@@ -3,7 +3,7 @@
 // Infobip is a pure delivery mechanism — no business logic lives here.
 // Docs: https://www.infobip.com/docs/api/channels/whatsapp
 //
-// Required env:
+// Required runtime env:
 //   INFOBIP_API_KEY          — Infobip dashboard > Developers > API keys
 //   INFOBIP_BASE_URL         — personal base URL, e.g. "xyz123.api.infobip.com"
 //   INFOBIP_WHATSAPP_SENDER  — registered WhatsApp sender in E.164
@@ -27,6 +27,25 @@ export type InfobipSendResult = {
   status: number;
   sid?: string;
   error?: string;
+  diagnostic?: InfobipRuntimeDiagnostic;
+};
+
+export type InfobipRuntimeDiagnostic = {
+  keyFingerprint: string;
+  keyLength: number;
+  normalizedAppPrefix: boolean;
+  normalizedWrappingQuotes: boolean;
+  normalizedWhitespace: boolean;
+  apiHost: string;
+  senderSuffix: string;
+  responseRequestId?: string;
+};
+
+type RuntimeConfig = {
+  apiKey: string;
+  baseUrl: string;
+  sender: string;
+  diagnostic: InfobipRuntimeDiagnostic;
 };
 
 function normalizeNumber(num: string): string {
@@ -38,15 +57,66 @@ function normalizeNumber(num: string): string {
   return stripped.replace(/[^\d]/g, "");
 }
 
-function baseUrl(raw: string): string {
-  const trimmed = raw.trim().replace(/\/+$/, "");
-  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+function unwrapQuotes(raw: string): { value: string; changed: boolean } {
+  let value = raw.trim();
+  let changed = false;
+  while (
+    value.length >= 2 &&
+    ((value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'")))
+  ) {
+    value = value.slice(1, -1).trim();
+    changed = true;
+  }
+  return { value, changed };
 }
 
-function apiKeyValue(raw: string): string {
-  // Infobip's examples show the complete `Authorization: App <key>` value.
-  // Accept either that copied form or the bare key without producing `App App ...`.
-  return raw.trim().replace(/^App\s+/i, "");
+function normalizeBaseUrl(raw: string): string {
+  const { value } = unwrapQuotes(raw);
+  const withoutTrailingSlash = value.replace(/\/+$/, "");
+  return /^https?:\/\//i.test(withoutTrailingSlash)
+    ? withoutTrailingSlash
+    : `https://${withoutTrailingSlash}`;
+}
+
+async function fingerprint(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest).slice(0, 8))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function readRuntimeConfig(): Promise<RuntimeConfig | null> {
+  // Read inside the request operation. Do not move these values to module scope:
+  // production secret bindings can be refreshed independently of this bundle.
+  const rawApiKey = process.env.INFOBIP_API_KEY;
+  const rawBaseUrl = process.env.INFOBIP_BASE_URL;
+  const rawSender = process.env.INFOBIP_WHATSAPP_SENDER;
+  if (!rawApiKey || !rawBaseUrl || !rawSender) return null;
+
+  const unwrappedKey = unwrapQuotes(rawApiKey);
+  const hadAppPrefix = /^(?:App\s+)+/i.test(unwrappedKey.value);
+  const apiKey = unwrappedKey.value.replace(/^(?:App\s+)+/i, "").trim();
+  const normalizedWhitespace = apiKey !== rawApiKey;
+  const normalizedUrl = normalizeBaseUrl(rawBaseUrl);
+  const sender = normalizeNumber(unwrapQuotes(rawSender).value);
+  const apiHost = new URL(normalizedUrl).hostname;
+
+  return {
+    apiKey,
+    baseUrl: normalizedUrl,
+    sender,
+    diagnostic: {
+      keyFingerprint: await fingerprint(apiKey),
+      keyLength: apiKey.length,
+      normalizedAppPrefix: hadAppPrefix,
+      normalizedWrappingQuotes: unwrappedKey.changed,
+      normalizedWhitespace,
+      apiHost,
+      senderSuffix: sender.slice(-4),
+    },
+  };
 }
 
 export function isInfobipConfigured(): boolean {
@@ -60,16 +130,13 @@ export function isInfobipConfigured(): boolean {
 export async function sendInfobipWhatsApp(
   input: InfobipSendInput,
 ): Promise<InfobipSendResult> {
-  const apiKey = process.env.INFOBIP_API_KEY;
-  const rawBase = process.env.INFOBIP_BASE_URL;
-  const from = process.env.INFOBIP_WHATSAPP_SENDER;
-
-  if (!apiKey || !rawBase || !from) {
+  const config = await readRuntimeConfig();
+  if (!config) {
     return { ok: false, status: 500, error: "Infobip WhatsApp is not configured" };
   }
 
   const to = normalizeNumber(input.to);
-  const sender = normalizeNumber(from);
+  const sender = config.sender;
 
   let path: string;
   let payload: Record<string, unknown>;
@@ -110,10 +177,10 @@ export async function sendInfobipWhatsApp(
   }
 
   try {
-    const resp = await fetch(`${baseUrl(rawBase)}${path}`, {
+    const resp = await fetch(`${config.baseUrl}${path}`, {
       method: "POST",
       headers: {
-        Authorization: `App ${apiKeyValue(apiKey)}`,
+        Authorization: `App ${config.apiKey}`,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
@@ -121,6 +188,12 @@ export async function sendInfobipWhatsApp(
     });
 
     const text = await resp.text();
+    const responseRequestId =
+      resp.headers.get("x-request-id") ??
+      resp.headers.get("x-correlation-id") ??
+      resp.headers.get("x-infobip-request-id") ??
+      undefined;
+    const diagnostic = { ...config.diagnostic, responseRequestId };
     let json: any = null;
     try {
       json = text ? JSON.parse(text) : null;
@@ -138,13 +211,19 @@ export async function sendInfobipWhatsApp(
 
     if (!resp.ok || groupName === "REJECTED") {
       const msg = providerError ?? text?.slice(0, 300) ?? `HTTP ${resp.status}`;
-      console.error("[infobip] send failed", resp.status, msg);
-      return { ok: false, status: resp.status || 502, error: msg };
+      console.error("[infobip] send failed", resp.status, msg, diagnostic);
+      return { ok: false, status: resp.status || 502, error: msg, diagnostic };
     }
 
-    return { ok: true, status: resp.status, sid: message?.messageId };
+    console.info("[infobip] send accepted", resp.status, message?.messageId, diagnostic);
+    return { ok: true, status: resp.status, sid: message?.messageId, diagnostic };
   } catch (e: any) {
     console.error("[infobip] network error", e?.message ?? e);
-    return { ok: false, status: 0, error: e?.message ?? "Network error" };
+    return {
+      ok: false,
+      status: 0,
+      error: e?.message ?? "Network error",
+      diagnostic: config.diagnostic,
+    };
   }
 }

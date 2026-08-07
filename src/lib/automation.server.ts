@@ -11,6 +11,20 @@ import {
 
 export type AutomationSettingsMap = Record<AutomationKey, AutomationSetting>;
 
+export async function resolveAutomationRetailerId(
+  supabase: any,
+  userId: string,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("retailer_id")
+    .eq("user_id", userId)
+    .not("retailer_id", "is", null)
+    .limit(1)
+    .maybeSingle();
+  return data?.retailer_id ?? null;
+}
+
 export async function getAutomationSettingsList(
   supabase: any,
   retailerId: string,

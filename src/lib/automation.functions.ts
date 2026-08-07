@@ -1,17 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-async function resolveRetailerId(supabase: any, userId: string) {
-  const { data } = await supabase
-    .from("user_roles")
-    .select("retailer_id")
-    .eq("user_id", userId)
-    .not("retailer_id", "is", null)
-    .limit(1)
-    .maybeSingle();
-  return data?.retailer_id ?? null;
-}
+import { resolveAutomationRetailerId } from "@/lib/automation.server";
 
 export const listAutomationSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -20,7 +10,7 @@ export const listAutomationSettings = createServerFn({ method: "POST" })
     const { activeWhatsAppProvider } = await import("@/lib/whatsapp.server");
     const provider = activeWhatsAppProvider();
 
-    const retailerId = await resolveRetailerId(supabase, userId);
+    const retailerId = await resolveAutomationRetailerId(supabase, userId);
     if (!retailerId) return { settings: [], provider, lastFailure: null };
 
     const { getAutomationSettingsList } = await import("@/lib/automation.server");
@@ -88,7 +78,7 @@ export const saveAutomationSetting = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const retailerId = await resolveRetailerId(supabase, userId);
+    const retailerId = await resolveAutomationRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No workspace found");
 
     const { upsertAutomationSetting } = await import("@/lib/automation.server");

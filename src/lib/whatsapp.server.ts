@@ -10,6 +10,7 @@
 // client bundle.
 
 import { isInfobipConfigured, sendInfobipWhatsApp } from "@/lib/whatsapp-infobip.server";
+import type { InfobipRuntimeDiagnostic } from "@/lib/whatsapp-infobip.server";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
@@ -37,6 +38,7 @@ export type SendWhatsAppResult = {
   status: number;
   sid?: string;
   error?: string;
+  diagnostic?: InfobipRuntimeDiagnostic;
 };
 
 function normalizeWhatsApp(num: string): string {
