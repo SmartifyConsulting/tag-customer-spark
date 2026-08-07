@@ -26,6 +26,7 @@ import {
   Trees,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { IntelligenceTabs } from "@/components/intelligence-tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -199,6 +200,7 @@ function SustainabilityPage() {
 
   return (
     <div className="space-y-6">
+      <IntelligenceTabs />
       <PageHeader
         title="Sustainability Impact"
         description="Environmental and cost impact of replacing printed till slips with TAG digital receipts."
