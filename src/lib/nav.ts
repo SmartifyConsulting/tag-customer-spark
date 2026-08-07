@@ -7,7 +7,9 @@ import {
   ShieldCheck,
   Boxes,
   DollarSign,
+  ReceiptText,
 } from "lucide-react";
+
 import type { TierFeatureKey } from "@/lib/tier";
 import type { AppRole } from "@/hooks/use-auth";
 
