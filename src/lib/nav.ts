@@ -66,7 +66,30 @@ export type NavItem = {
 //     but the item is top-level because inventory is an every-day
 //     destination). Keep it here; don't move it under Admin.
 //
-export const NAV: readonly NavItem[] = [
+// ─── Persona split ──────────────────────────────────────────────────────
+// The platform now has two front doors over one backend:
+//
+//   • **TAG Retail**  — staff-facing: POS/QR management, receipt delivery,
+//     store analytics, sustainability, customer engagement.
+//   • **TAG Wallet**  — consumer-facing: digital receipts, purchases, my
+//     products, warranties, returns, household inventory.
+//
+// A signed-in user with any retail role gets TAG Retail; everyone else
+// (shoppers with a TAG ID and no staff role) gets TAG Wallet. Don't mix the
+// two lists back together — the whole point is that each surface stays
+// focused on one audience.
+export type Persona = "retail" | "wallet";
+
+export const PERSONA_LABEL: Record<Persona, string> = {
+  retail: "TAG Retail",
+  wallet: "TAG Wallet",
+};
+
+export function personaFromRoles(roles: readonly string[] | undefined): Persona {
+  return roles && roles.length > 0 ? "retail" : "wallet";
+}
+
+export const RETAIL_NAV: readonly NavItem[] = [
   {
     title: "Briefing",
     url: "/briefing",
@@ -82,11 +105,9 @@ export const NAV: readonly NavItem[] = [
   { title: "Messages", url: "/inbox", icon: Inbox, match: ["/inbox"] },
 
   {
-    title: "Intelligence",
+    title: "Analytics",
     url: "/intelligence",
     icon: TrendingUp,
-    // Intelligence tabs (Dashboard, Insights, Analytics, ROI, Trends, Forecasting)
-    // are now shown within the Intelligence page, not as submenu items here.
     match: [
       "/intelligence",
       "/analytics",
@@ -94,28 +115,14 @@ export const NAV: readonly NavItem[] = [
       "/commerce",
       "/dashboard",
     ],
-  },
-
-  // Ownership — the consumer-owned purchase and ownership record. Purchases
-  // and receipts (Phase 2) plus owned products, household and warranties
-  // (Phase 3) live here. Digital receipts, manuals, service history and
-  // product health are tabs inside these screens, not extra nav rows.
-  {
-    title: "Ownership",
-    url: "/ownership/purchases",
-    icon: ReceiptText,
-    match: ["/ownership"],
     items: [
-      { title: "Purchases", url: "/ownership/purchases", match: ["/ownership/purchases"] },
-      { title: "My Products", url: "/ownership/products", match: ["/ownership/products"] },
-      { title: "Household", url: "/ownership/household", match: ["/ownership/household"] },
-      { title: "Warranties", url: "/ownership/warranties", match: ["/ownership/warranties"] },
-      { title: "Returns", url: "/ownership/returns", match: ["/ownership/returns"] },
-      { title: "TAG ID", url: "/ownership/tag-id", match: ["/ownership/tag-id"] },
+      { title: "Overview", url: "/intelligence", match: ["/intelligence"] },
+      { title: "Insights", url: "/intelligence/insights", match: ["/intelligence/insights"] },
+      { title: "Analytics", url: "/analytics", match: ["/analytics"] },
+      { title: "ROI", url: "/roi", match: ["/roi"] },
+      { title: "Sustainability", url: "/analytics/sustainability", match: ["/analytics/sustainability"] },
     ],
   },
-
-
 
   {
     title: "Admin",
@@ -140,14 +147,46 @@ export const NAV: readonly NavItem[] = [
   },
 ] as const;
 
+// TAG Wallet — the consumer surface. Ownership sub-pages are promoted to
+// top-level rows here because they *are* the app for a shopper.
+export const WALLET_NAV: readonly NavItem[] = [
+  { title: "Receipts", url: "/ownership/purchases", icon: ReceiptText, match: ["/ownership/purchases"] },
+  { title: "My Products", url: "/ownership/products", icon: Boxes, match: ["/ownership/products"] },
+  { title: "Household", url: "/ownership/household", icon: Home, match: ["/ownership/household"] },
+  { title: "Warranties", url: "/ownership/warranties", icon: WarrantyIcon, match: ["/ownership/warranties"] },
+  { title: "Returns", url: "/ownership/returns", icon: Undo2, match: ["/ownership/returns"] },
+  { title: "TAG ID", url: "/ownership/tag-id", icon: Wallet, match: ["/ownership/tag-id"] },
+] as const;
+
+export function navForPersona(persona: Persona): readonly NavItem[] {
+  return persona === "wallet" ? WALLET_NAV : RETAIL_NAV;
+}
+
+// Back-compat alias — retail is the default surface.
+export const NAV = RETAIL_NAV;
+
 // Mobile bottom nav — dropdowns don't fit on a bar, so we surface four
-// everyday destinations. Briefing replaces Dashboard as the home slot.
-export const MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
+// everyday destinations per persona.
+export const RETAIL_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
   { title: "Briefing", url: "/briefing", icon: LayoutDashboard, match: ["/briefing"] },
   { title: "Messages", url: "/inbox", icon: Inbox, match: ["/inbox"] },
   { title: "Inventory", url: "/admin/inventory", icon: Tag, match: ["/admin/inventory", "/products"] },
+  { title: "Impact", url: "/analytics/sustainability", icon: Leaf, match: ["/analytics/sustainability"] },
   { title: "Customers", url: "/admin?tab=customers", icon: Users, match: ["/admin", "/customers"] },
 ] as const;
+
+export const WALLET_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
+  { title: "Receipts", url: "/ownership/purchases", icon: ReceiptText, match: ["/ownership/purchases"] },
+  { title: "Products", url: "/ownership/products", icon: Boxes, match: ["/ownership/products"] },
+  { title: "Warranties", url: "/ownership/warranties", icon: WarrantyIcon, match: ["/ownership/warranties"] },
+  { title: "TAG ID", url: "/ownership/tag-id", icon: Wallet, match: ["/ownership/tag-id"] },
+] as const;
+
+export function mobileNavForPersona(persona: Persona): readonly Omit<NavItem, "items">[] {
+  return persona === "wallet" ? WALLET_MOBILE_NAV : RETAIL_MOBILE_NAV;
+}
+
+export const MOBILE_NAV = RETAIL_MOBILE_NAV;
 
 export function isNavActive(
   item: { match: readonly string[]; exact?: boolean },
