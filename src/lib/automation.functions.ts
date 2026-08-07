@@ -1,13 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { resolveAutomationRetailerId } from "@/lib/automation.server";
 
 export const listAutomationSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { activeWhatsAppProvider } = await import("@/lib/whatsapp.server");
+    const { resolveAutomationRetailerId } = await import("@/lib/automation.server");
     const provider = activeWhatsAppProvider();
 
     const retailerId = await resolveAutomationRetailerId(supabase, userId);
@@ -78,6 +78,7 @@ export const saveAutomationSetting = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { resolveAutomationRetailerId } = await import("@/lib/automation.server");
     const retailerId = await resolveAutomationRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No workspace found");
 
@@ -89,4 +90,50 @@ export const saveAutomationSetting = createServerFn({ method: "POST" })
       template_name: data.template_name,
     });
     return { ok: true };
+  });
+
+export const testInfobipDelivery = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ recipient: z.string().trim().min(8).max(40) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: role } = await supabase
+      .from("user_roles")
+      .select("retailer_id")
+      .eq("user_id", userId)
+      .eq("role", "super_admin")
+      .not("retailer_id", "is", null)
+      .limit(1)
+      .maybeSingle();
+    if (!role?.retailer_id) throw new Error("Super administrator access required");
+
+    const { data: product } = await supabase
+      .from("products")
+      .select("id, hero_image, image_url, thumbnail_url")
+      .eq("retailer_id", role.retailer_id)
+      .eq("status", "active")
+      .order("updated_at", { ascending: false })
+      .limit(25);
+    const { isPublicMediaUrl } = await import("@/lib/whatsapp-templates.server");
+    const imageUrl = (product ?? [])
+      .flatMap((row: any) => [row.hero_image, row.image_url, row.thumbnail_url])
+      .find((url: string | null) => isPublicMediaUrl(url));
+    if (!imageUrl) throw new Error("No active product has a public image for the test template");
+
+    const { sendTemplate } = await import("@/lib/whatsapp-service.server");
+    const result = await sendTemplate({
+      templateName: "tag_scan_v5",
+      to: data.recipient,
+      headerImageUrl: imageUrl,
+    });
+
+    return {
+      ok: result.ok,
+      status: result.status,
+      messageId: result.sid ?? null,
+      error: result.error ?? null,
+      diagnostic: result.diagnostic ?? null,
+    };
   });
