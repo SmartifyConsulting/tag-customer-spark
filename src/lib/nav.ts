@@ -8,6 +8,11 @@ import {
   Boxes,
   DollarSign,
   ReceiptText,
+  Leaf,
+  Home,
+  ShieldCheck as WarrantyIcon,
+  Undo2,
+  Wallet,
 } from "lucide-react";
 
 import type { TierFeatureKey } from "@/lib/tier";
