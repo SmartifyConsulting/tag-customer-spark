@@ -262,7 +262,11 @@ async function sendWithConfig(
       resp.headers.get("x-correlation-id") ??
       resp.headers.get("x-infobip-request-id") ??
       undefined;
-    const diagnostic = { ...config.diagnostic, responseRequestId, attemptedBindings };
+    const diagnostic: InfobipRuntimeDiagnostic = {
+      ...config.diagnostic,
+      responseRequestId,
+      attemptedBindings,
+    };
     let json: any = null;
     try {
       json = text ? JSON.parse(text) : null;
@@ -279,10 +283,18 @@ async function sendWithConfig(
       undefined;
 
     if (!resp.ok || groupName === "REJECTED") {
+      // Rejections are the case we cannot reproduce outside production, so
+      // capture Infobip's own identifiers here. None of this is secret and it
+      // is exactly what Infobip support needs to trace the request.
+      diagnostic.httpStatus = resp.status;
+      diagnostic.providerMessageId =
+        json?.requestError?.serviceException?.messageId ?? message?.status?.name ?? undefined;
+      diagnostic.rawErrorBody = text?.slice(0, 300);
       const msg = providerError ?? text?.slice(0, 300) ?? `HTTP ${resp.status}`;
       console.error("[infobip] send failed", resp.status, msg, diagnostic);
       return { ok: false, status: resp.status || 502, error: msg, diagnostic };
     }
+
 
     console.info("[infobip] send accepted", resp.status, message?.messageId, diagnostic);
     return { ok: true, status: resp.status, sid: message?.messageId, diagnostic };
