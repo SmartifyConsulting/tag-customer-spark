@@ -3762,6 +3762,78 @@ export type Database = {
           },
         ]
       }
+      sustainability_settings: {
+        Row: {
+          avg_receipt_length_cm: number
+          avg_receipt_weight_g: number
+          co2_kg_per_kg_paper: number
+          cost_per_receipt_cents: number
+          created_at: string
+          currency: string
+          demo_mode: boolean
+          electricity_cents_per_kwh: number
+          enabled: boolean
+          energy_kwh_per_1000_receipts: number
+          ink_cents_per_1000: number
+          printer_maintenance_cents_per_1000: number
+          retailer_id: string
+          units: string
+          updated_at: string
+          water_l_per_kg_paper: number
+        }
+        Insert: {
+          avg_receipt_length_cm?: number
+          avg_receipt_weight_g?: number
+          co2_kg_per_kg_paper?: number
+          cost_per_receipt_cents?: number
+          created_at?: string
+          currency?: string
+          demo_mode?: boolean
+          electricity_cents_per_kwh?: number
+          enabled?: boolean
+          energy_kwh_per_1000_receipts?: number
+          ink_cents_per_1000?: number
+          printer_maintenance_cents_per_1000?: number
+          retailer_id: string
+          units?: string
+          updated_at?: string
+          water_l_per_kg_paper?: number
+        }
+        Update: {
+          avg_receipt_length_cm?: number
+          avg_receipt_weight_g?: number
+          co2_kg_per_kg_paper?: number
+          cost_per_receipt_cents?: number
+          created_at?: string
+          currency?: string
+          demo_mode?: boolean
+          electricity_cents_per_kwh?: number
+          enabled?: boolean
+          energy_kwh_per_1000_receipts?: number
+          ink_cents_per_1000?: number
+          printer_maintenance_cents_per_1000?: number
+          retailer_id?: string
+          units?: string
+          updated_at?: string
+          water_l_per_kg_paper?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sustainability_settings_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: true
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "sustainability_settings_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: true
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       taxonomy_attribute_values: {
         Row: {
           attribute_key: string
