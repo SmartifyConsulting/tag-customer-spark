@@ -103,9 +103,9 @@ function DocumentsPage() {
                   </p>
                 </div>
                 {d.kind && <StatusBadge tone="info">{String(d.kind).replace(/_/g, " ")}</StatusBadge>}
-                {d.file_url && (
+                {d.url && (
                   <Button size="sm" variant="outline" asChild>
-                    <a href={d.file_url} target="_blank" rel="noreferrer">
+                    <a href={d.url} target="_blank" rel="noreferrer">
                       <ExternalLink className="mr-1.5 h-4 w-4" /> Open
                     </a>
                   </Button>
