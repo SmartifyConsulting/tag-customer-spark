@@ -44,7 +44,13 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="hidden border-r-0 overflow-visible md:flex">
-      <SidebarHeader className="bg-sidebar h-20 p-0" />
+      <SidebarHeader className="bg-sidebar h-20 justify-end p-0 pb-2">
+        {!collapsed && (
+          <p className="px-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/50">
+            {PERSONA_LABEL[persona]}
+          </p>
+        )}
+      </SidebarHeader>
 
       <SidebarContent className="px-1.5 pb-3 pt-4">
         <SidebarGroup>
