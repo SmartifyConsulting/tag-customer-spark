@@ -74,6 +74,7 @@ function NotifyForm({
   const [privacy, setPrivacy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const phoneOk = phone && isValidPhoneNumber(phone);
@@ -99,6 +100,7 @@ function NotifyForm({
       });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Something went wrong");
+      setWarning(json.warning ?? null);
       setDone(true);
     } catch (err: any) {
       setError(err.message ?? "Something went wrong");
@@ -121,6 +123,7 @@ function NotifyForm({
         <p className="mt-2 text-sm text-muted-foreground max-w-xs">
           {retailerName} will WhatsApp you if:
         </p>
+        {warning && <p className="mt-2 max-w-xs text-sm text-destructive">{warning}</p>}
         <ul className="mt-2 space-y-1 text-sm text-muted-foreground text-left">
           <li>• Price drops</li>
           <li>• Stock runs low</li>

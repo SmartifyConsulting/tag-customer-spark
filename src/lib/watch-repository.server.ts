@@ -75,20 +75,25 @@ export async function createOrRefreshWatch(
   };
 
 
-  const { data: existing } = await supabase
+  const { data: existing, error: lookupError } = await supabase
     .from("watchlists")
     .select("id")
     .eq("customer_id", input.customerId)
     .eq("product_id", input.productId)
     .eq("trigger", "any_update")
     .maybeSingle();
+  if (lookupError) throw new Error(`Could not find product watch: ${lookupError.message}`);
 
   if (existing) {
-    await supabase.from("watchlists").update(snapshot).eq("id", existing.id);
+    const { error: updateError } = await supabase
+      .from("watchlists")
+      .update(snapshot)
+      .eq("id", existing.id);
+    if (updateError) throw new Error(`Could not activate product watch: ${updateError.message}`);
     return existing.id as string;
   }
 
-  const { data: created } = await supabase
+  const { data: created, error: createError } = await supabase
     .from("watchlists")
     .insert({
       retailer_id: input.retailerId,
@@ -100,8 +105,10 @@ export async function createOrRefreshWatch(
     })
     .select("id")
     .maybeSingle();
+  if (createError) throw new Error(`Could not create product watch: ${createError.message}`);
+  if (!created?.id) throw new Error("Could not create product watch");
 
-  return (created as any)?.id ?? null;
+  return created.id as string;
 }
 
 /** Every active, notifiable watcher of a product. */

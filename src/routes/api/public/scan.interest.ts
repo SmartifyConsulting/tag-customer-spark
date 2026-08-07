@@ -132,18 +132,25 @@ export const Route = createFileRoute("/api/public/scan/interest")({
           .maybeSingle();
 
         const { createOrRefreshWatch } = await import("@/lib/watch-repository.server");
-        await createOrRefreshWatch(supabaseAdmin, {
-          retailerId: tag.retailer_id as string,
-          customerId,
-          productId: tag.product_id as string,
-          whatsappNumber: e164,
-          product: (watchedProduct as any) ?? {
-            price_cents: null,
-            sale_price_cents: null,
-            stock_qty: 0,
-            intent_score: 0,
-          },
-        });
+        try {
+          await createOrRefreshWatch(supabaseAdmin, {
+            retailerId: tag.retailer_id as string,
+            customerId,
+            productId: tag.product_id as string,
+            whatsappNumber: e164,
+            active: true,
+            product: (watchedProduct as any) ?? {
+              price_cents: null,
+              sale_price_cents: null,
+              stock_qty: 0,
+              intent_score: 0,
+            },
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Could not activate product alerts";
+          console.error("[scan.interest] watch activation failed", message);
+          return jsonRes({ ok: false, error: "We saved your details but could not activate product alerts. Please try again." }, 500);
+        }
 
         // Open or refresh the conversation, carrying the scanned product into
         // the Inbox thread (subject + first inbound message).
@@ -212,6 +219,7 @@ export const Route = createFileRoute("/api/public/scan/interest")({
         // Confirmation WhatsApp for the web opt-in. Business-initiated, so it
         // must be the approved `tag_scan_v5` template: IMAGE header, no body
         // variables. Never block opt-in on a send failure.
+        let deliveryError: string | null = null;
         try {
           const { sendTemplate } = await import("@/lib/whatsapp-service.server");
           const { isPublicMediaUrl } = await import("@/lib/whatsapp-templates.server");
@@ -231,13 +239,35 @@ export const Route = createFileRoute("/api/public/scan/interest")({
 
           if (!result.ok) {
             console.warn("[scan.interest] whatsapp send failed", result.status, result.error);
+            deliveryError = result.error ?? "WhatsApp confirmation was rejected";
           }
+
+          await supabaseAdmin.from("notification_history").insert({
+            retailer_id: tag.retailer_id,
+            customer_id: customerId,
+            channel: "whatsapp",
+            payload: {
+              type: "qr_scan",
+              product_id: tag.product_id,
+              template: "tag_scan_v5",
+              body: `Confirmed watch on ${productName}.`,
+            },
+            status: result.ok ? "queued" : "failed",
+            sent_at: result.ok ? new Date().toISOString() : null,
+            error: result.ok ? null : deliveryError,
+            provider_message_sid: result.sid ?? null,
+          });
         } catch (e: any) {
           console.warn("[scan.interest] whatsapp send error", e?.message ?? e);
+          deliveryError = e?.message ?? "WhatsApp confirmation could not be sent";
         }
 
-
-        return jsonRes({ ok: true, customerId });
+        return jsonRes({
+          ok: true,
+          customerId,
+          confirmationSent: !deliveryError,
+          warning: deliveryError ? "Your alerts are active, but the confirmation WhatsApp could not be sent yet." : null,
+        });
       },
     },
   },

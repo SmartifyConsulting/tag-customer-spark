@@ -367,6 +367,7 @@ function NotifyBar({ gtin, productName }: { gtin: string; productName: string })
   const [phone, setPhone] = useState<string | undefined>();
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const phoneOk = phone && isValidPhoneNumber(phone);
@@ -384,6 +385,7 @@ function NotifyBar({ gtin, productName }: { gtin: string; productName: string })
       });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Something went wrong");
+      setWarning(json.warning ?? null);
       setDone(true);
     } catch (err: any) {
       setError(err.message ?? "Something went wrong");
@@ -398,9 +400,12 @@ function NotifyBar({ gtin, productName }: { gtin: string; productName: string })
         <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-600/12 text-emerald-600">
           <CheckCircle2 className="h-5 w-5" />
         </div>
-        <p className="text-sm">
-          You're now following {productName} — we'll WhatsApp you if anything changes.
-        </p>
+        <div>
+          <p className="text-sm">
+            You're now following {productName} — we'll WhatsApp you if anything changes.
+          </p>
+          {warning && <p className="mt-1 text-xs text-destructive">{warning}</p>}
+        </div>
       </div>
     );
   }

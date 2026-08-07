@@ -136,19 +136,25 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
           .maybeSingle();
 
         const { createOrRefreshWatch } = await import("@/lib/watch-repository.server");
-        await createOrRefreshWatch(supabaseAdmin, {
-          retailerId: (product as any).retailer_id,
-          customerId,
-          productId: (product as any).id,
-          whatsappNumber: e164,
-          active: true,
-          product: (watchedProduct as any) ?? {
-            price_cents: null,
-            sale_price_cents: null,
-            stock_qty: 0,
-            intent_score: 0,
-          },
-        });
+        try {
+          await createOrRefreshWatch(supabaseAdmin, {
+            retailerId: (product as any).retailer_id,
+            customerId,
+            productId: (product as any).id,
+            whatsappNumber: e164,
+            active: true,
+            product: (watchedProduct as any) ?? {
+              price_cents: null,
+              sale_price_cents: null,
+              stock_qty: 0,
+              intent_score: 0,
+            },
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Could not activate product alerts";
+          console.error("[scan.barcode-interest] watch activation failed", message);
+          return jsonRes({ ok: false, error: "We saved your details but could not activate product alerts. Please try again." }, 500);
+        }
 
 
 
@@ -221,6 +227,7 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
         // page, so this only confirms it — the approved `tag_scan_v5` body has
         // no variables and an IMAGE header, which must be a public https URL.
         // Never block the opt-in on a send failure; record every outcome.
+        let deliveryError: string | null = null;
         try {
           const { sendTemplate } = await import("@/lib/whatsapp-service.server");
           const { isPublicMediaUrl } = await import("@/lib/whatsapp-templates.server");
@@ -248,6 +255,7 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
 
           if (!result.ok) {
             console.warn("[scan.barcode-interest] whatsapp send failed", result.status, result.error);
+            deliveryError = result.error ?? "WhatsApp confirmation was rejected";
           }
 
           await supabaseAdmin.from("notification_history").insert({
@@ -272,10 +280,15 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
 
         } catch (e: any) {
           console.warn("[scan.barcode-interest] whatsapp send error", e?.message ?? e);
+          deliveryError = e?.message ?? "WhatsApp confirmation could not be sent";
         }
 
-
-        return jsonRes({ ok: true, customerId });
+        return jsonRes({
+          ok: true,
+          customerId,
+          confirmationSent: !deliveryError,
+          warning: deliveryError ? "Your alerts are active, but the confirmation WhatsApp could not be sent yet." : null,
+        });
       },
     },
   },
