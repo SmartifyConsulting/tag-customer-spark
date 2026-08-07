@@ -445,6 +445,61 @@ export type Database = {
           },
         ]
       }
+      consumer_tag_ids: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          display_name: string | null
+          id: string
+          nfc_uid: string | null
+          retailer_id: string
+          tag_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          display_name?: string | null
+          id?: string
+          nfc_uid?: string | null
+          retailer_id: string
+          tag_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          display_name?: string | null
+          id?: string
+          nfc_uid?: string | null
+          retailer_id?: string
+          tag_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consumer_tag_ids_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consumer_tag_ids_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "consumer_tag_ids_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_messages: {
         Row: {
           author_user_id: string | null
@@ -782,6 +837,58 @@ export type Database = {
             columns: ["retailer_id"]
             isOneToOne: false
             referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      household_rooms: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          retailer_id: string
+          sort_order: number
+          tag_ref: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          retailer_id: string
+          sort_order?: number
+          tag_ref?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          retailer_id?: string
+          sort_order?: number
+          tag_ref?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "household_rooms_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "household_rooms_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "household_rooms_tag_ref_fkey"
+            columns: ["tag_ref"]
+            isOneToOne: false
+            referencedRelation: "consumer_tag_ids"
             referencedColumns: ["id"]
           },
         ]
@@ -1208,6 +1315,134 @@ export type Database = {
           },
         ]
       }
+      owned_products: {
+        Row: {
+          battery_health: number | null
+          brand: string | null
+          category: string
+          condition: string
+          created_at: string
+          current_value_cents: number
+          estimated_lifespan_months: number | null
+          id: string
+          image_url: string | null
+          maintenance_due_on: string | null
+          name: string
+          notes: string | null
+          ownership_status: string
+          product_id: string | null
+          purchase_item_id: string | null
+          purchase_price_cents: number
+          purchased_at: string | null
+          recall_notice: string | null
+          retailer_id: string
+          room_id: string | null
+          serial_number: string | null
+          tag_ref: string | null
+          updated_at: string
+        }
+        Insert: {
+          battery_health?: number | null
+          brand?: string | null
+          category?: string
+          condition?: string
+          created_at?: string
+          current_value_cents?: number
+          estimated_lifespan_months?: number | null
+          id?: string
+          image_url?: string | null
+          maintenance_due_on?: string | null
+          name: string
+          notes?: string | null
+          ownership_status?: string
+          product_id?: string | null
+          purchase_item_id?: string | null
+          purchase_price_cents?: number
+          purchased_at?: string | null
+          recall_notice?: string | null
+          retailer_id: string
+          room_id?: string | null
+          serial_number?: string | null
+          tag_ref?: string | null
+          updated_at?: string
+        }
+        Update: {
+          battery_health?: number | null
+          brand?: string | null
+          category?: string
+          condition?: string
+          created_at?: string
+          current_value_cents?: number
+          estimated_lifespan_months?: number | null
+          id?: string
+          image_url?: string | null
+          maintenance_due_on?: string | null
+          name?: string
+          notes?: string | null
+          ownership_status?: string
+          product_id?: string | null
+          purchase_item_id?: string | null
+          purchase_price_cents?: number
+          purchased_at?: string | null
+          recall_notice?: string | null
+          retailer_id?: string
+          room_id?: string | null
+          serial_number?: string | null
+          tag_ref?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owned_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owned_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "owned_products_purchase_item_id_fkey"
+            columns: ["purchase_item_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owned_products_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "owned_products_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owned_products_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "household_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owned_products_tag_ref_fkey"
+            columns: ["tag_ref"]
+            isOneToOne: false
+            referencedRelation: "consumer_tag_ids"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       passport_enrichment_queue: {
         Row: {
           attempts: number
@@ -1381,6 +1616,64 @@ export type Database = {
           },
           {
             foreignKeyName: "product_categories_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_documents: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          owned_product_id: string | null
+          retailer_id: string
+          source: string | null
+          title: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          owned_product_id?: string | null
+          retailer_id: string
+          source?: string | null
+          title: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          owned_product_id?: string | null
+          retailer_id?: string
+          source?: string | null
+          title?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_documents_owned_product_id_fkey"
+            columns: ["owned_product_id"]
+            isOneToOne: false
+            referencedRelation: "owned_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_documents_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "product_documents_retailer_id_fkey"
             columns: ["retailer_id"]
             isOneToOne: false
             referencedRelation: "retailers"
@@ -1846,6 +2139,83 @@ export type Database = {
           },
         ]
       }
+      product_returns: {
+        Row: {
+          created_at: string
+          id: string
+          purchase_id: string
+          purchase_item_id: string | null
+          reason: string | null
+          refund_cents: number
+          requested_at: string
+          resolved_at: string | null
+          retailer_id: string
+          return_code: string | null
+          status: string
+          updated_at: string
+          window_ends_on: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          purchase_id: string
+          purchase_item_id?: string | null
+          reason?: string | null
+          refund_cents?: number
+          requested_at?: string
+          resolved_at?: string | null
+          retailer_id: string
+          return_code?: string | null
+          status?: string
+          updated_at?: string
+          window_ends_on?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          purchase_id?: string
+          purchase_item_id?: string | null
+          reason?: string | null
+          refund_cents?: number
+          requested_at?: string
+          resolved_at?: string | null
+          retailer_id?: string
+          return_code?: string | null
+          status?: string
+          updated_at?: string
+          window_ends_on?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_returns_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_returns_purchase_item_id_fkey"
+            columns: ["purchase_item_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_returns_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "product_returns_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           barcode_type: string | null
@@ -2155,6 +2525,185 @@ export type Database = {
           },
         ]
       }
+      purchase_items: {
+        Row: {
+          brand: string | null
+          category: string | null
+          created_at: string
+          gtin: string | null
+          id: string
+          image_url: string | null
+          line_total_cents: number
+          name: string
+          product_id: string | null
+          purchase_id: string
+          quantity: number
+          retailer_id: string
+          return_window_days: number
+          serial_number: string | null
+          sku: string | null
+          unit_price_cents: number
+          updated_at: string
+          warranty_months: number
+        }
+        Insert: {
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          gtin?: string | null
+          id?: string
+          image_url?: string | null
+          line_total_cents?: number
+          name: string
+          product_id?: string | null
+          purchase_id: string
+          quantity?: number
+          retailer_id: string
+          return_window_days?: number
+          serial_number?: string | null
+          sku?: string | null
+          unit_price_cents?: number
+          updated_at?: string
+          warranty_months?: number
+        }
+        Update: {
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          gtin?: string | null
+          id?: string
+          image_url?: string | null
+          line_total_cents?: number
+          name?: string
+          product_id?: string | null
+          purchase_id?: string
+          quantity?: number
+          retailer_id?: string
+          return_window_days?: number
+          serial_number?: string | null
+          sku?: string | null
+          unit_price_cents?: number
+          updated_at?: string
+          warranty_months?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "purchase_items_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_items_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "purchase_items_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchases: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          notes: string | null
+          payment_method: string | null
+          purchased_at: string
+          receipt_number: string | null
+          retailer_id: string
+          status: string
+          store_id: string | null
+          tag_ref: string | null
+          total_cents: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          purchased_at?: string
+          receipt_number?: string | null
+          retailer_id: string
+          status?: string
+          store_id?: string | null
+          tag_ref?: string | null
+          total_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          purchased_at?: string
+          receipt_number?: string | null
+          retailer_id?: string
+          status?: string
+          store_id?: string | null
+          tag_ref?: string | null
+          total_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "purchases_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchases_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchases_tag_ref_fkey"
+            columns: ["tag_ref"]
+            isOneToOne: false
+            referencedRelation: "consumer_tag_ids"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qr_scans: {
         Row: {
           browser: string | null
@@ -2402,6 +2951,73 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receipts: {
+        Row: {
+          ai_summary: string | null
+          category: string | null
+          created_at: string
+          id: string
+          is_archived: boolean
+          is_favourite: boolean
+          issued_at: string
+          pdf_url: string | null
+          purchase_id: string
+          receipt_number: string | null
+          retailer_id: string
+          updated_at: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          is_favourite?: boolean
+          issued_at?: string
+          pdf_url?: string | null
+          purchase_id: string
+          receipt_number?: string | null
+          retailer_id: string
+          updated_at?: string
+        }
+        Update: {
+          ai_summary?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          is_favourite?: boolean
+          issued_at?: string
+          pdf_url?: string | null
+          purchase_id?: string
+          receipt_number?: string | null
+          retailer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "receipts_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
             referencedColumns: ["id"]
           },
         ]
@@ -2880,6 +3496,67 @@ export type Database = {
           },
         ]
       }
+      service_events: {
+        Row: {
+          cost_cents: number
+          created_at: string
+          description: string | null
+          id: string
+          kind: string
+          occurred_at: string
+          owned_product_id: string
+          retailer_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cost_cents?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          occurred_at?: string
+          owned_product_id: string
+          retailer_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cost_cents?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          occurred_at?: string
+          owned_product_id?: string
+          retailer_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_events_owned_product_id_fkey"
+            columns: ["owned_product_id"]
+            isOneToOne: false
+            referencedRelation: "owned_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_events_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "service_events_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff: {
         Row: {
           created_at: string
@@ -3203,6 +3880,134 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      warranties: {
+        Row: {
+          certificate_url: string | null
+          created_at: string
+          expires_on: string
+          id: string
+          owned_product_id: string
+          period_months: number
+          provider: string | null
+          registered_at: string | null
+          retailer_id: string
+          starts_on: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          certificate_url?: string | null
+          created_at?: string
+          expires_on?: string
+          id?: string
+          owned_product_id: string
+          period_months?: number
+          provider?: string | null
+          registered_at?: string | null
+          retailer_id: string
+          starts_on?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          certificate_url?: string | null
+          created_at?: string
+          expires_on?: string
+          id?: string
+          owned_product_id?: string
+          period_months?: number
+          provider?: string | null
+          registered_at?: string | null
+          retailer_id?: string
+          starts_on?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warranties_owned_product_id_fkey"
+            columns: ["owned_product_id"]
+            isOneToOne: false
+            referencedRelation: "owned_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warranties_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "warranties_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      warranty_claims: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          resolution: string | null
+          resolved_at: string | null
+          retailer_id: string
+          status: string
+          submitted_at: string
+          updated_at: string
+          warranty_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          retailer_id: string
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+          warranty_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          retailer_id?: string
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+          warranty_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warranty_claims_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "public_scan_view"
+            referencedColumns: ["retailer_id"]
+          },
+          {
+            foreignKeyName: "warranty_claims_retailer_id_fkey"
+            columns: ["retailer_id"]
+            isOneToOne: false
+            referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warranty_claims_warranty_id_fkey"
+            columns: ["warranty_id"]
+            isOneToOne: false
+            referencedRelation: "warranties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       watchlist_events: {
         Row: {
