@@ -90,7 +90,10 @@ async function fingerprint(value: string): Promise<string> {
 async function readRuntimeConfig(): Promise<RuntimeConfig | null> {
   // Read inside the request operation. Do not move these values to module scope:
   // production secret bindings can be refreshed independently of this bundle.
-  const rawApiKey = process.env.INFOBIP_API_KEY;
+  // V2 is a versioned binding created to escape a production platform binding
+  // that remained pinned to an older INFOBIP_API_KEY value after replacement.
+  // Keep the original name as a fallback for existing environments.
+  const rawApiKey = process.env.INFOBIP_API_KEY_V2 ?? process.env.INFOBIP_API_KEY;
   const rawBaseUrl = process.env.INFOBIP_BASE_URL;
   const rawSender = process.env.INFOBIP_WHATSAPP_SENDER;
   if (!rawApiKey || !rawBaseUrl || !rawSender) return null;
