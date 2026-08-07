@@ -67,6 +67,7 @@ import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminPricingRouteImport } from './routes/_authenticated/admin.pricing'
 import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authenticated/admin.inventory'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin.categories'
+import { Route as AuthenticatedOwnershipPurchasesIndexRouteImport } from './routes/_authenticated/ownership.purchases.index'
 import { Route as AuthenticatedAdminInventoryIndexRouteImport } from './routes/_authenticated/admin.inventory.index'
 import { Route as ApiPublicWebhooksTwilioInboundRouteImport } from './routes/api/public/webhooks/twilio-inbound'
 import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public/webhooks/paypal'
@@ -394,6 +395,12 @@ const AuthenticatedAdminCategoriesRoute =
     path: '/admin/categories',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOwnershipPurchasesIndexRoute =
+  AuthenticatedOwnershipPurchasesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedOwnershipPurchasesRoute,
+  } as any)
 const AuthenticatedAdminInventoryIndexRoute =
   AuthenticatedAdminInventoryIndexRouteImport.update({
     id: '/',
@@ -526,7 +533,7 @@ export interface FileRoutesByFullPath {
   '/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/ownership/products': typeof AuthenticatedOwnershipProductsRoute
-  '/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRoute
+  '/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRouteWithChildren
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -547,6 +554,7 @@ export interface FileRoutesByFullPath {
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
   '/api/public/webhooks/twilio-inbound': typeof ApiPublicWebhooksTwilioInboundRoute
   '/admin/inventory/': typeof AuthenticatedAdminInventoryIndexRoute
+  '/ownership/purchases/': typeof AuthenticatedOwnershipPurchasesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -595,7 +603,6 @@ export interface FileRoutesByTo {
   '/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/ownership/products': typeof AuthenticatedOwnershipProductsRoute
-  '/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -616,6 +623,7 @@ export interface FileRoutesByTo {
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
   '/api/public/webhooks/twilio-inbound': typeof ApiPublicWebhooksTwilioInboundRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryIndexRoute
+  '/ownership/purchases': typeof AuthenticatedOwnershipPurchasesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -670,7 +678,7 @@ export interface FileRoutesById {
   '/_authenticated/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/_authenticated/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/_authenticated/ownership/products': typeof AuthenticatedOwnershipProductsRoute
-  '/_authenticated/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRoute
+  '/_authenticated/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRouteWithChildren
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/products/compare': typeof AuthenticatedProductsCompareRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -691,6 +699,7 @@ export interface FileRoutesById {
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
   '/api/public/webhooks/twilio-inbound': typeof ApiPublicWebhooksTwilioInboundRoute
   '/_authenticated/admin/inventory/': typeof AuthenticatedAdminInventoryIndexRoute
+  '/_authenticated/ownership/purchases/': typeof AuthenticatedOwnershipPurchasesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -766,6 +775,7 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/paypal'
     | '/api/public/webhooks/twilio-inbound'
     | '/admin/inventory/'
+    | '/ownership/purchases/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -814,7 +824,6 @@ export interface FileRouteTypes {
     | '/intelligence/trends'
     | '/organisation/roles'
     | '/ownership/products'
-    | '/ownership/purchases'
     | '/products/$productId'
     | '/products/compare'
     | '/admin'
@@ -835,6 +844,7 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/paypal'
     | '/api/public/webhooks/twilio-inbound'
     | '/admin/inventory'
+    | '/ownership/purchases'
   id:
     | '__root__'
     | '/'
@@ -909,6 +919,7 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/paypal'
     | '/api/public/webhooks/twilio-inbound'
     | '/_authenticated/admin/inventory/'
+    | '/_authenticated/ownership/purchases/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1353,6 +1364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ownership/purchases/': {
+      id: '/_authenticated/ownership/purchases/'
+      path: '/'
+      fullPath: '/ownership/purchases/'
+      preLoaderRoute: typeof AuthenticatedOwnershipPurchasesIndexRouteImport
+      parentRoute: typeof AuthenticatedOwnershipPurchasesRoute
+    }
     '/_authenticated/admin/inventory/': {
       id: '/_authenticated/admin/inventory/'
       path: '/'
@@ -1511,16 +1529,32 @@ const AuthenticatedIntelligenceRouteWithChildren =
     AuthenticatedIntelligenceRouteChildren,
   )
 
+interface AuthenticatedOwnershipPurchasesRouteChildren {
+  AuthenticatedOwnershipPurchasesIndexRoute: typeof AuthenticatedOwnershipPurchasesIndexRoute
+}
+
+const AuthenticatedOwnershipPurchasesRouteChildren: AuthenticatedOwnershipPurchasesRouteChildren =
+  {
+    AuthenticatedOwnershipPurchasesIndexRoute:
+      AuthenticatedOwnershipPurchasesIndexRoute,
+  }
+
+const AuthenticatedOwnershipPurchasesRouteWithChildren =
+  AuthenticatedOwnershipPurchasesRoute._addFileChildren(
+    AuthenticatedOwnershipPurchasesRouteChildren,
+  )
+
 interface AuthenticatedOwnershipRouteChildren {
   AuthenticatedOwnershipProductsRoute: typeof AuthenticatedOwnershipProductsRoute
-  AuthenticatedOwnershipPurchasesRoute: typeof AuthenticatedOwnershipPurchasesRoute
+  AuthenticatedOwnershipPurchasesRoute: typeof AuthenticatedOwnershipPurchasesRouteWithChildren
   AuthenticatedOwnershipIndexRoute: typeof AuthenticatedOwnershipIndexRoute
 }
 
 const AuthenticatedOwnershipRouteChildren: AuthenticatedOwnershipRouteChildren =
   {
     AuthenticatedOwnershipProductsRoute: AuthenticatedOwnershipProductsRoute,
-    AuthenticatedOwnershipPurchasesRoute: AuthenticatedOwnershipPurchasesRoute,
+    AuthenticatedOwnershipPurchasesRoute:
+      AuthenticatedOwnershipPurchasesRouteWithChildren,
     AuthenticatedOwnershipIndexRoute: AuthenticatedOwnershipIndexRoute,
   }
 
