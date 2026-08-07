@@ -15,7 +15,7 @@ Ownership
 ├── Household
 ├── Warranties
 ├── Returns
-├── Wallet ID
+├── TAG ID
 ```
 
 Digital Receipts, Manuals, Service History, Insurance and Product Health live as tabs inside the screens they belong to (Receipts as a tab on Purchases; Manuals / Service History / Documents / Health as tabs on a product profile), so the sidebar stays at the six everyday destinations.
@@ -28,7 +28,7 @@ Digital Receipts, Manuals, Service History, Insurance and Product Health live as
 
 **Digital receipt wallet** — receipt vault with search, categorise, favourite, archive, and exports for tax and insurance. Receipts render as an on-screen preview with download PDF, share, print and export.
 
-**Wallet ID** — every consumer gets a permanent ID like `TAG-8427-KJ91`, shown as QR, barcode and an NFC identifier string. The code carries only the Wallet ID, no personal data. A retailer-side "record a purchase" flow lets staff scan/enter a Wallet ID and attach basket lines from existing inventory.
+**TAG ID** — every consumer gets a permanent ID like `TAG-8427-KJ91`, shown as QR, barcode and an NFC identifier string. The code carries only the TAG ID, no personal data. A retailer-side "record a purchase" flow lets staff scan/enter a TAG ID and attach basket lines from existing inventory.
 
 **Returns** — start a return, see status and eligibility (driven by the return window on the purchase), and generate a return QR.
 
@@ -50,9 +50,9 @@ Using the existing AI setup: summarise receipts, detect duplicate purchases, pre
 
 ## Data
 
-New tables: `consumer_wallets` (Wallet ID), `purchases`, `purchase_items`, `receipts`, `owned_products`, `warranties`, `warranty_claims`, `returns`, `service_events`, `product_documents`, `household_rooms`. All with grants and RLS scoped so retailer staff see only their own retailer's records, and rows carry the wallet ID so a future consumer login reads its own history unchanged.
+New tables: `consumer_tag_ids` (TAG ID), `purchases`, `purchase_items`, `receipts`, `owned_products`, `warranties`, `warranty_claims`, `returns`, `service_events`, `product_documents`, `household_rooms`. All with grants and RLS scoped so retailer staff see only their own retailer's records, and rows carry the TAG ID so a future consumer login reads its own history unchanged.
 
-Purchases are created two ways now: a retailer-side "Record purchase" dialog (scan Wallet ID, pick store, add inventory lines), plus a seeded demo dataset — a realistic household of purchases across several stores and categories with receipts, warranties at different stages, one active return and one recalled item — so every screen looks real on first open.
+Purchases are created two ways now: a retailer-side "Record purchase" dialog (scan TAG ID, pick store, add inventory lines), plus a seeded demo dataset — a realistic household of purchases across several stores and categories with receipts, warranties at different stages, one active return and one recalled item — so every screen looks real on first open.
 
 ## Technical notes
 
@@ -64,7 +64,7 @@ Purchases are created two ways now: a retailer-side "Record purchase" dialog (sc
 
 ## Build order
 
-1. Schema, grants, RLS, seed data, Wallet ID.
+1. Schema, grants, RLS, seed data, TAG ID.
 2. Purchases list, detail, receipt wallet, returns.
 3. My Products, product profile tabs, warranties, household.
 4. Exports and AI features.
