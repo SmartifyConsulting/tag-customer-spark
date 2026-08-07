@@ -251,124 +251,26 @@ export const recordPurchase = createServerFn({ method: "POST" })
     const { supabase, userId } = context as any;
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer for this user");
-
-    // Resolve (or create) the TAG ID this purchase belongs to.
-    let tagRow: any = null;
-    const { data: found } = await supabase
-      .from("consumer_tag_ids")
-      .select("*")
-      .eq("retailer_id", retailerId)
-      .eq("tag_id", data.tagId.trim().toUpperCase())
-      .maybeSingle();
-    tagRow = found;
-    if (!tagRow) {
-      const { data: created, error } = await supabase
-        .from("consumer_tag_ids")
-        .insert({ retailer_id: retailerId, tag_id: data.tagId.trim().toUpperCase() })
-        .select("*")
-        .maybeSingle();
-      if (error) throw new Error(error.message);
-      tagRow = created;
-    }
-
-    const total = data.items.reduce((s, i) => s + i.unitPriceCents * i.quantity, 0);
-    const receiptNumber =
-      data.receiptNumber?.trim() || `RCPT-${Math.floor(100000 + Math.random() * 899999)}`;
-
-    const { data: purchase, error: pErr } = await supabase
-      .from("purchases")
-      .insert({
-        retailer_id: retailerId,
-        store_id: data.storeId ?? null,
-        tag_ref: tagRow?.id ?? null,
-        purchased_at: data.purchasedAt ?? new Date().toISOString(),
-        receipt_number: receiptNumber,
-        payment_method: data.paymentMethod ?? null,
-        total_cents: total,
-        created_by: userId,
-      })
-      .select("*")
-      .maybeSingle();
-    if (pErr) throw new Error(pErr.message);
-
-    const { data: items, error: iErr } = await supabase
-      .from("purchase_items")
-      .insert(
-        data.items.map((i) => ({
-          retailer_id: retailerId,
-          purchase_id: purchase.id,
-          product_id: i.productId ?? null,
-          name: i.name,
-          brand: i.brand ?? null,
-          sku: i.sku ?? null,
-          category: i.category ?? null,
-          image_url: i.imageUrl ?? null,
-          quantity: i.quantity,
-          unit_price_cents: i.unitPriceCents,
-          line_total_cents: i.unitPriceCents * i.quantity,
-          warranty_months: i.warrantyMonths,
-          return_window_days: i.returnWindowDays,
-          serial_number: i.serialNumber ?? null,
-        })),
-      )
-      .select("*");
-    if (iErr) throw new Error(iErr.message);
-
-    await supabase.from("receipts").insert({
-      retailer_id: retailerId,
-      purchase_id: purchase.id,
-      receipt_number: receiptNumber,
-      issued_at: purchase.purchased_at,
-      category: data.items[0]?.category ?? null,
-    });
-
-    // Anything with a warranty becomes an owned product with a live warranty
-    // record — that's the bridge from purchase to ownership.
-    for (const item of (items ?? []) as any[]) {
-      if (!item.warranty_months || item.warranty_months <= 0) continue;
-      const { data: owned } = await supabase
-        .from("owned_products")
-        .insert({
-          retailer_id: retailerId,
-          tag_ref: tagRow?.id ?? null,
-          purchase_item_id: item.id,
-          product_id: item.product_id,
-          name: item.name,
-          brand: item.brand,
-          category: item.category ?? "Home",
-          image_url: item.image_url,
-          serial_number: item.serial_number,
-          purchased_at: purchase.purchased_at,
-          purchase_price_cents: item.unit_price_cents,
-          current_value_cents: item.unit_price_cents,
-        })
-        .select("id")
-        .maybeSingle();
-      if (owned) {
-        const start = new Date(purchase.purchased_at);
-        const end = new Date(start);
-        end.setMonth(end.getMonth() + item.warranty_months);
-        await supabase.from("warranties").insert({
-          retailer_id: retailerId,
-          owned_product_id: owned.id,
-          period_months: item.warranty_months,
-          starts_on: start.toISOString().slice(0, 10),
-          expires_on: end.toISOString().slice(0, 10),
-          status: "active",
-        });
-        await supabase.from("service_events").insert({
-          retailer_id: retailerId,
-          owned_product_id: owned.id,
-          kind: "purchase",
-          title: "Purchased",
-          occurred_at: purchase.purchased_at,
-          cost_cents: item.line_total_cents,
-        });
-      }
-    }
-
-    return { id: purchase.id as string, receiptNumber };
+    const { recordPurchaseFromTag } = await import("@/lib/ownership-purchase.server");
+    return recordPurchaseFromTag(supabase, retailerId, userId, data as any);
   });
+
+/**
+ * The counter flow: staff scan a customer's TAG ID, pick the store and the
+ * lines, and this single call writes purchase + receipt + ownership +
+ * warranty together.
+ */
+export const recordPurchaseFromTagScan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => recordPurchaseInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) throw new Error("No retailer for this user");
+    const { recordPurchaseFromTag } = await import("@/lib/ownership-purchase.server");
+    return recordPurchaseFromTag(supabase, retailerId, userId, data as any);
+  });
+
 
 // ── Receipts ─────────────────────────────────────────────────────────────
 
