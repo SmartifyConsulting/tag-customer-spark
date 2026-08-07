@@ -31,6 +31,7 @@ export type InfobipSendResult = {
 };
 
 export type InfobipRuntimeDiagnostic = {
+  keyBinding: "INFOBIP_API_KEY_V2" | "INFOBIP_API_KEY";
   keyFingerprint: string;
   keyLength: number;
   normalizedAppPrefix: boolean;
@@ -93,7 +94,8 @@ async function readRuntimeConfig(): Promise<RuntimeConfig | null> {
   // V2 is a versioned binding created to escape a production platform binding
   // that remained pinned to an older INFOBIP_API_KEY value after replacement.
   // Keep the original name as a fallback for existing environments.
-  const rawApiKey = process.env.INFOBIP_API_KEY_V2 ?? process.env.INFOBIP_API_KEY;
+  const v2ApiKey = process.env.INFOBIP_API_KEY_V2;
+  const rawApiKey = v2ApiKey ?? process.env.INFOBIP_API_KEY;
   const rawBaseUrl = process.env.INFOBIP_BASE_URL;
   const rawSender = process.env.INFOBIP_WHATSAPP_SENDER;
   if (!rawApiKey || !rawBaseUrl || !rawSender) return null;
@@ -111,6 +113,7 @@ async function readRuntimeConfig(): Promise<RuntimeConfig | null> {
     baseUrl: normalizedUrl,
     sender,
     diagnostic: {
+      keyBinding: v2ApiKey ? "INFOBIP_API_KEY_V2" : "INFOBIP_API_KEY",
       keyFingerprint: await fingerprint(apiKey),
       keyLength: apiKey.length,
       normalizedAppPrefix: hadAppPrefix,
