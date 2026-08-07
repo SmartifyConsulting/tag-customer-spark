@@ -65,6 +65,7 @@ import { Route as AuthenticatedCustomersConversationsRouteImport } from './route
 import { Route as AuthenticatedCommerceRoiRouteImport } from './routes/_authenticated/commerce.roi'
 import { Route as AuthenticatedCommercePricingRouteImport } from './routes/_authenticated/commerce.pricing'
 import { Route as AuthenticatedCommerceFunnelRouteImport } from './routes/_authenticated/commerce.funnel'
+import { Route as AuthenticatedAnalyticsSustainabilityRouteImport } from './routes/_authenticated/analytics.sustainability'
 import { Route as AuthenticatedAnalyticsReportsRouteImport } from './routes/_authenticated/analytics.reports'
 import { Route as AuthenticatedAnalyticsHistoryRouteImport } from './routes/_authenticated/analytics.history'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
@@ -391,6 +392,12 @@ const AuthenticatedCommerceFunnelRoute =
     path: '/commerce/funnel',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAnalyticsSustainabilityRoute =
+  AuthenticatedAnalyticsSustainabilityRouteImport.update({
+    id: '/sustainability',
+    path: '/sustainability',
+    getParentRoute: () => AuthenticatedAnalyticsRoute,
+  } as any)
 const AuthenticatedAnalyticsReportsRoute =
   AuthenticatedAnalyticsReportsRouteImport.update({
     id: '/reports',
@@ -571,6 +578,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
+  '/analytics/sustainability': typeof AuthenticatedAnalyticsSustainabilityRoute
   '/commerce/funnel': typeof AuthenticatedCommerceFunnelRoute
   '/commerce/pricing': typeof AuthenticatedCommercePricingRoute
   '/commerce/roi': typeof AuthenticatedCommerceRoiRoute
@@ -648,6 +656,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
+  '/analytics/sustainability': typeof AuthenticatedAnalyticsSustainabilityRoute
   '/commerce/funnel': typeof AuthenticatedCommerceFunnelRoute
   '/commerce/pricing': typeof AuthenticatedCommercePricingRoute
   '/commerce/roi': typeof AuthenticatedCommerceRoiRoute
@@ -729,6 +738,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/_authenticated/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
+  '/_authenticated/analytics/sustainability': typeof AuthenticatedAnalyticsSustainabilityRoute
   '/_authenticated/commerce/funnel': typeof AuthenticatedCommerceFunnelRoute
   '/_authenticated/commerce/pricing': typeof AuthenticatedCommercePricingRoute
   '/_authenticated/commerce/roi': typeof AuthenticatedCommerceRoiRoute
@@ -812,6 +822,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/analytics/history'
     | '/analytics/reports'
+    | '/analytics/sustainability'
     | '/commerce/funnel'
     | '/commerce/pricing'
     | '/commerce/roi'
@@ -889,6 +900,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/analytics/history'
     | '/analytics/reports'
+    | '/analytics/sustainability'
     | '/commerce/funnel'
     | '/commerce/pricing'
     | '/commerce/roi'
@@ -969,6 +981,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/users'
     | '/_authenticated/analytics/history'
     | '/_authenticated/analytics/reports'
+    | '/_authenticated/analytics/sustainability'
     | '/_authenticated/commerce/funnel'
     | '/_authenticated/commerce/pricing'
     | '/_authenticated/commerce/roi'
@@ -1439,6 +1452,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCommerceFunnelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/analytics/sustainability': {
+      id: '/_authenticated/analytics/sustainability'
+      path: '/sustainability'
+      fullPath: '/analytics/sustainability'
+      preLoaderRoute: typeof AuthenticatedAnalyticsSustainabilityRouteImport
+      parentRoute: typeof AuthenticatedAnalyticsRoute
+    }
     '/_authenticated/analytics/reports': {
       id: '/_authenticated/analytics/reports'
       path: '/reports'
@@ -1613,12 +1633,15 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAnalyticsRouteChildren {
   AuthenticatedAnalyticsHistoryRoute: typeof AuthenticatedAnalyticsHistoryRoute
   AuthenticatedAnalyticsReportsRoute: typeof AuthenticatedAnalyticsReportsRoute
+  AuthenticatedAnalyticsSustainabilityRoute: typeof AuthenticatedAnalyticsSustainabilityRoute
 }
 
 const AuthenticatedAnalyticsRouteChildren: AuthenticatedAnalyticsRouteChildren =
   {
     AuthenticatedAnalyticsHistoryRoute: AuthenticatedAnalyticsHistoryRoute,
     AuthenticatedAnalyticsReportsRoute: AuthenticatedAnalyticsReportsRoute,
+    AuthenticatedAnalyticsSustainabilityRoute:
+      AuthenticatedAnalyticsSustainabilityRoute,
   }
 
 const AuthenticatedAnalyticsRouteWithChildren =
@@ -1861,13 +1884,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

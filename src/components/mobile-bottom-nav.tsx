@@ -1,8 +1,10 @@
 import { useRouterState } from "@tanstack/react-router";
-import { MOBILE_NAV, isNavActive } from "@/lib/nav";
+import { mobileNavForPersona, isNavActive } from "@/lib/nav";
+import { usePersona } from "@/hooks/use-persona";
 
 export function MobileBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const items = mobileNavForPersona(usePersona());
 
   return (
     <nav
@@ -10,7 +12,7 @@ export function MobileBottomNav() {
       aria-label="Primary"
     >
       <ul className="mx-auto flex max-w-3xl items-stretch justify-between px-1 pb-[env(safe-area-inset-bottom)]">
-        {MOBILE_NAV.map((item) => {
+        {items.map((item) => {
           const active = isNavActive(item, pathname);
           return (
             <li key={item.url} className="flex-1">
