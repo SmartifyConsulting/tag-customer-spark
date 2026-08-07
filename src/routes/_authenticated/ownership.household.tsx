@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Download, Home, Plus } from "lucide-react";
+import { Download, Home, Plus, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatMoney } from "@/lib/format";
 import { exportExcel } from "@/components/ownership/export";
 import { OwnedCard } from "./ownership.products.index";
-import { exportInventory, listOwnedProducts, upsertRoom } from "@/lib/ownership.functions";
+import {
+  autoAssignRooms,
+  exportInventory,
+  listOwnedProducts,
+  moveOwnedProductToRoom,
+  upsertRoom,
+} from "@/lib/ownership.functions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/ownership/household")({
   head: () => ({
@@ -32,6 +45,8 @@ function HouseholdPage() {
   const listFn = useServerFn(listOwnedProducts);
   const roomFn = useServerFn(upsertRoom);
   const exportFn = useServerFn(exportInventory);
+  const autoFn = useServerFn(autoAssignRooms);
+  const moveFn = useServerFn(moveOwnedProductToRoom);
   const [newRoom, setNewRoom] = useState("");
 
   const { data, isLoading } = useQuery({ queryKey: ["ownership", "owned"], queryFn: () => listFn() });
@@ -44,6 +59,24 @@ function HouseholdPage() {
       qc.invalidateQueries({ queryKey: ["ownership", "owned"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not add the room"),
+  });
+
+  const autoAssign = useMutation({
+    mutationFn: () => autoFn(),
+    onSuccess: (r: any) => {
+      toast.success(r?.moved ? `Filed ${r.moved} item(s) by category` : "Everything is already filed");
+      qc.invalidateQueries({ queryKey: ["ownership", "owned"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not auto-file"),
+  });
+
+  const move = useMutation({
+    mutationFn: (input: { id: string; roomId: string | null }) => moveFn({ data: input }),
+    onSuccess: () => {
+      toast.success("Moved");
+      qc.invalidateQueries({ queryKey: ["ownership", "owned"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not move that item"),
   });
 
   const rooms = ((data as any)?.rooms ?? []) as any[];
@@ -97,6 +130,9 @@ function HouseholdPage() {
         <Button size="sm" disabled={newRoom.trim().length < 2 || addRoom.isPending} onClick={() => addRoom.mutate()}>
           <Plus className="mr-1.5 h-4 w-4" /> Add
         </Button>
+        <Button size="sm" variant="outline" disabled={autoAssign.isPending} onClick={() => autoAssign.mutate()}>
+          <Wand2 className="mr-1.5 h-4 w-4" /> Auto-file
+        </Button>
       </div>
 
       {isLoading ? (
@@ -105,14 +141,40 @@ function HouseholdPage() {
         sections.map((s) => (
           <section key={s.id} className="space-y-4">
             <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              <Home className="h-4 w-4" /> {s.name} · {s.items.length}
+              <Home className="h-4 w-4" /> {s.name} · {s.items.length} ·{" "}
+              {formatMoney(
+                s.items.reduce(
+                  (t: number, p: any) => t + (p.current_value_cents ?? p.purchase_price_cents ?? 0),
+                  0,
+                ),
+              )}
             </h2>
             {s.items.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nothing assigned to this room yet.</p>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {s.items.map((p) => (
-                  <OwnedCard key={p.id} product={p} />
+                  <div key={p.id} className="space-y-2">
+                    <OwnedCard product={p} />
+                    <Select
+                      value={p.room?.id ?? "unassigned"}
+                      onValueChange={(v) =>
+                        move.mutate({ id: p.id, roomId: v === "unassigned" ? null : v })
+                      }
+                    >
+                      <SelectTrigger className="h-8 text-xs" aria-label={`Room for ${p.name}`}>
+                        <SelectValue placeholder="Move to room" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        {rooms.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>
+                            {r.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 ))}
               </div>
             )}
