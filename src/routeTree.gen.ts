@@ -44,6 +44,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedBriefingRouteImport } from './routes/_authenticated/briefing'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as AuthenticatedPurchaseIndexRouteImport } from './routes/_authenticated/purchase.index'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
 import { Route as AuthenticatedOwnershipIndexRouteImport } from './routes/_authenticated/ownership.index'
 import { Route as AuthenticatedIntelligenceIndexRouteImport } from './routes/_authenticated/intelligence.index'
@@ -267,6 +268,12 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPurchaseIndexRoute =
+  AuthenticatedPurchaseIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPurchaseRoute,
+  } as any)
 const AuthenticatedProductsIndexRoute =
   AuthenticatedProductsIndexRouteImport.update({
     id: '/',
@@ -567,7 +574,7 @@ export interface FileRoutesByFullPath {
   '/intent': typeof AuthenticatedIntentRoute
   '/ownership': typeof AuthenticatedOwnershipRouteWithChildren
   '/products': typeof AuthenticatedProductsRouteWithChildren
-  '/purchase': typeof AuthenticatedPurchaseRoute
+  '/purchase': typeof AuthenticatedPurchaseRouteWithChildren
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
@@ -608,6 +615,7 @@ export interface FileRoutesByFullPath {
   '/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/ownership/': typeof AuthenticatedOwnershipIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
+  '/purchase/': typeof AuthenticatedPurchaseIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/ownership/products/$productId': typeof AuthenticatedOwnershipProductsProductIdRoute
   '/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
@@ -647,7 +655,6 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/intent': typeof AuthenticatedIntentRoute
-  '/purchase': typeof AuthenticatedPurchaseRoute
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
@@ -685,6 +692,7 @@ export interface FileRoutesByTo {
   '/intelligence': typeof AuthenticatedIntelligenceIndexRoute
   '/ownership': typeof AuthenticatedOwnershipIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
+  '/purchase': typeof AuthenticatedPurchaseIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/ownership/products/$productId': typeof AuthenticatedOwnershipProductsProductIdRoute
   '/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
@@ -729,7 +737,7 @@ export interface FileRoutesById {
   '/_authenticated/intent': typeof AuthenticatedIntentRoute
   '/_authenticated/ownership': typeof AuthenticatedOwnershipRouteWithChildren
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
-  '/_authenticated/purchase': typeof AuthenticatedPurchaseRoute
+  '/_authenticated/purchase': typeof AuthenticatedPurchaseRouteWithChildren
   '/_authenticated/roi': typeof AuthenticatedRoiRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
@@ -770,6 +778,7 @@ export interface FileRoutesById {
   '/_authenticated/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/_authenticated/ownership/': typeof AuthenticatedOwnershipIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
+  '/_authenticated/purchase/': typeof AuthenticatedPurchaseIndexRoute
   '/_authenticated/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
   '/_authenticated/ownership/products/$productId': typeof AuthenticatedOwnershipProductsProductIdRoute
   '/_authenticated/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
@@ -855,6 +864,7 @@ export interface FileRouteTypes {
     | '/intelligence/'
     | '/ownership/'
     | '/products/'
+    | '/purchase/'
     | '/admin/inventory/$productId'
     | '/ownership/products/$productId'
     | '/ownership/purchases/$purchaseId'
@@ -894,7 +904,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/inbox'
     | '/intent'
-    | '/purchase'
     | '/roi'
     | '/settings'
     | '/staff'
@@ -932,6 +941,7 @@ export interface FileRouteTypes {
     | '/intelligence'
     | '/ownership'
     | '/products'
+    | '/purchase'
     | '/admin/inventory/$productId'
     | '/ownership/products/$productId'
     | '/ownership/purchases/$purchaseId'
@@ -1016,6 +1026,7 @@ export interface FileRouteTypes {
     | '/_authenticated/intelligence/'
     | '/_authenticated/ownership/'
     | '/_authenticated/products/'
+    | '/_authenticated/purchase/'
     | '/_authenticated/admin/inventory/$productId'
     | '/_authenticated/ownership/products/$productId'
     | '/_authenticated/ownership/purchases/$purchaseId'
@@ -1316,6 +1327,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/analytics'
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/purchase/': {
+      id: '/_authenticated/purchase/'
+      path: '/'
+      fullPath: '/purchase/'
+      preLoaderRoute: typeof AuthenticatedPurchaseIndexRouteImport
+      parentRoute: typeof AuthenticatedPurchaseRoute
     }
     '/_authenticated/products/': {
       id: '/_authenticated/products/'
@@ -1791,6 +1809,19 @@ const AuthenticatedProductsRouteWithChildren =
     AuthenticatedProductsRouteChildren,
   )
 
+interface AuthenticatedPurchaseRouteChildren {
+  AuthenticatedPurchaseIndexRoute: typeof AuthenticatedPurchaseIndexRoute
+}
+
+const AuthenticatedPurchaseRouteChildren: AuthenticatedPurchaseRouteChildren = {
+  AuthenticatedPurchaseIndexRoute: AuthenticatedPurchaseIndexRoute,
+}
+
+const AuthenticatedPurchaseRouteWithChildren =
+  AuthenticatedPurchaseRoute._addFileChildren(
+    AuthenticatedPurchaseRouteChildren,
+  )
+
 interface AuthenticatedAdminInventoryRouteChildren {
   AuthenticatedAdminInventoryProductIdRoute: typeof AuthenticatedAdminInventoryProductIdRoute
   AuthenticatedAdminInventoryIndexRoute: typeof AuthenticatedAdminInventoryIndexRoute
@@ -1819,7 +1850,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
   AuthenticatedOwnershipRoute: typeof AuthenticatedOwnershipRouteWithChildren
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
-  AuthenticatedPurchaseRoute: typeof AuthenticatedPurchaseRoute
+  AuthenticatedPurchaseRoute: typeof AuthenticatedPurchaseRouteWithChildren
   AuthenticatedRoiRoute: typeof AuthenticatedRoiRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
@@ -1847,7 +1878,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIntentRoute: AuthenticatedIntentRoute,
   AuthenticatedOwnershipRoute: AuthenticatedOwnershipRouteWithChildren,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
-  AuthenticatedPurchaseRoute: AuthenticatedPurchaseRoute,
+  AuthenticatedPurchaseRoute: AuthenticatedPurchaseRouteWithChildren,
   AuthenticatedRoiRoute: AuthenticatedRoiRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
