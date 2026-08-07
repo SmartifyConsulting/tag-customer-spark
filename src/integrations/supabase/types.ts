@@ -2968,6 +2968,7 @@ export type Database = {
           purchase_id: string
           receipt_number: string | null
           retailer_id: string
+          status: Database["public"]["Enums"]["receipt_status"]
           updated_at: string
         }
         Insert: {
@@ -2982,6 +2983,7 @@ export type Database = {
           purchase_id: string
           receipt_number?: string | null
           retailer_id: string
+          status?: Database["public"]["Enums"]["receipt_status"]
           updated_at?: string
         }
         Update: {
@@ -2996,6 +2998,7 @@ export type Database = {
           purchase_id?: string
           receipt_number?: string | null
           retailer_id?: string
+          status?: Database["public"]["Enums"]["receipt_status"]
           updated_at?: string
         }
         Relationships: [
@@ -4475,6 +4478,15 @@ export type Database = {
       product_status: "active" | "draft" | "archived"
       promotion_status: "scheduled" | "active" | "ended" | "cancelled"
       qr_status: "active" | "inactive" | "retired"
+      receipt_status:
+        | "paper"
+        | "digital"
+        | "synced"
+        | "pending"
+        | "failed"
+        | "returned"
+        | "refunded"
+        | "warranty_registered"
       recovery_status: "attributed" | "pending" | "rejected"
       redemption_status: "issued" | "redeemed" | "expired" | "void"
       retailer_status: "active" | "suspended" | "cancelled"
@@ -4666,6 +4678,16 @@ export const Constants = {
       product_status: ["active", "draft", "archived"],
       promotion_status: ["scheduled", "active", "ended", "cancelled"],
       qr_status: ["active", "inactive", "retired"],
+      receipt_status: [
+        "paper",
+        "digital",
+        "synced",
+        "pending",
+        "failed",
+        "returned",
+        "refunded",
+        "warranty_registered",
+      ],
       recovery_status: ["attributed", "pending", "rejected"],
       redemption_status: ["issued", "redeemed", "expired", "void"],
       retailer_status: ["active", "suspended", "cancelled"],
