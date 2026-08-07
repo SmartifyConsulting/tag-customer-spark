@@ -50,6 +50,9 @@ export type InfobipRuntimeDiagnostic = {
   providerMessageId?: string;
   /** Truncated raw provider error body (never contains our credentials). */
   rawErrorBody?: string;
+};
+
+
 
 
 type RuntimeConfig = {
