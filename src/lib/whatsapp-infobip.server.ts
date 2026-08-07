@@ -44,7 +44,13 @@ export type InfobipRuntimeDiagnostic = {
   availableBindings?: string[];
   /** Bindings actually attempted before this result (auth retry evidence). */
   attemptedBindings?: string[];
-};
+  /** Provider HTTP status on failure. */
+  httpStatus?: number;
+  /** Infobip's own error identifier, e.g. "UNAUTHORIZED". */
+  providerMessageId?: string;
+  /** Truncated raw provider error body (never contains our credentials). */
+  rawErrorBody?: string;
+
 
 type RuntimeConfig = {
   apiKey: string;
