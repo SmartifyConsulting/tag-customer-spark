@@ -84,8 +84,8 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
         try {
           const body: any = await request.clone().json().catch(() => ({}));
           if (body?.sendTo) {
-            const { sendWhatsAppTemplate } = await import("@/lib/whatsapp-service.server");
-            send = await sendWhatsAppTemplate({
+            const { sendTemplate } = await import("@/lib/whatsapp-service.server");
+            send = await sendTemplate({
               to: String(body.sendTo),
               templateName: String(body.template ?? "tag_scan_v5"),
               variables: {},
