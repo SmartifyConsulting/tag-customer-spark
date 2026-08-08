@@ -1,7 +1,7 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Trash2, Camera, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +40,98 @@ const emptyLine: Line = {
 
 const CATEGORIES = ["Home", "Electronics", "Kitchen", "Garden", "Clothing", "Automotive"];
 
+function CameraCapture({ onCapture }: { onCapture: (file: File) => void }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setError(null);
+    setStarting(true);
+
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play().catch(() => {});
+        }
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message ?? "Camera unavailable");
+      } finally {
+        if (!cancelled) setStarting(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    };
+  }, []);
+
+  const capture = () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(
+      (blob) => {
+        if (blob) onCapture(new File([blob], `receipt-${Date.now()}.jpg`, { type: "image/jpeg" }));
+      },
+      "image/jpeg",
+      0.9,
+    );
+  };
+
+  return (
+    <div className="relative aspect-[3/4] w-full max-w-sm overflow-hidden rounded-lg bg-black sm:aspect-video sm:max-w-none">
+      <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
+      <div className="pointer-events-none absolute inset-4 rounded-lg border-2 border-white/60" />
+      {starting && (
+        <div className="absolute inset-0 grid place-items-center bg-black/40 text-white">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <p className="text-xs">Starting camera...</p>
+          </div>
+        </div>
+      )}
+      {error && (
+        <div className="absolute inset-0 grid place-items-center bg-black/70 p-4 text-center text-sm text-white">
+          <div>
+            <p className="font-medium">Cannot access the camera</p>
+            <p className="mt-1 text-xs opacity-80">Allow camera permission for this site, then reload.</p>
+          </div>
+        </div>
+      )}
+      {!starting && !error && (
+        <div className="absolute inset-x-0 bottom-3 flex justify-center">
+          <button
+            type="button"
+            onClick={capture}
+            aria-label="Take photo"
+            className="h-14 w-14 rounded-full border-4 border-white bg-white/30 backdrop-blur-sm transition active:scale-95"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function RecordPurchaseDialog() {
   const [open, setOpen] = useState(false);
   const [tagId, setTagId] = useState("");
@@ -47,9 +139,8 @@ export function RecordPurchaseDialog() {
   const [payment, setPayment] = useState("Card");
   const [lines, setLines] = useState<Line[]>([{ ...emptyLine }]);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
 
   const storesFn = useServerFn(listStores);
@@ -101,12 +192,17 @@ export function RecordPurchaseDialog() {
     0,
   );
 
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPhotoFile(file);
-      extractReceiptData(file);
-    }
+  const handleCaptured = (file: File) => {
+    setPhotoFile(file);
+    setPhotoUrl(URL.createObjectURL(file));
+    extractReceiptData(file);
+  };
+
+  const retake = () => {
+    if (photoUrl) URL.revokeObjectURL(photoUrl);
+    setPhotoFile(null);
+    setPhotoUrl(null);
+    setLines([{ ...emptyLine }]);
   };
 
   const extractReceiptData = async (file: File) => {
@@ -127,7 +223,13 @@ export function RecordPurchaseDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) retake();
+      }}
+    >
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-1.5 h-4 w-4" /> Record purchase
@@ -141,60 +243,28 @@ export function RecordPurchaseDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed border-border p-8">
+        <div className="flex flex-col items-center justify-center gap-4">
           {!photoFile ? (
-            <>
-              <Camera className="h-8 w-8 text-muted-foreground" />
-              <div className="text-center">
-                <p className="font-medium">Add a receipt photo</p>
-                <p className="text-xs text-muted-foreground">Take a photo now or choose one from your library</p>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handlePhotoSelect}
-              />
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handlePhotoSelect}
-              />
-              <div className="flex gap-2">
-                <Button onClick={() => cameraInputRef.current?.click()}>
-                  <Camera className="mr-1.5 h-4 w-4" /> Take photo
-                </Button>
-                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                  Choose from library
-                </Button>
-              </div>
-            </>
+            open && <CameraCapture onCapture={handleCaptured} />
           ) : (
-            <>
-              <div className="text-center">
-                <p className="font-medium">{photoFile.name}</p>
-                {extracting && (
-                  <div className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Extracting data...
-                  </div>
+            <div className="w-full max-w-sm space-y-3 sm:max-w-none">
+              <div className="overflow-hidden rounded-lg border border-border">
+                {photoUrl && (
+                  <img src={photoUrl} alt="Captured receipt" className="max-h-72 w-full object-contain bg-muted" />
                 )}
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setPhotoFile(null);
-                  setLines([{ ...emptyLine }]);
-                }}
-              >
-                Change photo
-              </Button>
-            </>
+              {extracting && (
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Extracting data...
+                </div>
+              )}
+              <div className="flex justify-center">
+                <Button variant="outline" size="sm" onClick={retake}>
+                  <RotateCcw className="mr-1.5 h-4 w-4" /> Retake photo
+                </Button>
+              </div>
+            </div>
           )}
         </div>
 
@@ -222,7 +292,7 @@ export function RecordPurchaseDialog() {
           </div>
         )}
 
-        {/* Item entry — shown once a receipt photo has been added */}
+        {/* Item entry — shown once a receipt photo has been captured */}
         {photoFile && (
           <div className="space-y-3 border-t pt-4">
             <h3 className="text-sm font-medium">Items</h3>

@@ -13,6 +13,7 @@ import { briefingQueryOptions } from "@/lib/dashboard";
 import { TagReaderTile } from "@/components/qr/tag-reader-tile";
 import { UIVersionSwitcher } from "@/components/ui-version-switcher";
 import { ShopperTagButton } from "@/components/ownership/shopper-tag-button";
+import { UserMenu } from "@/components/user-menu";
 import { useIsStaff } from "@/hooks/use-persona";
 
 
@@ -95,13 +96,14 @@ function AuthenticatedLayout() {
 
             <TagLogo
               variant="wordmark"
-              heightClass="h-[9.547rem] sm:h-[10.608rem]"
+              heightClass="h-[14.798rem] sm:h-[10.608rem]"
               className="justify-self-center"
             />
 
             <div className="flex items-center gap-3 justify-self-end">
               {!isStaff && <ShopperTagButton />}
               {!isStaff && <UIVersionSwitcher />}
+              {!isStaff && <UserMenu />}
             </div>
           </header>
 
