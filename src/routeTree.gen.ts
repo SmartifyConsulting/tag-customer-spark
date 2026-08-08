@@ -78,6 +78,7 @@ import { Route as AuthenticatedAnalyticsSustainabilityRouteImport } from './rout
 import { Route as AuthenticatedAnalyticsReportsRouteImport } from './routes/_authenticated/analytics.reports'
 import { Route as AuthenticatedAnalyticsHistoryRouteImport } from './routes/_authenticated/analytics.history'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
+import { Route as AuthenticatedAdminSystemRouteImport } from './routes/_authenticated/admin.system'
 import { Route as AuthenticatedAdminPricingRouteImport } from './routes/_authenticated/admin.pricing'
 import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authenticated/admin.inventory'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin.categories'
@@ -476,6 +477,12 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminSystemRoute =
+  AuthenticatedAdminSystemRouteImport.update({
+    id: '/admin/system',
+    path: '/admin/system',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminPricingRoute =
   AuthenticatedAdminPricingRouteImport.update({
     id: '/admin/pricing',
@@ -646,6 +653,7 @@ export interface FileRoutesByFullPath {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRouteWithChildren
   '/admin/pricing': typeof AuthenticatedAdminPricingRoute
+  '/admin/system': typeof AuthenticatedAdminSystemRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -733,6 +741,7 @@ export interface FileRoutesByTo {
   '/tools/barcode-reader': typeof ToolsBarcodeReaderRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/pricing': typeof AuthenticatedAdminPricingRoute
+  '/admin/system': typeof AuthenticatedAdminSystemRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -825,6 +834,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRouteWithChildren
   '/_authenticated/admin/pricing': typeof AuthenticatedAdminPricingRoute
+  '/_authenticated/admin/system': typeof AuthenticatedAdminSystemRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/_authenticated/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
@@ -919,6 +929,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/inventory'
     | '/admin/pricing'
+    | '/admin/system'
     | '/admin/users'
     | '/analytics/history'
     | '/analytics/reports'
@@ -1006,6 +1017,7 @@ export interface FileRouteTypes {
     | '/tools/barcode-reader'
     | '/admin/categories'
     | '/admin/pricing'
+    | '/admin/system'
     | '/admin/users'
     | '/analytics/history'
     | '/analytics/reports'
@@ -1097,6 +1109,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/inventory'
     | '/_authenticated/admin/pricing'
+    | '/_authenticated/admin/system'
     | '/_authenticated/admin/users'
     | '/_authenticated/analytics/history'
     | '/_authenticated/analytics/reports'
@@ -1669,6 +1682,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/system': {
+      id: '/_authenticated/admin/system'
+      path: '/admin/system'
+      fullPath: '/admin/system'
+      preLoaderRoute: typeof AuthenticatedAdminSystemRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/pricing': {
       id: '/_authenticated/admin/pricing'
       path: '/admin/pricing'
@@ -2030,6 +2050,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminInventoryRoute: typeof AuthenticatedAdminInventoryRouteWithChildren
   AuthenticatedAdminPricingRoute: typeof AuthenticatedAdminPricingRoute
+  AuthenticatedAdminSystemRoute: typeof AuthenticatedAdminSystemRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedCommerceFunnelRoute: typeof AuthenticatedCommerceFunnelRoute
   AuthenticatedCommercePricingRoute: typeof AuthenticatedCommercePricingRoute
@@ -2062,6 +2083,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminInventoryRoute:
     AuthenticatedAdminInventoryRouteWithChildren,
   AuthenticatedAdminPricingRoute: AuthenticatedAdminPricingRoute,
+  AuthenticatedAdminSystemRoute: AuthenticatedAdminSystemRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedCommerceFunnelRoute: AuthenticatedCommerceFunnelRoute,
   AuthenticatedCommercePricingRoute: AuthenticatedCommercePricingRoute,
@@ -2110,3 +2132,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
