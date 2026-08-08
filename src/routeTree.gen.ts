@@ -45,6 +45,7 @@ import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedBriefingRouteImport } from './routes/_authenticated/briefing'
+import { Route as AuthenticatedBarcodeTaggerRouteImport } from './routes/_authenticated/barcode-tagger'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedPurchaseIndexRouteImport } from './routes/_authenticated/purchase.index'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
@@ -60,6 +61,7 @@ import { Route as AuthenticatedOwnershipTagIdRouteImport } from './routes/_authe
 import { Route as AuthenticatedOwnershipReturnsRouteImport } from './routes/_authenticated/ownership.returns'
 import { Route as AuthenticatedOwnershipPurchasesRouteImport } from './routes/_authenticated/ownership.purchases'
 import { Route as AuthenticatedOwnershipProductsRouteImport } from './routes/_authenticated/ownership.products'
+import { Route as AuthenticatedOwnershipOutletsRouteImport } from './routes/_authenticated/ownership.outlets'
 import { Route as AuthenticatedOwnershipHouseholdRouteImport } from './routes/_authenticated/ownership.household'
 import { Route as AuthenticatedOwnershipDocumentsRouteImport } from './routes/_authenticated/ownership.documents'
 import { Route as AuthenticatedOrganisationRolesRouteImport } from './routes/_authenticated/organisation.roles'
@@ -279,6 +281,12 @@ const AuthenticatedBriefingRoute = AuthenticatedBriefingRouteImport.update({
   path: '/briefing',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBarcodeTaggerRoute =
+  AuthenticatedBarcodeTaggerRouteImport.update({
+    id: '/barcode-tagger',
+    path: '/barcode-tagger',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -365,6 +373,12 @@ const AuthenticatedOwnershipProductsRoute =
   AuthenticatedOwnershipProductsRouteImport.update({
     id: '/products',
     path: '/products',
+    getParentRoute: () => AuthenticatedOwnershipRoute,
+  } as any)
+const AuthenticatedOwnershipOutletsRoute =
+  AuthenticatedOwnershipOutletsRouteImport.update({
+    id: '/outlets',
+    path: '/outlets',
     getParentRoute: () => AuthenticatedOwnershipRoute,
   } as any)
 const AuthenticatedOwnershipHouseholdRoute =
@@ -606,6 +620,7 @@ export interface FileRoutesByFullPath {
   '/setup': typeof SetupRoute
   '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
+  '/barcode-tagger': typeof AuthenticatedBarcodeTaggerRoute
   '/briefing': typeof AuthenticatedBriefingRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -647,6 +662,7 @@ export interface FileRoutesByFullPath {
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/ownership/documents': typeof AuthenticatedOwnershipDocumentsRoute
   '/ownership/household': typeof AuthenticatedOwnershipHouseholdRoute
+  '/ownership/outlets': typeof AuthenticatedOwnershipOutletsRoute
   '/ownership/products': typeof AuthenticatedOwnershipProductsRouteWithChildren
   '/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRouteWithChildren
   '/ownership/returns': typeof AuthenticatedOwnershipReturnsRoute
@@ -696,6 +712,7 @@ export interface FileRoutesByTo {
   '/setup': typeof SetupRoute
   '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
+  '/barcode-tagger': typeof AuthenticatedBarcodeTaggerRoute
   '/briefing': typeof AuthenticatedBriefingRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -732,6 +749,7 @@ export interface FileRoutesByTo {
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/ownership/documents': typeof AuthenticatedOwnershipDocumentsRoute
   '/ownership/household': typeof AuthenticatedOwnershipHouseholdRoute
+  '/ownership/outlets': typeof AuthenticatedOwnershipOutletsRoute
   '/ownership/returns': typeof AuthenticatedOwnershipReturnsRoute
   '/ownership/tag-id': typeof AuthenticatedOwnershipTagIdRoute
   '/ownership/warranties': typeof AuthenticatedOwnershipWarrantiesRoute
@@ -781,6 +799,7 @@ export interface FileRoutesById {
   '/setup': typeof SetupRoute
   '/terms': typeof TermsRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
+  '/_authenticated/barcode-tagger': typeof AuthenticatedBarcodeTaggerRoute
   '/_authenticated/briefing': typeof AuthenticatedBriefingRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -822,6 +841,7 @@ export interface FileRoutesById {
   '/_authenticated/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
   '/_authenticated/ownership/documents': typeof AuthenticatedOwnershipDocumentsRoute
   '/_authenticated/ownership/household': typeof AuthenticatedOwnershipHouseholdRoute
+  '/_authenticated/ownership/outlets': typeof AuthenticatedOwnershipOutletsRoute
   '/_authenticated/ownership/products': typeof AuthenticatedOwnershipProductsRouteWithChildren
   '/_authenticated/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRouteWithChildren
   '/_authenticated/ownership/returns': typeof AuthenticatedOwnershipReturnsRoute
@@ -873,6 +893,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/terms'
     | '/analytics'
+    | '/barcode-tagger'
     | '/briefing'
     | '/customers'
     | '/dashboard'
@@ -914,6 +935,7 @@ export interface FileRouteTypes {
     | '/organisation/roles'
     | '/ownership/documents'
     | '/ownership/household'
+    | '/ownership/outlets'
     | '/ownership/products'
     | '/ownership/purchases'
     | '/ownership/returns'
@@ -963,6 +985,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/terms'
     | '/analytics'
+    | '/barcode-tagger'
     | '/briefing'
     | '/customers'
     | '/dashboard'
@@ -999,6 +1022,7 @@ export interface FileRouteTypes {
     | '/organisation/roles'
     | '/ownership/documents'
     | '/ownership/household'
+    | '/ownership/outlets'
     | '/ownership/returns'
     | '/ownership/tag-id'
     | '/ownership/warranties'
@@ -1047,6 +1071,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/terms'
     | '/_authenticated/analytics'
+    | '/_authenticated/barcode-tagger'
     | '/_authenticated/briefing'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
@@ -1088,6 +1113,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organisation/roles'
     | '/_authenticated/ownership/documents'
     | '/_authenticated/ownership/household'
+    | '/_authenticated/ownership/outlets'
     | '/_authenticated/ownership/products'
     | '/_authenticated/ownership/purchases'
     | '/_authenticated/ownership/returns'
@@ -1412,6 +1438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBriefingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/barcode-tagger': {
+      id: '/_authenticated/barcode-tagger'
+      path: '/barcode-tagger'
+      fullPath: '/barcode-tagger'
+      preLoaderRoute: typeof AuthenticatedBarcodeTaggerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/analytics': {
       id: '/_authenticated/analytics'
       path: '/analytics'
@@ -1515,6 +1548,13 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/ownership/products'
       preLoaderRoute: typeof AuthenticatedOwnershipProductsRouteImport
+      parentRoute: typeof AuthenticatedOwnershipRoute
+    }
+    '/_authenticated/ownership/outlets': {
+      id: '/_authenticated/ownership/outlets'
+      path: '/outlets'
+      fullPath: '/ownership/outlets'
+      preLoaderRoute: typeof AuthenticatedOwnershipOutletsRouteImport
       parentRoute: typeof AuthenticatedOwnershipRoute
     }
     '/_authenticated/ownership/household': {
@@ -1885,6 +1925,7 @@ const AuthenticatedOwnershipPurchasesRouteWithChildren =
 interface AuthenticatedOwnershipRouteChildren {
   AuthenticatedOwnershipDocumentsRoute: typeof AuthenticatedOwnershipDocumentsRoute
   AuthenticatedOwnershipHouseholdRoute: typeof AuthenticatedOwnershipHouseholdRoute
+  AuthenticatedOwnershipOutletsRoute: typeof AuthenticatedOwnershipOutletsRoute
   AuthenticatedOwnershipProductsRoute: typeof AuthenticatedOwnershipProductsRouteWithChildren
   AuthenticatedOwnershipPurchasesRoute: typeof AuthenticatedOwnershipPurchasesRouteWithChildren
   AuthenticatedOwnershipReturnsRoute: typeof AuthenticatedOwnershipReturnsRoute
@@ -1897,6 +1938,7 @@ const AuthenticatedOwnershipRouteChildren: AuthenticatedOwnershipRouteChildren =
   {
     AuthenticatedOwnershipDocumentsRoute: AuthenticatedOwnershipDocumentsRoute,
     AuthenticatedOwnershipHouseholdRoute: AuthenticatedOwnershipHouseholdRoute,
+    AuthenticatedOwnershipOutletsRoute: AuthenticatedOwnershipOutletsRoute,
     AuthenticatedOwnershipProductsRoute:
       AuthenticatedOwnershipProductsRouteWithChildren,
     AuthenticatedOwnershipPurchasesRoute:
@@ -1967,6 +2009,7 @@ const AuthenticatedAdminInventoryRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRouteWithChildren
+  AuthenticatedBarcodeTaggerRoute: typeof AuthenticatedBarcodeTaggerRoute
   AuthenticatedBriefingRoute: typeof AuthenticatedBriefingRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -1997,6 +2040,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRouteWithChildren,
+  AuthenticatedBarcodeTaggerRoute: AuthenticatedBarcodeTaggerRoute,
   AuthenticatedBriefingRoute: AuthenticatedBriefingRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
@@ -2066,3 +2110,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
