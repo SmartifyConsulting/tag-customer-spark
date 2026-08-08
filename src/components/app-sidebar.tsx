@@ -23,6 +23,7 @@ import { useTier } from "@/hooks/use-tier";
 import { useAuth, useIsAdmin, useIsSuperAdmin } from "@/hooks/use-auth";
 import { UserMenu } from "@/components/user-menu";
 import { QrPreview } from "@/components/qr/qr-preview";
+import { UIVersionSwitcher } from "@/components/ui-version-switcher";
 import { sectionsForUser, isNavActive, type NavItem } from "@/lib/nav";
 import { getTagIdentity } from "@/lib/ownership.functions";
 import { useIsStaff } from "@/hooks/use-persona";
@@ -58,15 +59,25 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="hidden border-r-0 overflow-visible md:flex">
-      {/* Shopper QR Code Header */}
+      {/* Header: QR Code (Shopper) or Demo Controls */}
       {!collapsed && tagData?.tag_id && !isStaff && (
         <SidebarHeader className="flex flex-col items-center gap-2 py-3 px-2">
-          <div className="text-xs font-semibold text-sidebar-foreground/60">My Shopper Tag</div>
+          <div className="flex items-center justify-between w-full mb-1">
+            <div className="text-xs font-semibold text-sidebar-foreground/60">My Shopper Tag</div>
+            <UIVersionSwitcher />
+          </div>
           <QrPreview value={tagData.tag_id} size={120} />
         </SidebarHeader>
       )}
+      {!collapsed && (!tagData?.tag_id || isStaff) && (
+        <SidebarHeader className="flex items-center justify-end py-2 px-3 h-16">
+          <UIVersionSwitcher />
+        </SidebarHeader>
+      )}
       {collapsed && (
-        <SidebarHeader className="bg-sidebar h-16 justify-end p-0 pb-2" />
+        <SidebarHeader className="bg-sidebar h-16 justify-center p-0 flex items-center">
+          <UIVersionSwitcher />
+        </SidebarHeader>
       )}
 
       <SidebarContent className="px-1.5 pb-3 pt-2">
