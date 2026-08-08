@@ -137,9 +137,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Shopper accounts never get a retailer provisioned — they stay
       // role-less (wallet persona) and just link to whichever retailer's
       // customer record matches their WhatsApp number (see
-      // resolveRetailerId in ownership.functions.ts).
+      // resolveRetailerId in ownership.functions.ts). A DB trigger
+      // (handle_new_user) inserts a default retailer_id=NULL role row on
+      // every signup regardless of account type — strip it here so
+      // roles.length stays 0 and personaFromRoles keeps treating this as
+      // "wallet", not "retail".
       if (!provisioningAttempted.current) {
         provisioningAttempted.current = true;
+        if (rows.some((r) => !r.retailer_id)) {
+          await supabase.from("user_roles").delete().eq("user_id", userId).is("retailer_id", null);
+          rows = rows.filter((r) => r.retailer_id);
+        }
         const whatsapp = authUser.user?.user_metadata?.whatsapp_e164 as string | undefined;
         if (whatsapp) {
           try {
