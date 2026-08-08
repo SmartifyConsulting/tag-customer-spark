@@ -96,98 +96,17 @@ function PurchasesPage() {
     <div className="space-y-8">
       <PageHeader
         title="Purchases"
-        description="Every purchase captured digitally — the bridge between discovery and ownership."
+        description="Your digital receipts and purchase history in one place."
         actions={<RecordPurchaseDialog />}
       />
 
       <LifecycleAlerts />
 
-      <Tabs defaultValue="purchases" className="space-y-6">
+      <Tabs defaultValue="receipts" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="purchases">Purchases</TabsTrigger>
           <TabsTrigger value="receipts">Receipts</TabsTrigger>
           <TabsTrigger value="returns">Returns</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="purchases" className="space-y-6">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="relative sm:col-span-2">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                placeholder="Search product, brand, store, SKU or receipt number"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <FilterSelect
-              value={storeId}
-              onChange={setStoreId}
-              placeholder="All stores"
-              options={((data as any)?.stores ?? []).map((s: any) => ({ value: s.id, label: s.name }))}
-            />
-            <FilterSelect
-              value={category}
-              onChange={setCategory}
-              placeholder="All categories"
-              options={((data as any)?.categories ?? []).map((c: string) => ({ value: c, label: c }))}
-            />
-            <FilterSelect
-              value={brand}
-              onChange={setBrand}
-              placeholder="All brands"
-              options={((data as any)?.brands ?? []).map((b: string) => ({ value: b, label: b }))}
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {[
-              { key: ALL, label: "Everything" },
-              { key: "warranty", label: "Warranty expiring" },
-              { key: "returned", label: "Returned or refunded" },
-            ].map((f) => (
-              <Button
-                key={f.key}
-                size="sm"
-                variant={flag === f.key ? "default" : "outline"}
-                onClick={() => setFlag(f.key)}
-              >
-                {f.label}
-              </Button>
-            ))}
-          </div>
-
-          {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="h-44 rounded-xl" />
-              ))}
-            </div>
-          ) : purchases.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-sm text-muted-foreground">
-                No purchases match those filters yet.
-              </CardContent>
-            </Card>
-          ) : (
-            <Accordion type="multiple" defaultValue={groupByDate(purchases).map((g) => g.label)}>
-              {groupByDate(purchases).map((group) => (
-                <AccordionItem key={group.label} value={group.label}>
-                  <AccordionTrigger className="text-sm font-semibold">
-                    {group.label} <span className="ml-2 font-normal text-muted-foreground">({group.items.length})</span>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="grid gap-4 pt-2 md:grid-cols-2 xl:grid-cols-3">
-                      {group.items.map((p: any) => (
-                        <PurchaseCard key={p.id} purchase={p} />
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          )}
-        </TabsContent>
 
         <TabsContent value="receipts">
           <ReceiptWallet />

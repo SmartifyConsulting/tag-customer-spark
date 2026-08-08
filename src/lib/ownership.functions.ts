@@ -1245,3 +1245,56 @@ export const lifecycleAlerts = createServerFn({ method: "POST" })
 
     return alerts.slice(0, 20);
   });
+
+// ─── Outlets (Shopper's registered stores) ───────────────────────────────
+
+export const listUserOutlets = createServerFn({ method: "POST" })(async () => {
+  const { supabase, userId } = await requireSupabaseAuth();
+  const { data } = await supabase
+    .from("shopper_outlets")
+    .select(`
+      outlet_id,
+      outlets (
+        id,
+        name,
+        location
+      )
+    `)
+    .eq("shopper_id", userId)
+    .order("created_at", { ascending: false });
+
+  return (data ?? []).map((row: any) => row.outlets).filter(Boolean);
+});
+
+export const listAllOutlets = createServerFn({ method: "POST" })(async (opts: { data: { search?: string } }) => {
+  const { supabase } = await requireSupabaseAuth();
+  let query = supabase.from("outlets").select("id, name, location");
+
+  if (opts.data.search) {
+    query = query.ilike("name", `%${opts.data.search}%`);
+  }
+
+  const { data } = await query.order("name", { ascending: true }).limit(50);
+  return data ?? [];
+});
+
+export const addOutletToUser = createServerFn({ method: "POST" })(async (opts: { data: { outlet_id: string } }) => {
+  const { supabase, userId } = await requireSupabaseAuth();
+  const { error } = await supabase.from("shopper_outlets").insert({
+    shopper_id: userId,
+    outlet_id: opts.data.outlet_id,
+  });
+
+  if (error) throw error;
+});
+
+export const removeOutletFromUser = createServerFn({ method: "POST" })(async (opts: { data: { outlet_id: string } }) => {
+  const { supabase, userId } = await requireSupabaseAuth();
+  const { error } = await supabase
+    .from("shopper_outlets")
+    .delete()
+    .eq("shopper_id", userId)
+    .eq("outlet_id", opts.data.outlet_id);
+
+  if (error) throw error;
+});

@@ -167,6 +167,12 @@ export const SHOPPER_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
     icon: ShoppingBag,
     match: ["/ownership/purchases", "/purchase/receipts", "/ownership/returns"],
   },
+  {
+    title: "Outlets",
+    url: "/ownership/outlets",
+    icon: Boxes,
+    match: ["/ownership/outlets"],
+  },
 ] as const;
 
 export function mobileNavForUser(isStaff: boolean): readonly Omit<NavItem, "items">[] {
