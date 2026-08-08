@@ -15,7 +15,7 @@ type UIVersion = "v1" | "v2" | "v3";
 const UI_VERSIONS: Record<UIVersion, { name: string; description: string }> = {
   v1: { name: "V1", description: "Original black & white" },
   v2: { name: "V2", description: "Cream, Forest Green, Orange" },
-  v3: { name: "V3", description: "Coming soon" },
+  v3: { name: "V3", description: "Forest Green & Yellow — no pink" },
 };
 
 const THEME_CONFIGS: Record<UIVersion, Record<string, string>> = {
@@ -51,21 +51,23 @@ const THEME_CONFIGS: Record<UIVersion, Record<string, string>> = {
     "--sidebar-primary": "#2C5F4F",
     "--sidebar-primary-foreground": "#FFFFFF",
   },
+  // Same structure as V2, with the orange swapped for a pure yellow/gold —
+  // no pink anywhere in this theme, including the logo (see tag-logo.tsx).
   v3: {
-    "--background": "oklch(1 0 0)",
-    "--foreground": "oklch(0.16 0.005 60)",
-    "--primary": "oklch(0.16 0.005 60)",
-    "--primary-foreground": "oklch(1 0 0)",
-    "--secondary": "oklch(0.96 0 0)",
-    "--secondary-foreground": "oklch(0.16 0.005 60)",
-    "--accent": "oklch(0.16 0.005 60)",
-    "--accent-foreground": "oklch(1 0 0)",
-    "--border": "oklch(0.90 0 0)",
-    "--input": "oklch(0.90 0 0)",
-    "--sidebar": "oklch(1 0 0)",
-    "--sidebar-foreground": "oklch(0.16 0.005 60)",
-    "--sidebar-primary": "oklch(0.16 0.005 60)",
-    "--sidebar-primary-foreground": "oklch(1 0 0)",
+    "--background": "#F5F1E8",
+    "--foreground": "#2C3E50",
+    "--primary": "#2C5F4F",
+    "--primary-foreground": "#FFFFFF",
+    "--secondary": "#F2B705",
+    "--secondary-foreground": "#2C3E50",
+    "--accent": "#F2B705",
+    "--accent-foreground": "#2C3E50",
+    "--border": "#E8E4D8",
+    "--input": "#F9F7F3",
+    "--sidebar": "#F5F1E8",
+    "--sidebar-foreground": "#2C3E50",
+    "--sidebar-primary": "#2C5F4F",
+    "--sidebar-primary-foreground": "#FFFFFF",
   },
 };
 
@@ -85,9 +87,14 @@ export function UIVersionSwitcher() {
     Object.entries(theme).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
+    // Exposed as a data attribute (not just localStorage) so components that
+    // render outside this one — like the logo — can react to the active
+    // version without needing their own context/provider wiring.
+    root.setAttribute("data-ui-version", activeVersion);
 
     // Save to localStorage
     localStorage.setItem("ui-version", activeVersion);
+    window.dispatchEvent(new CustomEvent("ui-version-change", { detail: activeVersion }));
   }, [activeVersion]);
 
   const handleVersionChange = (version: UIVersion) => {

@@ -33,13 +33,13 @@ export function MobileBottomNav() {
                 href={item.url}
                 className={[
                   "flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors",
-                  active ? "text-[#A6446B]" : "text-muted-foreground hover:text-[#A6446B]",
+                  active ? "text-primary" : "text-muted-foreground hover:text-primary",
                 ].join(" ")}
               >
                 <span
                   className={[
                     "relative inline-flex h-8 w-12 items-center justify-center rounded-full transition-colors",
-                    active ? "bg-[#A6446B] text-white" : "",
+                    active ? "bg-primary text-primary-foreground" : "",
                   ].join(" ")}
                 >
                   <item.icon className="h-4 w-4" />
