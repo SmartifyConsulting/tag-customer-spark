@@ -60,6 +60,17 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
           echo = { ok: false, error: e?.message ?? "network error" };
         }
 
+        // Egress IP this runtime presents to third parties — what Infobip's
+        // network-level restrictions would be matching against.
+        try {
+          const ipResp = await fetch("https://api.ipify.org?format=json");
+          const ipJson: any = await ipResp.json();
+          echo["egressIp"] = ipJson?.ip ?? null;
+        } catch {
+          /* leave egressIp as-is */
+        }
+
+
         return Response.json({
           keyFingerprint: fingerprint,
           keyLength: key.length,
