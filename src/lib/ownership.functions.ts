@@ -123,6 +123,8 @@ export const listPurchases = createServerFn({ method: "POST" })
     let storesQuery = supabase.from("stores").select("id, name");
     let returnsQuery = supabase.from("product_returns").select("purchase_id, status");
 
+    let tagRef: string | null = null;
+
     if (retailerId) {
       // Staff: filter by retailer
       purchaseQuery = purchaseQuery.eq("retailer_id", retailerId);
@@ -130,18 +132,20 @@ export const listPurchases = createServerFn({ method: "POST" })
       returnsQuery = returnsQuery.eq("retailer_id", retailerId);
     } else {
       // Shopper: filter by consumer tag (tag_ref)
+      // Try to find a consumer tag for this user
       const { data: tags } = await supabase
         .from("consumer_tag_ids")
-        .select("id")
-        .eq("customer_id", userId)
+        .select("id, retailer_id")
         .limit(1)
         .maybeSingle();
 
       if (!tags?.id) return { purchases: [], stores: [], brands: [], categories: [] };
 
-      purchaseQuery = purchaseQuery.eq("tag_ref", tags.id);
-      storesQuery = storesQuery.select("id, name");
-      returnsQuery = returnsQuery.eq("tag_ref", tags.id);
+      tagRef = tags.id;
+      retailerId = tags.retailer_id;
+      purchaseQuery = purchaseQuery.eq("tag_ref", tagRef);
+      storesQuery = storesQuery.eq("retailer_id", retailerId);
+      returnsQuery = returnsQuery.eq("tag_ref", tagRef);
     }
 
     purchaseQuery = purchaseQuery.order("purchased_at", { ascending: false });
