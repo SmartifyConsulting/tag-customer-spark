@@ -89,6 +89,7 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
               to: String(body.sendTo),
               templateName: String(body.template ?? "tag_scan_v5"),
               variables: {},
+              headerImageUrl: body.headerImageUrl ? String(body.headerImageUrl) : null,
             });
           }
         } catch (e: any) {
