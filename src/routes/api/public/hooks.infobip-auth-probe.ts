@@ -36,12 +36,38 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
           }
         };
 
+        // Neutral echo: proves whether the Authorization header leaves this
+        // runtime intact, and reports the egress IP Infobip actually sees.
+        // Only the header SHAPE is reported — never the key itself.
+        let echo: Record<string, unknown> = { ok: false };
+        try {
+          const resp = await fetch("https://postman-echo.com/get", {
+            headers: { Authorization: `App ${key}`, Accept: "application/json" },
+          });
+          const json: any = await resp.json();
+          const seen: string = json?.headers?.authorization ?? "";
+          echo = {
+            ok: resp.ok,
+            status: resp.status,
+            egressIp: json?.headers?.["x-forwarded-for"] ?? json?.headers?.["x-real-ip"] ?? null,
+            authHeaderPresent: Boolean(seen),
+            authHeaderScheme: seen.split(" ")[0] ?? null,
+            authHeaderLength: seen.length,
+            authHeaderIntact: seen === `App ${key}`,
+            headerNames: Object.keys(json?.headers ?? {}).sort(),
+          };
+        } catch (e: any) {
+          echo = { ok: false, error: e?.message ?? "network error" };
+        }
+
         return Response.json({
           keyFingerprint: fingerprint,
           keyLength: key.length,
           host: base,
           probes: [await probe("/account/1/balance"), await probe("/whatsapp/2/senders")],
+          echo,
         });
+
       },
     },
   },
