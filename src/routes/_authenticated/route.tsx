@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { TagLogo } from "@/components/tag-logo";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { CommandPalette } from "@/components/command-palette";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { getRetailerBranding } from "@/lib/branding.functions";
@@ -103,7 +102,6 @@ function AuthenticatedLayout() {
             <div className="flex items-center gap-3 justify-self-end">
               {!isStaff && <ShopperTagButton />}
               {!isStaff && <UIVersionSwitcher />}
-              <ThemeToggle />
             </div>
           </header>
 

@@ -21,7 +21,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { getWorkspaceSettings, updateRetailerProfile, listAuditLog, uploadRetailerLogo } from "@/lib/settings.functions";
@@ -94,13 +93,6 @@ function SettingsPage() {
                       }}
                     />
 
-                    <div className="flex items-center justify-between rounded-xl border p-4">
-                      <div>
-                        <p className="text-sm font-medium">Appearance</p>
-                        <p className="text-xs text-muted-foreground">Switch between light, dark, or system themes.</p>
-                      </div>
-                      <ThemeToggle />
-                    </div>
                     <div className="flex justify-end">
                       <Button onClick={() => save.mutate()} disabled={save.isPending}>Save</Button>
                     </div>

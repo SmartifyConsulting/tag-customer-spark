@@ -98,7 +98,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     id: "purchase",
     label: "Purchase",
     items: [
-      { title: "Tagged", url: "/tagged", icon: Tag, match: ["/tagged"] },
+      { title: "Scanner", url: "/tagged", icon: Tag, match: ["/tagged"] },
       {
         title: "Receipts",
         url: "/ownership/purchases",
@@ -162,7 +162,7 @@ export const STAFF_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
 
 export const SHOPPER_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
   { title: "My Tag", url: "/barcode-tagger", icon: Barcode, match: ["/barcode-tagger"] },
-  { title: "Tagged", url: "/tagged", icon: Tag, match: ["/tagged"] },
+  { title: "Scanner", url: "/tagged", icon: Tag, match: ["/tagged"] },
   {
     title: "Receipts",
     url: "/ownership/purchases",

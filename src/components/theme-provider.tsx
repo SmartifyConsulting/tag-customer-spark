@@ -1,60 +1,22 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-
-type Theme = "light" | "dark" | "system";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 
 type ThemeContextValue = {
-  theme: Theme;
-  resolvedTheme: "light" | "dark";
-  setTheme: (theme: Theme) => void;
+  resolvedTheme: "light";
 };
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-const STORAGE_KEY = "tag-theme";
-
-function getSystemTheme(): "light" | "dark" {
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
+// Dark mode has been removed entirely — the app is always light, regardless
+// of any theme a user previously picked or their OS preference.
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Default is LIGHT, never "system": following the OS meant the app flipped
-  // to dark on its own (sunset / auto dark mode). Dark only applies when the
-  // user explicitly picks it in the theme toggle.
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "light";
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    return stored === "dark" || stored === "light" || stored === "system" ? stored : "light";
-  });
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
-
   useEffect(() => {
-    const apply = () => {
-      const next = theme === "system" ? getSystemTheme() : theme;
-      setResolvedTheme(next);
-      const root = document.documentElement;
-      root.classList.remove("light", "dark");
-      root.classList.add(next);
-    };
-    apply();
+    const root = document.documentElement;
+    root.classList.remove("dark");
+    root.classList.add("light");
+    localStorage.removeItem("tag-theme");
+  }, []);
 
-    if (theme === "system") {
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      mq.addEventListener("change", apply);
-      return () => mq.removeEventListener("change", apply);
-    }
-  }, [theme]);
-
-  const setTheme = (t: Theme) => {
-    localStorage.setItem(STORAGE_KEY, t);
-    setThemeState(t);
-  };
-
-  return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ resolvedTheme: "light" }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {
