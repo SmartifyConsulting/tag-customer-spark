@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveOwnershipContext } from "@/lib/ownership-context.server";
-import { FEATURE_MIN_TIER, meetsTier, type TagTier } from "@/lib/tier";
+import { hasFeature, type TagTier } from "@/lib/tier";
 
 // The single account permitted to flip global feature toggles. This is a
 // platform-level kill switch, not a role — no other super_admin or
@@ -32,7 +32,9 @@ async function computeReceiptsEnabled(supabase: any, userId: string): Promise<bo
   if ((setting?.value ?? true) === false) return false;
 
   const { retailerId } = await resolveOwnershipContext(supabase, userId);
-  if (!retailerId) return false;
+  // No resolvable retailer (e.g. a wallet account not yet linked) should not
+  // hard-fail the module — only the kill switch and tier gating do.
+  if (!retailerId) return true;
 
   const { data: retailer } = await supabase
     .from("retailers")
@@ -40,7 +42,9 @@ async function computeReceiptsEnabled(supabase: any, userId: string): Promise<bo
     .eq("id", retailerId)
     .maybeSingle();
   const tier = (retailer?.tier ?? "starter") as TagTier;
-  return meetsTier(tier, FEATURE_MIN_TIER.receipts);
+  // Use the shared feature gate so this matches the rest of the app (which is
+  // currently open to all tiers during testing).
+  return hasFeature(tier, "receipts");
 }
 
 // Used by receipts/purchases/returns data functions to enforce the same
