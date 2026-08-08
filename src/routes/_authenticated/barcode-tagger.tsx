@@ -1,174 +1,129 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, RotateCcw } from "lucide-react";
+import { Copy, Download, ScanLine } from "lucide-react";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
-import { QrPreview } from "@/components/qr/qr-preview";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { QrPreview, useQrPngDownload } from "@/components/qr/qr-preview";
+import { Barcode } from "@/components/ownership/shared";
 import { getMyShopperTag } from "@/lib/ownership.functions";
 
 export const Route = createFileRoute("/_authenticated/barcode-tagger")({
-  ssr: false,
   head: () => ({
     meta: [
       { title: "My Tag — Tag" },
       {
         name: "description",
-        content: "Your personal QR code, and a barcode scanner to tag products.",
+        content:
+          "Your personal shopper QR code and barcode, generated when you signed up. Scan it at checkout.",
       },
+      { property: "og:title", content: "My Tag — Tag" },
+      {
+        property: "og:description",
+        content: "Your personal shopper QR code and barcode, generated when you signed up.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: BarcodeTaggerPage,
 });
 
 function BarcodeTaggerPage() {
-  const [detected, setDetected] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
-  const { videoRef, error, starting } = useBarcodeScanner((code) => setDetected(code), nonce);
-
   const tagFn = useServerFn(getMyShopperTag);
-  const { data: myTag } = useQuery({ queryKey: ["my-shopper-tag"], queryFn: () => tagFn() });
-  const qrValue = useMemo(() => {
-    if (!myTag?.tagId) return null;
-    return JSON.stringify({ tagId: myTag.tagId, email: myTag.email ?? undefined });
-  }, [myTag]);
+  const { data: myTag, isLoading } = useQuery({
+    queryKey: ["my-shopper-tag"],
+    queryFn: () => tagFn(),
+  });
 
-  const looksLikeGtin = !!detected && /^\d{8,14}$/.test(detected);
+  const tagId = (myTag as any)?.tagId ?? "";
+  const email = (myTag as any)?.email as string | undefined;
+  // The QR carries only the tag ID and the account email — nothing else.
+  const qrValue = tagId ? JSON.stringify({ tagId, email: email ?? undefined }) : "";
+  const download = useQrPngDownload(qrValue, `${tagId || "my-tag"}.png`);
 
-  useEffect(() => {
-    if (!detected || !looksLikeGtin) return;
-    const t = setTimeout(() => {
-      window.location.href = `/passport/${detected}`;
-    }, 400);
-    return () => clearTimeout(t);
-  }, [detected, looksLikeGtin]);
+  if (isLoading) return <Skeleton className="h-80 rounded-xl" />;
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
-      <div className="mx-auto max-w-4xl">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">My Tag</h1>
-          <p className="mt-2 text-muted-foreground">
-            Your personal QR code, and a barcode scanner ready to tag any product.
-          </p>
-        </div>
+    <div className="space-y-8">
+      <PageHeader
+        title="My Tag"
+        description="Your personal code, generated when you signed up. Show it at checkout to link a purchase to you."
+      />
 
-        {/* My QR Code — auto-generated at sign-up */}
-        {qrValue && (
-          <Card className="mb-6 flex flex-col items-center gap-3 p-6 sm:flex-row sm:justify-center">
-            <QrPreview value={qrValue} size={140} />
-            <div className="text-center sm:text-left">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                My Shopper Tag
-              </p>
-              <p className="mt-1 font-mono text-lg font-semibold text-primary">{myTag?.tagId}</p>
-              {myTag?.email && <p className="text-sm text-muted-foreground">{myTag.email}</p>}
-            </div>
-          </Card>
-        )}
-
-        {/* Main Content Grid - Responsive Layout */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Video Feed - Takes full width on mobile, 2/3 on desktop */}
-          <div className="lg:col-span-2">
-            <Card className="overflow-hidden">
-              <div className="relative overflow-hidden rounded-lg bg-black aspect-video md:aspect-square">
-                <video
-                  ref={videoRef}
-                  playsInline
-                  muted
-                  className="h-full w-full object-cover"
-                />
-                {/* Scanning Frame Overlay */}
-                <div className="pointer-events-none absolute inset-0 grid place-items-center">
-                  <div className="h-1/3 w-2/3 rounded-lg border-2 border-primary/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
-                </div>
-                {/* Loading State */}
-                {starting && !detected && (
-                  <div className="absolute inset-0 grid place-items-center bg-black/40 text-white">
-                    <div className="flex flex-col items-center gap-3">
-                      <Loader2 className="h-8 w-8 animate-spin" />
-                      <p className="text-sm">Starting camera...</p>
-                    </div>
-                  </div>
-                )}
-                {/* Error State */}
-                {error && (
-                  <div className="absolute inset-0 grid place-items-center bg-black/70 p-4 text-center text-sm text-white">
-                    <div>
-                      <p className="font-medium">Cannot access the camera</p>
-                      <p className="mt-1 text-xs opacity-80">{error}</p>
-                      <p className="mt-2 text-xs opacity-80">
-                        Allow camera permission for this site, then reload.
-                      </p>
-                    </div>
-                  </div>
-                )}
+      {!tagId ? (
+        <Card>
+          <CardContent className="py-12 text-center text-sm text-muted-foreground">
+            Your shopper tag isn't ready yet. Refresh in a moment.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,420px)_1fr]">
+          <Card>
+            <CardContent className="flex flex-col items-center gap-4 p-8">
+              <QrPreview value={qrValue} size={220} />
+              <p className="font-mono text-xl font-semibold tracking-[0.15em]">{tagId}</p>
+              {email && <p className="text-sm text-muted-foreground">{email}</p>}
+              <div className="w-full">
+                <Barcode value={tagId} />
               </div>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(tagId);
+                    toast.success("Tag ID copied");
+                  }}
+                >
+                  <Copy className="mr-1.5 h-4 w-4" /> Copy
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => download()}>
+                  <Download className="mr-1.5 h-4 w-4" /> PNG
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle>Looking to scan a product?</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm text-muted-foreground">
+                <p>
+                  The camera lives on the Scanner tab, so it only runs while you're actually
+                  scanning — never in the background.
+                </p>
+                <Button asChild size="sm">
+                  <Link to="/tagged">
+                    <ScanLine className="mr-1.5 h-4 w-4" /> Open Scanner
+                  </Link>
+                </Button>
+              </CardContent>
             </Card>
-          </div>
 
-          {/* Detected Barcode Panel - Sidebar on desktop, below on mobile */}
-          <div className="lg:col-span-1">
-            <Card className="p-6 sticky top-6">
-              {detected ? (
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-                      Detected Barcode
-                    </p>
-                    <p className="mt-2 break-all font-mono text-lg font-semibold text-primary">
-                      {detected}
-                    </p>
-                  </div>
-
-                  {looksLikeGtin && (
-                    <div className="rounded-lg bg-primary/10 p-3">
-                      <p className="flex items-center gap-2 text-sm text-primary font-medium">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Redirecting to product...
-                      </p>
-                    </div>
-                  )}
-
-                  {!looksLikeGtin && (
-                    <div className="rounded-lg bg-warning/10 p-3">
-                      <p className="text-sm text-warning">
-                        This doesn't look like a valid product barcode. Try again.
-                      </p>
-                    </div>
-                  )}
-
-                  <Button
-                    onClick={() => {
-                      setDetected(null);
-                      setNonce((n) => n + 1);
-                    }}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Scan Again
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3 text-center">
-                  <div className="text-5xl">📱</div>
-                  <div>
-                    <p className="font-semibold">Ready to tag</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Position a barcode in the camera frame
-                    </p>
-                  </div>
-                </div>
-              )}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle>How it works at checkout</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  The cashier scans this QR or barcode before payment, and the purchase is written
+                  straight to your ownership record — no paper receipt required.
+                </p>
+                <p>
+                  The code carries only your tag ID and account email. No phone number, address or
+                  payment detail is ever encoded.
+                </p>
+              </CardContent>
             </Card>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

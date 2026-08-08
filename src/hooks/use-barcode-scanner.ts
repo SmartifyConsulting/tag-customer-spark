@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf"];
 
@@ -9,6 +9,7 @@ export function useBarcodeScanner(onDetected: (code: string) => void, resetKey: 
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const detectedRef = useRef(false);
+  const stopCameraRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     let cancelled = false;
@@ -22,6 +23,8 @@ export function useBarcodeScanner(onDetected: (code: string) => void, resetKey: 
       streamRef.current = null;
       if (videoRef.current) videoRef.current.srcObject = null;
     };
+
+    stopCameraRef.current = stopCamera;
 
     const startCamera = async () => {
       if (cancelled || document.hidden || streamRef.current) return;
@@ -47,6 +50,10 @@ export function useBarcodeScanner(onDetected: (code: string) => void, resetKey: 
         const handleDetected = (code: string) => {
           if (cancelled || detectedRef.current) return;
           detectedRef.current = true;
+          // Release the camera the moment we have a code — the redirect that
+          // usually follows should never leave the stream (and the camera
+          // indicator) running during the hand-off.
+          stopCamera();
           onDetected(code);
         };
 
@@ -89,7 +96,7 @@ export function useBarcodeScanner(onDetected: (code: string) => void, resetKey: 
     // they come back, as long as this component is still mounted.
     const handleVisibility = () => {
       if (document.hidden) stopCamera();
-      else startCamera();
+      else if (!detectedRef.current) startCamera();
     };
 
     startCamera();
@@ -103,5 +110,7 @@ export function useBarcodeScanner(onDetected: (code: string) => void, resetKey: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
-  return { videoRef, error, starting };
+  const stop = useCallback(() => stopCameraRef.current(), []);
+
+  return { videoRef, error, starting, stop };
 }
