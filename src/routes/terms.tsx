@@ -31,7 +31,7 @@ function TermsPage() {
             <h2 className="text-lg font-semibold text-foreground">1. Agreement to Terms</h2>
             <p>
               These Terms and Conditions ("Terms") form a binding agreement between you ("you",
-              "your", the "Retailer") and [Company Legal Name] ("Tag", "we", "us", "our"),
+              "your", the "Retailer") and Smartify Consulting ("Tag", "we", "us", "our"),
               governing your access to and use of the Tag platform, including our website,
               dashboard, QR/product tagging tools, WhatsApp messaging features, and any related
               services (together, the "Service"). By creating an account or using the Service,

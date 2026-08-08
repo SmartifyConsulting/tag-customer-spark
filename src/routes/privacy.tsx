@@ -29,7 +29,7 @@ function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-foreground">1. Introduction</h2>
             <p>
-              This Privacy Policy explains how [Company Legal Name] ("Tag", "we", "us", "our")
+              This Privacy Policy explains how Smartify Consulting ("Tag", "we", "us", "our")
               collects, uses, discloses, and protects information when you use the Tag platform,
               including our website, dashboard, QR/product tagging tools, and WhatsApp messaging
               features (together, the "Service"). It applies to retailers who create an account
