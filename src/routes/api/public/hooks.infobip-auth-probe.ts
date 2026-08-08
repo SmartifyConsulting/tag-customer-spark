@@ -8,13 +8,20 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const sharedSecret = process.env.CRON_SECRET ?? process.env.INFOBIP_WEBHOOK_SECRET;
+        const sharedSecret =
+          process.env.INFOBIP_PROBE_SECRET ??
+          process.env.CRON_SECRET ??
+          process.env.INFOBIP_WEBHOOK_SECRET;
         if (!sharedSecret || request.headers.get("x-cron-secret") !== sharedSecret) {
           return new Response("Unauthorized", { status: 401 });
         }
 
 
-        const rawKey = process.env.INFOBIP_API_KEY_V2 ?? process.env.INFOBIP_API_KEY ?? "";
+        const rawKey =
+          process.env.INFOBIP_API_KEY_V3 ??
+          process.env.INFOBIP_API_KEY_V2 ??
+          process.env.INFOBIP_API_KEY ??
+          "";
         const key = rawKey.trim().replace(/^"|"$/g, "").replace(/^(?:App\s+)+/i, "").trim();
         const rawBase = (process.env.INFOBIP_BASE_URL ?? "").trim().replace(/^"|"$/g, "");
         const base = /^https?:\/\//i.test(rawBase) ? rawBase : `https://${rawBase}`;
@@ -71,12 +78,31 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
         }
 
 
+        // Optional live send through the real runtime adapter, so the probe can
+        // prove end-to-end delivery, not just authentication.
+        let send: unknown = null;
+        try {
+          const body: any = await request.clone().json().catch(() => ({}));
+          if (body?.sendTo) {
+            const { sendTemplate } = await import("@/lib/whatsapp-service.server");
+            send = await sendTemplate({
+              to: String(body.sendTo),
+              templateName: String(body.template ?? "tag_scan_v5"),
+              variables: {},
+              headerImageUrl: body.headerImageUrl ? String(body.headerImageUrl) : null,
+            });
+          }
+        } catch (e: any) {
+          send = { ok: false, error: e?.message ?? "send failed" };
+        }
+
         return Response.json({
           keyFingerprint: fingerprint,
           keyLength: key.length,
           host: base,
           probes: [await probe("/account/1/balance"), await probe("/whatsapp/2/senders")],
           echo,
+          send,
         });
 
       },

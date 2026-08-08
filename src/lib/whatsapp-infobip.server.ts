@@ -63,7 +63,7 @@ type RuntimeConfig = {
 };
 
 /** Candidate credential bindings, in preference order. */
-const KEY_BINDINGS = ["INFOBIP_API_KEY_V2", "INFOBIP_API_KEY"] as const;
+const KEY_BINDINGS = ["INFOBIP_API_KEY_V3", "INFOBIP_API_KEY_V2", "INFOBIP_API_KEY"] as const;
 
 
 function normalizeNumber(num: string): string {
@@ -164,7 +164,9 @@ async function readRuntimeConfigs(): Promise<RuntimeConfig[]> {
 
 export function isInfobipConfigured(): boolean {
   return Boolean(
-    (process.env.INFOBIP_API_KEY_V2 || process.env.INFOBIP_API_KEY) &&
+    (process.env.INFOBIP_API_KEY_V3 ||
+      process.env.INFOBIP_API_KEY_V2 ||
+      process.env.INFOBIP_API_KEY) &&
       process.env.INFOBIP_BASE_URL &&
       process.env.INFOBIP_WHATSAPP_SENDER,
   );
