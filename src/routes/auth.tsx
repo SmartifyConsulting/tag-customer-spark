@@ -38,8 +38,16 @@ function AuthPage() {
   const [siPassword, setSiPassword] = useState("");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/briefing", replace: true });
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      const { data: roleRows } = await supabase
+        .from("user_roles")
+        .select("retailer_id")
+        .eq("user_id", data.session.user.id)
+        .not("retailer_id", "is", null)
+        .limit(1);
+      const isShopper = !roleRows || roleRows.length === 0;
+      navigate({ to: isShopper ? "/barcode-tagger" : "/briefing", replace: true });
     });
   }, [navigate]);
 
@@ -76,8 +84,9 @@ function AuthPage() {
       toast.error("Google sign-in failed.");
       return;
     }
-    if (result.redirected) return;
-    navigate({ to: "/briefing", replace: true });
+    // Navigating onward happens in AuthProvider's onAuthStateChange handler
+    // (see handleSignIn above) — it knows whether this is a shopper or
+    // staff account and sends each to the right home page.
   };
 
   // Signup gets its own minimal, centered layout: just the logo and the

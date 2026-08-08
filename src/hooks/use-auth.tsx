@@ -158,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       if (isFreshSignIn) {
-        navigate({ to: "/tagged", replace: true });
+        navigate({ to: "/barcode-tagger", replace: true });
       }
       setRoles(rows.map((r) => r.role));
       return;
