@@ -112,18 +112,45 @@ export const listPurchases = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
     const retailerId = await resolveRetailerId(supabase, userId);
-    if (!retailerId) return { purchases: [], stores: [], brands: [], categories: [] };
+
+    // For staff: query by retailer_id. For shoppers: query by consumer tag.
+    let purchaseQuery = supabase
+      .from("purchases")
+      .select(
+        "*, items:purchase_items(*), receipt:receipts(id, receipt_number, is_favourite, is_archived, category), store:stores(id, name, city)",
+      );
+
+    let storesQuery = supabase.from("stores").select("id, name");
+    let returnsQuery = supabase.from("product_returns").select("purchase_id, status");
+
+    if (retailerId) {
+      // Staff: filter by retailer
+      purchaseQuery = purchaseQuery.eq("retailer_id", retailerId);
+      storesQuery = storesQuery.eq("retailer_id", retailerId);
+      returnsQuery = returnsQuery.eq("retailer_id", retailerId);
+    } else {
+      // Shopper: filter by consumer tag (tag_ref)
+      const { data: tags } = await supabase
+        .from("consumer_tag_ids")
+        .select("id")
+        .eq("customer_id", userId)
+        .limit(1)
+        .maybeSingle();
+
+      if (!tags?.id) return { purchases: [], stores: [], brands: [], categories: [] };
+
+      purchaseQuery = purchaseQuery.eq("tag_ref", tags.id);
+      storesQuery = storesQuery.select("id, name");
+      returnsQuery = returnsQuery.eq("tag_ref", tags.id);
+    }
+
+    purchaseQuery = purchaseQuery.order("purchased_at", { ascending: false });
+    storesQuery = storesQuery.order("name");
 
     const [{ data: rows }, { data: stores }, { data: returns }] = await Promise.all([
-      supabase
-        .from("purchases")
-        .select(
-          "*, items:purchase_items(*), receipt:receipts(id, receipt_number, is_favourite, is_archived, category), store:stores(id, name, city)",
-        )
-        .eq("retailer_id", retailerId)
-        .order("purchased_at", { ascending: false }),
-      supabase.from("stores").select("id, name").eq("retailer_id", retailerId).order("name"),
-      supabase.from("product_returns").select("purchase_id, status").eq("retailer_id", retailerId),
+      purchaseQuery,
+      storesQuery,
+      returnsQuery,
     ]);
 
     const returnByPurchase = new Map<string, string>();
