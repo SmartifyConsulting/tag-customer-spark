@@ -164,7 +164,9 @@ async function readRuntimeConfigs(): Promise<RuntimeConfig[]> {
 
 export function isInfobipConfigured(): boolean {
   return Boolean(
-    (process.env.INFOBIP_API_KEY_V2 || process.env.INFOBIP_API_KEY) &&
+    (process.env.INFOBIP_API_KEY_V3 ||
+      process.env.INFOBIP_API_KEY_V2 ||
+      process.env.INFOBIP_API_KEY) &&
       process.env.INFOBIP_BASE_URL &&
       process.env.INFOBIP_WHATSAPP_SENDER,
   );
