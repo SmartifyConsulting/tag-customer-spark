@@ -1315,6 +1315,44 @@ export type Database = {
           },
         ]
       }
+      outlets: {
+        Row: {
+          created_at: string
+          id: string
+          location: string | null
+          name: string
+          status: string
+          store_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          location?: string | null
+          name: string
+          status?: string
+          store_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          location?: string | null
+          name?: string
+          status?: string
+          store_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outlets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       owned_products: {
         Row: {
           battery_health: number | null
@@ -3556,6 +3594,51 @@ export type Database = {
             columns: ["retailer_id"]
             isOneToOne: false
             referencedRelation: "retailers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shopper_outlets: {
+        Row: {
+          added_at: string
+          created_at: string
+          id: string
+          last_visited_at: string | null
+          outlet_id: string
+          shopper_id: string
+          updated_at: string
+        }
+        Insert: {
+          added_at?: string
+          created_at?: string
+          id?: string
+          last_visited_at?: string | null
+          outlet_id: string
+          shopper_id: string
+          updated_at?: string
+        }
+        Update: {
+          added_at?: string
+          created_at?: string
+          id?: string
+          last_visited_at?: string | null
+          outlet_id?: string
+          shopper_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopper_outlets_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shopper_outlets_shopper_id_fkey"
+            columns: ["shopper_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
