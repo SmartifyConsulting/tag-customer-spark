@@ -15,7 +15,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { recordPurchase, getTagIdentity, listUserOutlets } from "@/lib/ownership.functions";
 import { listStores } from "@/lib/stores.functions";
 
@@ -43,7 +42,6 @@ const CATEGORIES = ["Home", "Electronics", "Kitchen", "Garden", "Clothing", "Aut
 
 export function RecordPurchaseDialog() {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"photo" | "manual">("photo");
   const [tagId, setTagId] = useState("");
   const [outletId, setOutletId] = useState<string>("");
   const [payment, setPayment] = useState("Card");
@@ -90,6 +88,7 @@ export function RecordPurchaseDialog() {
       setOpen(false);
       setLines([{ ...emptyLine }]);
       setPhotoFile(null);
+      setOutletId("");
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not record the purchase"),
   });
@@ -138,102 +137,93 @@ export function RecordPurchaseDialog() {
         <DialogHeader>
           <DialogTitle>Add Purchase Receipt</DialogTitle>
           <DialogDescription>
-            Take a photo of your receipt for instant extraction, or manually enter your purchase details.
+            Take a photo of your receipt to add it — a photo is required for every receipt.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={mode} onValueChange={(v) => setMode(v as any)}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="photo">📷 Photo Receipt</TabsTrigger>
-            <TabsTrigger value="manual">✏️ Manual Entry</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="photo" className="space-y-4">
-            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed border-border p-8">
-              {!photoFile ? (
-                <>
-                  <Camera className="h-8 w-8 text-muted-foreground" />
-                  <div className="text-center">
-                    <p className="font-medium">Add a receipt photo</p>
-                    <p className="text-xs text-muted-foreground">Take a photo now or choose one from your library</p>
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePhotoSelect}
-                  />
-                  <input
-                    ref={cameraInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={handlePhotoSelect}
-                  />
-                  <div className="flex gap-2">
-                    <Button onClick={() => cameraInputRef.current?.click()}>
-                      <Camera className="mr-1.5 h-4 w-4" /> Take photo
-                    </Button>
-                    <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                      Choose from library
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="text-center">
-                    <p className="font-medium">{photoFile.name}</p>
-                    {extracting && (
-                      <div className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Extracting data...
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setPhotoFile(null);
-                      setLines([{ ...emptyLine }]);
-                    }}
-                  >
-                    Change photo
-                  </Button>
-                </>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="manual" className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Outlet</Label>
-                <Select value={outletId} onValueChange={setOutletId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select outlet" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {((outlets.data as any[]) ?? []).map((o) => (
-                      <SelectItem key={o.id} value={o.id}>
-                        {o.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        <div className="flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed border-border p-8">
+          {!photoFile ? (
+            <>
+              <Camera className="h-8 w-8 text-muted-foreground" />
+              <div className="text-center">
+                <p className="font-medium">Add a receipt photo</p>
+                <p className="text-xs text-muted-foreground">Take a photo now or choose one from your library</p>
               </div>
-              <div className="space-y-1.5">
-                <Label>Payment method</Label>
-                <Input value={payment} onChange={(e) => setPayment(e.target.value)} />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoSelect}
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handlePhotoSelect}
+              />
+              <div className="flex gap-2">
+                <Button onClick={() => cameraInputRef.current?.click()}>
+                  <Camera className="mr-1.5 h-4 w-4" /> Take photo
+                </Button>
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                  Choose from library
+                </Button>
               </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+            </>
+          ) : (
+            <>
+              <div className="text-center">
+                <p className="font-medium">{photoFile.name}</p>
+                {extracting && (
+                  <div className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Extracting data...
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setPhotoFile(null);
+                  setLines([{ ...emptyLine }]);
+                }}
+              >
+                Change photo
+              </Button>
+            </>
+          )}
+        </div>
 
-        {/* Item entry (shown in both modes after photo extraction or in manual mode) */}
-        {(mode === "manual" || (mode === "photo" && (lines.length > 1 || lines[0].name))) && (
+        {photoFile && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Outlet</Label>
+              <Select value={outletId} onValueChange={setOutletId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select outlet" />
+                </SelectTrigger>
+                <SelectContent>
+                  {((outlets.data as any[]) ?? []).map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Payment method</Label>
+              <Input value={payment} onChange={(e) => setPayment(e.target.value)} />
+            </div>
+          </div>
+        )}
+
+        {/* Item entry — shown once a receipt photo has been added */}
+        {photoFile && (
           <div className="space-y-3 border-t pt-4">
             <h3 className="text-sm font-medium">Items</h3>
             {lines.map((l, i) => (
@@ -295,12 +285,17 @@ export function RecordPurchaseDialog() {
           </div>
         )}
 
-        <div className="flex items-center justify-between border-t pt-4">
-          <p className="text-sm text-muted-foreground">Basket total R {total.toFixed(2)}</p>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || lines.every((l) => !l.name.trim())}>
-            {save.isPending ? "Saving…" : "Save receipt"}
-          </Button>
-        </div>
+        {photoFile && (
+          <div className="flex items-center justify-between border-t pt-4">
+            <p className="text-sm text-muted-foreground">Basket total R {total.toFixed(2)}</p>
+            <Button
+              onClick={() => save.mutate()}
+              disabled={save.isPending || lines.every((l) => !l.name.trim())}
+            >
+              {save.isPending ? "Saving…" : "Save receipt"}
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

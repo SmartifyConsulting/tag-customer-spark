@@ -77,8 +77,17 @@ export const getTagIdentity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context as any;
-    const retailerId = await resolveRetailerId(supabase, userId);
+    const { retailerId, tagRef } = await resolveOwnershipContext(supabase, userId);
     if (!retailerId) return null;
+
+    if (tagRef) {
+      const { data: existing } = await supabase
+        .from("consumer_tag_ids")
+        .select("*")
+        .eq("id", tagRef)
+        .maybeSingle();
+      return existing ?? null;
+    }
 
     const { data: existing } = await supabase
       .from("consumer_tag_ids")
