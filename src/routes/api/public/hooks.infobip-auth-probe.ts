@@ -8,13 +8,20 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const sharedSecret = process.env.CRON_SECRET ?? process.env.INFOBIP_WEBHOOK_SECRET;
+        const sharedSecret =
+          process.env.INFOBIP_PROBE_SECRET ??
+          process.env.CRON_SECRET ??
+          process.env.INFOBIP_WEBHOOK_SECRET;
         if (!sharedSecret || request.headers.get("x-cron-secret") !== sharedSecret) {
           return new Response("Unauthorized", { status: 401 });
         }
 
 
-        const rawKey = process.env.INFOBIP_API_KEY_V2 ?? process.env.INFOBIP_API_KEY ?? "";
+        const rawKey =
+          process.env.INFOBIP_API_KEY_V3 ??
+          process.env.INFOBIP_API_KEY_V2 ??
+          process.env.INFOBIP_API_KEY ??
+          "";
         const key = rawKey.trim().replace(/^"|"$/g, "").replace(/^(?:App\s+)+/i, "").trim();
         const rawBase = (process.env.INFOBIP_BASE_URL ?? "").trim().replace(/^"|"$/g, "");
         const base = /^https?:\/\//i.test(rawBase) ? rawBase : `https://${rawBase}`;
