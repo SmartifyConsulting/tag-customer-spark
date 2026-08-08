@@ -8,15 +8,10 @@ import {
   DollarSign,
   ReceiptText,
   Leaf,
-  Home,
-  ShieldCheck as WarrantyIcon,
-  Undo2,
-  Wallet,
   ShoppingBag,
-  Search,
-  FileText,
   Radar,
   Eye,
+  Tag,
 } from "lucide-react";
 
 import type { TierFeatureKey } from "@/lib/tier";
@@ -48,20 +43,21 @@ export type NavItem = {
 };
 
 // ─── Information architecture ───────────────────────────────────────────
-// TAG is one platform with four sections, not two separate apps:
+// TAG is one platform with three sections, not two separate apps:
 //
 //   PRODUCT    — the retailer's catalogue intelligence (staff only)
-//   PURCHASE   — the transaction record: purchases, digital receipts, returns
-//   OWNERSHIP  — what the shopper owns after the sale: products, household,
-//                warranties, documents, TAG ID
+//   PURCHASE   — everything a shopper needs: products they've tagged
+//                (scanned, not yet bought) and their full purchase record
+//                (purchases, digital receipts, returns — all tabs of one
+//                page). Warranties and documents live on the product itself,
+//                reached by hyperlinking into it — there's no separate
+//                Ownership section anymore.
 //   BUSINESS   — analytics, ROI, sustainability, admin (staff only)
 //
-// PURCHASE and OWNERSHIP are visible to EVERY signed-in user, because a
-// staff member is also a shopper. PRODUCT and BUSINESS are staff-only.
-// Don't reintroduce a binary "retail vs wallet" split of the whole nav —
-// section-level gating is what lets one account do both.
+// PURCHASE is visible to EVERY signed-in user, because a staff member is
+// also a shopper. PRODUCT and BUSINESS are staff-only.
 export type NavSection = {
-  id: "product" | "purchase" | "ownership" | "business";
+  id: "product" | "purchase" | "business";
   label: string;
   staffOnly?: boolean;
   items: readonly NavItem[];
@@ -101,21 +97,13 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     id: "purchase",
     label: "Purchase",
     items: [
-      { title: "Purchases", url: "/ownership/purchases", icon: ShoppingBag, match: ["/ownership/purchases"] },
-      { title: "Receipts", url: "/purchase/receipts", icon: ReceiptText, match: ["/purchase/receipts"] },
-      { title: "Search", url: "/purchase/search", icon: Search, match: ["/purchase/search"] },
-      { title: "Returns", url: "/ownership/returns", icon: Undo2, match: ["/ownership/returns"] },
-    ],
-  },
-  {
-    id: "ownership",
-    label: "Ownership",
-    items: [
-      { title: "My Products", url: "/ownership/products", icon: Boxes, match: ["/ownership/products"] },
-      { title: "Household", url: "/ownership/household", icon: Home, match: ["/ownership/household"] },
-      { title: "Warranties", url: "/ownership/warranties", icon: WarrantyIcon, match: ["/ownership/warranties"] },
-      { title: "Documents", url: "/ownership/documents", icon: FileText, match: ["/ownership/documents"] },
-      { title: "TAG ID", url: "/ownership/tag-id", icon: Wallet, match: ["/ownership/tag-id"] },
+      { title: "Tagged", url: "/tagged", icon: Tag, match: ["/tagged"] },
+      {
+        title: "Purchases",
+        url: "/ownership/purchases",
+        icon: ShoppingBag,
+        match: ["/ownership/purchases", "/purchase/receipts", "/ownership/returns"],
+      },
     ],
   },
   {
@@ -172,10 +160,13 @@ export const STAFF_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
 ] as const;
 
 export const SHOPPER_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
-  { title: "Receipts", url: "/purchase/receipts", icon: ReceiptText, match: ["/purchase/receipts"] },
-  { title: "Products", url: "/ownership/products", icon: Boxes, match: ["/ownership/products"] },
-  { title: "Warranties", url: "/ownership/warranties", icon: WarrantyIcon, match: ["/ownership/warranties"] },
-  { title: "TAG ID", url: "/ownership/tag-id", icon: Wallet, match: ["/ownership/tag-id"] },
+  { title: "Tagged", url: "/tagged", icon: Tag, match: ["/tagged"] },
+  {
+    title: "Purchases",
+    url: "/ownership/purchases",
+    icon: ShoppingBag,
+    match: ["/ownership/purchases", "/purchase/receipts", "/ownership/returns"],
+  },
 ] as const;
 
 export function mobileNavForUser(isStaff: boolean): readonly Omit<NavItem, "items">[] {

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { LogOut, Settings as SettingsIcon, User as UserIcon } from "lucide-react";
+import { LogOut, Repeat, Settings as SettingsIcon, User as UserIcon } from "lucide-react";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { listRememberedSessions } from "@/lib/session-switcher";
 
 function initials(name?: string | null, email?: string | null) {
   const src = (name || email || "?").trim();
@@ -19,10 +22,23 @@ function initials(name?: string | null, email?: string | null) {
   return src.slice(0, 2).toUpperCase();
 }
 
+async function switchTo(session: { access_token: string; refresh_token: string; email: string }) {
+  const { error } = await supabase.auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+  });
+  if (error) {
+    toast.error(`Could not switch to ${session.email} — sign in to that account again`);
+    return;
+  }
+  window.location.reload();
+}
+
 export function UserMenu() {
   const { user, profile, primaryRole, signOut } = useAuth();
   if (!user) return null;
   const name = profile?.full_name || user.email;
+  const otherSessions = listRememberedSessions().filter((s) => s.email !== user.email);
 
   return (
     <DropdownMenu>
@@ -51,7 +67,7 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/settings" className="flex items-center gap-2">
+          <Link to="/profile" className="flex items-center gap-2">
             <UserIcon className="h-4 w-4" /> Profile
           </Link>
         </DropdownMenuItem>
@@ -60,6 +76,19 @@ export function UserMenu() {
             <SettingsIcon className="h-4 w-4" /> Settings
           </Link>
         </DropdownMenuItem>
+        {otherSessions.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Switch profile
+            </DropdownMenuLabel>
+            {otherSessions.map((s) => (
+              <DropdownMenuItem key={s.email} onClick={() => void switchTo(s)} className="flex items-center gap-2">
+                <Repeat className="h-4 w-4" /> {s.email}
+              </DropdownMenuItem>
+            ))}
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => void signOut()} className="text-destructive focus:text-destructive">
           <LogOut className="h-4 w-4" /> Sign out

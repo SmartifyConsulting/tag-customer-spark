@@ -9,6 +9,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 // same records unchanged.
 // ─────────────────────────────────────────────────────────────────────────
 
+// Staff resolve their retailer via user_roles. A wallet (customer) account
+// has no staff role at all, so it falls back to the same WhatsApp-number
+// link Tagged uses: profiles.whatsapp_e164 -> customers.whatsapp_e164 ->
+// customers.retailer_id. This is a stopgap, not a real multi-retailer
+// consumer identity — see the "Known limitation" note further down.
 async function resolveRetailerId(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
     .from("user_roles")
@@ -17,7 +22,23 @@ async function resolveRetailerId(supabase: any, userId: string): Promise<string 
     .not("retailer_id", "is", null)
     .limit(1)
     .maybeSingle();
-  return data?.retailer_id ?? null;
+  if (data?.retailer_id) return data.retailer_id;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("whatsapp_e164")
+    .eq("id", userId)
+    .maybeSingle();
+  if (!profile?.whatsapp_e164) return null;
+
+  const { data: customer } = await supabase
+    .from("customers")
+    .select("retailer_id")
+    .eq("whatsapp_e164", profile.whatsapp_e164)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return customer?.retailer_id ?? null;
 }
 
 function randomTagId() {

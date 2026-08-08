@@ -10,13 +10,47 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QrPreview } from "@/components/qr/qr-preview";
 import { formatMoney } from "@/lib/format";
 import { StatusBadge, warrantyState } from "@/components/ownership/shared";
 import { RecordPurchaseDialog } from "@/components/ownership/record-purchase-dialog";
 import { exportCsv, exportExcel, exportTablePdf } from "@/components/ownership/export";
-import { listPurchases, listReceipts, summariseReceipt, updateReceipt } from "@/lib/ownership.functions";
+import {
+  listPurchases,
+  listReceipts,
+  listReturns,
+  summariseReceipt,
+  updateReceipt,
+  updateReturnStatus,
+} from "@/lib/ownership.functions";
+
+const RETURN_STATUSES = ["requested", "in_progress", "approved", "rejected", "refunded"] as const;
+
+function groupByDate(purchases: any[]) {
+  const now = Date.now();
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const weekAgo = now - 7 * 24 * 3600 * 1000;
+  const monthAgo = now - 30 * 24 * 3600 * 1000;
+
+  const groups: { label: string; items: any[] }[] = [
+    { label: "Today", items: [] },
+    { label: "This week", items: [] },
+    { label: "This month", items: [] },
+    { label: "Older", items: [] },
+  ];
+  for (const p of purchases) {
+    const t = new Date(p.purchased_at).getTime();
+    if (t >= startOfDay.getTime()) groups[0].items.push(p);
+    else if (t >= weekAgo) groups[1].items.push(p);
+    else if (t >= monthAgo) groups[2].items.push(p);
+    else groups[3].items.push(p);
+  }
+  return groups.filter((g) => g.items.length > 0);
+}
 
 export const Route = createFileRoute("/_authenticated/ownership/purchases/")({
   head: () => ({
@@ -72,6 +106,7 @@ function PurchasesPage() {
         <TabsList>
           <TabsTrigger value="purchases">Purchases</TabsTrigger>
           <TabsTrigger value="receipts">Digital receipts</TabsTrigger>
+          <TabsTrigger value="returns">Returns</TabsTrigger>
         </TabsList>
 
         <TabsContent value="purchases" className="space-y-6">
@@ -135,16 +170,31 @@ function PurchasesPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {purchases.map((p: any) => (
-                <PurchaseCard key={p.id} purchase={p} />
+            <Accordion type="multiple" defaultValue={groupByDate(purchases).map((g) => g.label)}>
+              {groupByDate(purchases).map((group) => (
+                <AccordionItem key={group.label} value={group.label}>
+                  <AccordionTrigger className="text-sm font-semibold">
+                    {group.label} <span className="ml-2 font-normal text-muted-foreground">({group.items.length})</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="grid gap-4 pt-2 md:grid-cols-2 xl:grid-cols-3">
+                      {group.items.map((p: any) => (
+                        <PurchaseCard key={p.id} purchase={p} />
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
               ))}
-            </div>
+            </Accordion>
           )}
         </TabsContent>
 
         <TabsContent value="receipts">
           <ReceiptWallet />
+        </TabsContent>
+
+        <TabsContent value="returns">
+          <ReturnsTab />
         </TabsContent>
       </Tabs>
     </div>
@@ -388,6 +438,101 @@ function ReceiptWallet() {
       >
         <Download className="mr-1.5 h-4 w-4" /> Export wallet as PDF
       </Button>
+    </div>
+  );
+}
+
+function ReturnsTab() {
+  const qc = useQueryClient();
+  const listFn = useServerFn(listReturns);
+  const updateFn = useServerFn(updateReturnStatus);
+  const [openQr, setOpenQr] = useState<string | null>(null);
+
+  const { data, isLoading } = useQuery({ queryKey: ["ownership", "returns"], queryFn: () => listFn() });
+
+  const update = useMutation({
+    mutationFn: (v: { id: string; status: (typeof RETURN_STATUSES)[number] }) => updateFn({ data: v }),
+    onSuccess: () => {
+      toast.success("Return updated");
+      qc.invalidateQueries({ queryKey: ["ownership"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not update the return"),
+  });
+
+  const rows = (data as any[]) ?? [];
+
+  if (isLoading) return <Skeleton className="h-56 rounded-xl" />;
+  if (rows.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-sm text-muted-foreground">
+          No returns in progress. Open a purchase and choose "Start return".
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {rows.map((r) => {
+        const eligible = r.window_ends_on ? new Date(r.window_ends_on).getTime() >= Date.now() : false;
+        return (
+          <Card key={r.id}>
+            <CardContent className="space-y-3 p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{r.item?.name ?? "Item"}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {r.purchase?.store?.name ?? "Store"} · Receipt {r.purchase?.receipt_number ?? "—"}
+                  </p>
+                </div>
+                <p className="text-sm font-semibold">{formatMoney(r.refund_cents ?? 0)}</p>
+              </div>
+              <p className="text-sm text-muted-foreground">{r.reason}</p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <StatusBadge tone={r.status === "refunded" ? "ok" : r.status === "rejected" ? "expired" : "soon"}>
+                  {String(r.status).replace("_", " ")}
+                </StatusBadge>
+                <StatusBadge tone={eligible ? "ok" : "expired"}>
+                  {eligible ? "Within return window" : "Window closed"}
+                </StatusBadge>
+                <StatusBadge tone="info">{r.return_code}</StatusBadge>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Select value={r.status} onValueChange={(v) => update.mutate({ id: r.id, status: v as any })}>
+                  <SelectTrigger className="w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RETURN_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s.replace("_", " ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" variant="outline" onClick={() => setOpenQr(openQr === r.id ? null : r.id)}>
+                  {openQr === r.id ? "Hide return QR" : "Return QR"}
+                </Button>
+                {r.purchase_id && (
+                  <Link
+                    to="/ownership/purchases/$purchaseId"
+                    params={{ purchaseId: r.purchase_id }}
+                    className="text-xs font-medium underline underline-offset-4"
+                  >
+                    Purchase
+                  </Link>
+                )}
+              </div>
+              {openQr === r.id && (
+                <div className="w-40">
+                  <QrPreview value={`TAG-RETURN:${r.return_code}`} />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

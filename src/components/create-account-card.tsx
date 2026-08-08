@@ -38,6 +38,7 @@ export function CreateAccountCard({
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
+  const [accountType, setAccountType] = useState<"retailer" | "customer">("retailer");
   const [suName, setSuName] = useState("");
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
@@ -46,6 +47,7 @@ export function CreateAccountCard({
   const [suProvince, setSuProvince] = useState("");
   const [suBranchName, setSuBranchName] = useState("");
   const [suWebsite, setSuWebsite] = useState("");
+  const [suWhatsapp, setSuWhatsapp] = useState("");
 
   const handleContinueToCredentialsStep = () => {
     if (!suName.trim()) {
@@ -60,24 +62,36 @@ export function CreateAccountCard({
     e.preventDefault();
     setInlineError(null);
     setLoading(true);
-    const country = SIGNUP_COUNTRIES.find((c) => c.code === suCountry) ?? SIGNUP_COUNTRIES[0];
-    const companyName = suCompany.trim() || `${suName}'s workspace`;
+
+    const signupData: Record<string, unknown> =
+      accountType === "customer"
+        ? {
+            full_name: suName,
+            account_type: "customer",
+            whatsapp_e164: suWhatsapp.trim() || undefined,
+          }
+        : (() => {
+            const country = SIGNUP_COUNTRIES.find((c) => c.code === suCountry) ?? SIGNUP_COUNTRIES[0];
+            const companyName = suCompany.trim() || `${suName}'s workspace`;
+            return {
+              full_name: suName,
+              account_type: "retailer",
+              company_name: companyName,
+              billing_country: country.code,
+              currency: country.currency,
+              country_name: country.name,
+              branch_name: suBranchName.trim() || undefined,
+              province: suProvince.trim() || undefined,
+              website: suWebsite.trim() || undefined,
+            };
+          })();
 
     const { data, error } = await supabase.auth.signUp({
       email: suEmail,
       password: suPassword,
       options: {
         emailRedirectTo: window.location.origin,
-        data: {
-          full_name: suName,
-          company_name: companyName,
-          billing_country: country.code,
-          currency: country.currency,
-          country_name: country.name,
-          branch_name: suBranchName.trim() || undefined,
-          province: suProvince.trim() || undefined,
-          website: suWebsite.trim() || undefined,
-        },
+        data: signupData,
       },
     });
     if (error) {
@@ -168,6 +182,26 @@ export function CreateAccountCard({
 
         {signupStep === 1 ? (
           <>
+            <div className="grid grid-cols-2 gap-2 rounded-lg border border-border/60 bg-muted/40 p-1">
+              <button
+                type="button"
+                onClick={() => setAccountType("retailer")}
+                className={`rounded-md py-1.5 text-sm font-medium transition-colors ${
+                  accountType === "retailer" ? "bg-background shadow-sm" : "text-muted-foreground"
+                }`}
+              >
+                I'm a retailer
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType("customer")}
+                className={`rounded-md py-1.5 text-sm font-medium transition-colors ${
+                  accountType === "customer" ? "bg-background shadow-sm" : "text-muted-foreground"
+                }`}
+              >
+                I'm a shopper
+              </button>
+            </div>
             <div className="space-y-1.5">
               <Label htmlFor="su-name">Full name *</Label>
               <Input
@@ -179,61 +213,80 @@ export function CreateAccountCard({
                 onChange={(e) => setSuName(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="su-company">Company *</Label>
-              <Input
-                id="su-company"
-                type="text"
-                autoComplete="organization"
-                value={suCompany}
-                onChange={(e) => setSuCompany(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="su-website">Company website</Label>
-              <Input
-                id="su-website"
-                type="text"
-                autoComplete="url"
-                value={suWebsite}
-                onChange={(e) => setSuWebsite(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+            {accountType === "customer" ? (
               <div className="space-y-1.5">
-                <Label htmlFor="su-branch">Branch name</Label>
+                <Label htmlFor="su-whatsapp">WhatsApp number</Label>
                 <Input
-                  id="su-branch"
-                  type="text"
-                  value={suBranchName}
-                  onChange={(e) => setSuBranchName(e.target.value)}
+                  id="su-whatsapp"
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="+27821234567"
+                  value={suWhatsapp}
+                  onChange={(e) => setSuWhatsapp(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Optional — links products you've tagged in-store to this account.
+                </p>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="su-province">Province / State</Label>
-                <Input
-                  id="su-province"
-                  type="text"
-                  value={suProvince}
-                  onChange={(e) => setSuProvince(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="su-country">Country *</Label>
-              <Select value={suCountry} onValueChange={setSuCountry}>
-                <SelectTrigger id="su-country">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SIGNUP_COUNTRIES.map((c) => (
-                    <SelectItem key={c.code} value={c.code}>
-                      {c.name} ({c.currency})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="su-company">Company *</Label>
+                  <Input
+                    id="su-company"
+                    type="text"
+                    autoComplete="organization"
+                    value={suCompany}
+                    onChange={(e) => setSuCompany(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="su-website">Company website</Label>
+                  <Input
+                    id="su-website"
+                    type="text"
+                    autoComplete="url"
+                    value={suWebsite}
+                    onChange={(e) => setSuWebsite(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="su-branch">Branch name</Label>
+                    <Input
+                      id="su-branch"
+                      type="text"
+                      value={suBranchName}
+                      onChange={(e) => setSuBranchName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="su-province">Province / State</Label>
+                    <Input
+                      id="su-province"
+                      type="text"
+                      value={suProvince}
+                      onChange={(e) => setSuProvince(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="su-country">Country *</Label>
+                  <Select value={suCountry} onValueChange={setSuCountry}>
+                    <SelectTrigger id="su-country">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SIGNUP_COUNTRIES.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.name} ({c.currency})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
             {inlineError && (
               <p className="text-sm text-destructive" aria-live="polite">
                 {inlineError}

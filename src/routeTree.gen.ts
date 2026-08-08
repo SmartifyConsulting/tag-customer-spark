@@ -30,11 +30,13 @@ import { Route as PDppIdRouteImport } from './routes/p.$dppId'
 import { Route as NMessageIdRouteImport } from './routes/n.$messageId'
 import { Route as AuthenticatedWatchlistsRouteImport } from './routes/_authenticated/watchlists'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
+import { Route as AuthenticatedTaggedRouteImport } from './routes/_authenticated/tagged'
 import { Route as AuthenticatedStoresRouteImport } from './routes/_authenticated/stores'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedRoiRouteImport } from './routes/_authenticated/roi'
 import { Route as AuthenticatedPurchaseRouteImport } from './routes/_authenticated/purchase'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedOwnershipRouteImport } from './routes/_authenticated/ownership'
 import { Route as AuthenticatedIntentRouteImport } from './routes/_authenticated/intent'
@@ -201,6 +203,11 @@ const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
   path: '/upgrade',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTaggedRoute = AuthenticatedTaggedRouteImport.update({
+  id: '/tagged',
+  path: '/tagged',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedStoresRoute = AuthenticatedStoresRouteImport.update({
   id: '/stores',
   path: '/stores',
@@ -224,6 +231,11 @@ const AuthenticatedRoiRoute = AuthenticatedRoiRouteImport.update({
 const AuthenticatedPurchaseRoute = AuthenticatedPurchaseRouteImport.update({
   id: '/purchase',
   path: '/purchase',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
@@ -602,11 +614,13 @@ export interface FileRoutesByFullPath {
   '/intent': typeof AuthenticatedIntentRoute
   '/ownership': typeof AuthenticatedOwnershipRouteWithChildren
   '/products': typeof AuthenticatedProductsRouteWithChildren
+  '/profile': typeof AuthenticatedProfileRoute
   '/purchase': typeof AuthenticatedPurchaseRouteWithChildren
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stores': typeof AuthenticatedStoresRoute
+  '/tagged': typeof AuthenticatedTaggedRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
@@ -687,10 +701,12 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/intent': typeof AuthenticatedIntentRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stores': typeof AuthenticatedStoresRoute
+  '/tagged': typeof AuthenticatedTaggedRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
@@ -773,11 +789,13 @@ export interface FileRoutesById {
   '/_authenticated/intent': typeof AuthenticatedIntentRoute
   '/_authenticated/ownership': typeof AuthenticatedOwnershipRouteWithChildren
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/purchase': typeof AuthenticatedPurchaseRouteWithChildren
   '/_authenticated/roi': typeof AuthenticatedRoiRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stores': typeof AuthenticatedStoresRoute
+  '/_authenticated/tagged': typeof AuthenticatedTaggedRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/_authenticated/watchlists': typeof AuthenticatedWatchlistsRoute
   '/n/$messageId': typeof NMessageIdRoute
@@ -863,11 +881,13 @@ export interface FileRouteTypes {
     | '/intent'
     | '/ownership'
     | '/products'
+    | '/profile'
     | '/purchase'
     | '/roi'
     | '/settings'
     | '/staff'
     | '/stores'
+    | '/tagged'
     | '/upgrade'
     | '/watchlists'
     | '/n/$messageId'
@@ -948,10 +968,12 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/inbox'
     | '/intent'
+    | '/profile'
     | '/roi'
     | '/settings'
     | '/staff'
     | '/stores'
+    | '/tagged'
     | '/upgrade'
     | '/watchlists'
     | '/n/$messageId'
@@ -1033,11 +1055,13 @@ export interface FileRouteTypes {
     | '/_authenticated/intent'
     | '/_authenticated/ownership'
     | '/_authenticated/products'
+    | '/_authenticated/profile'
     | '/_authenticated/purchase'
     | '/_authenticated/roi'
     | '/_authenticated/settings'
     | '/_authenticated/staff'
     | '/_authenticated/stores'
+    | '/_authenticated/tagged'
     | '/_authenticated/upgrade'
     | '/_authenticated/watchlists'
     | '/n/$messageId'
@@ -1283,6 +1307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUpgradeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tagged': {
+      id: '/_authenticated/tagged'
+      path: '/tagged'
+      fullPath: '/tagged'
+      preLoaderRoute: typeof AuthenticatedTaggedRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/stores': {
       id: '/_authenticated/stores'
       path: '/stores'
@@ -1316,6 +1347,13 @@ declare module '@tanstack/react-router' {
       path: '/purchase'
       fullPath: '/purchase'
       preLoaderRoute: typeof AuthenticatedPurchaseRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/products': {
@@ -1937,11 +1975,13 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
   AuthenticatedOwnershipRoute: typeof AuthenticatedOwnershipRouteWithChildren
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedPurchaseRoute: typeof AuthenticatedPurchaseRouteWithChildren
   AuthenticatedRoiRoute: typeof AuthenticatedRoiRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStoresRoute: typeof AuthenticatedStoresRoute
+  AuthenticatedTaggedRoute: typeof AuthenticatedTaggedRoute
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedWatchlistsRoute: typeof AuthenticatedWatchlistsRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
@@ -1965,11 +2005,13 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIntentRoute: AuthenticatedIntentRoute,
   AuthenticatedOwnershipRoute: AuthenticatedOwnershipRouteWithChildren,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedPurchaseRoute: AuthenticatedPurchaseRouteWithChildren,
   AuthenticatedRoiRoute: AuthenticatedRoiRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStoresRoute: AuthenticatedStoresRoute,
+  AuthenticatedTaggedRoute: AuthenticatedTaggedRoute,
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedWatchlistsRoute: AuthenticatedWatchlistsRoute,
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,

@@ -14,6 +14,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { completeSignup } from "@/lib/signup.functions";
 import { setRetailerLogoFromWebsite } from "@/lib/settings.functions";
+import { rememberSession } from "@/lib/session-switcher";
 
 export type AppRole = "super_admin" | "retail_admin" | "store_manager" | "sales_assistant";
 
@@ -68,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
+      if (newSession) rememberSession(newSession);
       if (newSession?.user) {
         // "SIGNED_IN" only fires for an actual sign-in action completing —
         // credentials submitted, a confirmation/magic link processed, OAuth
@@ -87,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: initial } }) => {
       setSession(initial);
       setUser(initial?.user ?? null);
+      if (initial) rememberSession(initial);
       if (initial?.user) {
         loadProfileAndRoles(initial.user.id).finally(() => setLoading(false));
       } else {
@@ -126,6 +129,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
     setProfile(prof ?? null);
     let rows = (roleRows ?? []) as { role: AppRole; retailer_id: string | null }[];
+
+    const { data: authUser } = await supabase.auth.getUser();
+    const isCustomerSignup = authUser.user?.user_metadata?.account_type === "customer";
+
+    if (isCustomerSignup) {
+      // Shopper accounts never get a retailer provisioned — they stay
+      // role-less (wallet persona) and just link to whichever retailer's
+      // customer record matches their WhatsApp number (see
+      // resolveRetailerId in ownership.functions.ts).
+      if (!provisioningAttempted.current) {
+        provisioningAttempted.current = true;
+        const whatsapp = authUser.user?.user_metadata?.whatsapp_e164 as string | undefined;
+        if (whatsapp) {
+          try {
+            await supabase.from("profiles").update({ whatsapp_e164: whatsapp }).eq("id", userId);
+          } catch {
+            // Non-fatal — can be added later from Profile.
+          }
+        }
+      }
+      if (isFreshSignIn) {
+        navigate({ to: "/tagged", replace: true });
+      }
+      setRoles(rows.map((r) => r.role));
+      return;
+    }
 
     // Provision a retailer for a session that has none yet. Idempotent
     // server-side. Covers every entry path uniformly (confirmation link,
