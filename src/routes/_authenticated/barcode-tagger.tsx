@@ -1,18 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
+import { QrPreview } from "@/components/qr/qr-preview";
+import { getMyShopperTag } from "@/lib/ownership.functions";
 
 export const Route = createFileRoute("/_authenticated/barcode-tagger")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Barcode Tagger — Tag" },
+      { title: "My Tag — Tag" },
       {
         name: "description",
-        content: "Scan product barcodes to tag items and look them up.",
+        content: "Your personal QR code, and a barcode scanner to tag products.",
       },
     ],
   }),
@@ -23,6 +27,13 @@ function BarcodeTaggerPage() {
   const [detected, setDetected] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
   const { videoRef, error, starting } = useBarcodeScanner((code) => setDetected(code), nonce);
+
+  const tagFn = useServerFn(getMyShopperTag);
+  const { data: myTag } = useQuery({ queryKey: ["my-shopper-tag"], queryFn: () => tagFn() });
+  const qrValue = useMemo(() => {
+    if (!myTag?.tagId) return null;
+    return JSON.stringify({ tagId: myTag.tagId, email: myTag.email ?? undefined });
+  }, [myTag]);
 
   const looksLikeGtin = !!detected && /^\d{8,14}$/.test(detected);
 
@@ -39,11 +50,25 @@ function BarcodeTaggerPage() {
       <div className="mx-auto max-w-4xl">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Barcode Tagger</h1>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">My Tag</h1>
           <p className="mt-2 text-muted-foreground">
-            Point your camera at any product barcode. Detection happens automatically.
+            Your personal QR code, and a barcode scanner ready to tag any product.
           </p>
         </div>
+
+        {/* My QR Code — auto-generated at sign-up */}
+        {qrValue && (
+          <Card className="mb-6 flex flex-col items-center gap-3 p-6 sm:flex-row sm:justify-center">
+            <QrPreview value={qrValue} size={140} />
+            <div className="text-center sm:text-left">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                My Shopper Tag
+              </p>
+              <p className="mt-1 font-mono text-lg font-semibold text-primary">{myTag?.tagId}</p>
+              {myTag?.email && <p className="text-sm text-muted-foreground">{myTag.email}</p>}
+            </div>
+          </Card>
+        )}
 
         {/* Main Content Grid - Responsive Layout */}
         <div className="grid gap-6 lg:grid-cols-3">

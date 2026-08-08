@@ -12,17 +12,29 @@ export function useBarcodeScanner(onDetected: (code: string) => void, resetKey: 
 
   useEffect(() => {
     let cancelled = false;
-    detectedRef.current = false;
-    setError(null);
-    setStarting(true);
 
-    (async () => {
+    const stopCamera = () => {
+      try {
+        stopRef.current();
+      } catch {}
+      stopRef.current = () => {};
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      if (videoRef.current) videoRef.current.srcObject = null;
+    };
+
+    const startCamera = async () => {
+      if (cancelled || document.hidden || streamRef.current) return;
+      detectedRef.current = false;
+      setError(null);
+      setStarting(true);
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "environment" },
           audio: false,
         });
-        if (cancelled) {
+        if (cancelled || document.hidden) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
@@ -69,16 +81,24 @@ export function useBarcodeScanner(onDetected: (code: string) => void, resetKey: 
       } finally {
         if (!cancelled) setStarting(false);
       }
-    })();
+    };
+
+    // Release the camera the instant the tab/app is backgrounded — a
+    // getUserMedia stream otherwise keeps running (and the camera indicator
+    // lit) even while the user has switched away — and re-acquire it when
+    // they come back, as long as this component is still mounted.
+    const handleVisibility = () => {
+      if (document.hidden) stopCamera();
+      else startCamera();
+    };
+
+    startCamera();
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       cancelled = true;
-      try {
-        stopRef.current();
-      } catch {}
-      stopRef.current = () => {};
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
+      document.removeEventListener("visibilitychange", handleVisibility);
+      stopCamera();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
