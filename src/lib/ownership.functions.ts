@@ -1315,91 +1315,53 @@ export const lifecycleAlerts = createServerFn({ method: "POST" })
 
 // ─── Outlets (Shopper's registered stores) ───────────────────────────────
 
-export const listUserOutlets = createServerFn({ method: "POST" })(async () => {
-  const { supabase, userId } = await requireSupabaseAuth();
-  const { data } = await supabase
-    .from("shopper_outlets")
-    .select(`
-      outlet_id,
-      outlets (
-        id,
-        name,
-        location
-      )
-    `)
-    .eq("shopper_id", userId)
-    .order("created_at", { ascending: false });
+export const listUserOutlets = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context as any;
+    const { data } = await supabase
+      .from("shopper_outlets")
+      .select("outlet_id, outlets(id, name, location)")
+      .eq("shopper_id", userId)
+      .order("created_at", { ascending: false });
 
-  return (data ?? []).map((row: any) => row.outlets).filter(Boolean);
-});
-
-export const listAllOutlets = createServerFn({ method: "POST" })(async (opts: { data: { search?: string } }) => {
-  const { supabase } = await requireSupabaseAuth();
-  let query = supabase.from("outlets").select("id, name, location");
-
-  if (opts.data.search) {
-    query = query.ilike("name", `%${opts.data.search}%`);
-  }
-
-  const { data } = await query.order("name", { ascending: true }).limit(50);
-  return data ?? [];
-});
-
-export const addOutletToUser = createServerFn({ method: "POST" })(async (opts: { data: { outlet_id: string } }) => {
-  const { supabase, userId } = await requireSupabaseAuth();
-  const { error } = await supabase.from("shopper_outlets").insert({
-    shopper_id: userId,
-    outlet_id: opts.data.outlet_id,
+    return ((data ?? []) as any[]).map((row) => row.outlets).filter(Boolean);
   });
 
-  if (error) throw error;
-});
+export const listAllOutlets = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ search: z.string().optional() }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context as any;
+    let query = supabase.from("outlets").select("id, name, location");
+    if (data.search) query = query.ilike("name", `%${data.search}%`);
+    const { data: rows } = await query.order("name", { ascending: true }).limit(50);
+    return rows ?? [];
+  });
 
-export const removeOutletFromUser = createServerFn({ method: "POST" })(async (opts: { data: { outlet_id: string } }) => {
-  const { supabase, userId } = await requireSupabaseAuth();
-  const { error } = await supabase
-    .from("shopper_outlets")
-    .delete()
-    .eq("shopper_id", userId)
-    .eq("outlet_id", opts.data.outlet_id);
+export const addOutletToUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ outlet_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    const { error } = await supabase
+      .from("shopper_outlets")
+      .insert({ shopper_id: userId, outlet_id: data.outlet_id });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
 
-  if (error) throw error;
-});
+export const removeOutletFromUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ outlet_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    const { error } = await supabase
+      .from("shopper_outlets")
+      .delete()
+      .eq("shopper_id", userId)
+      .eq("outlet_id", data.outlet_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
 
-// Admin function to link a user by email to an outlet by name
-export const setupOutletLinkByEmail = createServerFn({ method: "POST" })(async (opts: { data: { email: string; outletName: string } }) => {
-  const { supabase } = await requireSupabaseAuth();
-
-  // Find user by email
-  const { data: user } = await supabase.from("profiles").select("id").eq("email", opts.data.email).maybeSingle();
-  if (!user?.id) throw new Error(`User not found: ${opts.data.email}`);
-
-  // Find or create outlet
-  let outlet = await supabase
-    .from("outlets")
-    .select("id")
-    .ilike("name", opts.data.outletName)
-    .maybeSingle();
-
-  if (!outlet.data?.id) {
-    const { data: created } = await supabase
-      .from("outlets")
-      .insert({ name: opts.data.outletName, location: "South Africa" })
-      .select("id")
-      .maybeSingle();
-    if (!created?.id) throw new Error("Failed to create outlet");
-    outlet = { data: created };
-  }
-
-  // Link user to outlet
-  const { error } = await supabase.from("shopper_outlets").upsert(
-    {
-      shopper_id: user.id,
-      outlet_id: outlet.data.id,
-    },
-    { onConflict: "shopper_id,outlet_id" },
-  );
-
-  if (error) throw error;
-  return { userId: user.id, outletId: outlet.data.id };
-});
