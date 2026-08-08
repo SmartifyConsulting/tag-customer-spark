@@ -27,6 +27,7 @@ import { UIVersionSwitcher } from "@/components/ui-version-switcher";
 import { sectionsForUser, isNavActive, type NavItem } from "@/lib/nav";
 import { getTagIdentity } from "@/lib/ownership.functions";
 import { useIsStaff } from "@/hooks/use-persona";
+import { useReceiptsEnabled } from "@/hooks/use-receipts-enabled";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -37,6 +38,7 @@ export function AppSidebar() {
   const isAdmin = useIsAdmin();
   const isSuperAdmin = useIsSuperAdmin();
   const isStaff = useIsStaff();
+  const { enabled: receiptsEnabled } = useReceiptsEnabled();
 
   // Fetch shopper's tag for QR code (only for shoppers, not staff-only view)
   const tagFn = useServerFn(getTagIdentity);
@@ -52,7 +54,10 @@ export function AppSidebar() {
   const sections = sectionsForUser(isStaff).map((section) => ({
     ...section,
     items: section.items.filter(
-      (item) => (!item.adminOnly || isAdmin) && (!item.superAdminOnly || isSuperAdmin),
+      (item) =>
+        (!item.adminOnly || isAdmin) &&
+        (!item.superAdminOnly || isSuperAdmin) &&
+        (receiptsEnabled || item.url !== "/ownership/purchases"),
     ),
   }));
   const isActive = (item: NavItem) => isNavActive(item, pathname);

@@ -1,10 +1,16 @@
 import { useRouterState } from "@tanstack/react-router";
 import { mobileNavForUser, isNavActive } from "@/lib/nav";
 import { useIsStaff } from "@/hooks/use-persona";
+import { useReceiptsEnabled } from "@/hooks/use-receipts-enabled";
+
+const RECEIPTS_URLS = new Set(["/ownership/purchases", "/purchase/receipts"]);
 
 export function MobileBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const items = mobileNavForUser(useIsStaff());
+  const { enabled: receiptsEnabled } = useReceiptsEnabled();
+  const items = mobileNavForUser(useIsStaff()).filter(
+    (item) => receiptsEnabled || !RECEIPTS_URLS.has(item.url),
+  );
 
 
   return (

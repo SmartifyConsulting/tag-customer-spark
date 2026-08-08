@@ -13,6 +13,8 @@ import { ReceiptStatusBadge, StatusBadge } from "@/components/ownership/shared";
 import { exportCsv, exportExcel, exportTablePdf } from "@/components/ownership/export";
 import { formatMoney } from "@/lib/format";
 import { listReceipts, updateReceipt } from "@/lib/ownership.functions";
+import { useReceiptsEnabled } from "@/hooks/use-receipts-enabled";
+import { ReceiptsDisabled } from "@/components/ownership/receipts-disabled";
 
 export const Route = createFileRoute("/_authenticated/purchase/receipts")({
   head: () => ({
@@ -33,6 +35,7 @@ export const Route = createFileRoute("/_authenticated/purchase/receipts")({
 });
 
 function ReceiptsPage() {
+  const { enabled } = useReceiptsEnabled();
   const [query, setQuery] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const listFn = useServerFn(listReceipts);
@@ -79,6 +82,18 @@ function ReceiptsPage() {
       category: r.category ?? "",
       total: (r.purchase?.total_cents ?? 0) / 100,
     }));
+
+  if (!enabled) {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          title="Digital Receipts"
+          description="Proof of purchase without paper — searchable, exportable and permanently linked to the TAG ID."
+        />
+        <ReceiptsDisabled />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
