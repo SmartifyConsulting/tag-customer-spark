@@ -56,6 +56,24 @@ export const getTagIdentity = createServerFn({ method: "POST" })
     return created ?? null;
   });
 
+// A shopper's own personal TAG identity, created automatically at signup
+// (see handle_new_user() in the DB) — distinct from getTagIdentity() above,
+// which resolves a retailer's shared "demo household" tag used for the
+// staff counter-scan flow. This is always exactly the caller's own row,
+// identified only by their tag ID and their own account email.
+export const getMyShopperTag = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId, claims } = context as any;
+    const { data } = await supabase
+      .from("consumer_tag_ids")
+      .select("tag_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!data?.tag_id) return null;
+    return { tagId: data.tag_id as string, email: (claims?.email as string) ?? null };
+  });
+
 export const listTagIdentities = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
