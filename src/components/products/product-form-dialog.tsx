@@ -375,30 +375,34 @@ export function ProductFormDialog({
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Field label="Price (R) *">
                 <Input
-                  type="text"
-                  inputMode="decimal"
-
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
                   value={centsToRandInput(form.watch("price_cents"))}
-                  onChange={(e) =>
-                    form.setValue("price_cents", randToCents(e.target.value), {
+                  onChange={(e) => {
+                    const val = e.target.value.trim();
+                    form.setValue("price_cents", val === "" ? 0 : randToCents(val), {
                       shouldDirty: true,
-                    })
-                  }
+                    });
+                  }}
+                  onFocus={(e) => e.currentTarget.select()}
                 />
               </Field>
               <Field label="Sale price (R)">
                 <Input
-                  type="text"
-                  inputMode="decimal"
-
-                  value={centsToRandInput(form.watch("sale_price_cents"))}
-                  onChange={(e) =>
+                  type="number"
+                  step="0.01"
+                  placeholder="Leave empty for no sale"
+                  value={centsToRandInput(form.watch("sale_price_cents") ?? "")}
+                  onChange={(e) => {
+                    const val = e.target.value.trim();
                     form.setValue(
                       "sale_price_cents",
-                      e.target.value === "" ? null : randToCents(e.target.value),
+                      val === "" ? null : randToCents(val),
                       { shouldDirty: true },
-                    )
-                  }
+                    );
+                  }}
+                  onFocus={(e) => e.currentTarget.select()}
                 />
               </Field>
               <Field label="Currency">
