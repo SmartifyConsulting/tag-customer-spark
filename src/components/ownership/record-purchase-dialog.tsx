@@ -51,6 +51,7 @@ export function RecordPurchaseDialog() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [extracting, setExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
 
   const storesFn = useServerFn(listStores);
@@ -153,8 +154,8 @@ export function RecordPurchaseDialog() {
                 <>
                   <Camera className="h-8 w-8 text-muted-foreground" />
                   <div className="text-center">
-                    <p className="font-medium">Upload receipt photo</p>
-                    <p className="text-xs text-muted-foreground">JPG, PNG or WebP</p>
+                    <p className="font-medium">Add a receipt photo</p>
+                    <p className="text-xs text-muted-foreground">Take a photo now or choose one from your library</p>
                   </div>
                   <input
                     ref={fileInputRef}
@@ -163,9 +164,22 @@ export function RecordPurchaseDialog() {
                     className="hidden"
                     onChange={handlePhotoSelect}
                   />
-                  <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                    Choose photo
-                  </Button>
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handlePhotoSelect}
+                  />
+                  <div className="flex gap-2">
+                    <Button onClick={() => cameraInputRef.current?.click()}>
+                      <Camera className="mr-1.5 h-4 w-4" /> Take photo
+                    </Button>
+                    <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                      Choose from library
+                    </Button>
+                  </div>
                 </>
               ) : (
                 <>
