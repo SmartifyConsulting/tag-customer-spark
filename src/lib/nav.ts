@@ -2,7 +2,7 @@ import {
   LayoutDashboard,
   Users,
   TrendingUp,
-  MessageCircle,
+  MessageSquare,
   ShieldCheck,
   Boxes,
   DollarSign,
@@ -91,7 +91,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       },
       { title: "Intent Engine", url: "/intelligence/intent", icon: Radar, match: ["/intelligence/intent", "/intent"] },
       { title: "Watchlists", url: "/watchlists", icon: Eye, match: ["/watchlists"] },
-      { title: "Whatsapps", url: "/inbox", icon: MessageCircle, match: ["/inbox"] },
+      { title: "Whatsapps", url: "/inbox", icon: MessageSquare, match: ["/inbox"] },
     ],
   },
   {
