@@ -14,6 +14,8 @@ import { Route as SetupRouteImport } from './routes/setup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as PopiaRouteImport } from './routes/popia'
+import { Route as PatentRouteImport } from './routes/patent'
 import { Route as IntentGapAnalyticsRouteImport } from './routes/intent-gap-analytics'
 import { Route as IntelligenceEngineRouteImport } from './routes/intelligence-engine'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
@@ -125,6 +127,16 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PopiaRoute = PopiaRouteImport.update({
+  id: '/popia',
+  path: '/popia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PatentRoute = PatentRouteImport.update({
+  id: '/patent',
+  path: '/patent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IntentGapAnalyticsRoute = IntentGapAnalyticsRouteImport.update({
@@ -621,6 +633,8 @@ export interface FileRoutesByFullPath {
   '/how-it-works': typeof HowItWorksRoute
   '/intelligence-engine': typeof IntelligenceEngineRoute
   '/intent-gap-analytics': typeof IntentGapAnalyticsRoute
+  '/patent': typeof PatentRoute
+  '/popia': typeof PopiaRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -714,6 +728,8 @@ export interface FileRoutesByTo {
   '/how-it-works': typeof HowItWorksRoute
   '/intelligence-engine': typeof IntelligenceEngineRoute
   '/intent-gap-analytics': typeof IntentGapAnalyticsRoute
+  '/patent': typeof PatentRoute
+  '/popia': typeof PopiaRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -802,6 +818,8 @@ export interface FileRoutesById {
   '/how-it-works': typeof HowItWorksRoute
   '/intelligence-engine': typeof IntelligenceEngineRoute
   '/intent-gap-analytics': typeof IntentGapAnalyticsRoute
+  '/patent': typeof PatentRoute
+  '/popia': typeof PopiaRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -897,6 +915,8 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/intelligence-engine'
     | '/intent-gap-analytics'
+    | '/patent'
+    | '/popia'
     | '/pricing'
     | '/privacy'
     | '/reset-password'
@@ -990,6 +1010,8 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/intelligence-engine'
     | '/intent-gap-analytics'
+    | '/patent'
+    | '/popia'
     | '/pricing'
     | '/privacy'
     | '/reset-password'
@@ -1077,6 +1099,8 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/intelligence-engine'
     | '/intent-gap-analytics'
+    | '/patent'
+    | '/popia'
     | '/pricing'
     | '/privacy'
     | '/reset-password'
@@ -1172,6 +1196,8 @@ export interface RootRouteChildren {
   HowItWorksRoute: typeof HowItWorksRoute
   IntelligenceEngineRoute: typeof IntelligenceEngineRoute
   IntentGapAnalyticsRoute: typeof IntentGapAnalyticsRoute
+  PatentRoute: typeof PatentRoute
+  PopiaRoute: typeof PopiaRoute
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -1232,6 +1258,20 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/popia': {
+      id: '/popia'
+      path: '/popia'
+      fullPath: '/popia'
+      preLoaderRoute: typeof PopiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/patent': {
+      id: '/patent'
+      path: '/patent'
+      fullPath: '/patent'
+      preLoaderRoute: typeof PatentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/intent-gap-analytics': {
@@ -2105,6 +2145,8 @@ const rootRouteChildren: RootRouteChildren = {
   HowItWorksRoute: HowItWorksRoute,
   IntelligenceEngineRoute: IntelligenceEngineRoute,
   IntentGapAnalyticsRoute: IntentGapAnalyticsRoute,
+  PatentRoute: PatentRoute,
+  PopiaRoute: PopiaRoute,
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
@@ -2132,3 +2174,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
