@@ -27,6 +27,8 @@ const searchSchema = z.object({
       "multiStore",
       "opportunityFeed",
       "sustainability",
+      "receipts",
+
 
     ])
     .optional(),
