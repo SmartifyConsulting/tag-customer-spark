@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
 
 export const Route = createFileRoute("/_authenticated/barcode-tagger")({
   ssr: false,
@@ -19,90 +20,9 @@ export const Route = createFileRoute("/_authenticated/barcode-tagger")({
 });
 
 function BarcodeTaggerPage() {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const stopRef = useRef<() => void>(() => {});
-  const [error, setError] = useState<string | null>(null);
-  const [starting, setStarting] = useState(false);
   const [detected, setDetected] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
-
-  useEffect(() => {
-    if (detected) return;
-    let cancelled = false;
-    setError(null);
-    setStarting(true);
-
-    (async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-          audio: false,
-        });
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => {});
-        }
-
-        const handleDetected = (code: string) => {
-          if (cancelled) return;
-          setDetected(code);
-        };
-
-        const AnyWindow = window as unknown as { BarcodeDetector?: any };
-        if (AnyWindow.BarcodeDetector) {
-          const detector = new AnyWindow.BarcodeDetector({
-            formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf"],
-          });
-          let raf = 0;
-          const tick = async () => {
-            if (cancelled || !videoRef.current) return;
-            try {
-              const codes = await detector.detect(videoRef.current);
-              if (codes && codes[0]?.rawValue) {
-                handleDetected(String(codes[0].rawValue));
-                return;
-              }
-            } catch {}
-            raf = requestAnimationFrame(tick);
-          };
-          raf = requestAnimationFrame(tick);
-          stopRef.current = () => cancelAnimationFrame(raf);
-        } else {
-          const { BrowserMultiFormatReader } = await import("@zxing/browser");
-          if (cancelled) return;
-          const reader = new BrowserMultiFormatReader();
-          const controls = await reader.decodeFromStream(
-            stream,
-            videoRef.current!,
-            (result) => {
-              if (result) handleDetected(result.getText());
-            },
-          );
-          stopRef.current = () => controls.stop();
-        }
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message ?? "Camera unavailable");
-      } finally {
-        if (!cancelled) setStarting(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      try {
-        stopRef.current();
-      } catch {}
-      stopRef.current = () => {};
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    };
-  }, [detected, nonce]);
+  const { videoRef, error, starting } = useBarcodeScanner((code) => setDetected(code), nonce);
 
   const looksLikeGtin = !!detected && /^\d{8,14}$/.test(detected);
 

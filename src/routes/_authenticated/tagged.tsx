@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Tag } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, Tag } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatMoney } from "@/lib/format";
 import { listMyTaggedProducts } from "@/lib/tagged.functions";
+import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
 
 export const Route = createFileRoute("/_authenticated/tagged")({
   head: () => ({
@@ -17,6 +19,64 @@ export const Route = createFileRoute("/_authenticated/tagged")({
   }),
   component: TaggedPage,
 });
+
+function ReadyToScanCard() {
+  const [detected, setDetected] = useState<string | null>(null);
+  const { videoRef, error, starting } = useBarcodeScanner((code) => setDetected(code));
+  const looksLikeGtin = !!detected && /^\d{8,14}$/.test(detected);
+
+  useEffect(() => {
+    if (!detected || !looksLikeGtin) return;
+    const t = setTimeout(() => {
+      window.location.href = `/passport/${detected}`;
+    }, 400);
+    return () => clearTimeout(t);
+  }, [detected, looksLikeGtin]);
+
+  return (
+    <Card className="overflow-hidden">
+      <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black sm:aspect-[21/9]">
+        <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
+        <div className="pointer-events-none absolute inset-0 grid place-items-center">
+          <div className="h-1/2 w-2/3 rounded-lg border-2 border-primary/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)] sm:w-1/3" />
+        </div>
+        {!detected && !starting && !error && (
+          <div className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-xs font-medium text-white/90">
+            Ready to scan — point at a barcode
+          </div>
+        )}
+        {starting && !detected && (
+          <div className="absolute inset-0 grid place-items-center bg-black/40 text-white">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <p className="text-xs">Starting camera...</p>
+            </div>
+          </div>
+        )}
+        {detected && (
+          <div className="absolute inset-0 grid place-items-center bg-black/60 p-4 text-center text-white">
+            {looksLikeGtin ? (
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Redirecting to product...
+              </div>
+            ) : (
+              <p className="text-sm">That doesn't look like a product barcode.</p>
+            )}
+          </div>
+        )}
+        {error && (
+          <div className="absolute inset-0 grid place-items-center bg-black/70 p-4 text-center text-xs text-white">
+            <div>
+              <p className="font-medium">Cannot access the camera</p>
+              <p className="mt-1 opacity-80">Allow camera permission for this site, then reload.</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
 
 function TaggedPage() {
   const listFn = useServerFn(listMyTaggedProducts);
@@ -30,6 +90,8 @@ function TaggedPage() {
         title="Tagged"
         description="Products you've scanned in-store and asked to be notified about — not yet purchased."
       />
+
+      <ReadyToScanCard />
 
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
