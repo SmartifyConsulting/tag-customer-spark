@@ -12,6 +12,7 @@ import {
   Radar,
   Eye,
   Tag,
+  Barcode,
 } from "lucide-react";
 
 import type { TierFeatureKey } from "@/lib/tier";
@@ -160,6 +161,7 @@ export const STAFF_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
 ] as const;
 
 export const SHOPPER_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
+  { title: "Barcode Tagger", url: "/barcode-tagger", icon: Barcode, match: ["/barcode-tagger"] },
   { title: "Tagged", url: "/tagged", icon: Tag, match: ["/tagged"] },
   {
     title: "Receipts",
