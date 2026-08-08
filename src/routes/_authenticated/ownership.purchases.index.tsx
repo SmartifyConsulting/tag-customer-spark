@@ -55,10 +55,10 @@ function groupByDate(purchases: any[]) {
 export const Route = createFileRoute("/_authenticated/ownership/purchases/")({
   head: () => ({
     meta: [
-      { title: "Purchases — Tag Ownership" },
+      { title: "Receipts — Tag Ownership" },
       {
         name: "description",
-        content: "Every purchase, receipt and warranty status in one consumer-owned record.",
+        content: "Your digital receipts and purchase history in one place.",
       },
     ],
   }),

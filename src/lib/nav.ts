@@ -100,7 +100,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     items: [
       { title: "Tagged", url: "/tagged", icon: Tag, match: ["/tagged"] },
       {
-        title: "Purchases",
+        title: "Receipts",
         url: "/ownership/purchases",
         icon: ShoppingBag,
         match: ["/ownership/purchases", "/purchase/receipts", "/ownership/returns"],
