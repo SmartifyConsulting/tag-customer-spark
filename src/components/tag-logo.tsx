@@ -1,4 +1,6 @@
 import tagLogoHorizontal from "@/assets/Tag_logo_pink_horizontal.png";
+import tagLogoV3 from "@/assets/Tag_logo_yellow_bg.png";
+import { useUIVersion } from "@/hooks/use-ui-version";
 
 export function TagLogo({
   className,
@@ -16,6 +18,11 @@ export function TagLogo({
   // specific size the presets don't cover.
   heightClass?: string;
 }) {
+  // V3 drops pink entirely, including the logo — swap to the green/yellow
+  // mark whenever that theme is active.
+  const uiVersion = useUIVersion();
+  const logoSrc = uiVersion === "v3" ? tagLogoV3 : tagLogoHorizontal;
+
   if (variant === "wordmark") {
     const h =
       heightClass ??
@@ -29,7 +36,7 @@ export function TagLogo({
     return (
       <div className={`flex items-center justify-center ${className ?? ""}`}>
         <img
-          src={tagLogoHorizontal}
+          src={logoSrc}
           alt="Tag"
           className={`${h} w-auto object-contain`}
         />
@@ -42,7 +49,7 @@ export function TagLogo({
   return (
     <div className={`flex items-center justify-center ${className ?? ""}`}>
       <img
-        src={tagLogoHorizontal}
+        src={logoSrc}
         alt="Tag"
         className={`${dim} object-contain`}
       />
