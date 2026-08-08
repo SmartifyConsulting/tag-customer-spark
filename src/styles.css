@@ -64,112 +64,112 @@
 :root {
   --radius: 0.9rem;
 
-  /* Tag — Black + White base, WhatsApp green as the single accent */
-  --background: oklch(1 0 0);                    /* White */
-  --foreground: oklch(0.16 0.005 60);             /* Ink #0d0d0d */
+  /* V2 Palette — Cream background, Forest Green primary, Orange secondary */
+  --background: #F5F1E8;                         /* Cream */
+  --foreground: #2C3E50;                         /* Dark charcoal */
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.16 0.005 60);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.16 0.005 60);
+  --card: #FFFFFF;                               /* White cards on cream */
+  --card-foreground: #2C3E50;
+  --popover: #FFFFFF;
+  --popover-foreground: #2C3E50;
 
-  --primary: oklch(0.16 0.005 60);               /* Ink black */
-  --primary-foreground: oklch(1 0 0);            /* White */
+  --primary: #2C5F4F;                            /* Forest Green */
+  --primary-foreground: #FFFFFF;
 
-  --secondary: oklch(0.96 0 0);                  /* Neutral light grey */
-  --secondary-foreground: oklch(0.16 0.005 60);
+  --secondary: #F5A623;                          /* Orange */
+  --secondary-foreground: #FFFFFF;
 
-  --muted: oklch(0.96 0 0);
-  --muted-foreground: oklch(0.46 0 0);
+  --muted: #E8E4D8;
+  --muted-foreground: #6B7280;
 
-  --accent: oklch(0.16 0.005 60);                /* Black (consistent with primary) */
-  --accent-foreground: oklch(1 0 0);
+  --accent: #F5A623;                             /* Orange accent */
+  --accent-foreground: #FFFFFF;
 
-  --destructive: oklch(0.45 0.14 40);            /* Crimson — errors only */
-  --destructive-foreground: oklch(0.99 0 0);
+  --destructive: #DC2626;                        /* Red — errors only */
+  --destructive-foreground: #FFFFFF;
 
-  --success: #25D366;                            /* WhatsApp green */
-  --success-foreground: oklch(1 0 0);
+  --success: #10B981;                            /* Green */
+  --success-foreground: #FFFFFF;
 
-  --mint: #C75984;                               /* TAG pink (matches logo) */
-  --mint-foreground: oklch(1 0 0);
+  --mint: #2C5F4F;                               /* Forest Green */
+  --mint-foreground: #FFFFFF;
 
-  --accent-secondary: #EBA327;                  /* Amber/Gold */
-  --accent-secondary-foreground: oklch(0.20 0.03 60);
+  --accent-secondary: #2C5F4F;                   /* Forest Green */
+  --accent-secondary-foreground: #FFFFFF;
 
-  --warning: oklch(0.80 0.14 78);                /* Amber #e8b84a */
-  --warning-foreground: oklch(0.20 0.03 60);
+  --warning: #F59E0B;                            /* Amber */
+  --warning-foreground: #FFFFFF;
 
-  --border: oklch(0.90 0 0);                     /* Neutral light grey */
-  --input: oklch(0.90 0 0);
-  --ring: oklch(0.16 0.005 60);
+  --border: #E8E4D8;                             /* Cream border */
+  --input: #F9F7F3;
+  --ring: #2C5F4F;
 
-  --chart-1: oklch(0.16 0.005 60);               /* Black */
-  --chart-2: #25D366;                            /* WhatsApp green */
-  --chart-3: oklch(0.45 0.14 40);                /* Crimson */
-  --chart-4: oklch(0.80 0.14 78);                /* Amber */
-  --chart-5: oklch(0.60 0 0);                    /* Neutral grey */
+  --chart-1: #2C5F4F;                            /* Forest Green */
+  --chart-2: #F5A623;                            /* Orange */
+  --chart-3: #10B981;                            /* Green */
+  --chart-4: #F59E0B;                            /* Amber */
+  --chart-5: #6B7280;                            /* Grey */
 
 
-  /* Sidebar — white surface, black active pill */
-  --sidebar: oklch(1 0 0);                       /* White */
-  --sidebar-foreground: oklch(0.16 0.005 60);    /* Ink */
-  --sidebar-primary: oklch(0.16 0.005 60);       /* Ink pill */
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.16 0.005 60);        /* Ink selection */
-  --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0.90 0 0);
-  --sidebar-ring: oklch(0.16 0.005 60);
+  /* Sidebar — cream surface, forest green active pill */
+  --sidebar: #F5F1E8;                            /* Cream */
+  --sidebar-foreground: #2C3E50;                 /* Dark text */
+  --sidebar-primary: #2C5F4F;                    /* Forest Green pill */
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F5A623;                     /* Orange selection */
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #E8E4D8;
+  --sidebar-ring: #2C5F4F;
 }
 
 .dark {
-  --background: oklch(0.14 0.005 60);
-  --foreground: oklch(0.955 0.012 82);
+  --background: #1F2937;                         /* Dark grey */
+  --foreground: #F5F1E8;                         /* Cream text on dark */
 
-  --card: oklch(0.18 0.005 60);
-  --card-foreground: oklch(0.955 0.012 82);
-  --popover: oklch(0.18 0.005 60);
-  --popover-foreground: oklch(0.955 0.012 82);
+  --card: #2C3E50;                               /* Darker card */
+  --card-foreground: #F5F1E8;
+  --popover: #2C3E50;
+  --popover-foreground: #F5F1E8;
 
-  --primary: oklch(0.955 0.012 82);              /* Cream on dark */
-  --primary-foreground: oklch(0.14 0.005 60);
+  --primary: #7FBFA8;                            /* Light forest green */
+  --primary-foreground: #1F2937;
 
-  --secondary: oklch(0.22 0.005 60);
-  --secondary-foreground: oklch(0.955 0.012 82);
+  --secondary: #FFB74D;                          /* Light orange */
+  --secondary-foreground: #1F2937;
 
-  --muted: oklch(0.22 0.005 60);
-  --muted-foreground: oklch(0.70 0.02 60);
+  --muted: #374151;
+  --muted-foreground: #9CA3AF;
 
-  --accent: oklch(0.955 0.012 82);               /* Cream on dark (consistent with primary) */
-  --accent-foreground: oklch(0.14 0.005 60);
+  --accent: #FFB74D;                             /* Light orange accent */
+  --accent-foreground: #1F2937;
 
-  --destructive: oklch(0.55 0.16 40);
-  --destructive-foreground: oklch(0.99 0 0);
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
 
-  --success: oklch(0.78 0.14 78);
-  --success-foreground: oklch(0.16 0.04 60);
+  --success: #34D399;
+  --success-foreground: #1F2937;
 
-  --mint: #C75984;                               /* Dark mode TAG pink (matches logo) */
-  --mint-foreground: oklch(0.99 0 0);
+  --mint: #7FBFA8;                               /* Light forest green */
+  --mint-foreground: #FFFFFF;
 
-  --accent-secondary: oklch(0.70 0.14 78);      /* Dark mode amber */
-  --accent-secondary-foreground: oklch(0.20 0.03 60);
+  --accent-secondary: #7FBFA8;                   /* Light forest green */
+  --accent-secondary-foreground: #FFFFFF;
 
-  --warning: oklch(0.82 0.14 78);
-  --warning-foreground: oklch(0.20 0.03 60);
+  --warning: #FBBF24;
+  --warning-foreground: #1F2937;
 
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.955 0.012 82);
+  --border: #374151;
+  --input: #1F2937;
+  --ring: #F5F1E8;
 
-  --sidebar: oklch(0.14 0.005 60);
-  --sidebar-foreground: oklch(0.955 0.012 82);
-  --sidebar-primary: oklch(0.955 0.012 82);
-  --sidebar-primary-foreground: oklch(0.14 0.005 60);
-  --sidebar-accent: oklch(0.955 0.012 82);
-  --sidebar-accent-foreground: oklch(0.14 0.005 60);
-  --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.955 0.012 82);
+  --sidebar: #1F2937;
+  --sidebar-foreground: #F5F1E8;
+  --sidebar-primary: #7FBFA8;
+  --sidebar-primary-foreground: #1F2937;
+  --sidebar-accent: #FFB74D;
+  --sidebar-accent-foreground: #1F2937;
+  --sidebar-border: #374151;
+  --sidebar-ring: #F5F1E8;
 }
 
 @layer base {
