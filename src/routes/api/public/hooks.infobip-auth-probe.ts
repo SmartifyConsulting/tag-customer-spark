@@ -8,13 +8,20 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const sharedSecret = process.env.CRON_SECRET ?? process.env.INFOBIP_WEBHOOK_SECRET;
+        const sharedSecret =
+          process.env.INFOBIP_PROBE_SECRET ??
+          process.env.CRON_SECRET ??
+          process.env.INFOBIP_WEBHOOK_SECRET;
         if (!sharedSecret || request.headers.get("x-cron-secret") !== sharedSecret) {
           return new Response("Unauthorized", { status: 401 });
         }
 
 
-        const rawKey = process.env.INFOBIP_API_KEY_V2 ?? process.env.INFOBIP_API_KEY ?? "";
+        const rawKey =
+          process.env.INFOBIP_API_KEY_V3 ??
+          process.env.INFOBIP_API_KEY_V2 ??
+          process.env.INFOBIP_API_KEY ??
+          "";
         const key = rawKey.trim().replace(/^"|"$/g, "").replace(/^(?:App\s+)+/i, "").trim();
         const rawBase = (process.env.INFOBIP_BASE_URL ?? "").trim().replace(/^"|"$/g, "");
         const base = /^https?:\/\//i.test(rawBase) ? rawBase : `https://${rawBase}`;
@@ -36,12 +43,68 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
           }
         };
 
+        // Neutral echo: proves whether the Authorization header leaves this
+        // runtime intact, and reports the egress IP Infobip actually sees.
+        // Only the header SHAPE is reported — never the key itself.
+        let echo: Record<string, unknown> = { ok: false };
+        try {
+          const resp = await fetch("https://postman-echo.com/get", {
+            headers: { Authorization: `App ${key}`, Accept: "application/json" },
+          });
+          const json: any = await resp.json();
+          const seen: string = json?.headers?.authorization ?? "";
+          echo = {
+            ok: resp.ok,
+            status: resp.status,
+            egressIp: json?.headers?.["x-forwarded-for"] ?? json?.headers?.["x-real-ip"] ?? null,
+            authHeaderPresent: Boolean(seen),
+            authHeaderScheme: seen.split(" ")[0] ?? null,
+            authHeaderLength: seen.length,
+            authHeaderIntact: seen === `App ${key}`,
+            headerNames: Object.keys(json?.headers ?? {}).sort(),
+          };
+        } catch (e: any) {
+          echo = { ok: false, error: e?.message ?? "network error" };
+        }
+
+        // Egress IP this runtime presents to third parties — what Infobip's
+        // network-level restrictions would be matching against.
+        try {
+          const ipResp = await fetch("https://api.ipify.org?format=json");
+          const ipJson: any = await ipResp.json();
+          echo["egressIp"] = ipJson?.ip ?? null;
+        } catch {
+          /* leave egressIp as-is */
+        }
+
+
+        // Optional live send through the real runtime adapter, so the probe can
+        // prove end-to-end delivery, not just authentication.
+        let send: unknown = null;
+        try {
+          const body: any = await request.clone().json().catch(() => ({}));
+          if (body?.sendTo) {
+            const { sendTemplate } = await import("@/lib/whatsapp-service.server");
+            send = await sendTemplate({
+              to: String(body.sendTo),
+              templateName: String(body.template ?? "tag_scan_v5"),
+              variables: {},
+              headerImageUrl: body.headerImageUrl ? String(body.headerImageUrl) : null,
+            });
+          }
+        } catch (e: any) {
+          send = { ok: false, error: e?.message ?? "send failed" };
+        }
+
         return Response.json({
           keyFingerprint: fingerprint,
           keyLength: key.length,
           host: base,
           probes: [await probe("/account/1/balance"), await probe("/whatsapp/2/senders")],
+          echo,
+          send,
         });
+
       },
     },
   },
