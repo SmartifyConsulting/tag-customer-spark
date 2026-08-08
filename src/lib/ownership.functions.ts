@@ -41,6 +41,26 @@ async function resolveRetailerId(supabase: any, userId: string): Promise<string 
   return customer?.retailer_id ?? null;
 }
 
+// Shoppers have no retailer link via resolveRetailerId (no staff role, no
+// whatsapp-matched customer with a retailer). Until real per-user tag
+// linkage exists, fall back to the single demo consumer tag so a shopper
+// account can see purchases/receipts/returns instead of a blank page.
+async function resolveOwnershipContext(
+  supabase: any,
+  userId: string,
+): Promise<{ retailerId: string | null; tagRef: string | null }> {
+  const retailerId = await resolveRetailerId(supabase, userId);
+  if (retailerId) return { retailerId, tagRef: null };
+
+  const { data: tag } = await supabase
+    .from("consumer_tag_ids")
+    .select("id, retailer_id")
+    .limit(1)
+    .maybeSingle();
+  if (!tag?.id) return { retailerId: null, tagRef: null };
+  return { retailerId: tag.retailer_id, tagRef: tag.id };
+}
+
 function randomTagId() {
   const digits = Math.floor(1000 + Math.random() * 9000);
   const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -111,41 +131,27 @@ export const listPurchases = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => purchaseFilters.parse(d ?? {}))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
-    const retailerId = await resolveRetailerId(supabase, userId);
+    const { retailerId, tagRef } = await resolveOwnershipContext(supabase, userId);
+    if (!retailerId) return { purchases: [], stores: [], brands: [], categories: [] };
 
-    // For staff: query by retailer_id. For shoppers: query by consumer tag.
     let purchaseQuery = supabase
       .from("purchases")
       .select(
         "*, items:purchase_items(*), receipt:receipts(id, receipt_number, is_favourite, is_archived, category), store:stores(id, name, city)",
       );
+    let storesQuery = supabase.from("stores").select("id, name").eq("retailer_id", retailerId);
+    // product_returns has no tag_ref column, so shoppers filter it via a
+    // join to purchases.tag_ref instead.
+    let returnsQuery = supabase
+      .from("product_returns")
+      .select(tagRef ? "purchase_id, status, purchase:purchases!inner(tag_ref)" : "purchase_id, status");
 
-    let storesQuery = supabase.from("stores").select("id, name");
-    let returnsQuery = supabase.from("product_returns").select("purchase_id, status");
-
-    let tagRef: string | null = null;
-
-    if (retailerId) {
-      // Staff: filter by retailer
-      purchaseQuery = purchaseQuery.eq("retailer_id", retailerId);
-      storesQuery = storesQuery.eq("retailer_id", retailerId);
-      returnsQuery = returnsQuery.eq("retailer_id", retailerId);
-    } else {
-      // Shopper: filter by consumer tag (tag_ref)
-      // Try to find a consumer tag for this user
-      const { data: tags } = await supabase
-        .from("consumer_tag_ids")
-        .select("id, retailer_id")
-        .limit(1)
-        .maybeSingle();
-
-      if (!tags?.id) return { purchases: [], stores: [], brands: [], categories: [] };
-
-      tagRef = tags.id;
-      retailerId = tags.retailer_id;
+    if (tagRef) {
       purchaseQuery = purchaseQuery.eq("tag_ref", tagRef);
-      storesQuery = storesQuery.eq("retailer_id", retailerId);
-      returnsQuery = returnsQuery.eq("tag_ref", tagRef);
+      returnsQuery = returnsQuery.eq("purchase.tag_ref", tagRef);
+    } else {
+      purchaseQuery = purchaseQuery.eq("retailer_id", retailerId);
+      returnsQuery = returnsQuery.eq("retailer_id", retailerId);
     }
 
     purchaseQuery = purchaseQuery.order("purchased_at", { ascending: false });
@@ -330,20 +336,40 @@ export const listReceipts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context as any;
-    const retailerId = await resolveRetailerId(supabase, userId);
+    const { retailerId, tagRef } = await resolveOwnershipContext(supabase, userId);
     if (!retailerId) return [];
-    const [{ data }, { data: returns }, { data: warranties }] = await Promise.all([
-      supabase
+
+    let receiptsQuery = supabase
+      .from("receipts")
+      .select("*, purchase:purchases(*, store:stores(name), items:purchase_items(*))")
+      .eq("retailer_id", retailerId)
+      .order("issued_at", { ascending: false });
+    // product_returns has no tag_ref column, so shoppers filter it via a
+    // join to purchases.tag_ref instead.
+    let returnsQuery = supabase
+      .from("product_returns")
+      .select(tagRef ? "purchase_id, status, purchase:purchases!inner(tag_ref)" : "purchase_id, status");
+    let warrantiesQuery = supabase
+      .from("warranties")
+      .select("registered_at, owned:owned_products(purchase_item_id)")
+      .eq("retailer_id", retailerId)
+      .not("registered_at", "is", null);
+
+    if (tagRef) {
+      receiptsQuery = supabase
         .from("receipts")
-        .select("*, purchase:purchases(*, store:stores(name), items:purchase_items(*))")
-        .eq("retailer_id", retailerId)
-        .order("issued_at", { ascending: false }),
-      supabase.from("product_returns").select("purchase_id, status").eq("retailer_id", retailerId),
-      supabase
-        .from("warranties")
-        .select("registered_at, owned:owned_products(purchase_item_id)")
-        .eq("retailer_id", retailerId)
-        .not("registered_at", "is", null),
+        .select("*, purchase:purchases!inner(*, store:stores(name), items:purchase_items(*))")
+        .eq("purchase.tag_ref", tagRef)
+        .order("issued_at", { ascending: false });
+      returnsQuery = returnsQuery.eq("purchase.tag_ref", tagRef);
+    } else {
+      returnsQuery = returnsQuery.eq("retailer_id", retailerId);
+    }
+
+    const [{ data }, { data: returns }, { data: warranties }] = await Promise.all([
+      receiptsQuery,
+      returnsQuery,
+      warrantiesQuery,
     ]);
 
     const returnByPurchase = new Map<string, string>();
@@ -394,13 +420,23 @@ export const listReturns = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context as any;
-    const retailerId = await resolveRetailerId(supabase, userId);
+    const { retailerId, tagRef } = await resolveOwnershipContext(supabase, userId);
     if (!retailerId) return [];
-    const { data } = await supabase
+
+    let query = supabase
       .from("product_returns")
-      .select("*, item:purchase_items(*), purchase:purchases(receipt_number, purchased_at, store:stores(name))")
-      .eq("retailer_id", retailerId)
+      .select(
+        tagRef
+          ? "*, item:purchase_items(*), purchase:purchases!inner(receipt_number, purchased_at, store:stores(name), tag_ref)"
+          : "*, item:purchase_items(*), purchase:purchases(receipt_number, purchased_at, store:stores(name))",
+      )
       .order("requested_at", { ascending: false });
+
+    query = tagRef
+      ? query.eq("purchase.tag_ref", tagRef)
+      : query.eq("retailer_id", retailerId);
+
+    const { data } = await query;
     return data ?? [];
   });
 
