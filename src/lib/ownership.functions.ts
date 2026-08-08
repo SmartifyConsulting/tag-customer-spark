@@ -1298,3 +1298,41 @@ export const removeOutletFromUser = createServerFn({ method: "POST" })(async (op
 
   if (error) throw error;
 });
+
+// Admin function to link a user by email to an outlet by name
+export const setupOutletLinkByEmail = createServerFn({ method: "POST" })(async (opts: { data: { email: string; outletName: string } }) => {
+  const { supabase } = await requireSupabaseAuth();
+
+  // Find user by email
+  const { data: user } = await supabase.from("profiles").select("id").eq("email", opts.data.email).maybeSingle();
+  if (!user?.id) throw new Error(`User not found: ${opts.data.email}`);
+
+  // Find or create outlet
+  let outlet = await supabase
+    .from("outlets")
+    .select("id")
+    .ilike("name", opts.data.outletName)
+    .maybeSingle();
+
+  if (!outlet.data?.id) {
+    const { data: created } = await supabase
+      .from("outlets")
+      .insert({ name: opts.data.outletName, location: "South Africa" })
+      .select("id")
+      .maybeSingle();
+    if (!created?.id) throw new Error("Failed to create outlet");
+    outlet = { data: created };
+  }
+
+  // Link user to outlet
+  const { error } = await supabase.from("shopper_outlets").upsert(
+    {
+      shopper_id: user.id,
+      outlet_id: outlet.data.id,
+    },
+    { onConflict: "shopper_id,outlet_id" },
+  );
+
+  if (error) throw error;
+  return { userId: user.id, outletId: outlet.data.id };
+});

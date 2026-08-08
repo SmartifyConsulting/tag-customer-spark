@@ -95,7 +95,7 @@ function PurchasesPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Purchases"
+        title="Receipts"
         description="Your digital receipts and purchase history in one place."
         actions={<RecordPurchaseDialog />}
       />

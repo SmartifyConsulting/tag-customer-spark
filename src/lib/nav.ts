@@ -162,7 +162,7 @@ export const STAFF_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
 export const SHOPPER_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
   { title: "Tagged", url: "/tagged", icon: Tag, match: ["/tagged"] },
   {
-    title: "Purchases",
+    title: "Receipts",
     url: "/ownership/purchases",
     icon: ShoppingBag,
     match: ["/ownership/purchases", "/purchase/receipts", "/ownership/returns"],
