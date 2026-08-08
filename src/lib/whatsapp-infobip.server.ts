@@ -63,7 +63,7 @@ type RuntimeConfig = {
 };
 
 /** Candidate credential bindings, in preference order. */
-const KEY_BINDINGS = ["INFOBIP_API_KEY_V2", "INFOBIP_API_KEY"] as const;
+const KEY_BINDINGS = ["INFOBIP_API_KEY_V3", "INFOBIP_API_KEY_V2", "INFOBIP_API_KEY"] as const;
 
 
 function normalizeNumber(num: string): string {
