@@ -105,7 +105,7 @@ function PurchasesPage() {
       <Tabs defaultValue="purchases" className="space-y-6">
         <TabsList>
           <TabsTrigger value="purchases">Purchases</TabsTrigger>
-          <TabsTrigger value="receipts">Digital receipts</TabsTrigger>
+          <TabsTrigger value="receipts">Receipts</TabsTrigger>
           <TabsTrigger value="returns">Returns</TabsTrigger>
         </TabsList>
 
