@@ -14,7 +14,7 @@ type UIVersion = "v1" | "v2" | "v3";
 
 const UI_VERSIONS: Record<UIVersion, { name: string; description: string }> = {
   v1: { name: "V1", description: "Original black & white" },
-  v2: { name: "V2", description: "Cream, Forest Green, Orange" },
+  v2: { name: "V2", description: "Light Grey, Forest Green, Orange" },
   v3: { name: "V3", description: "Forest Green & Yellow — no pink" },
 };
 
@@ -36,7 +36,7 @@ const THEME_CONFIGS: Record<UIVersion, Record<string, string>> = {
     "--sidebar-primary-foreground": "oklch(1 0 0)",
   },
   v2: {
-    "--background": "#F5F1E8",
+    "--background": "#F3F4F6",
     "--foreground": "#2C3E50",
     "--primary": "#2C5F4F",
     "--primary-foreground": "#FFFFFF",
@@ -44,9 +44,9 @@ const THEME_CONFIGS: Record<UIVersion, Record<string, string>> = {
     "--secondary-foreground": "#FFFFFF",
     "--accent": "#F5A623",
     "--accent-foreground": "#FFFFFF",
-    "--border": "#E8E4D8",
-    "--input": "#F9F7F3",
-    "--sidebar": "#F5F1E8",
+    "--border": "#E5E7EB",
+    "--input": "#FFFFFF",
+    "--sidebar": "#F3F4F6",
     "--sidebar-foreground": "#2C3E50",
     "--sidebar-primary": "#2C5F4F",
     "--sidebar-primary-foreground": "#FFFFFF",

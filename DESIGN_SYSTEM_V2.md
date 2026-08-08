@@ -5,8 +5,8 @@ The V2 user interface uses a sophisticated three-color palette designed for clar
 
 ## Primary Colors
 
-### Cream (Background)
-- **Hex:** `#F5F1E8`
+### Light Grey (Background)
+- **Hex:** `#F3F4F6`
 - **Role:** Primary background color for all surfaces
 - **Usage:** Page backgrounds, default card backgrounds, main content areas
 - **Accessibility:** High contrast with dark text and forest green elements
