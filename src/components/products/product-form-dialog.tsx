@@ -393,7 +393,7 @@ export function ProductFormDialog({
                   type="number"
                   step="0.01"
                   placeholder="Leave empty for no sale"
-                  value={centsToRandInput(form.watch("sale_price_cents") ?? "")}
+                  value={centsToRandInput(form.watch("sale_price_cents") ?? null)}
                   onChange={(e) => {
                     const val = e.target.value.trim();
                     form.setValue(
