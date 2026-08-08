@@ -1,7 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import {
   Sidebar,
   SidebarContent,
@@ -22,10 +20,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useTier } from "@/hooks/use-tier";
 import { useAuth, useIsAdmin, useIsSuperAdmin } from "@/hooks/use-auth";
 import { UserMenu } from "@/components/user-menu";
-import { QrPreview } from "@/components/qr/qr-preview";
 import { UIVersionSwitcher } from "@/components/ui-version-switcher";
 import { sectionsForUser, isNavActive, type NavItem } from "@/lib/nav";
-import { getTagIdentity } from "@/lib/ownership.functions";
 import { useIsStaff } from "@/hooks/use-persona";
 import { useReceiptsEnabled } from "@/hooks/use-receipts-enabled";
 
@@ -40,13 +36,6 @@ export function AppSidebar() {
   const isStaff = useIsStaff();
   const { enabled: receiptsEnabled } = useReceiptsEnabled();
 
-  // Fetch shopper's tag for QR code (only for shoppers, not staff-only view)
-  const tagFn = useServerFn(getTagIdentity);
-  const { data: tagData } = useQuery({
-    queryKey: ["tag-identity"],
-    queryFn: () => tagFn(),
-    enabled: !isStaff,
-  });
   // A nav item whose destination gates on a role the user doesn't have
   // used to still render (and highlight active) here, then bounce the user
   // to /dashboard on click — confusing. Filter to what they can actually
@@ -62,28 +51,21 @@ export function AppSidebar() {
   }));
   const isActive = (item: NavItem) => isNavActive(item, pathname);
 
+  // Shoppers never get the left nav bar, at any screen size — they navigate
+  // via the bottom nav and the top header (see route.tsx) instead.
+  if (!isStaff) return null;
+
   return (
     <Sidebar collapsible="icon" className="hidden border-r-0 overflow-visible md:flex">
-      {/* Header: QR Code (Shopper) or Demo Controls */}
-      {!collapsed && tagData?.tag_id && !isStaff && (
-        <SidebarHeader className="flex flex-col items-center gap-2 py-3 px-2">
-          <div className="flex items-center justify-between w-full mb-1">
-            <div className="text-xs font-semibold text-sidebar-foreground/60">My Shopper Tag</div>
-            <UIVersionSwitcher />
-          </div>
-          <QrPreview value={tagData.tag_id} size={120} />
-        </SidebarHeader>
-      )}
-      {!collapsed && (!tagData?.tag_id || isStaff) && (
-        <SidebarHeader className="flex items-center justify-end py-2 px-3 h-16">
-          <UIVersionSwitcher />
-        </SidebarHeader>
-      )}
-      {collapsed && (
-        <SidebarHeader className="bg-sidebar h-16 justify-center p-0 flex items-center">
-          <UIVersionSwitcher />
-        </SidebarHeader>
-      )}
+      <SidebarHeader
+        className={
+          collapsed
+            ? "bg-sidebar h-16 justify-center p-0 flex items-center"
+            : "flex items-center justify-end py-2 px-3 h-16"
+        }
+      >
+        <UIVersionSwitcher />
+      </SidebarHeader>
 
       <SidebarContent className="px-1.5 pb-3 pt-2">
         {sections.map((section) => (

@@ -12,6 +12,9 @@ import { getRetailerBranding } from "@/lib/branding.functions";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { briefingQueryOptions } from "@/lib/dashboard";
 import { TagReaderTile } from "@/components/qr/tag-reader-tile";
+import { UIVersionSwitcher } from "@/components/ui-version-switcher";
+import { ShopperTagButton } from "@/components/ownership/shopper-tag-button";
+import { useIsStaff } from "@/hooks/use-persona";
 
 
 export const Route = createFileRoute("/_authenticated")({
@@ -54,6 +57,7 @@ function AuthenticatedLayout() {
   // The reader frame belongs on the dashboard/briefing surface only.
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const showReaderTile = pathname === "/briefing" || pathname === "/dashboard";
+  const isStaff = useIsStaff();
 
 
   const themeStyle: Record<string, string> = {};
@@ -80,21 +84,37 @@ function AuthenticatedLayout() {
       <SidebarProvider style={themeStyle as any} className="flex-1">
         <AppSidebar />
         <SidebarInset className="bg-background">
-          <header className="flex items-center justify-end gap-3 bg-background px-4 py-3 sm:px-6">
-            <SidebarTrigger className="md:hidden" />
-            {showReaderTile && (
-              <div className="mr-auto hidden sm:block">
-                <TagReaderTile compact />
-              </div>
-            )}
-            <div className="ml-auto flex items-center gap-3">
+          <header className="grid grid-cols-3 items-center gap-3 bg-background px-4 py-3 sm:px-6">
+            <div className="flex items-center gap-3 justify-self-start">
+              {isStaff && <SidebarTrigger className="md:hidden" />}
+              {isStaff && showReaderTile && (
+                <div className="hidden sm:block">
+                  <TagReaderTile compact />
+                </div>
+              )}
+            </div>
+
+            <TagLogo
+              variant="wordmark"
+              heightClass="h-[9.547rem] sm:h-[10.608rem]"
+              className="justify-self-center"
+            />
+
+            <div className="flex items-center gap-3 justify-self-end">
+              {!isStaff && <ShopperTagButton />}
+              {!isStaff && <UIVersionSwitcher />}
               <ThemeToggle />
-              <TagLogo variant="wordmark" heightClass="h-[10.608rem]" />
             </div>
           </header>
 
           <CommandPalette />
-          <main className="flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10 md:pb-10">
+          <main
+            className={
+              isStaff
+                ? "flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10 md:pb-10"
+                : "flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10"
+            }
+          >
             <div className="mx-auto w-full max-w-7xl">
               <Outlet />
             </div>
