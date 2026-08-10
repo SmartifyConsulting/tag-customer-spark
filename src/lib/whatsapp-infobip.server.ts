@@ -4,7 +4,7 @@
 // Docs: https://www.infobip.com/docs/api/channels/whatsapp
 //
 // Required runtime env:
-//   INFOBIP_API_KEY_V2       — the single Infobip credential this app uses
+//   INFOBIP_API_KEY          — the Infobip credential (legacy _V2/_V3 accepted)
 //   INFOBIP_BASE_URL         — personal base URL, e.g. "xyz123.api.infobip.com"
 //   INFOBIP_WHATSAPP_SENDER  — registered WhatsApp sender in E.164
 
