@@ -353,8 +353,10 @@ export async function lookupInfobipMessageStatus(messageId: string): Promise<{
       ok: true,
       status: resp.status,
       error: null,
+      attempts,
       diagnostic: { ...config.diagnostic, transport: resp.transport },
       endpoint: path.split("?")[0],
+
       result: {
         messageId: row.messageId ?? null,
         sender: row.sender ?? null,
