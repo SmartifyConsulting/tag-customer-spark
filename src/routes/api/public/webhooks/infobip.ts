@@ -421,6 +421,13 @@ export const Route = createFileRoute("/api/public/webhooks/infobip")({
           headers: { "Content-Type": "application/json" },
         });
       },
+      // Reachability check for webhook configuration. Returns no data.
+      GET: async () =>
+        new Response(
+          JSON.stringify({ ok: true, endpoint: "infobip-webhook", secretConfigured: Boolean(process.env.INFOBIP_WEBHOOK_SECRET) }),
+          { headers: { "Content-Type": "application/json" } },
+        ),
     },
+
   },
 });
