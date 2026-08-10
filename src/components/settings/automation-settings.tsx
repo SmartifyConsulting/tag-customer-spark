@@ -45,7 +45,10 @@ export function AutomationSettings() {
   });
 
   const testDelivery = useMutation({
-    mutationFn: () => testInfobipDelivery({ data: { recipient: testRecipient } }),
+    mutationFn: () =>
+      testInfobipDelivery({
+        data: { recipient: testRecipient, templateName: testTemplate.trim() },
+      }),
     onSuccess: (result) => {
       if (result.ok) toast.success("Infobip accepted the test message");
       else toast.error(result.error ?? "Infobip rejected the test message");
