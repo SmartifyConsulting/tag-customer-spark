@@ -92,6 +92,31 @@ export const saveAutomationSetting = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Verifies that the live runtime can authenticate against Infobip, without
+ * sending anyone a message. This isolates a credential/authentication problem
+ * from a template or recipient problem when a reply reports "Invalid login
+ * details": it calls a read-only Infobip endpoint with the exact same binding
+ * the send path uses, from the same worker runtime.
+ */
+export const checkInfobipConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: role } = await supabase
+      .from("user_roles")
+      .select("retailer_id")
+      .eq("user_id", userId)
+      .eq("role", "super_admin")
+      .limit(1)
+      .maybeSingle();
+    if (!role) throw new Error("Super administrator access required");
+
+    const { checkInfobipAuth } = await import("@/lib/whatsapp-infobip.server");
+    return checkInfobipAuth();
+  });
+
+
 export const testInfobipDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>

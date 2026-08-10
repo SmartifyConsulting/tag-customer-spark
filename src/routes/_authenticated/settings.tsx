@@ -312,7 +312,7 @@ function LogoUploader({ logoUrl, onUploaded }: { logoUrl: string; onUploaded: (u
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(logoUrl);
-      toast.success("URL copied — paste into Twilio Content Template {{media_url}}");
+      toast.success("URL copied — paste into your WhatsApp template media header");
     } catch {
       toast.error("Copy failed");
     }
@@ -323,7 +323,7 @@ function LogoUploader({ logoUrl, onUploaded }: { logoUrl: string; onUploaded: (u
       <div>
         <p className="text-sm font-medium">Company logo</p>
         <p className="text-xs text-muted-foreground">
-          Used on QR cards, opt-in pages, WhatsApp messages, and Twilio content templates.
+          Used on QR cards, opt-in pages, WhatsApp messages, and WhatsApp templates.
         </p>
       </div>
       <div className="flex items-center gap-4">
@@ -360,7 +360,7 @@ function LogoUploader({ logoUrl, onUploaded }: { logoUrl: string; onUploaded: (u
 
       {logoUrl ? (
         <div className="space-y-1.5">
-          <Label className="text-xs">Twilio media URL</Label>
+          <Label className="text-xs">WhatsApp media URL</Label>
           <div className="flex gap-2">
             <Input readOnly value={logoUrl} className="font-mono text-xs" onFocus={(e) => e.currentTarget.select()} />
             <Button type="button" variant="outline" size="sm" onClick={copy}>
@@ -373,11 +373,11 @@ function LogoUploader({ logoUrl, onUploaded }: { logoUrl: string; onUploaded: (u
             </Button>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Paste this URL into Twilio Content Template Builder as the media URL, or into the <code>MediaUrl</code> param when sending via the API.
+            Paste this URL into your approved WhatsApp template as the media header image.
           </p>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">Upload a logo to get a shareable URL for Twilio.</p>
+        <p className="text-xs text-muted-foreground">Upload a logo to get a shareable media URL.</p>
       )}
     </div>
   );

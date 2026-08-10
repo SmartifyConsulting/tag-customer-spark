@@ -239,7 +239,7 @@ export const enqueueCampaign = createServerFn({ method: "POST" })
     if (data.sendNow) update.sent_at = new Date().toISOString();
     await supabase.from("notification_campaigns").update(update).eq("id", data.id);
 
-    // Real send path for sendNow: dispatch WhatsApp via Twilio, then email fallback.
+    // Real send path for sendNow: dispatch WhatsApp via Infobip, then email fallback.
     if (data.sendNow) {
       try {
         const { sendWhatsApp } = await import("./whatsapp.server");

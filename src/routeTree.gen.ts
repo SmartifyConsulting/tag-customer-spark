@@ -87,7 +87,6 @@ import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_auth
 import { Route as AuthenticatedOwnershipPurchasesIndexRouteImport } from './routes/_authenticated/ownership.purchases.index'
 import { Route as AuthenticatedOwnershipProductsIndexRouteImport } from './routes/_authenticated/ownership.products.index'
 import { Route as AuthenticatedAdminInventoryIndexRouteImport } from './routes/_authenticated/admin.inventory.index'
-import { Route as ApiPublicWebhooksTwilioInboundRouteImport } from './routes/api/public/webhooks/twilio-inbound'
 import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public/webhooks/paypal'
 import { Route as ApiPublicWebhooksPayfastItnRouteImport } from './routes/api/public/webhooks/payfast-itn'
 import { Route as ApiPublicWebhooksInfobipRouteImport } from './routes/api/public/webhooks/infobip'
@@ -531,12 +530,6 @@ const AuthenticatedAdminInventoryIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedAdminInventoryRoute,
   } as any)
-const ApiPublicWebhooksTwilioInboundRoute =
-  ApiPublicWebhooksTwilioInboundRouteImport.update({
-    id: '/api/public/webhooks/twilio-inbound',
-    path: '/api/public/webhooks/twilio-inbound',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicWebhooksPaypalRoute = ApiPublicWebhooksPaypalRouteImport.update({
   id: '/api/public/webhooks/paypal',
   path: '/api/public/webhooks/paypal',
@@ -714,7 +707,6 @@ export interface FileRoutesByFullPath {
   '/api/public/webhooks/infobip': typeof ApiPublicWebhooksInfobipRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
-  '/api/public/webhooks/twilio-inbound': typeof ApiPublicWebhooksTwilioInboundRoute
   '/admin/inventory/': typeof AuthenticatedAdminInventoryIndexRoute
   '/ownership/products/': typeof AuthenticatedOwnershipProductsIndexRoute
   '/ownership/purchases/': typeof AuthenticatedOwnershipPurchasesIndexRoute
@@ -802,7 +794,6 @@ export interface FileRoutesByTo {
   '/api/public/webhooks/infobip': typeof ApiPublicWebhooksInfobipRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
-  '/api/public/webhooks/twilio-inbound': typeof ApiPublicWebhooksTwilioInboundRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryIndexRoute
   '/ownership/products': typeof AuthenticatedOwnershipProductsIndexRoute
   '/ownership/purchases': typeof AuthenticatedOwnershipPurchasesIndexRoute
@@ -899,7 +890,6 @@ export interface FileRoutesById {
   '/api/public/webhooks/infobip': typeof ApiPublicWebhooksInfobipRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
-  '/api/public/webhooks/twilio-inbound': typeof ApiPublicWebhooksTwilioInboundRoute
   '/_authenticated/admin/inventory/': typeof AuthenticatedAdminInventoryIndexRoute
   '/_authenticated/ownership/products/': typeof AuthenticatedOwnershipProductsIndexRoute
   '/_authenticated/ownership/purchases/': typeof AuthenticatedOwnershipPurchasesIndexRoute
@@ -996,7 +986,6 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/infobip'
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
-    | '/api/public/webhooks/twilio-inbound'
     | '/admin/inventory/'
     | '/ownership/products/'
     | '/ownership/purchases/'
@@ -1084,7 +1073,6 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/infobip'
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
-    | '/api/public/webhooks/twilio-inbound'
     | '/admin/inventory'
     | '/ownership/products'
     | '/ownership/purchases'
@@ -1180,7 +1168,6 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/infobip'
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
-    | '/api/public/webhooks/twilio-inbound'
     | '/_authenticated/admin/inventory/'
     | '/_authenticated/ownership/products/'
     | '/_authenticated/ownership/purchases/'
@@ -1220,7 +1207,6 @@ export interface RootRouteChildren {
   ApiPublicWebhooksInfobipRoute: typeof ApiPublicWebhooksInfobipRoute
   ApiPublicWebhooksPayfastItnRoute: typeof ApiPublicWebhooksPayfastItnRoute
   ApiPublicWebhooksPaypalRoute: typeof ApiPublicWebhooksPaypalRoute
-  ApiPublicWebhooksTwilioInboundRoute: typeof ApiPublicWebhooksTwilioInboundRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1771,13 +1757,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminInventoryIndexRouteImport
       parentRoute: typeof AuthenticatedAdminInventoryRoute
     }
-    '/api/public/webhooks/twilio-inbound': {
-      id: '/api/public/webhooks/twilio-inbound'
-      path: '/api/public/webhooks/twilio-inbound'
-      fullPath: '/api/public/webhooks/twilio-inbound'
-      preLoaderRoute: typeof ApiPublicWebhooksTwilioInboundRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/webhooks/paypal': {
       id: '/api/public/webhooks/paypal'
       path: '/api/public/webhooks/paypal'
@@ -2169,18 +2148,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicWebhooksInfobipRoute: ApiPublicWebhooksInfobipRoute,
   ApiPublicWebhooksPayfastItnRoute: ApiPublicWebhooksPayfastItnRoute,
   ApiPublicWebhooksPaypalRoute: ApiPublicWebhooksPaypalRoute,
-  ApiPublicWebhooksTwilioInboundRoute: ApiPublicWebhooksTwilioInboundRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
