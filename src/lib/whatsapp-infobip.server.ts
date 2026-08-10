@@ -197,18 +197,17 @@ export async function checkInfobipAuth(): Promise<{
   }
 
   try {
-    const resp = await fetch(`${config.baseUrl}/whatsapp/1/senders`, {
-      headers: {
-        Authorization: `App ${config.apiKey}`,
-        Accept: "application/json",
-      },
-    });
-    const raw = (await resp.text()).slice(0, 300);
+    const resp = await infobipCall(config, "/whatsapp/1/senders", null);
+    const raw = resp.text.slice(0, 300);
     return {
       ok: resp.ok,
       status: resp.status,
       error: resp.ok ? null : raw || `Infobip returned ${resp.status}`,
-      diagnostic: { ...config.diagnostic, httpStatus: resp.status },
+      diagnostic: {
+        ...config.diagnostic,
+        httpStatus: resp.status,
+        transport: resp.transport,
+      },
     };
   } catch (e) {
     return {
@@ -219,6 +218,110 @@ export async function checkInfobipAuth(): Promise<{
     };
   }
 }
+
+/**
+ * Outbound egress path for Infobip calls.
+ *
+ * The deployed app runtime reaches the internet over IPv6 and Infobip rejects
+ * those requests with 401 "Invalid login details" — the identical credential
+ * returns 200 over IPv4. So we call Infobip directly first and, on a 401,
+ * repeat the request through the database's network path (pg_net), which has a
+ * stable IPv4 origin Infobip accepts. Once a 401 is seen in this isolate we go
+ * straight through the relay to avoid paying for a doomed direct attempt.
+ */
+let preferRelay = false;
+
+type InfobipCallResult = {
+  ok: boolean;
+  status: number;
+  text: string;
+  requestId?: string;
+  transport: "direct" | "relay";
+};
+
+async function directCall(
+  config: RuntimeConfig,
+  path: string,
+  payload: Record<string, unknown> | null,
+): Promise<InfobipCallResult> {
+  const resp = await fetch(`${config.baseUrl}${path}`, {
+    method: payload ? "POST" : "GET",
+    headers: {
+      Authorization: `App ${config.apiKey}`,
+      Accept: "application/json",
+      ...(payload ? { "Content-Type": "application/json" } : {}),
+    },
+    body: payload ? JSON.stringify(payload) : undefined,
+  });
+  return {
+    ok: resp.ok,
+    status: resp.status,
+    text: await resp.text(),
+    requestId:
+      resp.headers.get("x-request-id") ??
+      resp.headers.get("x-correlation-id") ??
+      resp.headers.get("x-infobip-request-id") ??
+      undefined,
+    transport: "direct",
+  };
+}
+
+async function relayCall(
+  config: RuntimeConfig,
+  path: string,
+  payload: Record<string, unknown> | null,
+): Promise<InfobipCallResult> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: id, error } = await supabaseAdmin.rpc("infobip_relay_request", {
+    p_base: config.baseUrl,
+    p_path: path,
+    p_api_key: config.apiKey,
+    p_payload: payload as never,
+  });
+  if (error || id == null) {
+    return {
+      ok: false,
+      status: 0,
+      text: error?.message ?? "Relay did not accept the request",
+      transport: "relay",
+    };
+  }
+
+  // pg_net performs the call asynchronously, so poll for the stored response.
+  for (let attempt = 0; attempt < 30; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    const { data } = await supabaseAdmin.rpc("infobip_relay_response", {
+      p_id: id as number,
+    });
+    const row = Array.isArray(data) ? (data[0] as any) : null;
+    if (row) {
+      const status: number = row.status_code ?? 0;
+      return {
+        ok: status >= 200 && status < 300,
+        status,
+        text: row.content ?? row.error_msg ?? "",
+        transport: "relay",
+      };
+    }
+  }
+  return { ok: false, status: 504, text: "Relay timed out waiting for Infobip", transport: "relay" };
+}
+
+async function infobipCall(
+  config: RuntimeConfig,
+  path: string,
+  payload: Record<string, unknown> | null,
+): Promise<InfobipCallResult> {
+  if (preferRelay) return relayCall(config, path, payload);
+
+  const direct = await directCall(config, path, payload);
+  if (direct.status !== 401) return direct;
+
+  console.warn("[infobip] direct egress rejected (401) — retrying via database relay");
+  preferRelay = true;
+  return relayCall(config, path, payload);
+}
+
 
 
 async function sendWithConfig(
