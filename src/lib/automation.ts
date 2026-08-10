@@ -3,12 +3,21 @@
 // so adding a new notification type is a one-line change plus an engine rule.
 
 export type AutomationKey =
+  | "scan_confirmation"
   | "price_drop"
   | "low_stock"
   | "last_one"
   | "back_in_stock"
   | "high_interest"
   | "daily_summary";
+
+/** Approved TAG templates that can be used as the scan confirmation. */
+export const SCAN_TEMPLATE_OPTIONS = [
+  "tag_scan_v5",
+  "tag_interest",
+  "tag_lastunit",
+  "tag_valuechange",
+] as const;
 
 export type AutomationDefinition = {
   key: AutomationKey;
