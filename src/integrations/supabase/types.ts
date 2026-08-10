@@ -4504,6 +4504,23 @@ export type Database = {
         }
         Returns: boolean
       }
+      infobip_relay_request: {
+        Args: {
+          p_api_key: string
+          p_base: string
+          p_path: string
+          p_payload?: Json
+        }
+        Returns: number
+      }
+      infobip_relay_response: {
+        Args: { p_id: number }
+        Returns: {
+          content: string
+          error_msg: string
+          status_code: number
+        }[]
+      }
       mark_onboarding_complete: {
         Args: { p_user_id?: string }
         Returns: undefined
