@@ -17,7 +17,9 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
         }
 
 
-        const { resolveInfobipKeyBinding } = await import("@/lib/whatsapp-infobip.server");
+        const { probeInfobipRuntime, resolveInfobipKeyBinding } = await import(
+          "@/lib/whatsapp-infobip.server"
+        );
         const binding = resolveInfobipKeyBinding();
         const rawKey = binding?.value ?? "";
 
@@ -30,18 +32,6 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
         const fingerprint = Array.from(new Uint8Array(digest).slice(0, 8))
           .map((b) => b.toString(16).padStart(2, "0"))
           .join("");
-
-        const probe = async (path: string) => {
-          try {
-            const resp = await fetch(`${base}${path}`, {
-              headers: { Authorization: `App ${key}`, Accept: "application/json" },
-            });
-            const body = (await resp.text()).slice(0, 200);
-            return { path, status: resp.status, body };
-          } catch (e: any) {
-            return { path, status: 0, body: e?.message ?? "network error" };
-          }
-        };
 
         // Neutral echo: proves whether the Authorization header leaves this
         // runtime intact, and reports the egress IP Infobip actually sees.
@@ -96,11 +86,13 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
           send = { ok: false, error: e?.message ?? "send failed" };
         }
 
+        const runtimeProbe = await probeInfobipRuntime();
         return Response.json({
-          keyFingerprint: fingerprint,
-          keyLength: key.length,
-          host: base,
-          probes: [await probe("/account/1/balance"), await probe("/whatsapp/2/senders")],
+          keyFingerprint: runtimeProbe.diagnostic?.keyFingerprint ?? fingerprint,
+          keyLength: runtimeProbe.diagnostic?.keyLength ?? key.length,
+          host: runtimeProbe.diagnostic?.apiHost ?? new URL(base).hostname,
+          keyBinding: runtimeProbe.diagnostic?.keyBinding ?? binding?.name ?? null,
+          probes: runtimeProbe.probes,
           echo,
           send,
         });
