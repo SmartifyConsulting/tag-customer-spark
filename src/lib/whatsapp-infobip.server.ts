@@ -52,6 +52,9 @@ export type InfobipRuntimeDiagnostic = {
   providerMessageId?: string;
   /** Truncated raw provider error body (never contains our credentials). */
   rawErrorBody?: string;
+  /** Which egress path carried the call: direct from the app, or the DB relay. */
+  transport?: "direct" | "relay";
+
 };
 
 
