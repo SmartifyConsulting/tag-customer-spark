@@ -33,6 +33,14 @@ export type AutomationDefinition = {
 
 export const AUTOMATIONS: AutomationDefinition[] = [
   {
+    key: "scan_confirmation",
+    label: "Scan confirmation",
+    description:
+      "The WhatsApp sent the moment a customer taps Follow Me after scanning. Switch the template here if the current one is rejected.",
+    threshold: null,
+    templateName: "tag_scan_v5",
+  },
+  {
     key: "price_drop",
     label: "Price drop",
     description:
