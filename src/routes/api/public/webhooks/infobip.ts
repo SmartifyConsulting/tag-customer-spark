@@ -107,13 +107,88 @@ function toE164(num: string | undefined | null): string | null {
 function mapStatus(groupName?: string, name?: string): string {
   const g = (groupName ?? "").toUpperCase();
   const n = (name ?? "").toUpperCase();
-  if (n === "READ" || g === "READ") return "read";
-  if (g === "DELIVERED") return "delivered";
-  if (g === "PENDING") return "queued";
+  if (n.includes("READ") || g === "READ" || g === "SEEN") return "read";
+  if (g === "DELIVERED" || n.includes("DELIVERED")) return "delivered";
+  if (g === "PENDING" || n.startsWith("PENDING")) return "queued";
   if (g === "REJECTED" || g === "UNDELIVERABLE" || g === "EXPIRED") return "failed";
   if (g === "SENT") return "sent";
   return "sent";
 }
+
+/** True when a webhook result is a delivery report rather than an inbound message. */
+function isDeliveryReport(result: any): boolean {
+  return Boolean(result?.messageId && (result?.status?.groupName || result?.status?.name) && !result?.message);
+}
+
+/**
+ * Applies one Infobip delivery report to notification_history.
+ * Never logs recipient numbers, keys or secrets.
+ */
+async function applyDeliveryReport(supabaseAdmin: any, result: any): Promise<void> {
+  const messageId = String(result.messageId);
+  const groupName = result.status?.groupName as string | undefined;
+  const statusName = result.status?.name as string | undefined;
+  const mapped = mapStatus(groupName, statusName);
+
+  const err = result.error ?? {};
+  const isRealError = err && err.id !== undefined && Number(err.id) !== 0;
+  const errorText =
+    mapped === "failed" || isRealError
+      ? [err.groupName, err.name, err.description, err.id != null ? `code=${err.id}` : null]
+          .filter(Boolean)
+          .join(" | ") || `${groupName ?? ""} ${statusName ?? ""}`.trim() || null
+      : null;
+
+  const doneAt = result.doneAt ?? result.sentAt ?? new Date().toISOString();
+
+  const { data: row } = await supabaseAdmin
+    .from("notification_history")
+    .select("id, status, delivered_at, read_at")
+    .eq("provider_message_sid", messageId)
+    .maybeSingle();
+
+  if (!row) {
+    console.warn("[infobip-webhook] DLR for unknown messageId", {
+      messageIdTail: messageId.slice(-6),
+      group: groupName,
+      name: statusName,
+    });
+    return;
+  }
+
+  const patch: Record<string, unknown> = { status: mapped, error: errorText };
+  if (mapped === "delivered") {
+    patch.delivered_at = row.delivered_at ?? doneAt;
+  } else if (mapped === "read") {
+    patch.read_at = row.read_at ?? doneAt;
+    patch.delivered_at = row.delivered_at ?? doneAt;
+  } else if (mapped === "queued") {
+    // Pending: leave the row queued, do not stamp timestamps or clobber a
+    // later status that already arrived out of order.
+    if (row.status !== "queued") return;
+    patch.status = "queued";
+  } else if (mapped === "sent") {
+    // Never downgrade a row that has already reached delivered/read.
+    if (row.status === "delivered" || row.status === "read") return;
+    patch.sent_at = result.sentAt ?? doneAt;
+  }
+
+  const { error: updateError } = await supabaseAdmin
+    .from("notification_history")
+    .update(patch as any)
+    .eq("id", row.id);
+
+  console.log("[infobip-webhook] DLR applied", {
+    messageIdTail: messageId.slice(-6),
+    group: groupName,
+    name: statusName,
+    errorCode: err?.id ?? null,
+    from: row.status,
+    to: patch.status,
+    updateError: updateError?.message ?? null,
+  });
+}
+
 
 /** Extracts the inbound text or button payload from an Infobip result. */
 function inboundText(message: any): string {
@@ -160,20 +235,24 @@ export const Route = createFileRoute("/api/public/webhooks/infobip")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+        const dlrCount = results.filter(isDeliveryReport).length;
+        console.log("[infobip-webhook] received", {
+          results: results.length,
+          deliveryReports: dlrCount,
+          inbound: results.length - dlrCount,
+        });
+
         for (const result of results) {
           // ---- Delivery report ----
-          if (result?.status && result?.messageId && !result?.message) {
-            const mapped = mapStatus(result.status.groupName, result.status.name);
-            const errorText =
-              result.error?.name || result.error?.description
-                ? `${result.error?.name ?? ""} ${result.error?.description ?? ""}`.trim()
-                : null;
-            await supabaseAdmin
-              .from("notification_history")
-              .update({ status: mapped, error: errorText } as any)
-              .eq("provider_message_sid", result.messageId);
+          if (isDeliveryReport(result)) {
+            try {
+              await applyDeliveryReport(supabaseAdmin, result);
+            } catch (e: any) {
+              console.error("[infobip-webhook] DLR handling failed", e?.message ?? String(e));
+            }
             continue;
           }
+
 
           // ---- Inbound message ----
           const from = toE164(result?.from);
@@ -342,6 +421,13 @@ export const Route = createFileRoute("/api/public/webhooks/infobip")({
           headers: { "Content-Type": "application/json" },
         });
       },
+      // Reachability check for webhook configuration. Returns no data.
+      GET: async () =>
+        new Response(
+          JSON.stringify({ ok: true, endpoint: "infobip-webhook", secretConfigured: Boolean(process.env.INFOBIP_WEBHOOK_SECRET) }),
+          { headers: { "Content-Type": "application/json" } },
+        ),
     },
+
   },
 });
