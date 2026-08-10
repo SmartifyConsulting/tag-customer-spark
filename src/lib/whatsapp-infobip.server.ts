@@ -67,8 +67,22 @@ type RuntimeConfig = {
   diagnostic: InfobipRuntimeDiagnostic;
 };
 
-/** The single Infobip credential binding used by every send path. */
-const KEY_BINDING = "INFOBIP_API_KEY_V2";
+/**
+ * Candidate Infobip credential bindings, in priority order. The current secret
+ * is `INFOBIP_API_KEY`; the `_V2`/`_V3` names are legacy fallbacks kept so an
+ * older deployment binding keeps working.
+ */
+const KEY_BINDINGS = ["INFOBIP_API_KEY", "INFOBIP_API_KEY_V2", "INFOBIP_API_KEY_V3"] as const;
+
+/** First credential binding present in this runtime, with its name. */
+export function resolveInfobipKeyBinding(): { name: string; value: string } | null {
+  for (const name of KEY_BINDINGS) {
+    const value = process.env[name];
+    if (value && value.trim()) return { name, value };
+  }
+  return null;
+}
+
 
 
 
