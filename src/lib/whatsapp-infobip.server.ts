@@ -297,6 +297,102 @@ export async function probeInfobipRuntime(): Promise<{
 }
 
 /**
+ * Read-only delivery-report lookup for a single Infobip message id.
+ *
+ * Uses the same credential binding and transport as the send path, and never
+ * returns the API key. Recipient MSISDNs are masked so the diagnostic can be
+ * surfaced or logged without exposing personal data.
+ */
+export async function lookupInfobipMessageStatus(messageId: string): Promise<{
+  ok: boolean;
+  status: number;
+  error: string | null;
+  diagnostic: InfobipRuntimeDiagnostic | null;
+  endpoint: string | null;
+  result: Record<string, unknown> | null;
+  attempts: Array<{ path: string; status: number; transport: "direct" | "relay" }>;
+}> {
+  const config = await readRuntimeConfig();
+  if (!config) {
+    return {
+      ok: false,
+      status: 500,
+      error: missingBindingMessage(),
+      diagnostic: null,
+      endpoint: null,
+      result: null,
+      attempts: [],
+    };
+  }
+
+  const id = encodeURIComponent(messageId);
+  // /whatsapp/2/logs is the channel log; the others are kept as fallbacks for
+  // accounts where only the legacy report queue is enabled.
+  const paths = [
+    `/whatsapp/2/logs?messageId=${id}`,
+    `/whatsapp/1/reports?messageId=${id}`,
+    `/resource/1/logs?messageId=${id}`,
+  ];
+
+  const attempts: Array<{ path: string; status: number; transport: "direct" | "relay" }> = [];
+  for (const path of paths) {
+    const resp = await infobipCall(config, path, null);
+    attempts.push({ path: path.split("?")[0], status: resp.status, transport: resp.transport });
+    if (!resp.ok) continue;
+
+    let json: any = null;
+    try {
+      json = resp.text ? JSON.parse(resp.text) : null;
+    } catch {
+      continue;
+    }
+    const row = Array.isArray(json?.results) ? json.results[0] : null;
+    if (!row) continue;
+
+    return {
+      ok: true,
+      status: resp.status,
+      error: null,
+      diagnostic: { ...config.diagnostic, transport: resp.transport },
+      endpoint: path.split("?")[0],
+      result: {
+        messageId: row.messageId ?? null,
+        sender: row.sender ?? null,
+        destination: maskMsisdn(row.destination),
+        sentAt: row.sentAt ?? null,
+        doneAt: row.doneAt ?? null,
+        status: row.status ?? null,
+        error: row.error ?? null,
+        templateName: row.content?.templateName ?? null,
+        templateLanguage: row.content?.language?.code ?? row.content?.language ?? null,
+        headerFormat: row.content?.mediaTemplateHeader?.format ?? null,
+        bodyPlaceholderCount: Array.isArray(row.content?.mediaTemplateBody?.placeholders)
+          ? row.content.mediaTemplateBody.placeholders.length
+          : null,
+      },
+    };
+  }
+
+  return {
+    ok: false,
+    status: attempts[attempts.length - 1]?.status ?? 0,
+    error: "No delivery log found for this message id on any Infobip log endpoint",
+    diagnostic: config.diagnostic,
+    endpoint: null,
+    result: null,
+    attempts,
+  };
+}
+
+/** Keeps country context but hides the subscriber number. */
+function maskMsisdn(value: unknown): string | null {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  if (!digits) return null;
+  return `${digits.slice(0, 3)}${"*".repeat(Math.max(0, digits.length - 6))}${digits.slice(-3)}`;
+}
+
+
+/**
  * Outbound egress path for Infobip calls.
  *
  * The deployed app runtime reaches the internet over IPv6 and Infobip rejects
