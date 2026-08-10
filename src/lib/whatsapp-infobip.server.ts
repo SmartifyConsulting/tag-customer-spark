@@ -526,6 +526,12 @@ async function sendWithConfig(
     if (input.headerImageUrl) {
       templateData.header = { type: "IMAGE", mediaUrl: input.headerImageUrl };
     }
+    if (input.buttons?.length) {
+      templateData.buttons = input.buttons.map((b) => ({
+        type: b.type,
+        parameter: b.parameter,
+      }));
+    }
     payload = {
       messages: [
         {
