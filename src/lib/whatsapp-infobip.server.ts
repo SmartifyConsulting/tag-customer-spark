@@ -4,7 +4,7 @@
 // Docs: https://www.infobip.com/docs/api/channels/whatsapp
 //
 // Required runtime env:
-//   INFOBIP_API_KEY_V2       — the single Infobip credential this app uses
+//   INFOBIP_API_KEY          — the Infobip credential (legacy _V2/_V3 accepted)
 //   INFOBIP_BASE_URL         — personal base URL, e.g. "xyz123.api.infobip.com"
 //   INFOBIP_WHATSAPP_SENDER  — registered WhatsApp sender in E.164
 
@@ -67,8 +67,22 @@ type RuntimeConfig = {
   diagnostic: InfobipRuntimeDiagnostic;
 };
 
-/** The single Infobip credential binding used by every send path. */
-const KEY_BINDING = "INFOBIP_API_KEY_V2";
+/**
+ * Candidate Infobip credential bindings, in priority order. The current secret
+ * is `INFOBIP_API_KEY`; the `_V2`/`_V3` names are legacy fallbacks kept so an
+ * older deployment binding keeps working.
+ */
+const KEY_BINDINGS = ["INFOBIP_API_KEY", "INFOBIP_API_KEY_V2", "INFOBIP_API_KEY_V3"] as const;
+
+/** First credential binding present in this runtime, with its name. */
+export function resolveInfobipKeyBinding(): { name: string; value: string } | null {
+  for (const name of KEY_BINDINGS) {
+    const value = process.env[name];
+    if (value && value.trim()) return { name, value };
+  }
+  return null;
+}
+
 
 
 
@@ -123,8 +137,9 @@ async function readRuntimeConfig(): Promise<RuntimeConfig | null> {
   // scope: bindings are injected per request in the deployed runtime.
   const rawBaseUrl = process.env.INFOBIP_BASE_URL;
   const rawSender = process.env.INFOBIP_WHATSAPP_SENDER;
-  const raw = process.env[KEY_BINDING];
-  if (!rawBaseUrl || !rawSender || !raw) return null;
+  const binding = resolveInfobipKeyBinding();
+  if (!rawBaseUrl || !rawSender || !binding) return null;
+  const raw = binding.value;
 
   const normalizedUrl = normalizeBaseUrl(rawBaseUrl);
   const sender = normalizeNumber(unwrapQuotes(rawSender).value);
@@ -135,12 +150,17 @@ async function readRuntimeConfig(): Promise<RuntimeConfig | null> {
   const apiKey = unwrappedKey.value.replace(/^(?:App\s+)+/i, "").trim();
   if (!apiKey) return null;
 
+  // Safe diagnostics only — never the key, never the full sender.
+  console.info(
+    `[infobip] config binding=${binding.name} keyLength=${apiKey.length} host=${apiHost} senderSuffix=${sender.slice(-4)}`,
+  );
+
   return {
     apiKey,
     baseUrl: normalizedUrl,
     sender,
     diagnostic: {
-      keyBinding: KEY_BINDING,
+      keyBinding: binding.name,
       keyFingerprint: await fingerprint(apiKey),
       keyLength: apiKey.length,
       normalizedAppPrefix: hadAppPrefix,
@@ -148,14 +168,25 @@ async function readRuntimeConfig(): Promise<RuntimeConfig | null> {
       normalizedWhitespace: apiKey !== raw,
       apiHost,
       senderSuffix: sender.slice(-4),
-      availableBindings: [KEY_BINDING],
+      availableBindings: KEY_BINDINGS.filter((n) => Boolean(process.env[n])),
     },
   };
 }
 
+/** Names the exact parts that are absent, so the UI diagnostic is actionable. */
+function missingBindingMessage(): string {
+  const missing: string[] = [];
+  if (!resolveInfobipKeyBinding()) missing.push(`API key (${KEY_BINDINGS.join(" or ")})`);
+  if (!process.env.INFOBIP_BASE_URL) missing.push("INFOBIP_BASE_URL");
+  if (!process.env.INFOBIP_WHATSAPP_SENDER) missing.push("INFOBIP_WHATSAPP_SENDER");
+  return `Infobip WhatsApp credential binding is missing in this runtime: ${
+    missing.length ? missing.join(", ") : "value present but empty after normalisation"
+  }`;
+}
+
 export function isInfobipConfigured(): boolean {
   return Boolean(
-    process.env[KEY_BINDING] &&
+    resolveInfobipKeyBinding() &&
       process.env.INFOBIP_BASE_URL &&
       process.env.INFOBIP_WHATSAPP_SENDER,
   );
@@ -166,15 +197,12 @@ export async function sendInfobipWhatsApp(
 ): Promise<InfobipSendResult> {
   const config = await readRuntimeConfig();
   if (!config) {
-    return {
-      ok: false,
-      status: 500,
-      error:
-        "Infobip WhatsApp credential binding is missing in this runtime (no API key, base URL or sender)",
-    };
+    const error = missingBindingMessage();
+    console.error(`[infobip] ${error}`);
+    return { ok: false, status: 500, error };
   }
 
-  return sendWithConfig(config, input, [KEY_BINDING]);
+  return sendWithConfig(config, input, [config.diagnostic.keyBinding]);
 }
 
 /**
@@ -193,11 +221,11 @@ export async function checkInfobipAuth(): Promise<{
     return {
       ok: false,
       status: 500,
-      error:
-        "Infobip WhatsApp credential binding is missing in this runtime (no API key, base URL or sender)",
+      error: missingBindingMessage(),
       diagnostic: null,
     };
   }
+
 
   try {
     const resp = await infobipCall(config, "/whatsapp/1/senders", null);

@@ -17,7 +17,10 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
         }
 
 
-        const rawKey = process.env.INFOBIP_API_KEY_V2 ?? "";
+        const { resolveInfobipKeyBinding } = await import("@/lib/whatsapp-infobip.server");
+        const binding = resolveInfobipKeyBinding();
+        const rawKey = binding?.value ?? "";
+
 
         const key = rawKey.trim().replace(/^"|"$/g, "").replace(/^(?:App\s+)+/i, "").trim();
         const rawBase = (process.env.INFOBIP_BASE_URL ?? "").trim().replace(/^"|"$/g, "");
