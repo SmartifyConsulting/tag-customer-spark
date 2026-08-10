@@ -63,6 +63,7 @@ export const saveAutomationSetting = createServerFn({ method: "POST" })
     z
       .object({
         automation_key: z.enum([
+          "scan_confirmation",
           "price_drop",
           "low_stock",
           "last_one",
