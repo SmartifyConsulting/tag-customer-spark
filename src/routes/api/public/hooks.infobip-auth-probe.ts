@@ -17,11 +17,8 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
         }
 
 
-        const rawKey =
-          process.env.INFOBIP_API_KEY_V3 ??
-          process.env.INFOBIP_API_KEY_V2 ??
-          process.env.INFOBIP_API_KEY ??
-          "";
+        const rawKey = process.env.INFOBIP_API_KEY_V2 ?? "";
+
         const key = rawKey.trim().replace(/^"|"$/g, "").replace(/^(?:App\s+)+/i, "").trim();
         const rawBase = (process.env.INFOBIP_BASE_URL ?? "").trim().replace(/^"|"$/g, "");
         const base = /^https?:\/\//i.test(rawBase) ? rawBase : `https://${rawBase}`;

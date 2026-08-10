@@ -1,39 +1,10 @@
 // WhatsApp Service — the ONLY module that knows about the delivery provider's
 // template addressing. It receives a template NAME, a recipient number and
-// variables, resolves how the active provider addresses that template and
-// sends it. It knows nothing about watches, prices, stock or business rules.
+// variables, resolves how Infobip addresses that template and sends it. It
+// knows nothing about watches, prices, stock or business rules.
 
-import {
-  activeWhatsAppProvider,
-  sendWhatsApp,
-  type SendWhatsAppResult,
-} from "@/lib/whatsapp.server";
+import { sendWhatsApp, type SendWhatsAppResult } from "@/lib/whatsapp.server";
 import { buildTemplatePayload } from "@/lib/whatsapp-templates.server";
-
-/**
- * Maps an approved template name to the environment variable holding its
- * Twilio Content SID. Only used when the active provider is Twilio.
- */
-const TEMPLATE_SID_ENV: Record<string, string> = {
-  price_drop: "TWILIO_TEMPLATE_PRICE_DROP_SID",
-  low_stock: "TWILIO_TEMPLATE_LOWSTOCK_SID",
-  last_one: "TWILIO_TEMPLATE_LAST_ONE_SID",
-  back_in_stock: "TWILIO_TEMPLATE_RESTOCK_SID",
-  high_interest: "TWILIO_TEMPLATE_HIGH_INTEREST_SID",
-  daily_summary: "TWILIO_TEMPLATE_DAILY_SUMMARY_SID",
-  // Legacy aliases kept so existing sends keep working.
-  sale: "TWILIO_TEMPLATE_SALE_SID",
-  barcode_scan: "TWILIO_TEMPLATE_BARCODE_SCAN_SID",
-  conversation_starter: "TWILIO_TEMPLATE_CONVERSATION_STARTER_SID",
-};
-
-export function resolveTemplateSid(templateName: string): string | undefined {
-  const envKey = TEMPLATE_SID_ENV[templateName];
-  const direct = envKey ? process.env[envKey] : undefined;
-  if (direct) return direct;
-  // Convention fallback: TWILIO_TEMPLATE_<NAME>_SID
-  return process.env[`TWILIO_TEMPLATE_${templateName.toUpperCase()}_SID`];
-}
 
 /**
  * Infobip addresses templates by their registered NAME, so no per-template
@@ -44,78 +15,43 @@ export function resolveInfobipTemplateName(templateName: string): string {
   return process.env[`INFOBIP_TEMPLATE_${templateName.toUpperCase()}`] ?? templateName;
 }
 
-/** Turns {"1": "a", "2": "b"} into ["a", "b"] in numeric order. */
-function toPlaceholders(variables?: Record<string, string>): string[] {
-  if (!variables) return [];
-  return Object.keys(variables)
-    .sort((a, b) => Number(a) - Number(b))
-    .map((k) => variables[k] ?? "");
-}
-
 export type SendTemplateInput = {
   templateName: string;
   to: string;
-  /**
-   * Named values for the approved template's placeholders (see
-   * whatsapp-templates.server.ts). Numbered keys are still accepted for the
-   * Twilio path, which addresses templates by Content SID.
-   */
+  /** Named values for the approved template's placeholders. */
   variables?: Record<string, string>;
   /** Media header for templates that define one. */
   headerImageUrl?: string | null;
   /**
-   * Plain-text used only when no template is configured for the provider.
+   * Plain-text used only when no approved template can be built.
    * WhatsApp accepts freeform sends within the 24h customer session window.
    */
   fallbackBody?: string;
 };
 
 export async function sendTemplate(input: SendTemplateInput): Promise<SendWhatsAppResult> {
-  const provider = activeWhatsAppProvider();
-
-  if (provider === "infobip") {
-    // Build strictly from the approved template contract. A mismatched
-    // placeholder count or a missing image header is accepted by the API and
-    // then rejected by WhatsApp (code 7008), so fail loudly here instead.
-    const built = buildTemplatePayload(
-      resolveInfobipTemplateName(input.templateName),
-      input.variables ?? {},
-      input.headerImageUrl ?? null,
-    );
-
-    if (!built.ok) {
-      console.error(`[whatsapp-service] ${built.error}`);
-      return { ok: false, status: 400, error: built.error };
-    }
-
-    // No freeform fallback here: these sends are business-initiated and
-    // WhatsApp drops freeform outside the customer's 24h session window.
-    return sendWhatsApp({
-      to: input.to,
-      templateName: built.templateName,
-      templateLanguage: process.env.INFOBIP_TEMPLATE_LANGUAGE ?? built.language,
-      placeholders: built.placeholders,
-      headerImageUrl: built.headerImageUrl,
-    });
-  }
-
-
-  const contentSid = resolveTemplateSid(input.templateName);
-
-  if (contentSid) {
-    return sendWhatsApp({ to: input.to, contentSid, contentVariables: input.variables });
-  }
-
-  if (!input.fallbackBody) {
-    return {
-      ok: false,
-      status: 400,
-      error: `No template configured for "${input.templateName}"`,
-    };
-  }
-
-  console.warn(
-    `[whatsapp-service] no Content SID for template "${input.templateName}" — falling back to freeform`,
+  // Build strictly from the approved template contract. A mismatched
+  // placeholder count or a missing image header is accepted by the API and
+  // then rejected by WhatsApp (code 7008), so fail loudly here instead.
+  const built = buildTemplatePayload(
+    resolveInfobipTemplateName(input.templateName),
+    input.variables ?? {},
+    input.headerImageUrl ?? null,
   );
-  return sendWhatsApp({ to: input.to, body: input.fallbackBody });
+
+  if (!built.ok) {
+    console.error(`[whatsapp-service] ${built.error}`);
+    return { ok: false, status: 400, error: built.error };
+  }
+
+  // No freeform fallback here: these sends are business-initiated and
+  // WhatsApp drops freeform outside the customer's 24h session window.
+  return sendWhatsApp({
+    to: input.to,
+    templateName: built.templateName,
+    templateLanguage: process.env.INFOBIP_TEMPLATE_LANGUAGE ?? built.language,
+    placeholders: built.placeholders,
+    headerImageUrl: built.headerImageUrl,
+  });
 }
+

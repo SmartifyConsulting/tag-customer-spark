@@ -21,6 +21,8 @@ import {
   listConversations,
   getConversation,
   sendReply,
+  retryReply,
+
   updateConversation,
   listAssignableStaff,
 } from "@/lib/inbox.functions";
@@ -225,6 +227,8 @@ function ConversationPane({ id }: { id: string }) {
   const qc = useQueryClient();
   const getFn = useServerFn(getConversation);
   const replyFn = useServerFn(sendReply);
+  const retryFn = useServerFn(retryReply);
+
   const updateFn = useServerFn(updateConversation);
   const staffFn = useServerFn(listAssignableStaff);
   const resolveRecoveryFn = useServerFn(resolvePendingRecovery);
@@ -259,19 +263,33 @@ function ConversationPane({ id }: { id: string }) {
     if (!text.trim() || sending) return;
     setSending(true);
     try {
-      const res = await replyFn({
+      const res = (await replyFn({
         data: { conversation_id: id, body: text.trim(), is_internal: isInternal },
-      });
+      })) as { sent: boolean; error?: string | null };
       await qc.invalidateQueries({ queryKey: ["conversation", id] });
       if (res.sent) {
         setText("");
       } else {
+        // The message is stored either way, so clear the composer and let the
+        // failed bubble in the thread carry the retry affordance.
+        setText("");
         toast.error(res.error ?? "Message wasn't delivered to WhatsApp");
       }
     } finally {
       setSending(false);
     }
   }
+
+  async function retry(messageId: string) {
+    const res = (await retryFn({ data: { message_id: messageId } })) as {
+      ok: boolean;
+      error?: string | null;
+    };
+    await qc.invalidateQueries({ queryKey: ["conversation", id] });
+    if (res.ok) toast.success("Delivered");
+    else toast.error(res.error ?? "Still couldn't deliver");
+  }
+
 
   async function assign(userId: string | null) {
     await updateFn({ data: { id, assigned_to: userId } });
@@ -393,7 +411,7 @@ function ConversationPane({ id }: { id: string }) {
             <div className="text-center text-sm text-muted-foreground py-8">No messages yet.</div>
           ) : (
             messages.map((m: any) => (
-              <MessageBubble key={m.id} message={m} />
+              <MessageBubble key={m.id} message={m} onRetry={retry} />
             ))
           )}
         </div>
@@ -533,9 +551,17 @@ function ConversationPane({ id }: { id: string }) {
   );
 }
 
-function MessageBubble({ message }: { message: any }) {
+function MessageBubble({
+  message,
+  onRetry,
+}: {
+  message: any;
+  onRetry?: (messageId: string) => void | Promise<void>;
+}) {
   const isOutbound = message.direction === "outbound";
   const isInternal = message.is_internal;
+  const isFailed = isOutbound && !isInternal && message.status === "failed";
+  const [retrying, setRetrying] = useState(false);
   return (
     <div className={cn("flex", isOutbound ? "justify-end" : "justify-start")}>
       <div
@@ -543,20 +569,50 @@ function MessageBubble({ message }: { message: any }) {
           "max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm",
           isInternal
             ? "bg-[color:var(--warning)]/15 text-foreground border border-[color:var(--warning)]/40"
-            : isOutbound
-              ? "bg-primary text-primary-foreground"
-              : "bg-card border border-border",
+            : isFailed
+              ? "bg-destructive/10 text-foreground border border-destructive/40"
+              : isOutbound
+                ? "bg-primary text-primary-foreground"
+                : "bg-card border border-border",
         )}
       >
         {isInternal && <div className="text-[10px] uppercase tracking-wide opacity-70 mb-0.5">Internal note</div>}
         <div className="whitespace-pre-wrap break-words">{message.body}</div>
-        <div className={cn("mt-1 text-[10px]", isOutbound && !isInternal ? "text-primary-foreground/70" : "text-muted-foreground")}>
-          {fmtTime(message.sent_at)}
+        <div
+          className={cn(
+            "mt-1 text-[10px] flex items-center gap-2",
+            isOutbound && !isInternal && !isFailed ? "text-primary-foreground/70" : "text-muted-foreground",
+          )}
+        >
+          <span>{fmtTime(message.sent_at)}</span>
+          {isFailed && (
+            <>
+              <span className="text-destructive font-medium">Not delivered</span>
+              {onRetry && (
+                <button
+                  type="button"
+                  disabled={retrying}
+                  className="underline underline-offset-2 hover:no-underline disabled:opacity-50"
+                  onClick={async () => {
+                    setRetrying(true);
+                    try {
+                      await onRetry(message.id);
+                    } finally {
+                      setRetrying(false);
+                    }
+                  }}
+                >
+                  {retrying ? "Retrying…" : "Retry"}
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
 
 function SummariseButton({ conversationId, onSuggestion }: { conversationId: string; onSuggestion: (s: string) => void }) {
   const [loading, setLoading] = useState(false);

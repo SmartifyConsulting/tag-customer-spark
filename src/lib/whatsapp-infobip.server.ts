@@ -4,9 +4,10 @@
 // Docs: https://www.infobip.com/docs/api/channels/whatsapp
 //
 // Required runtime env:
-//   INFOBIP_API_KEY          — Infobip dashboard > Developers > API keys
+//   INFOBIP_API_KEY_V2       — the single Infobip credential this app uses
 //   INFOBIP_BASE_URL         — personal base URL, e.g. "xyz123.api.infobip.com"
 //   INFOBIP_WHATSAPP_SENDER  — registered WhatsApp sender in E.164
+
 
 export type InfobipSendInput = {
   to: string; // E.164, with or without "+" / "whatsapp:" prefix
@@ -40,10 +41,11 @@ export type InfobipRuntimeDiagnostic = {
   apiHost: string;
   senderSuffix: string;
   responseRequestId?: string;
-  /** Every distinct credential binding this runtime could see, in try order. */
+  /** The single credential binding this runtime uses. */
   availableBindings?: string[];
-  /** Bindings actually attempted before this result (auth retry evidence). */
+  /** Kept for log/diagnostic compatibility — always the single binding. */
   attemptedBindings?: string[];
+
   /** Provider HTTP status on failure. */
   httpStatus?: number;
   /** Infobip's own error identifier, e.g. "UNAUTHORIZED". */
@@ -62,8 +64,9 @@ type RuntimeConfig = {
   diagnostic: InfobipRuntimeDiagnostic;
 };
 
-/** Candidate credential bindings, in preference order. */
-const KEY_BINDINGS = ["INFOBIP_API_KEY_V3", "INFOBIP_API_KEY_V2", "INFOBIP_API_KEY"] as const;
+/** The single Infobip credential binding used by every send path. */
+const KEY_BINDING = "INFOBIP_API_KEY_V2";
+
 
 
 function normalizeNumber(num: string): string {
@@ -106,67 +109,50 @@ async function fingerprint(value: string): Promise<string> {
 }
 
 /**
- * Resolves every distinct Infobip credential this runtime can see, in
- * preference order and de-duplicated by value.
+ * Resolves the single Infobip credential for this runtime.
  *
- * Different execution contexts (authenticated server functions vs the public
- * `/api/public/*` routes) can be handed different secret bindings. Silently
- * picking the first name present meant one path authenticated with a current
- * key and the other with a superseded one. We now enumerate them, record which
- * binding was used, and fall through to the next candidate on an auth
- * rejection instead of failing the customer's confirmation.
+ * Exactly one binding is used everywhere (authenticated server functions and
+ * the public `/api/public/*` routes), so every path authenticates identically
+ * and a rejection is reported rather than masked by a fallback key.
  */
-async function readRuntimeConfigs(): Promise<RuntimeConfig[]> {
+async function readRuntimeConfig(): Promise<RuntimeConfig | null> {
   // Read inside the request operation. Do not move these values to module
   // scope: bindings are injected per request in the deployed runtime.
   const rawBaseUrl = process.env.INFOBIP_BASE_URL;
   const rawSender = process.env.INFOBIP_WHATSAPP_SENDER;
-  if (!rawBaseUrl || !rawSender) return [];
+  const raw = process.env[KEY_BINDING];
+  if (!rawBaseUrl || !rawSender || !raw) return null;
 
   const normalizedUrl = normalizeBaseUrl(rawBaseUrl);
   const sender = normalizeNumber(unwrapQuotes(rawSender).value);
   const apiHost = new URL(normalizedUrl).hostname;
 
-  const configs: RuntimeConfig[] = [];
-  const seen = new Set<string>();
+  const unwrappedKey = unwrapQuotes(raw);
+  const hadAppPrefix = /^(?:App\s+)+/i.test(unwrappedKey.value);
+  const apiKey = unwrappedKey.value.replace(/^(?:App\s+)+/i, "").trim();
+  if (!apiKey) return null;
 
-  for (const binding of KEY_BINDINGS) {
-    const raw = process.env[binding];
-    if (!raw) continue;
-
-    const unwrappedKey = unwrapQuotes(raw);
-    const hadAppPrefix = /^(?:App\s+)+/i.test(unwrappedKey.value);
-    const apiKey = unwrappedKey.value.replace(/^(?:App\s+)+/i, "").trim();
-    if (!apiKey || seen.has(apiKey)) continue;
-    seen.add(apiKey);
-
-    configs.push({
-      apiKey,
-      baseUrl: normalizedUrl,
-      sender,
-      diagnostic: {
-        keyBinding: binding,
-        keyFingerprint: await fingerprint(apiKey),
-        keyLength: apiKey.length,
-        normalizedAppPrefix: hadAppPrefix,
-        normalizedWrappingQuotes: unwrappedKey.changed,
-        normalizedWhitespace: apiKey !== raw,
-        apiHost,
-        senderSuffix: sender.slice(-4),
-      },
-    });
-  }
-
-  const availableBindings = configs.map((c) => c.diagnostic.keyBinding);
-  for (const config of configs) config.diagnostic.availableBindings = availableBindings;
-  return configs;
+  return {
+    apiKey,
+    baseUrl: normalizedUrl,
+    sender,
+    diagnostic: {
+      keyBinding: KEY_BINDING,
+      keyFingerprint: await fingerprint(apiKey),
+      keyLength: apiKey.length,
+      normalizedAppPrefix: hadAppPrefix,
+      normalizedWrappingQuotes: unwrappedKey.changed,
+      normalizedWhitespace: apiKey !== raw,
+      apiHost,
+      senderSuffix: sender.slice(-4),
+      availableBindings: [KEY_BINDING],
+    },
+  };
 }
 
 export function isInfobipConfigured(): boolean {
   return Boolean(
-    (process.env.INFOBIP_API_KEY_V3 ||
-      process.env.INFOBIP_API_KEY_V2 ||
-      process.env.INFOBIP_API_KEY) &&
+    process.env[KEY_BINDING] &&
       process.env.INFOBIP_BASE_URL &&
       process.env.INFOBIP_WHATSAPP_SENDER,
   );
@@ -175,8 +161,8 @@ export function isInfobipConfigured(): boolean {
 export async function sendInfobipWhatsApp(
   input: InfobipSendInput,
 ): Promise<InfobipSendResult> {
-  const configs = await readRuntimeConfigs();
-  if (configs.length === 0) {
+  const config = await readRuntimeConfig();
+  if (!config) {
     return {
       ok: false,
       status: 500,
@@ -185,28 +171,55 @@ export async function sendInfobipWhatsApp(
     };
   }
 
-  const attempted: string[] = [];
-  let last: InfobipSendResult | null = null;
+  return sendWithConfig(config, input, [KEY_BINDING]);
+}
 
-  for (const config of configs) {
-    attempted.push(config.diagnostic.keyBinding);
-    const result = await sendWithConfig(config, input, [...attempted]);
-    if (result.ok) return result;
-    last = result;
-    // Only an authentication rejection is worth retrying with another binding;
-    // template or recipient errors would fail identically on every key.
-    const isAuthFailure =
-      result.status === 401 ||
-      result.status === 403 ||
-      /invalid login details|unauthorized/i.test(result.error ?? "");
-    if (!isAuthFailure) break;
-    console.warn(
-      `[infobip] ${config.diagnostic.keyBinding} rejected (${result.status}) — trying next binding`,
-    );
+/**
+ * Read-only authentication check against Infobip from this exact runtime.
+ * Sends no WhatsApp message, so it can be run safely at any time to tell an
+ * authentication failure apart from a template or recipient failure.
+ */
+export async function checkInfobipAuth(): Promise<{
+  ok: boolean;
+  status: number;
+  error: string | null;
+  diagnostic: InfobipRuntimeDiagnostic | null;
+}> {
+  const config = await readRuntimeConfig();
+  if (!config) {
+    return {
+      ok: false,
+      status: 500,
+      error:
+        "Infobip WhatsApp credential binding is missing in this runtime (no API key, base URL or sender)",
+      diagnostic: null,
+    };
   }
 
-  return last!;
+  try {
+    const resp = await fetch(`${config.baseUrl}/whatsapp/1/senders`, {
+      headers: {
+        Authorization: `App ${config.apiKey}`,
+        Accept: "application/json",
+      },
+    });
+    const raw = (await resp.text()).slice(0, 300);
+    return {
+      ok: resp.ok,
+      status: resp.status,
+      error: resp.ok ? null : raw || `Infobip returned ${resp.status}`,
+      diagnostic: { ...config.diagnostic, httpStatus: resp.status },
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      status: 0,
+      error: (e as Error).message,
+      diagnostic: config.diagnostic,
+    };
+  }
 }
+
 
 async function sendWithConfig(
   config: RuntimeConfig,

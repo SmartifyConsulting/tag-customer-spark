@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, Loader2, Send, Zap } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, PlugZap, Send, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AUTOMATIONS, type AutomationSetting } from "@/lib/automation";
-import { listAutomationSettings, saveAutomationSetting, testInfobipDelivery } from "@/lib/automation.functions";
+import {
+  checkInfobipConnection,
+  listAutomationSettings,
+  saveAutomationSetting,
+  testInfobipDelivery,
+} from "@/lib/automation.functions";
 import { useAuth } from "@/hooks/use-auth";
 
 export function AutomationSettings() {
@@ -46,6 +51,18 @@ export function AutomationSettings() {
     },
     onError: (e: Error) => toast.error(e.message || "Could not run delivery test"),
   });
+
+  // Authentication-only probe: no message is sent, so a failure here points at
+  // the credential binding rather than the template or the recipient.
+  const connectionCheck = useMutation({
+    mutationFn: () => checkInfobipConnection(),
+    onSuccess: (result) => {
+      if (result.ok) toast.success("Infobip authenticated this runtime");
+      else toast.error(result.error ?? "Infobip rejected this runtime's credentials");
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not check the connection"),
+  });
+
 
   if (isLoading) {
     return (
@@ -118,6 +135,43 @@ export function AutomationSettings() {
                 Send test
               </Button>
             </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => connectionCheck.mutate()}
+                disabled={connectionCheck.isPending}
+              >
+                {connectionCheck.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <PlugZap className="mr-2 h-4 w-4" />
+                )}
+                Check connection
+              </Button>
+              {connectionCheck.data ? (
+                <span className="flex items-center gap-2 text-sm">
+                  {connectionCheck.data.ok ? (
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                  )}
+                  {connectionCheck.data.ok
+                    ? "Authenticated"
+                    : `Rejected (${connectionCheck.data.status})`}
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {connectionCheck.data.diagnostic?.keyBinding ?? "—"} ·{" "}
+                    {connectionCheck.data.diagnostic?.keyFingerprint ?? "—"}
+                  </span>
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  Authenticates against Infobip without sending a message.
+                </span>
+              )}
+            </div>
+
+
 
             {testDelivery.data ? (
               <div className="rounded-lg border bg-muted/30 p-4 text-sm">

@@ -1,5 +1,5 @@
 // Notification Engine — pure business logic. It decides WHETHER a notification
-// should be sent and WHAT variables it carries. It never talks to Twilio: it
+// should be sent and WHAT variables it carries. It never talks to the provider: it
 // hands a template name + variables to the WhatsApp Service.
 //
 // Rules (each is independently de-duplicated per watcher):

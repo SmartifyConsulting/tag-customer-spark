@@ -18,7 +18,7 @@ export type AutomationDefinition = {
   threshold: number | null;
   thresholdLabel?: string;
   thresholdSuffix?: string;
-  /** Approved Twilio Content Template name (not the SID — see whatsapp-service). */
+  /** Approved WhatsApp template name registered with Infobip. */
   templateName: string;
 };
 

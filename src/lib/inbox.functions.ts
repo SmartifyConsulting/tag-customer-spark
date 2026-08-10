@@ -124,6 +124,14 @@ export const sendReply = createServerFn({ method: "POST" })
     let sent = false;
     let sendError: string | null = null;
     let status: "sent" | "failed" = "sent";
+    let diagnostic: {
+      httpStatus: number | null;
+      keyBinding: string | null;
+      keyFingerprint: string | null;
+      apiHost: string | null;
+      senderSuffix: string | null;
+      providerMessageId: string | null;
+    } | null = null;
 
     if (!data.is_internal) {
       const customer = (convo as any).customer;
@@ -139,23 +147,44 @@ export const sendReply = createServerFn({ method: "POST" })
         } else {
           status = "failed";
           sendError = result.error ?? "Send failed";
+          // Record the provider evidence for this exact send: which credential
+          // binding the live runtime used, its fingerprint, the API host and
+          // the provider's own status. Without this, a 401 here is
+          // indistinguishable from a template or recipient problem.
+          diagnostic = {
+            httpStatus: result.status ?? null,
+            keyBinding: result.diagnostic?.keyBinding ?? null,
+            keyFingerprint: result.diagnostic?.keyFingerprint ?? null,
+            apiHost: result.diagnostic?.apiHost ?? null,
+            senderSuffix: result.diagnostic?.senderSuffix ?? null,
+            providerMessageId: result.diagnostic?.providerMessageId ?? null,
+          };
+          console.error("[inbox] WhatsApp reply failed", {
+            conversationId: data.conversation_id,
+            error: sendError,
+            ...diagnostic,
+          });
         }
       }
     } else {
       sent = true; // Internal notes don't need to "send" anywhere to count as successful.
     }
 
-    const { error } = await supabase.from("conversation_messages").insert({
-      conversation_id: data.conversation_id,
-      retailer_id: convo.retailer_id,
-      direction: "outbound",
-      body: data.body,
-      is_internal: data.is_internal,
-      author_user_id: userId,
-      created_by: userId,
-      status,
-      sent_at: new Date().toISOString(),
-    });
+    const { data: inserted, error } = await supabase
+      .from("conversation_messages")
+      .insert({
+        conversation_id: data.conversation_id,
+        retailer_id: convo.retailer_id,
+        direction: "outbound",
+        body: data.body,
+        is_internal: data.is_internal,
+        author_user_id: userId,
+        created_by: userId,
+        status,
+        sent_at: new Date().toISOString(),
+      })
+      .select("id")
+      .maybeSingle();
 
     if (error) throw new Error(error.message);
     if (!data.is_internal) {
@@ -164,8 +193,59 @@ export const sendReply = createServerFn({ method: "POST" })
         .update({ unread_count: 0, last_message_at: new Date().toISOString() })
         .eq("id", data.conversation_id);
     }
-    return { ok: true, sent, error: sendError };
+    return { ok: true, sent, error: sendError, diagnostic, messageId: inserted?.id ?? null };
   });
+
+/**
+ * Re-attempts delivery of a reply that is already stored with status "failed".
+ * The message row is reused so the thread keeps a single entry instead of
+ * accumulating a duplicate bubble per retry.
+ */
+export const retryReply = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ message_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: msg } = await supabase
+      .from("conversation_messages")
+      .select("id, body, is_internal, conversation_id, status")
+      .eq("id", data.message_id)
+      .maybeSingle();
+    if (!msg) throw new Error("Message not found");
+    if (msg.is_internal) throw new Error("Internal notes are never delivered");
+
+    const { data: convo } = await supabase
+      .from("conversations")
+      .select("customer:customers(whatsapp_e164, status)")
+      .eq("id", msg.conversation_id)
+      .maybeSingle();
+    const customer = (convo as any)?.customer;
+    const phone = customer?.whatsapp_e164 as string | null | undefined;
+    if (!phone || customer?.status !== "subscribed") {
+      return { ok: false, error: phone ? "Customer is unsubscribed" : "No WhatsApp number on file" };
+    }
+
+    const { sendWhatsApp } = await import("@/lib/whatsapp.server");
+    const result = await sendWhatsApp({ to: phone, body: msg.body ?? "" });
+
+    await supabase
+      .from("conversation_messages")
+      .update({ status: result.ok ? "sent" : "failed", sent_at: new Date().toISOString() })
+      .eq("id", msg.id);
+
+    if (!result.ok) {
+      console.error("[inbox] WhatsApp reply retry failed", {
+        messageId: msg.id,
+        error: result.error,
+        httpStatus: result.status,
+        keyBinding: result.diagnostic?.keyBinding ?? null,
+        keyFingerprint: result.diagnostic?.keyFingerprint ?? null,
+      });
+    }
+
+    return { ok: result.ok, error: result.ok ? null : result.error ?? "Send failed" };
+  });
+
 
 export const updateConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
