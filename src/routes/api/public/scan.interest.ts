@@ -11,6 +11,9 @@ const interestSchema = z.object({
   privacyAccepted: z.boolean().optional().default(false),
 });
 
+/** Thrown when the retailer has switched the scan confirmation off. */
+class SkipConfirmation extends Error {}
+
 function jsonRes(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
