@@ -251,6 +251,52 @@ export async function checkInfobipAuth(): Promise<{
 }
 
 /**
+ * Operational read-only probes that deliberately share the exact RuntimeConfig
+ * and transport used by message sends. Returned diagnostics contain no secret
+ * values.
+ */
+export async function probeInfobipRuntime(): Promise<{
+  ok: boolean;
+  status: number;
+  error: string | null;
+  diagnostic: InfobipRuntimeDiagnostic | null;
+  probes: Array<{ path: string; status: number; body: string; transport: "direct" | "relay" }>;
+}> {
+  const config = await readRuntimeConfig();
+  if (!config) {
+    return {
+      ok: false,
+      status: 500,
+      error: missingBindingMessage(),
+      diagnostic: null,
+      probes: [],
+    };
+  }
+
+  const paths = ["/account/1/balance", "/whatsapp/2/senders"];
+  const probes = await Promise.all(
+    paths.map(async (path) => {
+      const response = await infobipCall(config, path, null);
+      return {
+        path,
+        status: response.status,
+        body: response.text.slice(0, 200),
+        transport: response.transport,
+      };
+    }),
+  );
+  const failed = probes.find((probe) => probe.status < 200 || probe.status >= 300);
+
+  return {
+    ok: !failed,
+    status: failed?.status ?? 200,
+    error: failed ? failed.body || `Infobip returned ${failed.status}` : null,
+    diagnostic: config.diagnostic,
+    probes,
+  };
+}
+
+/**
  * Outbound egress path for Infobip calls.
  *
  * The deployed app runtime reaches the internet over IPv6 and Infobip rejects
