@@ -90,9 +90,6 @@ export function buildTemplatePayload(
   headerImageUrl: string | null | undefined,
 ): BuiltTemplate | BuildFailure {
   const contract = getTemplateContract(templateName);
-  if (!contract) {
-    return { ok: false, error: `No approved template contract for "${templateName}"` };
-  }
 
   const placeholders: string[] = [];
   for (const key of contract.placeholders) {
