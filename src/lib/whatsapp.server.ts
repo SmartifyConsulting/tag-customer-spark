@@ -51,5 +51,6 @@ export async function sendWhatsApp(input: SendWhatsAppInput): Promise<SendWhatsA
     templateLanguage: input.templateLanguage,
     placeholders: input.placeholders,
     headerImageUrl: input.headerImageUrl,
+    buttons: input.buttons,
   });
 }
