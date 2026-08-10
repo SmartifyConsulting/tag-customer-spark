@@ -7,6 +7,9 @@ const interestSchema = z.object({
   whatsapp: z.string().min(5).max(40),
 });
 
+/** Thrown when the retailer has switched the scan confirmation off. */
+class SkipConfirmation extends Error {}
+
 function jsonRes(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
