@@ -235,20 +235,24 @@ export const Route = createFileRoute("/api/public/webhooks/infobip")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+        const dlrCount = results.filter(isDeliveryReport).length;
+        console.log("[infobip-webhook] received", {
+          results: results.length,
+          deliveryReports: dlrCount,
+          inbound: results.length - dlrCount,
+        });
+
         for (const result of results) {
           // ---- Delivery report ----
-          if (result?.status && result?.messageId && !result?.message) {
-            const mapped = mapStatus(result.status.groupName, result.status.name);
-            const errorText =
-              result.error?.name || result.error?.description
-                ? `${result.error?.name ?? ""} ${result.error?.description ?? ""}`.trim()
-                : null;
-            await supabaseAdmin
-              .from("notification_history")
-              .update({ status: mapped, error: errorText } as any)
-              .eq("provider_message_sid", result.messageId);
+          if (isDeliveryReport(result)) {
+            try {
+              await applyDeliveryReport(supabaseAdmin, result);
+            } catch (e: any) {
+              console.error("[infobip-webhook] DLR handling failed", e?.message ?? String(e));
+            }
             continue;
           }
+
 
           // ---- Inbound message ----
           const from = toE164(result?.from);
