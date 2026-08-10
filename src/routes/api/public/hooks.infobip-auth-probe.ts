@@ -17,11 +17,18 @@ export const Route = createFileRoute("/api/public/hooks/infobip-auth-probe")({
         }
 
 
-        const { probeInfobipRuntime, resolveInfobipKeyBinding } = await import(
-          "@/lib/whatsapp-infobip.server"
-        );
+        const { probeInfobipRuntime, resolveInfobipKeyBinding, lookupInfobipMessageStatus } =
+          await import("@/lib/whatsapp-infobip.server");
+
+        // Read-only delivery-report lookup: { "logsFor": "<messageId>" }.
+        const reqBody: any = await request.clone().json().catch(() => ({}));
+        if (reqBody?.logsFor) {
+          return Response.json(await lookupInfobipMessageStatus(String(reqBody.logsFor)));
+        }
+
         const binding = resolveInfobipKeyBinding();
         const rawKey = binding?.value ?? "";
+
 
 
         const key = rawKey.trim().replace(/^"|"$/g, "").replace(/^(?:App\s+)+/i, "").trim();
