@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AUTOMATIONS, type AutomationSetting } from "@/lib/automation";
+import { AUTOMATIONS, SCAN_TEMPLATE_OPTIONS, type AutomationSetting } from "@/lib/automation";
 import {
   checkInfobipConnection,
   listAutomationSettings,
