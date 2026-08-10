@@ -21,6 +21,12 @@ export type InfobipSendInput = {
   placeholders?: string[];
   /** Optional header image URL when the template has a media header. */
   headerImageUrl?: string | null;
+  /**
+   * Button components the approved template declares. WhatsApp requires every
+   * QUICK_REPLY button to carry its payload parameter at send time; omitting
+   * them is rejected with error 7008 (EC_INVALID_TEMPLATE_ARGS).
+   */
+  buttons?: Array<{ type: "QUICK_REPLY"; parameter: string }>;
 };
 
 export type InfobipSendResult = {
