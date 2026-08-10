@@ -373,26 +373,14 @@ async function sendWithConfig(
   }
 
   try {
-    const resp = await fetch(`${config.baseUrl}${path}`, {
-      method: "POST",
-      headers: {
-        Authorization: `App ${config.apiKey}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    const resp = await infobipCall(config, path, payload);
 
-    const text = await resp.text();
-    const responseRequestId =
-      resp.headers.get("x-request-id") ??
-      resp.headers.get("x-correlation-id") ??
-      resp.headers.get("x-infobip-request-id") ??
-      undefined;
+    const text = resp.text;
     const diagnostic: InfobipRuntimeDiagnostic = {
       ...config.diagnostic,
-      responseRequestId,
+      responseRequestId: resp.requestId,
       attemptedBindings,
+      transport: resp.transport,
     };
     let json: any = null;
     try {
@@ -425,6 +413,7 @@ async function sendWithConfig(
 
     console.info("[infobip] send accepted", resp.status, message?.messageId, diagnostic);
     return { ok: true, status: resp.status, sid: message?.messageId, diagnostic };
+
   } catch (e: any) {
     console.error("[infobip] network error", e?.message ?? e);
     return {
