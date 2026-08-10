@@ -7,6 +7,9 @@ const interestSchema = z.object({
   whatsapp: z.string().min(5).max(40),
 });
 
+/** Thrown when the retailer has switched the scan confirmation off. */
+class SkipConfirmation extends Error {}
+
 function jsonRes(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -224,13 +227,24 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
         }
 
         // Confirmation WhatsApp. The customer has already opted in on the web
-        // page, so this only confirms it — the approved `tag_scan_v5` body has
-        // no variables and an IMAGE header, which must be a public https URL.
+        // page, so this only confirms it. The template is configurable in
+        // Settings > Automations (default `tag_scan_v5`) and is built from its
+        // approved contract — IMAGE header on a public https URL.
         // Never block the opt-in on a send failure; record every outcome.
         let deliveryError: string | null = null;
+        let scanTemplate = "tag_scan_v5";
         try {
           const { sendTemplate } = await import("@/lib/whatsapp-service.server");
           const { isPublicMediaUrl } = await import("@/lib/whatsapp-templates.server");
+          const { getScanConfirmationSetting } = await import("@/lib/automation.server");
+          const { buildScanTemplateVariables } = await import("@/lib/scan-template.server");
+
+          const scanSetting = await getScanConfirmationSetting(
+            supabaseAdmin,
+            (product as any).retailer_id,
+          );
+          scanTemplate = scanSetting.templateName;
+          if (!scanSetting.enabled) throw new SkipConfirmation();
 
           let headerImage = isPublicMediaUrl(productImage) ? productImage : null;
           if (!headerImage) {
@@ -248,9 +262,15 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
             `other interest, and the last unit.`;
 
           const result = await sendTemplate({
-            templateName: "tag_scan_v5",
+            templateName: scanTemplate,
             to: e164,
             headerImageUrl: headerImage,
+            variables: buildScanTemplateVariables({
+              productName,
+              priceCents:
+                (watchedProduct as any)?.sale_price_cents ?? (watchedProduct as any)?.price_cents ?? null,
+              originalPriceCents: (watchedProduct as any)?.price_cents ?? null,
+            }),
           });
 
           if (!result.ok) {
@@ -265,7 +285,7 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
             payload: {
               type: "barcode_scan",
               product_id: (product as any).id,
-              template: "tag_scan_v5",
+              template: scanTemplate,
               body: historyBody,
               // Safe, non-secret evidence of WHICH credential binding this
               // runtime used. The public route and the authenticated dashboard
@@ -285,8 +305,12 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
 
 
         } catch (e: any) {
-          console.warn("[scan.barcode-interest] whatsapp send error", e?.message ?? e);
-          deliveryError = e?.message ?? "WhatsApp confirmation could not be sent";
+          if (e instanceof SkipConfirmation) {
+            // Confirmation intentionally switched off in Settings > Automations.
+          } else {
+            console.warn("[scan.barcode-interest] whatsapp send error", e?.message ?? e);
+            deliveryError = e?.message ?? "WhatsApp confirmation could not be sent";
+          }
         }
 
         return jsonRes({

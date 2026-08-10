@@ -11,6 +11,9 @@ const interestSchema = z.object({
   privacyAccepted: z.boolean().optional().default(false),
 });
 
+/** Thrown when the retailer has switched the scan confirmation off. */
+class SkipConfirmation extends Error {}
+
 function jsonRes(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -217,12 +220,20 @@ export const Route = createFileRoute("/api/public/scan/interest")({
 
 
         // Confirmation WhatsApp for the web opt-in. Business-initiated, so it
-        // must be the approved `tag_scan_v5` template: IMAGE header, no body
-        // variables. Never block opt-in on a send failure.
+        // is built from the approved contract of whichever template is
+        // configured in Settings > Automations (default `tag_scan_v5`).
+        // Never block opt-in on a send failure.
         let deliveryError: string | null = null;
+        let scanTemplate = "tag_scan_v5";
         try {
           const { sendTemplate } = await import("@/lib/whatsapp-service.server");
           const { isPublicMediaUrl } = await import("@/lib/whatsapp-templates.server");
+          const { getScanConfirmationSetting } = await import("@/lib/automation.server");
+          const { buildScanTemplateVariables } = await import("@/lib/scan-template.server");
+
+          const scanSetting = await getScanConfirmationSetting(supabaseAdmin, tag.retailer_id);
+          scanTemplate = scanSetting.templateName;
+          if (!scanSetting.enabled) throw new SkipConfirmation();
 
           const headerImage =
             [
@@ -232,9 +243,15 @@ export const Route = createFileRoute("/api/public/scan/interest")({
             ].find((u: string | null) => isPublicMediaUrl(u)) ?? null;
 
           const result = await sendTemplate({
-            templateName: "tag_scan_v5",
+            templateName: scanTemplate,
             to: e164,
             headerImageUrl: headerImage,
+            variables: buildScanTemplateVariables({
+              productName,
+              priceCents:
+                (watchedProduct as any)?.sale_price_cents ?? (watchedProduct as any)?.price_cents ?? null,
+              originalPriceCents: (watchedProduct as any)?.price_cents ?? null,
+            }),
           });
 
           if (!result.ok) {
@@ -249,8 +266,9 @@ export const Route = createFileRoute("/api/public/scan/interest")({
             payload: {
               type: "qr_scan",
               product_id: tag.product_id,
-              template: "tag_scan_v5",
+              template: scanTemplate,
               body: `Confirmed watch on ${productName}.`,
+              delivery_diagnostic: result.diagnostic ?? null,
             },
             status: result.ok ? "queued" : "failed",
             sent_at: result.ok ? new Date().toISOString() : null,
@@ -258,8 +276,12 @@ export const Route = createFileRoute("/api/public/scan/interest")({
             provider_message_sid: result.sid ?? null,
           });
         } catch (e: any) {
-          console.warn("[scan.interest] whatsapp send error", e?.message ?? e);
-          deliveryError = e?.message ?? "WhatsApp confirmation could not be sent";
+          if (e instanceof SkipConfirmation) {
+            // Confirmation intentionally switched off in Settings > Automations.
+          } else {
+            console.warn("[scan.interest] whatsapp send error", e?.message ?? e);
+            deliveryError = e?.message ?? "WhatsApp confirmation could not be sent";
+          }
         }
 
         return jsonRes({

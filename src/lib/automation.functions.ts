@@ -63,6 +63,7 @@ export const saveAutomationSetting = createServerFn({ method: "POST" })
     z
       .object({
         automation_key: z.enum([
+          "scan_confirmation",
           "price_drop",
           "low_stock",
           "last_one",
@@ -120,7 +121,12 @@ export const checkInfobipConnection = createServerFn({ method: "POST" })
 export const testInfobipDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ recipient: z.string().trim().min(8).max(40) }).parse(d),
+    z
+      .object({
+        recipient: z.string().trim().min(8).max(40),
+        templateName: z.string().trim().min(1).max(120).optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -136,22 +142,35 @@ export const testInfobipDelivery = createServerFn({ method: "POST" })
 
     const { data: product } = await supabase
       .from("products")
-      .select("id, hero_image, image_url, thumbnail_url")
+      .select("id, name, price_cents, sale_price_cents, hero_image, image_url, thumbnail_url")
       .eq("retailer_id", role.retailer_id)
       .eq("status", "active")
       .order("updated_at", { ascending: false })
       .limit(25);
     const { isPublicMediaUrl } = await import("@/lib/whatsapp-templates.server");
-    const imageUrl = (product ?? [])
-      .flatMap((row: any) => [row.hero_image, row.image_url, row.thumbnail_url])
-      .find((url: string | null) => isPublicMediaUrl(url));
+    const withImage = ((product ?? []) as any[]).find((row) =>
+      [row.hero_image, row.image_url, row.thumbnail_url].some((url: string | null) =>
+        isPublicMediaUrl(url),
+      ),
+    );
+    const imageUrl = withImage
+      ? [withImage.hero_image, withImage.image_url, withImage.thumbnail_url].find(
+          (url: string | null) => isPublicMediaUrl(url),
+        )
+      : null;
     if (!imageUrl) throw new Error("No active product has a public image for the test template");
 
+    const { buildScanTemplateVariables } = await import("@/lib/scan-template.server");
     const { sendTemplate } = await import("@/lib/whatsapp-service.server");
     const result = await sendTemplate({
-      templateName: "tag_scan_v5",
+      templateName: data.templateName ?? "tag_scan_v5",
       to: data.recipient,
       headerImageUrl: imageUrl,
+      variables: buildScanTemplateVariables({
+        productName: withImage?.name ?? "this product",
+        priceCents: withImage?.sale_price_cents ?? withImage?.price_cents ?? null,
+        originalPriceCents: withImage?.price_cents ?? null,
+      }),
     });
 
     return {

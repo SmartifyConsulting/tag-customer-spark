@@ -44,8 +44,16 @@ export const TEMPLATE_CONTRACTS: Record<string, TemplateContract> = {
 /** Templates a watcher may receive after opting in. */
 export const ALERT_TEMPLATES = ["tag_valuechange", "tag_interest", "tag_lastunit"] as const;
 
-export function getTemplateContract(name: string): TemplateContract | null {
-  return TEMPLATE_CONTRACTS[name] ?? null;
+/**
+ * Returns the approved contract for a template. Templates approved after this
+ * registry was written fall back to the shape every TAG template shares —
+ * IMAGE header, no body variables — so a newly approved name can be selected
+ * in Settings without a code change.
+ */
+export function getTemplateContract(name: string): TemplateContract {
+  return (
+    TEMPLATE_CONTRACTS[name] ?? { name, language: "en", header: "IMAGE", placeholders: [] }
+  );
 }
 
 /** WhatsApp media headers require a publicly reachable https URL. */
@@ -82,9 +90,6 @@ export function buildTemplatePayload(
   headerImageUrl: string | null | undefined,
 ): BuiltTemplate | BuildFailure {
   const contract = getTemplateContract(templateName);
-  if (!contract) {
-    return { ok: false, error: `No approved template contract for "${templateName}"` };
-  }
 
   const placeholders: string[] = [];
   for (const key of contract.placeholders) {

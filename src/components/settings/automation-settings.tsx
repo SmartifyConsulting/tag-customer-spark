@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AUTOMATIONS, type AutomationSetting } from "@/lib/automation";
+import { AUTOMATIONS, SCAN_TEMPLATE_OPTIONS, type AutomationSetting } from "@/lib/automation";
 import {
   checkInfobipConnection,
   listAutomationSettings,
@@ -28,6 +28,7 @@ export function AutomationSettings() {
 
   const [draft, setDraft] = useState<Record<string, AutomationSetting>>({});
   const [testRecipient, setTestRecipient] = useState("");
+  const [testTemplate, setTestTemplate] = useState<string>("tag_scan_v5");
 
   useEffect(() => {
     if (!data?.settings) return;
@@ -44,7 +45,10 @@ export function AutomationSettings() {
   });
 
   const testDelivery = useMutation({
-    mutationFn: () => testInfobipDelivery({ data: { recipient: testRecipient } }),
+    mutationFn: () =>
+      testInfobipDelivery({
+        data: { recipient: testRecipient, templateName: testTemplate.trim() },
+      }),
     onSuccess: (result) => {
       if (result.ok) toast.success("Infobip accepted the test message");
       else toast.error(result.error ?? "Infobip rejected the test message");
@@ -111,11 +115,25 @@ export function AutomationSettings() {
           <CardHeader>
             <CardTitle className="text-base">Live Infobip delivery test</CardTitle>
             <CardDescription>
-              Sends tag_scan_v5 through the same runtime adapter used by Follow Me and barcode scans.
+              Sends the chosen template through the same runtime adapter used by Follow Me and
+              barcode scans, so you can prove a template delivers before making it the default.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                aria-label="Template to test"
+                value={testTemplate}
+                onChange={(event) => setTestTemplate(event.target.value)}
+                list="tag-template-options"
+                placeholder="tag_scan_v5"
+                className="font-mono text-xs sm:max-w-[220px]"
+              />
+              <datalist id="tag-template-options">
+                {SCAN_TEMPLATE_OPTIONS.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
               <Input
                 aria-label="WhatsApp test recipient"
                 value={testRecipient}
@@ -125,7 +143,11 @@ export function AutomationSettings() {
               />
               <Button
                 onClick={() => testDelivery.mutate()}
-                disabled={testDelivery.isPending || testRecipient.trim().length < 8}
+                disabled={
+                  testDelivery.isPending ||
+                  testRecipient.trim().length < 8 ||
+                  testTemplate.trim().length === 0
+                }
               >
                 {testDelivery.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

@@ -73,3 +73,26 @@ export async function upsertAutomationSetting(
   );
   if (error) throw new Error(error.message);
 }
+
+/**
+ * The template the Follow Me opt-in confirms with. Configurable in
+ * Settings > Automations so a rejected template can be swapped without a
+ * deploy; falls back to the shipped default when never configured.
+ */
+export async function getScanConfirmationSetting(
+  client: any,
+  retailerId: string,
+): Promise<{ enabled: boolean; templateName: string }> {
+  const fallback = AUTOMATIONS.find((a) => a.key === "scan_confirmation")!.templateName;
+  const { data } = await client
+    .from("automation_settings")
+    .select("enabled, template_name")
+    .eq("retailer_id", retailerId)
+    .eq("automation_key", "scan_confirmation")
+    .maybeSingle();
+
+  return {
+    enabled: data ? Boolean(data.enabled) : true,
+    templateName: (data?.template_name as string) || fallback,
+  };
+}
