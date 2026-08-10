@@ -52,6 +52,7 @@ export async function sendTemplate(input: SendTemplateInput): Promise<SendWhatsA
     templateLanguage: process.env.INFOBIP_TEMPLATE_LANGUAGE ?? built.language,
     placeholders: built.placeholders,
     headerImageUrl: built.headerImageUrl,
+    buttons: built.buttons,
   });
 }
 

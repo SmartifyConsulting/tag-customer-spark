@@ -19,12 +19,26 @@ export type TemplateContract = {
    * An empty array means the approved body has NO variables.
    */
   placeholders: string[];
+  /**
+   * Payload values for the approved template's QUICK_REPLY buttons, in the
+   * approved order. WhatsApp requires a parameter for every quick-reply
+   * button at send time; omitting them is rejected with error 7008.
+   */
+  quickReplies?: string[];
 };
 
 export const TEMPLATE_CONTRACTS: Record<string, TemplateContract> = {
   // Scan confirmation. Approved body has NO variables — the product is
   // identified by the image header only.
-  tag_scan_v5: { name: "tag_scan_v5", language: "en", header: "IMAGE", placeholders: [] },
+  tag_scan_v5: {
+    name: "tag_scan_v5",
+    language: "en",
+    header: "IMAGE",
+    placeholders: [],
+    // Single approved QUICK_REPLY button. The payload is echoed back on the
+    // inbound webhook, which matches on this exact text.
+    quickReplies: ["Keep an eye on me"],
+  },
 
   // Price drop: "My price has dropped from {{1}} to {{2}}".
   tag_valuechange: {
@@ -75,6 +89,7 @@ export type BuiltTemplate = {
   language: string;
   placeholders: string[];
   headerImageUrl: string | null;
+  buttons: Array<{ type: "QUICK_REPLY"; parameter: string }>;
 };
 
 export type BuildFailure = { ok: false; error: string };
@@ -113,5 +128,9 @@ export function buildTemplatePayload(
     language: contract.language,
     placeholders,
     headerImageUrl: contract.header === "IMAGE" ? (headerImageUrl as string) : null,
+    buttons: (contract.quickReplies ?? []).map((parameter) => ({
+      type: "QUICK_REPLY" as const,
+      parameter,
+    })),
   };
 }

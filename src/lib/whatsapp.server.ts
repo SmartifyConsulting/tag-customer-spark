@@ -25,6 +25,8 @@ export type SendWhatsAppInput = {
   templateLanguage?: string;
   placeholders?: string[];
   headerImageUrl?: string | null;
+  /** QUICK_REPLY button parameters the approved template declares. */
+  buttons?: Array<{ type: "QUICK_REPLY"; parameter: string }>;
 };
 
 export type SendWhatsAppResult = {
@@ -49,5 +51,6 @@ export async function sendWhatsApp(input: SendWhatsAppInput): Promise<SendWhatsA
     templateLanguage: input.templateLanguage,
     placeholders: input.placeholders,
     headerImageUrl: input.headerImageUrl,
+    buttons: input.buttons,
   });
 }
