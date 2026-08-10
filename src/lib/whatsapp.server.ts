@@ -25,6 +25,8 @@ export type SendWhatsAppInput = {
   templateLanguage?: string;
   placeholders?: string[];
   headerImageUrl?: string | null;
+  /** QUICK_REPLY button parameters the approved template declares. */
+  buttons?: Array<{ type: "QUICK_REPLY"; parameter: string }>;
 };
 
 export type SendWhatsAppResult = {
