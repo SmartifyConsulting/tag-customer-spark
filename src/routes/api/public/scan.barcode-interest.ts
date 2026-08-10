@@ -302,8 +302,12 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
 
 
         } catch (e: any) {
-          console.warn("[scan.barcode-interest] whatsapp send error", e?.message ?? e);
-          deliveryError = e?.message ?? "WhatsApp confirmation could not be sent";
+          if (e instanceof SkipConfirmation) {
+            // Confirmation intentionally switched off in Settings > Automations.
+          } else {
+            console.warn("[scan.barcode-interest] whatsapp send error", e?.message ?? e);
+            deliveryError = e?.message ?? "WhatsApp confirmation could not be sent";
+          }
         }
 
         return jsonRes({
