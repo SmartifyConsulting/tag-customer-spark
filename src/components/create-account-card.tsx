@@ -188,23 +188,6 @@ export function CreateAccountCard({
                 onChange={(e) => setSuName(e.target.value)}
               />
             </div>
-            {accountType === "customer" ? (
-              <div className="space-y-1.5">
-                <Label htmlFor="su-whatsapp">WhatsApp number</Label>
-                <Input
-                  id="su-whatsapp"
-                  type="tel"
-                  autoComplete="tel"
-                  placeholder="+27821234567"
-                  value={suWhatsapp}
-                  onChange={(e) => setSuWhatsapp(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Optional — links products you've tagged in-store to this account.
-                </p>
-              </div>
-            ) : (
-              <>
                 <div className="space-y-1.5">
                   <Label htmlFor="su-company">Company *</Label>
                   <Input
@@ -260,8 +243,6 @@ export function CreateAccountCard({
                     </SelectContent>
                   </Select>
                 </div>
-              </>
-            )}
             {inlineError && (
               <p className="text-sm text-destructive" aria-live="polite">
                 {inlineError}
