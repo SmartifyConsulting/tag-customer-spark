@@ -13,7 +13,6 @@ const TABS = [
   { label: "ROI", to: "/roi" as const },
   { label: "Trends", to: "/intelligence/trends" as const },
   { label: "Forecasting", to: "/intelligence/forecasting" as const },
-  { label: "Sustainability", to: "/analytics/sustainability" as const },
 ];
 
 export function IntelligenceTabs() {

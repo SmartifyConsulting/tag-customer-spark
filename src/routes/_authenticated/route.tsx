@@ -12,7 +12,6 @@ import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { briefingQueryOptions } from "@/lib/dashboard";
 import { TagReaderTile } from "@/components/qr/tag-reader-tile";
 import { UIVersionSwitcher } from "@/components/ui-version-switcher";
-import { ShopperTagButton } from "@/components/ownership/shopper-tag-button";
 import { UserMenu } from "@/components/user-menu";
 import { useIsStaff } from "@/hooks/use-persona";
 
@@ -101,7 +100,6 @@ function AuthenticatedLayout() {
             />
 
             <div className="flex items-center gap-3 justify-self-end">
-              {!isStaff && <ShopperTagButton />}
               {!isStaff && <UIVersionSwitcher />}
               {!isStaff && <UserMenu />}
             </div>
