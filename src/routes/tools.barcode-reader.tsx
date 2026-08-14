@@ -28,6 +28,12 @@ function BarcodeReaderPage() {
   const [starting, setStarting] = useState(false);
   const [detected, setDetected] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
+  // First detection wins. The camera can fire several reads a second, and a
+  // second read (often a different, partially-decoded code) used to replace
+  // the first — which is why the "Follow me" screen flashed up and was then
+  // navigated away from. Once we have a code we stop the camera and ignore
+  // everything after it, until the user explicitly scans again.
+  const lockedRef = useRef(false);
 
   useEffect(() => {
     if (detected) return;
@@ -52,7 +58,14 @@ function BarcodeReaderPage() {
         }
 
         const handleDetected = (code: string) => {
-          if (cancelled) return;
+          if (cancelled || lockedRef.current) return;
+          lockedRef.current = true;
+          try {
+            stopRef.current();
+          } catch {}
+          stopRef.current = () => {};
+          streamRef.current?.getTracks().forEach((t) => t.stop());
+          streamRef.current = null;
           setDetected(code);
         };
 
