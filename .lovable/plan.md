@@ -1,4 +1,4 @@
-# Remove Receipts / Ownership / Sustainability + fix the Follow Me flash
+# Remove Receipts / Ownership / Sustainability, drop shopper sign-up, fix scan + import
 
 Two pieces of work: switch off the whole Purchase + Ownership area and the Sustainability dashboard (code removed, database left untouched), and fix the scan flow so the Follow Me screen stays on screen.
 
