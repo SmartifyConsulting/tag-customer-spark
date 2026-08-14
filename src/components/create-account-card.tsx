@@ -182,26 +182,6 @@ export function CreateAccountCard({
 
         {signupStep === 1 ? (
           <>
-            <div className="grid grid-cols-2 gap-2 rounded-lg border border-border/60 bg-muted/40 p-1">
-              <button
-                type="button"
-                onClick={() => setAccountType("retailer")}
-                className={`rounded-md py-1.5 text-sm font-medium transition-colors ${
-                  accountType === "retailer" ? "bg-background shadow-sm" : "text-muted-foreground"
-                }`}
-              >
-                I'm a retailer
-              </button>
-              <button
-                type="button"
-                onClick={() => setAccountType("customer")}
-                className={`rounded-md py-1.5 text-sm font-medium transition-colors ${
-                  accountType === "customer" ? "bg-background shadow-sm" : "text-muted-foreground"
-                }`}
-              >
-                I'm a shopper
-              </button>
-            </div>
             <div className="space-y-1.5">
               <Label htmlFor="su-name">Full name *</Label>
               <Input

@@ -183,6 +183,7 @@ function BarcodeReaderPage() {
               <Button
                 variant="outline"
                 onClick={() => {
+                  lockedRef.current = false;
                   setDetected(null);
                   setNonce((n) => n + 1);
                 }}
