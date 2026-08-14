@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QrPreview, useQrPngDownload } from "@/components/qr/qr-preview";
-import { Barcode } from "@/components/ownership/shared";
-import { getMyShopperTag } from "@/lib/ownership.functions";
+import { Barcode } from "@/components/tag-barcode";
+import { getMyShopperTag } from "@/lib/tag-identity.functions";
 
 export const Route = createFileRoute("/_authenticated/barcode-tagger")({
   head: () => ({

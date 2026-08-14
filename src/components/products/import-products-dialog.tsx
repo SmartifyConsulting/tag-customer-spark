@@ -45,8 +45,36 @@ async function fileToBase64(file: File): Promise<string> {
 // Batch size for both phases — small enough that the progress bar advances
 // smoothly and a single request never takes too long, since commit runs
 // AI category-suggestion and QR/image work per row server-side.
-const IMPORT_CHUNK = 25;
-const TAG_CHUNK = 10;
+const IMPORT_CHUNK = 10;
+const TAG_CHUNK = 5;
+// A chunk that never answers used to freeze the bar forever (the rows had
+// actually landed server-side). Bound every chunk and retry it once.
+const CHUNK_TIMEOUT_MS = 90_000;
+
+async function withRetry<T>(fn: () => Promise<T>, attempts = 2): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await Promise.race([
+        fn(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timed out — retrying")), CHUNK_TIMEOUT_MS),
+        ),
+      ]);
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError;
+}
+
+function formatEta(ms: number) {
+  const s = Math.max(1, Math.round(ms / 1000));
+  if (s < 60) return `about ${s}s left`;
+  const m = Math.round(s / 60);
+  return `about ${m} min left`;
+}
+
 
 export function ImportProductsDialog({
   open,
@@ -68,6 +96,7 @@ export function ImportProductsDialog({
   const [label, setLabel] = useState("");
   const [progress, setProgress] = useState(0);
   const [mode, setMode] = useState<"merge" | "overwrite">("merge");
+  const [eta, setEta] = useState<string | null>(null);
 
   const preview = useMutation({
     mutationFn: async (f: File) => {
@@ -101,11 +130,14 @@ export function ImportProductsDialog({
       let brandsCreated = 0;
 
       setProgress(2);
+      // Rolling ETA from measured chunk throughput — the first chunk sets the
+      // baseline, later chunks smooth it.
+      const startedAt = Date.now();
       for (let i = 0; i < rows.length; i += IMPORT_CHUNK) {
         const chunk = rows.slice(i, i + IMPORT_CHUNK);
         const done = Math.min(i + chunk.length, rows.length);
         setLabel(`Importing products… ${done} / ${rows.length}`);
-        const res = await commitFn({ data: { rows: chunk, mode } });
+        const res = await withRetry(() => commitFn({ data: { rows: chunk, mode } }));
         created += res.created;
         updated += res.updated;
         failed += res.failed;
@@ -117,6 +149,10 @@ export function ImportProductsDialog({
         storesCreated += res.storesCreated ?? 0;
         brandsCreated += res.brandsCreated ?? 0;
         setProgress(2 + Math.round((done / rows.length) * 43));
+        const perRow = (Date.now() - startedAt) / done;
+        // Remaining import rows, plus the tagging phase that follows (which
+        // historically runs at roughly the same cost per product).
+        setEta(formatEta(perRow * (rows.length - done) + perRow * rows.length * 0.9));
       }
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["admin-inventory"] });
@@ -138,9 +174,12 @@ export function ImportProductsDialog({
         for (let i = 0; i < ids.length; i += TAG_CHUNK) {
           const chunk = ids.slice(i, i + TAG_CHUNK);
           setLabel(`Generating QR codes… ${done} / ${ids.length}`);
-          await bulkCompleteFn({ data: { productIds: chunk } });
+          const chunkStart = Date.now();
+          await withRetry(() => bulkCompleteFn({ data: { productIds: chunk } }));
           done += chunk.length;
           setProgress(60 + Math.round((done / ids.length) * 40));
+          const perId = (Date.now() - chunkStart) / chunk.length;
+          setEta(formatEta(perId * (ids.length - done)));
         }
       } else {
         setProgress(100);
@@ -148,6 +187,7 @@ export function ImportProductsDialog({
       await qc.invalidateQueries();
 
       setLabel("All done.");
+      setEta(null);
       toast.success(
         `Imported: ${created} new, ${updated} updated${failed ? `, ${failed} failed` : ""}`,
       );
@@ -171,6 +211,7 @@ export function ImportProductsDialog({
       onOpenChange(false);
     } catch (e: any) {
       toast.error(e?.message ?? "Import failed");
+      setEta(null);
       setProcessing(false);
     }
   };
@@ -208,7 +249,10 @@ export function ImportProductsDialog({
             </div>
             <div>
               <p className="font-medium">Importing your products…</p>
-              <p className="mt-1 text-sm text-muted-foreground">{label}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {label}
+                {eta ? ` — ${eta}` : ""}
+              </p>
             </div>
             <Progress value={progress} className="mx-auto max-w-sm" />
           </div>

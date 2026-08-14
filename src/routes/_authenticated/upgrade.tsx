@@ -26,8 +26,6 @@ const searchSchema = z.object({
       "apiAccess",
       "multiStore",
       "opportunityFeed",
-      "sustainability",
-      "receipts",
     ])
     .optional(),
 });

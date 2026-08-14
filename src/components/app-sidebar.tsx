@@ -23,7 +23,6 @@ import { UserMenu } from "@/components/user-menu";
 import { UIVersionSwitcher } from "@/components/ui-version-switcher";
 import { sectionsForUser, isNavActive, type NavItem } from "@/lib/nav";
 import { useIsStaff } from "@/hooks/use-persona";
-import { useReceiptsEnabled } from "@/hooks/use-receipts-enabled";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -34,7 +33,6 @@ export function AppSidebar() {
   const isAdmin = useIsAdmin();
   const isSuperAdmin = useIsSuperAdmin();
   const isStaff = useIsStaff();
-  const { enabled: receiptsEnabled } = useReceiptsEnabled();
 
   // A nav item whose destination gates on a role the user doesn't have
   // used to still render (and highlight active) here, then bounce the user
@@ -45,8 +43,7 @@ export function AppSidebar() {
     items: section.items.filter(
       (item) =>
         (!item.adminOnly || isAdmin) &&
-        (!item.superAdminOnly || isSuperAdmin) &&
-        (receiptsEnabled || item.url !== "/ownership/purchases"),
+        (!item.superAdminOnly || isSuperAdmin),
     ),
   }));
   const isActive = (item: NavItem) => isNavActive(item, pathname);

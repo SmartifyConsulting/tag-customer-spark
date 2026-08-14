@@ -32,7 +32,6 @@ import {
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { PassportTab } from "@/components/products/passport-tab";
 import { ProductQrPanel } from "@/components/qr/product-qr-panel";
-import { ProductOwnershipCard } from "@/components/ownership/product-ownership-card";
 import { ProductIntentPanel } from "@/components/intent/product-intent-panel";
 import { ProductImage } from "@/components/products/product-image";
 import { DigitalIdentityProgress } from "@/components/qr/digital-identity-progress";
@@ -274,7 +273,6 @@ export function ProductDetailView({
           </div>
         </div>
 
-        <ProductOwnershipCard productId={productId} />
 
         <ProductIntentPanel productId={productId} />
 

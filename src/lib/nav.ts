@@ -6,9 +6,6 @@ import {
   ShieldCheck,
   Boxes,
   DollarSign,
-  ReceiptText,
-  Leaf,
-  ShoppingBag,
   Radar,
   Eye,
   Tag,
@@ -53,7 +50,7 @@ export type NavItem = {
 //                page). Warranties and documents live on the product itself,
 //                reached by hyperlinking into it — there's no separate
 //                Ownership section anymore.
-//   BUSINESS   — analytics, ROI, sustainability, admin (staff only)
+//   BUSINESS   — analytics, ROI, admin (staff only)
 //
 // PURCHASE is visible to EVERY signed-in user, because a staff member is
 // also a shopper. PRODUCT and BUSINESS are staff-only.
@@ -97,15 +94,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
   {
     id: "purchase",
     label: "Purchase",
-    items: [
-      { title: "Scanner", url: "/tagged", icon: Tag, match: ["/tagged"] },
-      {
-        title: "Receipts",
-        url: "/ownership/purchases",
-        icon: ShoppingBag,
-        match: ["/ownership/purchases", "/purchase/receipts", "/ownership/returns"],
-      },
-    ],
+    items: [{ title: "Scanner", url: "/tagged", icon: Tag, match: ["/tagged"] }],
   },
   {
     id: "business",
@@ -122,7 +111,6 @@ export const NAV_SECTIONS: readonly NavSection[] = [
           { title: "Insights", url: "/intelligence/insights", match: ["/intelligence/insights"] },
           { title: "Analytics", url: "/analytics", match: ["/analytics"] },
           { title: "ROI", url: "/roi", match: ["/roi"] },
-          { title: "Sustainability", url: "/analytics/sustainability", match: ["/analytics/sustainability"] },
         ],
       },
       {
@@ -155,26 +143,14 @@ export function sectionsForUser(isStaff: boolean): readonly NavSection[] {
 export const STAFF_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
   { title: "Dashboard", url: "/briefing", icon: LayoutDashboard, match: ["/briefing"] },
   { title: "Products", url: "/admin/inventory", icon: Boxes, match: ["/admin/inventory", "/products"] },
-  { title: "Receipts", url: "/purchase/receipts", icon: ReceiptText, match: ["/purchase/receipts"] },
-  { title: "Impact", url: "/analytics/sustainability", icon: Leaf, match: ["/analytics/sustainability"] },
+  { title: "Scanner", url: "/tagged", icon: Tag, match: ["/tagged"] },
   { title: "Customers", url: "/admin?tab=customers", icon: Users, match: ["/customers"] },
 ] as const;
 
 export const SHOPPER_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
   { title: "My Tag", url: "/barcode-tagger", icon: Barcode, match: ["/barcode-tagger"] },
   { title: "Scanner", url: "/tagged", icon: Tag, match: ["/tagged"] },
-  {
-    title: "Receipts",
-    url: "/ownership/purchases",
-    icon: ShoppingBag,
-    match: ["/ownership/purchases", "/purchase/receipts", "/ownership/returns"],
-  },
-  {
-    title: "Outlets",
-    url: "/ownership/outlets",
-    icon: Boxes,
-    match: ["/ownership/outlets"],
-  },
+  { title: "Whatsapps", url: "/inbox", icon: MessageSquare, match: ["/inbox"] },
 ] as const;
 
 export function mobileNavForUser(isStaff: boolean): readonly Omit<NavItem, "items">[] {
