@@ -31,10 +31,10 @@ function ProfilePage() {
   const qc = useQueryClient();
   const getProfileFn = useServerFn(getMyProfile);
   const updateProfileFn = useServerFn(updateMyProfile);
-  const getTagFn = useServerFn(getTagIdentity);
+  const getTagFn = useServerFn(getMyShopperTag);
 
   const { data, isLoading } = useQuery({ queryKey: ["profile", "me"], queryFn: () => getProfileFn() });
-  const tag = useQuery({ queryKey: ["ownership", "tag"], queryFn: () => getTagFn() });
+  const tag = useQuery({ queryKey: ["my-tag"], queryFn: () => getTagFn() });
 
   const [fullName, setFullName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -57,7 +57,7 @@ function ProfilePage() {
     onError: (e: any) => toast.error(e?.message ?? "Could not save"),
   });
 
-  const tagValue = (tag.data as any)?.tag_id ?? "";
+  const tagValue = (tag.data as any)?.tagId ?? "";
   const download = useQrPngDownload(tagValue, `${tagValue || "tag-id"}.png`);
 
   if (isLoading) return <Skeleton className="h-96 rounded-xl" />;
