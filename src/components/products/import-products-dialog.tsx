@@ -45,8 +45,36 @@ async function fileToBase64(file: File): Promise<string> {
 // Batch size for both phases — small enough that the progress bar advances
 // smoothly and a single request never takes too long, since commit runs
 // AI category-suggestion and QR/image work per row server-side.
-const IMPORT_CHUNK = 25;
-const TAG_CHUNK = 10;
+const IMPORT_CHUNK = 10;
+const TAG_CHUNK = 5;
+// A chunk that never answers used to freeze the bar forever (the rows had
+// actually landed server-side). Bound every chunk and retry it once.
+const CHUNK_TIMEOUT_MS = 90_000;
+
+async function withRetry<T>(fn: () => Promise<T>, attempts = 2): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await Promise.race([
+        fn(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timed out — retrying")), CHUNK_TIMEOUT_MS),
+        ),
+      ]);
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError;
+}
+
+function formatEta(ms: number) {
+  const s = Math.max(1, Math.round(ms / 1000));
+  if (s < 60) return `about ${s}s left`;
+  const m = Math.round(s / 60);
+  return `about ${m} min left`;
+}
+
 
 export function ImportProductsDialog({
   open,
