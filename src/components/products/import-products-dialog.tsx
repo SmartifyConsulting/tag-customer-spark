@@ -249,7 +249,10 @@ export function ImportProductsDialog({
             </div>
             <div>
               <p className="font-medium">Importing your products…</p>
-              <p className="mt-1 text-sm text-muted-foreground">{label}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {label}
+                {eta ? ` — ${eta}` : ""}
+              </p>
             </div>
             <Progress value={progress} className="mx-auto max-w-sm" />
           </div>
