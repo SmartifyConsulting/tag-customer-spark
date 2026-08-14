@@ -65,13 +65,7 @@ export function CreateAccountCard({
     setLoading(true);
 
     const signupData: Record<string, unknown> =
-      accountType === "customer"
-        ? {
-            full_name: suName,
-            account_type: "customer",
-            whatsapp_e164: suWhatsapp.trim() || undefined,
-          }
-        : (() => {
+      (() => {
             const country = SIGNUP_COUNTRIES.find((c) => c.code === suCountry) ?? SIGNUP_COUNTRIES[0];
             const companyName = suCompany.trim() || `${suName}'s workspace`;
             return {
