@@ -12,9 +12,7 @@ export type TierFeatureKey =
   | "advancedExports"
   | "apiAccess"
   | "multiStore"
-  | "opportunityFeed"
-  | "sustainability"
-  | "receipts";
+  | "opportunityFeed";
 
 export const TIER_LABEL: Record<TagTier, string> = {
   go: "Tag Go",
@@ -34,8 +32,6 @@ export const FEATURE_MIN_TIER: Record<TierFeatureKey, TagTier> = {
   roi: "pro",
   weeklyBriefings: "pro",
   opportunityFeed: "pro",
-  sustainability: "growth",
-  receipts: "growth",
   intelligence: "enterprise",
   apiAccess: "enterprise",
 };
@@ -100,16 +96,6 @@ export const FEATURE_META: Record<
   multiStore: {
     title: "Multi-store management",
     description: "Run every branch from one Tag workspace.",
-  },
-  sustainability: {
-    title: "Sustainability & ESG reporting",
-    description:
-      "Quantify paper receipts avoided, CO₂e, water and cost saved — with exportable ESG summaries.",
-  },
-  receipts: {
-    title: "Digital Receipts",
-    description:
-      "Paperless receipts and purchase history for every shopper, linked to their TAG ID.",
   },
   opportunityFeed: {
     title: "AI Opportunity Feed",

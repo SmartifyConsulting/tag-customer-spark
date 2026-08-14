@@ -18,7 +18,6 @@ import {
 } from "@/lib/dashboard";
 import { formatMoney } from "@/lib/format";
 import { IntelligenceTabs } from "@/components/intelligence-tabs";
-import { ReceiptKpiRow } from "@/components/ownership/receipt-kpis";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   head: () => ({ meta: [{ title: "Analytics — Tag" }] }),
@@ -54,7 +53,6 @@ function AnalyticsPage() {
         }
       />
 
-      <ReceiptKpiRow />
 
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-12 sm:col-span-6 xl:col-span-3">
