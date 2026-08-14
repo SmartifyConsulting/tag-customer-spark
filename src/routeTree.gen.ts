@@ -37,10 +37,8 @@ import { Route as AuthenticatedStoresRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedRoiRouteImport } from './routes/_authenticated/roi'
-import { Route as AuthenticatedPurchaseRouteImport } from './routes/_authenticated/purchase'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
-import { Route as AuthenticatedOwnershipRouteImport } from './routes/_authenticated/ownership'
 import { Route as AuthenticatedIntentRouteImport } from './routes/_authenticated/intent'
 import { Route as AuthenticatedIntelligenceRouteImport } from './routes/_authenticated/intelligence'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
@@ -49,23 +47,11 @@ import { Route as AuthenticatedCustomersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBriefingRouteImport } from './routes/_authenticated/briefing'
 import { Route as AuthenticatedBarcodeTaggerRouteImport } from './routes/_authenticated/barcode-tagger'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
-import { Route as AuthenticatedPurchaseIndexRouteImport } from './routes/_authenticated/purchase.index'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
-import { Route as AuthenticatedOwnershipIndexRouteImport } from './routes/_authenticated/ownership.index'
 import { Route as AuthenticatedIntelligenceIndexRouteImport } from './routes/_authenticated/intelligence.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
-import { Route as AuthenticatedPurchaseSearchRouteImport } from './routes/_authenticated/purchase.search'
-import { Route as AuthenticatedPurchaseReceiptsRouteImport } from './routes/_authenticated/purchase.receipts'
 import { Route as AuthenticatedProductsCompareRouteImport } from './routes/_authenticated/products.compare'
 import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products.$productId'
-import { Route as AuthenticatedOwnershipWarrantiesRouteImport } from './routes/_authenticated/ownership.warranties'
-import { Route as AuthenticatedOwnershipTagIdRouteImport } from './routes/_authenticated/ownership.tag-id'
-import { Route as AuthenticatedOwnershipReturnsRouteImport } from './routes/_authenticated/ownership.returns'
-import { Route as AuthenticatedOwnershipPurchasesRouteImport } from './routes/_authenticated/ownership.purchases'
-import { Route as AuthenticatedOwnershipProductsRouteImport } from './routes/_authenticated/ownership.products'
-import { Route as AuthenticatedOwnershipOutletsRouteImport } from './routes/_authenticated/ownership.outlets'
-import { Route as AuthenticatedOwnershipHouseholdRouteImport } from './routes/_authenticated/ownership.household'
-import { Route as AuthenticatedOwnershipDocumentsRouteImport } from './routes/_authenticated/ownership.documents'
 import { Route as AuthenticatedOrganisationRolesRouteImport } from './routes/_authenticated/organisation.roles'
 import { Route as AuthenticatedIntelligenceTrendsRouteImport } from './routes/_authenticated/intelligence.trends'
 import { Route as AuthenticatedIntelligenceIntentRouteImport } from './routes/_authenticated/intelligence.intent'
@@ -76,16 +62,12 @@ import { Route as AuthenticatedCustomersConversationsRouteImport } from './route
 import { Route as AuthenticatedCommerceRoiRouteImport } from './routes/_authenticated/commerce.roi'
 import { Route as AuthenticatedCommercePricingRouteImport } from './routes/_authenticated/commerce.pricing'
 import { Route as AuthenticatedCommerceFunnelRouteImport } from './routes/_authenticated/commerce.funnel'
-import { Route as AuthenticatedAnalyticsSustainabilityRouteImport } from './routes/_authenticated/analytics.sustainability'
 import { Route as AuthenticatedAnalyticsReportsRouteImport } from './routes/_authenticated/analytics.reports'
 import { Route as AuthenticatedAnalyticsHistoryRouteImport } from './routes/_authenticated/analytics.history'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
-import { Route as AuthenticatedAdminSystemRouteImport } from './routes/_authenticated/admin.system'
 import { Route as AuthenticatedAdminPricingRouteImport } from './routes/_authenticated/admin.pricing'
 import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authenticated/admin.inventory'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin.categories'
-import { Route as AuthenticatedOwnershipPurchasesIndexRouteImport } from './routes/_authenticated/ownership.purchases.index'
-import { Route as AuthenticatedOwnershipProductsIndexRouteImport } from './routes/_authenticated/ownership.products.index'
 import { Route as AuthenticatedAdminInventoryIndexRouteImport } from './routes/_authenticated/admin.inventory.index'
 import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public/webhooks/paypal'
 import { Route as ApiPublicWebhooksPayfastItnRouteImport } from './routes/api/public/webhooks/payfast-itn'
@@ -99,8 +81,6 @@ import { Route as ApiPublicHooksIntentTickRouteImport } from './routes/api/publi
 import { Route as ApiPublicHooksInfobipAuthProbeRouteImport } from './routes/api/public/hooks.infobip-auth-probe'
 import { Route as ApiPublicHooksDailySummaryRouteImport } from './routes/api/public/hooks.daily-summary'
 import { Route as ApiPublic01GtinRouteImport } from './routes/api/public/01.$gtin'
-import { Route as AuthenticatedOwnershipPurchasesPurchaseIdRouteImport } from './routes/_authenticated/ownership.purchases.$purchaseId'
-import { Route as AuthenticatedOwnershipProductsProductIdRouteImport } from './routes/_authenticated/ownership.products.$productId'
 import { Route as AuthenticatedAdminInventoryProductIdRouteImport } from './routes/_authenticated/admin.inventory.$productId'
 
 const TermsRoute = TermsRouteImport.update({
@@ -242,11 +222,6 @@ const AuthenticatedRoiRoute = AuthenticatedRoiRouteImport.update({
   path: '/roi',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPurchaseRoute = AuthenticatedPurchaseRouteImport.update({
-  id: '/purchase',
-  path: '/purchase',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -255,11 +230,6 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
 const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
   id: '/products',
   path: '/products',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedOwnershipRoute = AuthenticatedOwnershipRouteImport.update({
-  id: '/ownership',
-  path: '/ownership',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedIntentRoute = AuthenticatedIntentRouteImport.update({
@@ -304,23 +274,11 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPurchaseIndexRoute =
-  AuthenticatedPurchaseIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedPurchaseRoute,
-  } as any)
 const AuthenticatedProductsIndexRoute =
   AuthenticatedProductsIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedProductsRoute,
-  } as any)
-const AuthenticatedOwnershipIndexRoute =
-  AuthenticatedOwnershipIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedOwnershipRoute,
   } as any)
 const AuthenticatedIntelligenceIndexRoute =
   AuthenticatedIntelligenceIndexRouteImport.update({
@@ -333,18 +291,6 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPurchaseSearchRoute =
-  AuthenticatedPurchaseSearchRouteImport.update({
-    id: '/search',
-    path: '/search',
-    getParentRoute: () => AuthenticatedPurchaseRoute,
-  } as any)
-const AuthenticatedPurchaseReceiptsRoute =
-  AuthenticatedPurchaseReceiptsRouteImport.update({
-    id: '/receipts',
-    path: '/receipts',
-    getParentRoute: () => AuthenticatedPurchaseRoute,
-  } as any)
 const AuthenticatedProductsCompareRoute =
   AuthenticatedProductsCompareRouteImport.update({
     id: '/compare',
@@ -356,54 +302,6 @@ const AuthenticatedProductsProductIdRoute =
     id: '/$productId',
     path: '/$productId',
     getParentRoute: () => AuthenticatedProductsRoute,
-  } as any)
-const AuthenticatedOwnershipWarrantiesRoute =
-  AuthenticatedOwnershipWarrantiesRouteImport.update({
-    id: '/warranties',
-    path: '/warranties',
-    getParentRoute: () => AuthenticatedOwnershipRoute,
-  } as any)
-const AuthenticatedOwnershipTagIdRoute =
-  AuthenticatedOwnershipTagIdRouteImport.update({
-    id: '/tag-id',
-    path: '/tag-id',
-    getParentRoute: () => AuthenticatedOwnershipRoute,
-  } as any)
-const AuthenticatedOwnershipReturnsRoute =
-  AuthenticatedOwnershipReturnsRouteImport.update({
-    id: '/returns',
-    path: '/returns',
-    getParentRoute: () => AuthenticatedOwnershipRoute,
-  } as any)
-const AuthenticatedOwnershipPurchasesRoute =
-  AuthenticatedOwnershipPurchasesRouteImport.update({
-    id: '/purchases',
-    path: '/purchases',
-    getParentRoute: () => AuthenticatedOwnershipRoute,
-  } as any)
-const AuthenticatedOwnershipProductsRoute =
-  AuthenticatedOwnershipProductsRouteImport.update({
-    id: '/products',
-    path: '/products',
-    getParentRoute: () => AuthenticatedOwnershipRoute,
-  } as any)
-const AuthenticatedOwnershipOutletsRoute =
-  AuthenticatedOwnershipOutletsRouteImport.update({
-    id: '/outlets',
-    path: '/outlets',
-    getParentRoute: () => AuthenticatedOwnershipRoute,
-  } as any)
-const AuthenticatedOwnershipHouseholdRoute =
-  AuthenticatedOwnershipHouseholdRouteImport.update({
-    id: '/household',
-    path: '/household',
-    getParentRoute: () => AuthenticatedOwnershipRoute,
-  } as any)
-const AuthenticatedOwnershipDocumentsRoute =
-  AuthenticatedOwnershipDocumentsRouteImport.update({
-    id: '/documents',
-    path: '/documents',
-    getParentRoute: () => AuthenticatedOwnershipRoute,
   } as any)
 const AuthenticatedOrganisationRolesRoute =
   AuthenticatedOrganisationRolesRouteImport.update({
@@ -465,12 +363,6 @@ const AuthenticatedCommerceFunnelRoute =
     path: '/commerce/funnel',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAnalyticsSustainabilityRoute =
-  AuthenticatedAnalyticsSustainabilityRouteImport.update({
-    id: '/sustainability',
-    path: '/sustainability',
-    getParentRoute: () => AuthenticatedAnalyticsRoute,
-  } as any)
 const AuthenticatedAnalyticsReportsRoute =
   AuthenticatedAnalyticsReportsRouteImport.update({
     id: '/reports',
@@ -488,12 +380,6 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAdminSystemRoute =
-  AuthenticatedAdminSystemRouteImport.update({
-    id: '/admin/system',
-    path: '/admin/system',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedAdminPricingRoute =
   AuthenticatedAdminPricingRouteImport.update({
     id: '/admin/pricing',
@@ -511,18 +397,6 @@ const AuthenticatedAdminCategoriesRoute =
     id: '/admin/categories',
     path: '/admin/categories',
     getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedOwnershipPurchasesIndexRoute =
-  AuthenticatedOwnershipPurchasesIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedOwnershipPurchasesRoute,
-  } as any)
-const AuthenticatedOwnershipProductsIndexRoute =
-  AuthenticatedOwnershipProductsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedOwnershipProductsRoute,
   } as any)
 const AuthenticatedAdminInventoryIndexRoute =
   AuthenticatedAdminInventoryIndexRouteImport.update({
@@ -598,18 +472,6 @@ const ApiPublic01GtinRoute = ApiPublic01GtinRouteImport.update({
   path: '/api/public/01/$gtin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedOwnershipPurchasesPurchaseIdRoute =
-  AuthenticatedOwnershipPurchasesPurchaseIdRouteImport.update({
-    id: '/$purchaseId',
-    path: '/$purchaseId',
-    getParentRoute: () => AuthenticatedOwnershipPurchasesRoute,
-  } as any)
-const AuthenticatedOwnershipProductsProductIdRoute =
-  AuthenticatedOwnershipProductsProductIdRouteImport.update({
-    id: '/$productId',
-    path: '/$productId',
-    getParentRoute: () => AuthenticatedOwnershipProductsRoute,
-  } as any)
 const AuthenticatedAdminInventoryProductIdRoute =
   AuthenticatedAdminInventoryProductIdRouteImport.update({
     id: '/$productId',
@@ -641,10 +503,8 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof AuthenticatedInboxRoute
   '/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/intent': typeof AuthenticatedIntentRoute
-  '/ownership': typeof AuthenticatedOwnershipRouteWithChildren
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
-  '/purchase': typeof AuthenticatedPurchaseRouteWithChildren
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/staff': typeof AuthenticatedStaffRoute
@@ -660,11 +520,9 @@ export interface FileRoutesByFullPath {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRouteWithChildren
   '/admin/pricing': typeof AuthenticatedAdminPricingRoute
-  '/admin/system': typeof AuthenticatedAdminSystemRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
-  '/analytics/sustainability': typeof AuthenticatedAnalyticsSustainabilityRoute
   '/commerce/funnel': typeof AuthenticatedCommerceFunnelRoute
   '/commerce/pricing': typeof AuthenticatedCommercePricingRoute
   '/commerce/roi': typeof AuthenticatedCommerceRoiRoute
@@ -675,26 +533,12 @@ export interface FileRoutesByFullPath {
   '/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
   '/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
-  '/ownership/documents': typeof AuthenticatedOwnershipDocumentsRoute
-  '/ownership/household': typeof AuthenticatedOwnershipHouseholdRoute
-  '/ownership/outlets': typeof AuthenticatedOwnershipOutletsRoute
-  '/ownership/products': typeof AuthenticatedOwnershipProductsRouteWithChildren
-  '/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRouteWithChildren
-  '/ownership/returns': typeof AuthenticatedOwnershipReturnsRoute
-  '/ownership/tag-id': typeof AuthenticatedOwnershipTagIdRoute
-  '/ownership/warranties': typeof AuthenticatedOwnershipWarrantiesRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
-  '/purchase/receipts': typeof AuthenticatedPurchaseReceiptsRoute
-  '/purchase/search': typeof AuthenticatedPurchaseSearchRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
-  '/ownership/': typeof AuthenticatedOwnershipIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
-  '/purchase/': typeof AuthenticatedPurchaseIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
-  '/ownership/products/$productId': typeof AuthenticatedOwnershipProductsProductIdRoute
-  '/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
   '/api/public/hooks/infobip-auth-probe': typeof ApiPublicHooksInfobipAuthProbeRoute
@@ -708,8 +552,6 @@ export interface FileRoutesByFullPath {
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
   '/admin/inventory/': typeof AuthenticatedAdminInventoryIndexRoute
-  '/ownership/products/': typeof AuthenticatedOwnershipProductsIndexRoute
-  '/ownership/purchases/': typeof AuthenticatedOwnershipPurchasesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -749,11 +591,9 @@ export interface FileRoutesByTo {
   '/tools/barcode-reader': typeof ToolsBarcodeReaderRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/pricing': typeof AuthenticatedAdminPricingRoute
-  '/admin/system': typeof AuthenticatedAdminSystemRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
-  '/analytics/sustainability': typeof AuthenticatedAnalyticsSustainabilityRoute
   '/commerce/funnel': typeof AuthenticatedCommerceFunnelRoute
   '/commerce/pricing': typeof AuthenticatedCommercePricingRoute
   '/commerce/roi': typeof AuthenticatedCommerceRoiRoute
@@ -764,24 +604,12 @@ export interface FileRoutesByTo {
   '/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
   '/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
-  '/ownership/documents': typeof AuthenticatedOwnershipDocumentsRoute
-  '/ownership/household': typeof AuthenticatedOwnershipHouseholdRoute
-  '/ownership/outlets': typeof AuthenticatedOwnershipOutletsRoute
-  '/ownership/returns': typeof AuthenticatedOwnershipReturnsRoute
-  '/ownership/tag-id': typeof AuthenticatedOwnershipTagIdRoute
-  '/ownership/warranties': typeof AuthenticatedOwnershipWarrantiesRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/compare': typeof AuthenticatedProductsCompareRoute
-  '/purchase/receipts': typeof AuthenticatedPurchaseReceiptsRoute
-  '/purchase/search': typeof AuthenticatedPurchaseSearchRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/intelligence': typeof AuthenticatedIntelligenceIndexRoute
-  '/ownership': typeof AuthenticatedOwnershipIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
-  '/purchase': typeof AuthenticatedPurchaseIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
-  '/ownership/products/$productId': typeof AuthenticatedOwnershipProductsProductIdRoute
-  '/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
   '/api/public/hooks/infobip-auth-probe': typeof ApiPublicHooksInfobipAuthProbeRoute
@@ -795,8 +623,6 @@ export interface FileRoutesByTo {
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryIndexRoute
-  '/ownership/products': typeof AuthenticatedOwnershipProductsIndexRoute
-  '/ownership/purchases': typeof AuthenticatedOwnershipPurchasesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -824,10 +650,8 @@ export interface FileRoutesById {
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/_authenticated/intent': typeof AuthenticatedIntentRoute
-  '/_authenticated/ownership': typeof AuthenticatedOwnershipRouteWithChildren
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/_authenticated/purchase': typeof AuthenticatedPurchaseRouteWithChildren
   '/_authenticated/roi': typeof AuthenticatedRoiRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
@@ -843,11 +667,9 @@ export interface FileRoutesById {
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRouteWithChildren
   '/_authenticated/admin/pricing': typeof AuthenticatedAdminPricingRoute
-  '/_authenticated/admin/system': typeof AuthenticatedAdminSystemRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/analytics/history': typeof AuthenticatedAnalyticsHistoryRoute
   '/_authenticated/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
-  '/_authenticated/analytics/sustainability': typeof AuthenticatedAnalyticsSustainabilityRoute
   '/_authenticated/commerce/funnel': typeof AuthenticatedCommerceFunnelRoute
   '/_authenticated/commerce/pricing': typeof AuthenticatedCommercePricingRoute
   '/_authenticated/commerce/roi': typeof AuthenticatedCommerceRoiRoute
@@ -858,26 +680,12 @@ export interface FileRoutesById {
   '/_authenticated/intelligence/intent': typeof AuthenticatedIntelligenceIntentRoute
   '/_authenticated/intelligence/trends': typeof AuthenticatedIntelligenceTrendsRoute
   '/_authenticated/organisation/roles': typeof AuthenticatedOrganisationRolesRoute
-  '/_authenticated/ownership/documents': typeof AuthenticatedOwnershipDocumentsRoute
-  '/_authenticated/ownership/household': typeof AuthenticatedOwnershipHouseholdRoute
-  '/_authenticated/ownership/outlets': typeof AuthenticatedOwnershipOutletsRoute
-  '/_authenticated/ownership/products': typeof AuthenticatedOwnershipProductsRouteWithChildren
-  '/_authenticated/ownership/purchases': typeof AuthenticatedOwnershipPurchasesRouteWithChildren
-  '/_authenticated/ownership/returns': typeof AuthenticatedOwnershipReturnsRoute
-  '/_authenticated/ownership/tag-id': typeof AuthenticatedOwnershipTagIdRoute
-  '/_authenticated/ownership/warranties': typeof AuthenticatedOwnershipWarrantiesRoute
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/products/compare': typeof AuthenticatedProductsCompareRoute
-  '/_authenticated/purchase/receipts': typeof AuthenticatedPurchaseReceiptsRoute
-  '/_authenticated/purchase/search': typeof AuthenticatedPurchaseSearchRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
-  '/_authenticated/ownership/': typeof AuthenticatedOwnershipIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
-  '/_authenticated/purchase/': typeof AuthenticatedPurchaseIndexRoute
   '/_authenticated/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
-  '/_authenticated/ownership/products/$productId': typeof AuthenticatedOwnershipProductsProductIdRoute
-  '/_authenticated/ownership/purchases/$purchaseId': typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
   '/api/public/hooks/infobip-auth-probe': typeof ApiPublicHooksInfobipAuthProbeRoute
@@ -891,8 +699,6 @@ export interface FileRoutesById {
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
   '/_authenticated/admin/inventory/': typeof AuthenticatedAdminInventoryIndexRoute
-  '/_authenticated/ownership/products/': typeof AuthenticatedOwnershipProductsIndexRoute
-  '/_authenticated/ownership/purchases/': typeof AuthenticatedOwnershipPurchasesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -920,10 +726,8 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/intelligence'
     | '/intent'
-    | '/ownership'
     | '/products'
     | '/profile'
-    | '/purchase'
     | '/roi'
     | '/settings'
     | '/staff'
@@ -939,11 +743,9 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/inventory'
     | '/admin/pricing'
-    | '/admin/system'
     | '/admin/users'
     | '/analytics/history'
     | '/analytics/reports'
-    | '/analytics/sustainability'
     | '/commerce/funnel'
     | '/commerce/pricing'
     | '/commerce/roi'
@@ -954,26 +756,12 @@ export interface FileRouteTypes {
     | '/intelligence/intent'
     | '/intelligence/trends'
     | '/organisation/roles'
-    | '/ownership/documents'
-    | '/ownership/household'
-    | '/ownership/outlets'
-    | '/ownership/products'
-    | '/ownership/purchases'
-    | '/ownership/returns'
-    | '/ownership/tag-id'
-    | '/ownership/warranties'
     | '/products/$productId'
     | '/products/compare'
-    | '/purchase/receipts'
-    | '/purchase/search'
     | '/admin/'
     | '/intelligence/'
-    | '/ownership/'
     | '/products/'
-    | '/purchase/'
     | '/admin/inventory/$productId'
-    | '/ownership/products/$productId'
-    | '/ownership/purchases/$purchaseId'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/daily-summary'
     | '/api/public/hooks/infobip-auth-probe'
@@ -987,8 +775,6 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
     | '/admin/inventory/'
-    | '/ownership/products/'
-    | '/ownership/purchases/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1028,11 +814,9 @@ export interface FileRouteTypes {
     | '/tools/barcode-reader'
     | '/admin/categories'
     | '/admin/pricing'
-    | '/admin/system'
     | '/admin/users'
     | '/analytics/history'
     | '/analytics/reports'
-    | '/analytics/sustainability'
     | '/commerce/funnel'
     | '/commerce/pricing'
     | '/commerce/roi'
@@ -1043,24 +827,12 @@ export interface FileRouteTypes {
     | '/intelligence/intent'
     | '/intelligence/trends'
     | '/organisation/roles'
-    | '/ownership/documents'
-    | '/ownership/household'
-    | '/ownership/outlets'
-    | '/ownership/returns'
-    | '/ownership/tag-id'
-    | '/ownership/warranties'
     | '/products/$productId'
     | '/products/compare'
-    | '/purchase/receipts'
-    | '/purchase/search'
     | '/admin'
     | '/intelligence'
-    | '/ownership'
     | '/products'
-    | '/purchase'
     | '/admin/inventory/$productId'
-    | '/ownership/products/$productId'
-    | '/ownership/purchases/$purchaseId'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/daily-summary'
     | '/api/public/hooks/infobip-auth-probe'
@@ -1074,8 +846,6 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
     | '/admin/inventory'
-    | '/ownership/products'
-    | '/ownership/purchases'
   id:
     | '__root__'
     | '/'
@@ -1102,10 +872,8 @@ export interface FileRouteTypes {
     | '/_authenticated/inbox'
     | '/_authenticated/intelligence'
     | '/_authenticated/intent'
-    | '/_authenticated/ownership'
     | '/_authenticated/products'
     | '/_authenticated/profile'
-    | '/_authenticated/purchase'
     | '/_authenticated/roi'
     | '/_authenticated/settings'
     | '/_authenticated/staff'
@@ -1121,11 +889,9 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/inventory'
     | '/_authenticated/admin/pricing'
-    | '/_authenticated/admin/system'
     | '/_authenticated/admin/users'
     | '/_authenticated/analytics/history'
     | '/_authenticated/analytics/reports'
-    | '/_authenticated/analytics/sustainability'
     | '/_authenticated/commerce/funnel'
     | '/_authenticated/commerce/pricing'
     | '/_authenticated/commerce/roi'
@@ -1136,26 +902,12 @@ export interface FileRouteTypes {
     | '/_authenticated/intelligence/intent'
     | '/_authenticated/intelligence/trends'
     | '/_authenticated/organisation/roles'
-    | '/_authenticated/ownership/documents'
-    | '/_authenticated/ownership/household'
-    | '/_authenticated/ownership/outlets'
-    | '/_authenticated/ownership/products'
-    | '/_authenticated/ownership/purchases'
-    | '/_authenticated/ownership/returns'
-    | '/_authenticated/ownership/tag-id'
-    | '/_authenticated/ownership/warranties'
     | '/_authenticated/products/$productId'
     | '/_authenticated/products/compare'
-    | '/_authenticated/purchase/receipts'
-    | '/_authenticated/purchase/search'
     | '/_authenticated/admin/'
     | '/_authenticated/intelligence/'
-    | '/_authenticated/ownership/'
     | '/_authenticated/products/'
-    | '/_authenticated/purchase/'
     | '/_authenticated/admin/inventory/$productId'
-    | '/_authenticated/ownership/products/$productId'
-    | '/_authenticated/ownership/purchases/$purchaseId'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/daily-summary'
     | '/api/public/hooks/infobip-auth-probe'
@@ -1169,8 +921,6 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
     | '/_authenticated/admin/inventory/'
-    | '/_authenticated/ownership/products/'
-    | '/_authenticated/ownership/purchases/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1407,13 +1157,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRoiRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/purchase': {
-      id: '/_authenticated/purchase'
-      path: '/purchase'
-      fullPath: '/purchase'
-      preLoaderRoute: typeof AuthenticatedPurchaseRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -1426,13 +1169,6 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/products'
       preLoaderRoute: typeof AuthenticatedProductsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ownership': {
-      id: '/_authenticated/ownership'
-      path: '/ownership'
-      fullPath: '/ownership'
-      preLoaderRoute: typeof AuthenticatedOwnershipRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/intent': {
@@ -1491,26 +1227,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/purchase/': {
-      id: '/_authenticated/purchase/'
-      path: '/'
-      fullPath: '/purchase/'
-      preLoaderRoute: typeof AuthenticatedPurchaseIndexRouteImport
-      parentRoute: typeof AuthenticatedPurchaseRoute
-    }
     '/_authenticated/products/': {
       id: '/_authenticated/products/'
       path: '/'
       fullPath: '/products/'
       preLoaderRoute: typeof AuthenticatedProductsIndexRouteImport
       parentRoute: typeof AuthenticatedProductsRoute
-    }
-    '/_authenticated/ownership/': {
-      id: '/_authenticated/ownership/'
-      path: '/'
-      fullPath: '/ownership/'
-      preLoaderRoute: typeof AuthenticatedOwnershipIndexRouteImport
-      parentRoute: typeof AuthenticatedOwnershipRoute
     }
     '/_authenticated/intelligence/': {
       id: '/_authenticated/intelligence/'
@@ -1526,20 +1248,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/purchase/search': {
-      id: '/_authenticated/purchase/search'
-      path: '/search'
-      fullPath: '/purchase/search'
-      preLoaderRoute: typeof AuthenticatedPurchaseSearchRouteImport
-      parentRoute: typeof AuthenticatedPurchaseRoute
-    }
-    '/_authenticated/purchase/receipts': {
-      id: '/_authenticated/purchase/receipts'
-      path: '/receipts'
-      fullPath: '/purchase/receipts'
-      preLoaderRoute: typeof AuthenticatedPurchaseReceiptsRouteImport
-      parentRoute: typeof AuthenticatedPurchaseRoute
-    }
     '/_authenticated/products/compare': {
       id: '/_authenticated/products/compare'
       path: '/compare'
@@ -1553,62 +1261,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/products/$productId'
       preLoaderRoute: typeof AuthenticatedProductsProductIdRouteImport
       parentRoute: typeof AuthenticatedProductsRoute
-    }
-    '/_authenticated/ownership/warranties': {
-      id: '/_authenticated/ownership/warranties'
-      path: '/warranties'
-      fullPath: '/ownership/warranties'
-      preLoaderRoute: typeof AuthenticatedOwnershipWarrantiesRouteImport
-      parentRoute: typeof AuthenticatedOwnershipRoute
-    }
-    '/_authenticated/ownership/tag-id': {
-      id: '/_authenticated/ownership/tag-id'
-      path: '/tag-id'
-      fullPath: '/ownership/tag-id'
-      preLoaderRoute: typeof AuthenticatedOwnershipTagIdRouteImport
-      parentRoute: typeof AuthenticatedOwnershipRoute
-    }
-    '/_authenticated/ownership/returns': {
-      id: '/_authenticated/ownership/returns'
-      path: '/returns'
-      fullPath: '/ownership/returns'
-      preLoaderRoute: typeof AuthenticatedOwnershipReturnsRouteImport
-      parentRoute: typeof AuthenticatedOwnershipRoute
-    }
-    '/_authenticated/ownership/purchases': {
-      id: '/_authenticated/ownership/purchases'
-      path: '/purchases'
-      fullPath: '/ownership/purchases'
-      preLoaderRoute: typeof AuthenticatedOwnershipPurchasesRouteImport
-      parentRoute: typeof AuthenticatedOwnershipRoute
-    }
-    '/_authenticated/ownership/products': {
-      id: '/_authenticated/ownership/products'
-      path: '/products'
-      fullPath: '/ownership/products'
-      preLoaderRoute: typeof AuthenticatedOwnershipProductsRouteImport
-      parentRoute: typeof AuthenticatedOwnershipRoute
-    }
-    '/_authenticated/ownership/outlets': {
-      id: '/_authenticated/ownership/outlets'
-      path: '/outlets'
-      fullPath: '/ownership/outlets'
-      preLoaderRoute: typeof AuthenticatedOwnershipOutletsRouteImport
-      parentRoute: typeof AuthenticatedOwnershipRoute
-    }
-    '/_authenticated/ownership/household': {
-      id: '/_authenticated/ownership/household'
-      path: '/household'
-      fullPath: '/ownership/household'
-      preLoaderRoute: typeof AuthenticatedOwnershipHouseholdRouteImport
-      parentRoute: typeof AuthenticatedOwnershipRoute
-    }
-    '/_authenticated/ownership/documents': {
-      id: '/_authenticated/ownership/documents'
-      path: '/documents'
-      fullPath: '/ownership/documents'
-      preLoaderRoute: typeof AuthenticatedOwnershipDocumentsRouteImport
-      parentRoute: typeof AuthenticatedOwnershipRoute
     }
     '/_authenticated/organisation/roles': {
       id: '/_authenticated/organisation/roles'
@@ -1680,13 +1332,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCommerceFunnelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/analytics/sustainability': {
-      id: '/_authenticated/analytics/sustainability'
-      path: '/sustainability'
-      fullPath: '/analytics/sustainability'
-      preLoaderRoute: typeof AuthenticatedAnalyticsSustainabilityRouteImport
-      parentRoute: typeof AuthenticatedAnalyticsRoute
-    }
     '/_authenticated/analytics/reports': {
       id: '/_authenticated/analytics/reports'
       path: '/reports'
@@ -1706,13 +1351,6 @@ declare module '@tanstack/react-router' {
       path: '/admin/users'
       fullPath: '/admin/users'
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/admin/system': {
-      id: '/_authenticated/admin/system'
-      path: '/admin/system'
-      fullPath: '/admin/system'
-      preLoaderRoute: typeof AuthenticatedAdminSystemRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/pricing': {
@@ -1735,20 +1373,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/categories'
       preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ownership/purchases/': {
-      id: '/_authenticated/ownership/purchases/'
-      path: '/'
-      fullPath: '/ownership/purchases/'
-      preLoaderRoute: typeof AuthenticatedOwnershipPurchasesIndexRouteImport
-      parentRoute: typeof AuthenticatedOwnershipPurchasesRoute
-    }
-    '/_authenticated/ownership/products/': {
-      id: '/_authenticated/ownership/products/'
-      path: '/'
-      fullPath: '/ownership/products/'
-      preLoaderRoute: typeof AuthenticatedOwnershipProductsIndexRouteImport
-      parentRoute: typeof AuthenticatedOwnershipProductsRoute
     }
     '/_authenticated/admin/inventory/': {
       id: '/_authenticated/admin/inventory/'
@@ -1841,20 +1465,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublic01GtinRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/ownership/purchases/$purchaseId': {
-      id: '/_authenticated/ownership/purchases/$purchaseId'
-      path: '/$purchaseId'
-      fullPath: '/ownership/purchases/$purchaseId'
-      preLoaderRoute: typeof AuthenticatedOwnershipPurchasesPurchaseIdRouteImport
-      parentRoute: typeof AuthenticatedOwnershipPurchasesRoute
-    }
-    '/_authenticated/ownership/products/$productId': {
-      id: '/_authenticated/ownership/products/$productId'
-      path: '/$productId'
-      fullPath: '/ownership/products/$productId'
-      preLoaderRoute: typeof AuthenticatedOwnershipProductsProductIdRouteImport
-      parentRoute: typeof AuthenticatedOwnershipProductsRoute
-    }
     '/_authenticated/admin/inventory/$productId': {
       id: '/_authenticated/admin/inventory/$productId'
       path: '/$productId'
@@ -1868,15 +1478,12 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAnalyticsRouteChildren {
   AuthenticatedAnalyticsHistoryRoute: typeof AuthenticatedAnalyticsHistoryRoute
   AuthenticatedAnalyticsReportsRoute: typeof AuthenticatedAnalyticsReportsRoute
-  AuthenticatedAnalyticsSustainabilityRoute: typeof AuthenticatedAnalyticsSustainabilityRoute
 }
 
 const AuthenticatedAnalyticsRouteChildren: AuthenticatedAnalyticsRouteChildren =
   {
     AuthenticatedAnalyticsHistoryRoute: AuthenticatedAnalyticsHistoryRoute,
     AuthenticatedAnalyticsReportsRoute: AuthenticatedAnalyticsReportsRoute,
-    AuthenticatedAnalyticsSustainabilityRoute:
-      AuthenticatedAnalyticsSustainabilityRoute,
   }
 
 const AuthenticatedAnalyticsRouteWithChildren =
@@ -1925,75 +1532,6 @@ const AuthenticatedIntelligenceRouteWithChildren =
     AuthenticatedIntelligenceRouteChildren,
   )
 
-interface AuthenticatedOwnershipProductsRouteChildren {
-  AuthenticatedOwnershipProductsProductIdRoute: typeof AuthenticatedOwnershipProductsProductIdRoute
-  AuthenticatedOwnershipProductsIndexRoute: typeof AuthenticatedOwnershipProductsIndexRoute
-}
-
-const AuthenticatedOwnershipProductsRouteChildren: AuthenticatedOwnershipProductsRouteChildren =
-  {
-    AuthenticatedOwnershipProductsProductIdRoute:
-      AuthenticatedOwnershipProductsProductIdRoute,
-    AuthenticatedOwnershipProductsIndexRoute:
-      AuthenticatedOwnershipProductsIndexRoute,
-  }
-
-const AuthenticatedOwnershipProductsRouteWithChildren =
-  AuthenticatedOwnershipProductsRoute._addFileChildren(
-    AuthenticatedOwnershipProductsRouteChildren,
-  )
-
-interface AuthenticatedOwnershipPurchasesRouteChildren {
-  AuthenticatedOwnershipPurchasesPurchaseIdRoute: typeof AuthenticatedOwnershipPurchasesPurchaseIdRoute
-  AuthenticatedOwnershipPurchasesIndexRoute: typeof AuthenticatedOwnershipPurchasesIndexRoute
-}
-
-const AuthenticatedOwnershipPurchasesRouteChildren: AuthenticatedOwnershipPurchasesRouteChildren =
-  {
-    AuthenticatedOwnershipPurchasesPurchaseIdRoute:
-      AuthenticatedOwnershipPurchasesPurchaseIdRoute,
-    AuthenticatedOwnershipPurchasesIndexRoute:
-      AuthenticatedOwnershipPurchasesIndexRoute,
-  }
-
-const AuthenticatedOwnershipPurchasesRouteWithChildren =
-  AuthenticatedOwnershipPurchasesRoute._addFileChildren(
-    AuthenticatedOwnershipPurchasesRouteChildren,
-  )
-
-interface AuthenticatedOwnershipRouteChildren {
-  AuthenticatedOwnershipDocumentsRoute: typeof AuthenticatedOwnershipDocumentsRoute
-  AuthenticatedOwnershipHouseholdRoute: typeof AuthenticatedOwnershipHouseholdRoute
-  AuthenticatedOwnershipOutletsRoute: typeof AuthenticatedOwnershipOutletsRoute
-  AuthenticatedOwnershipProductsRoute: typeof AuthenticatedOwnershipProductsRouteWithChildren
-  AuthenticatedOwnershipPurchasesRoute: typeof AuthenticatedOwnershipPurchasesRouteWithChildren
-  AuthenticatedOwnershipReturnsRoute: typeof AuthenticatedOwnershipReturnsRoute
-  AuthenticatedOwnershipTagIdRoute: typeof AuthenticatedOwnershipTagIdRoute
-  AuthenticatedOwnershipWarrantiesRoute: typeof AuthenticatedOwnershipWarrantiesRoute
-  AuthenticatedOwnershipIndexRoute: typeof AuthenticatedOwnershipIndexRoute
-}
-
-const AuthenticatedOwnershipRouteChildren: AuthenticatedOwnershipRouteChildren =
-  {
-    AuthenticatedOwnershipDocumentsRoute: AuthenticatedOwnershipDocumentsRoute,
-    AuthenticatedOwnershipHouseholdRoute: AuthenticatedOwnershipHouseholdRoute,
-    AuthenticatedOwnershipOutletsRoute: AuthenticatedOwnershipOutletsRoute,
-    AuthenticatedOwnershipProductsRoute:
-      AuthenticatedOwnershipProductsRouteWithChildren,
-    AuthenticatedOwnershipPurchasesRoute:
-      AuthenticatedOwnershipPurchasesRouteWithChildren,
-    AuthenticatedOwnershipReturnsRoute: AuthenticatedOwnershipReturnsRoute,
-    AuthenticatedOwnershipTagIdRoute: AuthenticatedOwnershipTagIdRoute,
-    AuthenticatedOwnershipWarrantiesRoute:
-      AuthenticatedOwnershipWarrantiesRoute,
-    AuthenticatedOwnershipIndexRoute: AuthenticatedOwnershipIndexRoute,
-  }
-
-const AuthenticatedOwnershipRouteWithChildren =
-  AuthenticatedOwnershipRoute._addFileChildren(
-    AuthenticatedOwnershipRouteChildren,
-  )
-
 interface AuthenticatedProductsRouteChildren {
   AuthenticatedProductsProductIdRoute: typeof AuthenticatedProductsProductIdRoute
   AuthenticatedProductsCompareRoute: typeof AuthenticatedProductsCompareRoute
@@ -2009,23 +1547,6 @@ const AuthenticatedProductsRouteChildren: AuthenticatedProductsRouteChildren = {
 const AuthenticatedProductsRouteWithChildren =
   AuthenticatedProductsRoute._addFileChildren(
     AuthenticatedProductsRouteChildren,
-  )
-
-interface AuthenticatedPurchaseRouteChildren {
-  AuthenticatedPurchaseReceiptsRoute: typeof AuthenticatedPurchaseReceiptsRoute
-  AuthenticatedPurchaseSearchRoute: typeof AuthenticatedPurchaseSearchRoute
-  AuthenticatedPurchaseIndexRoute: typeof AuthenticatedPurchaseIndexRoute
-}
-
-const AuthenticatedPurchaseRouteChildren: AuthenticatedPurchaseRouteChildren = {
-  AuthenticatedPurchaseReceiptsRoute: AuthenticatedPurchaseReceiptsRoute,
-  AuthenticatedPurchaseSearchRoute: AuthenticatedPurchaseSearchRoute,
-  AuthenticatedPurchaseIndexRoute: AuthenticatedPurchaseIndexRoute,
-}
-
-const AuthenticatedPurchaseRouteWithChildren =
-  AuthenticatedPurchaseRoute._addFileChildren(
-    AuthenticatedPurchaseRouteChildren,
   )
 
 interface AuthenticatedAdminInventoryRouteChildren {
@@ -2055,10 +1576,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedIntelligenceRoute: typeof AuthenticatedIntelligenceRouteWithChildren
   AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
-  AuthenticatedOwnershipRoute: typeof AuthenticatedOwnershipRouteWithChildren
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
-  AuthenticatedPurchaseRoute: typeof AuthenticatedPurchaseRouteWithChildren
   AuthenticatedRoiRoute: typeof AuthenticatedRoiRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
@@ -2069,7 +1588,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminInventoryRoute: typeof AuthenticatedAdminInventoryRouteWithChildren
   AuthenticatedAdminPricingRoute: typeof AuthenticatedAdminPricingRoute
-  AuthenticatedAdminSystemRoute: typeof AuthenticatedAdminSystemRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedCommerceFunnelRoute: typeof AuthenticatedCommerceFunnelRoute
   AuthenticatedCommercePricingRoute: typeof AuthenticatedCommercePricingRoute
@@ -2087,10 +1605,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedIntelligenceRoute: AuthenticatedIntelligenceRouteWithChildren,
   AuthenticatedIntentRoute: AuthenticatedIntentRoute,
-  AuthenticatedOwnershipRoute: AuthenticatedOwnershipRouteWithChildren,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
-  AuthenticatedPurchaseRoute: AuthenticatedPurchaseRouteWithChildren,
   AuthenticatedRoiRoute: AuthenticatedRoiRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
@@ -2102,7 +1618,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminInventoryRoute:
     AuthenticatedAdminInventoryRouteWithChildren,
   AuthenticatedAdminPricingRoute: AuthenticatedAdminPricingRoute,
-  AuthenticatedAdminSystemRoute: AuthenticatedAdminSystemRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedCommerceFunnelRoute: AuthenticatedCommerceFunnelRoute,
   AuthenticatedCommercePricingRoute: AuthenticatedCommercePricingRoute,
