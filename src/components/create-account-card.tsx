@@ -39,7 +39,6 @@ export function CreateAccountCard({
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
   // Shopper self-signup was removed — every account created here is a retailer.
-  const accountType = "retailer" as const;
   const [suName, setSuName] = useState("");
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
@@ -48,7 +47,6 @@ export function CreateAccountCard({
   const [suProvince, setSuProvince] = useState("");
   const [suBranchName, setSuBranchName] = useState("");
   const [suWebsite, setSuWebsite] = useState("");
-  const [suWhatsapp, setSuWhatsapp] = useState("");
 
   const handleContinueToCredentialsStep = () => {
     if (!suName.trim()) {
