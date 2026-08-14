@@ -38,7 +38,8 @@ export function CreateAccountCard({
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
-  const [accountType, setAccountType] = useState<"retailer" | "customer">("retailer");
+  // Shopper self-signup was removed — every account created here is a retailer.
+  const accountType = "retailer" as const;
   const [suName, setSuName] = useState("");
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
