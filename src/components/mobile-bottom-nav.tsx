@@ -1,17 +1,11 @@
 import { useRouterState } from "@tanstack/react-router";
 import { mobileNavForUser, isNavActive } from "@/lib/nav";
 import { useIsStaff } from "@/hooks/use-persona";
-import { useReceiptsEnabled } from "@/hooks/use-receipts-enabled";
-
-const RECEIPTS_URLS = new Set(["/ownership/purchases", "/purchase/receipts"]);
 
 export function MobileBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { enabled: receiptsEnabled } = useReceiptsEnabled();
   const isStaff = useIsStaff();
-  const items = mobileNavForUser(isStaff).filter(
-    (item) => receiptsEnabled || !RECEIPTS_URLS.has(item.url),
-  );
+  const items = mobileNavForUser(isStaff);
 
   // Staff still get the full left sidebar on desktop/tablet, so this stays
   // mobile-only for them. Shoppers have no left nav at any size, so this is
