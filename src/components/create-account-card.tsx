@@ -18,6 +18,8 @@ import { GoogleIcon } from "@/components/google-icon";
 import { lovable } from "@/integrations/lovable/index";
 import { mapAuthError, isExistingAccountError } from "@/lib/auth-errors";
 import { SIGNUP_COUNTRIES } from "@/lib/countries";
+import { useServerFn } from "@tanstack/react-start";
+import { uploadRetailerLogo } from "@/lib/settings.functions";
 
 // The full two-step sign-up wizard, extracted so it can be dropped either
 // inside AuthShell's card (the dedicated /auth page) or inline as a
