@@ -1,3 +1,12 @@
+export function isExistingAccountError(err: unknown): boolean {
+  const m = ((err as { message?: string })?.message ?? String(err ?? "")).toLowerCase();
+  return (
+    m.includes("already registered") ||
+    m.includes("already been registered") ||
+    m.includes("email address is already")
+  );
+}
+
 export function mapAuthError(err: unknown, context: "signin" | "signup" | "reset" = "signin"): string {
   const msg = (err as { message?: string })?.message ?? String(err ?? "");
   const m = msg.toLowerCase();
