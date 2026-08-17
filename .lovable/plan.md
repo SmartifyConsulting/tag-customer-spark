@@ -26,6 +26,13 @@ Drop the `TagLogo` from the sidebar header so the logo only appears once, in the
 - `src/components/app-sidebar.tsx` — remove the logo from `SidebarHeader` and collapse the
   now-empty header spacing.
 
+## 3b. Remove "Scanner" from the nav menu
+Remove the Scanner item from the sidebar nav (the Purchase section, whose only item is
+Scanner, disappears with it). Mobile bottom nav keeps its existing entries unless you want
+it dropped there too.
+
+- `src/lib/nav.ts` — drop the Scanner entry from `NAV_SECTIONS`.
+
 ## 4. Bring canvas text in front of the nav menu
 Page content currently sits under the sidebar/offcanvas layer where they overlap, hiding
 text. Fix the stacking so main content renders above the nav panel on desktop: give the
