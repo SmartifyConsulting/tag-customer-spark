@@ -80,7 +80,7 @@ export function AppSidebar() {
                   const locked = item.feature ? !hasFeature(item.feature) : false;
                   const activeClass =
                     active && !locked
-                      ? "bg-foreground text-background font-semibold hover:bg-foreground hover:text-background data-[active=true]:bg-foreground data-[active=true]:text-background [&_svg]:text-background"
+                      ? "bg-primary text-primary-foreground font-semibold hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground [&_svg]:text-primary-foreground"
                       : locked
                         ? "text-sidebar-foreground/50 hover:bg-muted hover:text-sidebar-foreground/80"
                         : "text-sidebar-foreground/80 hover:bg-muted hover:text-sidebar-foreground";
