@@ -31,3 +31,10 @@ Applied as design tokens in `src/styles.css` so every screen picks them up:
 - Image uploaded via the asset CDN and imported as a pointer JSON; no binary committed.
 - Files touched: `src/styles.css`, `src/components/auth-shell.tsx`, `src/components/hero-variants.tsx` (collapsed into one hero), `src/components/tag-logo.tsx`, `src/components/ui-version-switcher.tsx` + `src/hooks/use-ui-version.ts` (deleted), `src/routes/_authenticated/route.tsx` and `src/components/app-sidebar.tsx` (remove switcher usage).
 - No backend, data or business-logic changes.
+
+### 4. Investigate the failed login for trypticon23@gmail.com
+Diagnosis only — no fix committed until the cause is confirmed:
+- Check whether the account exists in the auth users list, and its confirmation, ban and last-sign-in state.
+- Pull yesterday's authentication logs for that email to see the exact failure (wrong password, unconfirmed email, rate limit, provider mismatch, etc.).
+- Check whether the account has a retailer role row and completed onboarding — a missing role/retailer link can bounce a valid sign-in straight back out of the app.
+- Report exactly what the logs say and propose the fix (password reset, confirm email, role/retailer repair) before changing anything.
