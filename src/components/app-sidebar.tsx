@@ -58,11 +58,12 @@ export function AppSidebar() {
         className={
           collapsed
             ? "bg-sidebar h-16 justify-center p-0 flex items-center"
-            : "flex items-center justify-end py-2 px-3 h-16"
+            : "flex items-center justify-center py-2 px-3 h-16"
         }
       >
-        <UIVersionSwitcher />
+        {!collapsed && <TagLogo variant="wordmark" heightClass="h-12" />}
       </SidebarHeader>
+
 
       <SidebarContent className="px-1.5 pb-3 pt-2">
         {sections.map((section) => (
