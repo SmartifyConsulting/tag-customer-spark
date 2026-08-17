@@ -43,7 +43,7 @@ export function AuthShell({
             <span className="font-bold text-foreground">Retail Intelligence</span> to physical
             stores — capturing buying intent and reconnecting with shoppers after they leave.
           </p>
-          <p className="mt-3 text-base font-bold text-[#DF2F2F]">No more blind spots.</p>
+          <p className="mt-3 text-base font-bold text-[#F2A93B]">No more blind spots.</p>
         </div>
 
         {/* Form column */}
