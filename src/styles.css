@@ -36,6 +36,8 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-mint: var(--mint);
   --color-mint-foreground: var(--mint-foreground);
+  --color-steel: var(--steel);
+  --color-steel-foreground: var(--steel-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
