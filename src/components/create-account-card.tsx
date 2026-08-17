@@ -191,6 +191,7 @@ export function CreateAccountCard({
     // this card is mounted on).
     setLoading(false);
     toast.success("Welcome to Tag");
+    void uploadLogoWhenReady();
   };
 
   const handleGoogle = async () => {
