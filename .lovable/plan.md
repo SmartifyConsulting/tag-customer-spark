@@ -15,7 +15,8 @@ Applied as design tokens in `src/styles.css` so every screen picks them up:
 - Primary: Dark Coral `#C1272D`-family (DMC 349) — buttons, active nav pill, links
 - Secondary / accent: Medium Tangerine `#E8A317` (DMC 741) — highlights, badges, charts
 - Deep contrast: Navy Blue `#1F3A5F` (DMC 336) — headings, sidebar text, dark sections
-- Borders / muted: soft warm greys on white; hovers stay light grey
+- Neutral breaker: Light Steel Gray `#A7B3C0` (DMC 318) — used to calm the bright colours: muted surfaces, table stripes, borders, dividers, hover states, disabled/secondary text and chart neutrals
+- Borders / muted: light steel gray tints on white; hovers stay a soft grey
 - Charts and status colours re-mapped to coral / tangerine / navy
 - Dark-mode block removed or neutralised (app is already locked to light)
 
