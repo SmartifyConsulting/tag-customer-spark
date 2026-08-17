@@ -37,6 +37,7 @@ export function CreateAccountCard({
   const [googleLoading, setGoogleLoading] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
+  const [existingEmail, setExistingEmail] = useState<string | null>(null);
 
   // Shopper self-signup was removed — every account created here is a retailer.
   const [suName, setSuName] = useState("");
