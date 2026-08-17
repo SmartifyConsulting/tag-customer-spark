@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { MarketingHeader } from "@/components/marketing-page";
+import { TagLogo } from "@/components/tag-logo";
 import heroImage from "@/assets/auth-hero-surf.png.asset.json";
 
 export function AuthShell({
