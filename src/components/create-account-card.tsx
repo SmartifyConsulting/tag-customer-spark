@@ -156,6 +156,40 @@ export function CreateAccountCard({
     navigate({ to: "/briefing", replace: true });
   };
 
+  if (existingEmail) {
+    return (
+      <div className="space-y-4 rounded-xl border border-border bg-muted/40 p-5 text-center">
+        <div className="space-y-2">
+          <p className="text-base font-semibold text-foreground">
+            You already have a Tag account
+          </p>
+          <p className="text-sm text-muted-foreground">
+            An account with <span className="font-semibold text-foreground">{existingEmail}</span>{" "}
+            already exists. Sign in instead, or reset your password if you've forgotten it.
+          </p>
+        </div>
+        <Button
+          type="button"
+          className="w-full"
+          onClick={() => {
+            if (onSwitchToSignIn) onSwitchToSignIn(existingEmail);
+            else navigate({ to: "/auth", search: { mode: "signin" } });
+          }}
+        >
+          Go to sign in
+        </Button>
+        <p className="text-sm text-muted-foreground">
+          <Link
+            to="/forgot-password"
+            className="font-medium text-foreground underline-offset-2 hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </p>
+      </div>
+    );
+  }
+
   if (confirmationEmail) {
     return (
       <div className="space-y-2 text-center">
