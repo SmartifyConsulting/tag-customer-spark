@@ -103,7 +103,10 @@ function AuthPage() {
             subtitle="Start recovering lost sales in under a minute."
           >
             <CreateAccountCard
-              onSwitchToSignIn={() => setMode("signin")}
+              onSwitchToSignIn={(email) => {
+                if (email) setSiEmail(email);
+                setMode("signin");
+              }}
               onEmailConfirmationSent={(email) => {
                 setMode("signin");
                 setSiEmail(email);
