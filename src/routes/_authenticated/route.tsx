@@ -45,8 +45,17 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
+  const { user } = Route.useRouteContext();
   const brandingFn = useServerFn(getRetailerBranding);
-  const branding = useQuery({ queryKey: ["branding"], queryFn: () => brandingFn(), staleTime: 5 * 60_000 });
+  const branding = useQuery({
+    queryKey: ["branding", user?.id],
+    queryFn: () => brandingFn(),
+    // Only fetch once we actually have a signed-in user; otherwise the
+    // serverFn runs without a bearer token and throws "Unauthorized".
+    enabled: !!user,
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
   const brandTheme = useBrandTheme(branding.data?.logo_url);
   // Greeting name shown in the top-left of the app header — same source
   // the Briefing page uses so it stays in sync ("Hello Makro Woodmead").
