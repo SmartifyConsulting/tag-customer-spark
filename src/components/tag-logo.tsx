@@ -1,7 +1,4 @@
 import tagLogoHorizontal from "@/assets/Tag_logo_pink_horizontal.png";
-import tagLogoV2 from "@/assets/Tag_logo_forest_green.png";
-import tagLogoV3 from "@/assets/Tag_logo_yellow_bg.png";
-import { useUIVersion } from "@/hooks/use-ui-version";
 
 export function TagLogo({
   className,
@@ -19,10 +16,8 @@ export function TagLogo({
   // specific size the presets don't cover.
   heightClass?: string;
 }) {
-  // V1 keeps the original pink mark; V2 and V3 drop pink entirely, each
-  // with their own logo.
-  const uiVersion = useUIVersion();
-  const logoSrc = uiVersion === "v3" ? tagLogoV3 : uiVersion === "v2" ? tagLogoV2 : tagLogoHorizontal;
+  // One logo, always the original pink mark — the V1/V2/V3 demo themes are gone.
+  const logoSrc = tagLogoHorizontal;
 
   if (variant === "wordmark") {
     const h =
