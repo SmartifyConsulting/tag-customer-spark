@@ -16,7 +16,7 @@ import {
 import { PasswordInput } from "@/components/password-input";
 import { GoogleIcon } from "@/components/google-icon";
 import { lovable } from "@/integrations/lovable/index";
-import { mapAuthError } from "@/lib/auth-errors";
+import { mapAuthError, isExistingAccountError } from "@/lib/auth-errors";
 import { SIGNUP_COUNTRIES } from "@/lib/countries";
 
 // The full two-step sign-up wizard, extracted so it can be dropped either
