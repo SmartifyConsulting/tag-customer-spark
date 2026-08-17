@@ -28,7 +28,7 @@ export function CreateAccountCard({
   onSwitchToSignIn,
   onEmailConfirmationSent,
 }: {
-  onSwitchToSignIn?: () => void;
+  onSwitchToSignIn?: (email?: string) => void;
   onEmailConfirmationSent?: (email: string) => void;
 }) {
   const navigate = useNavigate();
