@@ -16,7 +16,7 @@ import {
 import { PasswordInput } from "@/components/password-input";
 import { GoogleIcon } from "@/components/google-icon";
 import { lovable } from "@/integrations/lovable/index";
-import { mapAuthError } from "@/lib/auth-errors";
+import { mapAuthError, isExistingAccountError } from "@/lib/auth-errors";
 import { SIGNUP_COUNTRIES } from "@/lib/countries";
 
 // The full two-step sign-up wizard, extracted so it can be dropped either
@@ -28,7 +28,7 @@ export function CreateAccountCard({
   onSwitchToSignIn,
   onEmailConfirmationSent,
 }: {
-  onSwitchToSignIn?: () => void;
+  onSwitchToSignIn?: (email?: string) => void;
   onEmailConfirmationSent?: (email: string) => void;
 }) {
   const navigate = useNavigate();
@@ -37,6 +37,7 @@ export function CreateAccountCard({
   const [googleLoading, setGoogleLoading] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
+  const [existingEmail, setExistingEmail] = useState<string | null>(null);
 
   // Shopper self-signup was removed — every account created here is a retailer.
   const [suName, setSuName] = useState("");
@@ -89,9 +90,25 @@ export function CreateAccountCard({
     });
     if (error) {
       setLoading(false);
+      if (isExistingAccountError(error)) {
+        setInlineError(null);
+        setExistingEmail(suEmail);
+        toast.error("That email is already registered — please sign in.");
+        return;
+      }
       const friendly = mapAuthError(error, "signup");
       setInlineError(friendly);
       toast.error(friendly);
+      return;
+    }
+
+    // Supabase can mask an existing account: it returns a user with no
+    // identities and no session instead of an error.
+    if (data.user && (data.user.identities?.length ?? 0) === 0 && !data.session) {
+      setLoading(false);
+      setInlineError(null);
+      setExistingEmail(suEmail);
+      toast.error("That email is already registered — please sign in.");
       return;
     }
 
@@ -138,6 +155,40 @@ export function CreateAccountCard({
     if (result.redirected) return;
     navigate({ to: "/briefing", replace: true });
   };
+
+  if (existingEmail) {
+    return (
+      <div className="space-y-4 rounded-xl border border-border bg-muted/40 p-5 text-center">
+        <div className="space-y-2">
+          <p className="text-base font-semibold text-foreground">
+            You already have a Tag account
+          </p>
+          <p className="text-sm text-muted-foreground">
+            An account with <span className="font-semibold text-foreground">{existingEmail}</span>{" "}
+            already exists. Sign in instead, or reset your password if you've forgotten it.
+          </p>
+        </div>
+        <Button
+          type="button"
+          className="w-full"
+          onClick={() => {
+            if (onSwitchToSignIn) onSwitchToSignIn(existingEmail);
+            else navigate({ to: "/auth", search: { mode: "signin" } });
+          }}
+        >
+          Go to sign in
+        </Button>
+        <p className="text-sm text-muted-foreground">
+          <Link
+            to="/forgot-password"
+            className="font-medium text-foreground underline-offset-2 hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </p>
+      </div>
+    );
+  }
 
   if (confirmationEmail) {
     return (
