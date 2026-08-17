@@ -292,6 +292,28 @@ export function CreateAccountCard({
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="su-logo">Store logo</Label>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      id="su-logo"
+                      type="file"
+                      accept="image/png,image/webp,image/svg+xml"
+                      onChange={handleLogoPick}
+                    />
+                    {logoPreview && (
+                      <img
+                        src={logoPreview}
+                        alt="Store logo preview"
+                        className="h-10 w-10 shrink-0 bg-transparent object-contain"
+                      />
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Optional. Transparent PNG, WebP or SVG, max 2 MB — shown in the top-left of
+                    your Tag workspace.
+                  </p>
+                </div>
             {inlineError && (
               <p className="text-sm text-destructive" aria-live="polite">
                 {inlineError}
