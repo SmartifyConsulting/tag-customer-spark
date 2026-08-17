@@ -48,6 +48,55 @@ export function CreateAccountCard({
   const [suProvince, setSuProvince] = useState("");
   const [suBranchName, setSuBranchName] = useState("");
   const [suWebsite, setSuWebsite] = useState("");
+  // Optional store logo captured at sign-up; uploaded once the account (and
+  // its retailer row) exists, then shown in the top-left of the app header.
+  const [logoFile, setLogoFile] = useState<{
+    filename: string;
+    contentType: string;
+    base64: string;
+  } | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const uploadLogoFn = useServerFn(uploadRetailerLogo);
+
+  const handleLogoPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setLogoFile(null);
+      setLogoPreview(null);
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Logo is too large (max 2 MB).");
+      e.target.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result ?? "");
+      setLogoPreview(dataUrl);
+      setLogoFile({
+        filename: file.name,
+        contentType: file.type || "image/png",
+        base64: dataUrl,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // The retailer row is provisioned asynchronously right after sign-up, so
+  // retry a few times before giving up. A failed logo upload never blocks
+  // the account — it can always be set later in Settings > Branding.
+  const uploadLogoWhenReady = async () => {
+    if (!logoFile) return;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      try {
+        await uploadLogoFn({ data: logoFile });
+        return;
+      } catch {
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
+  };
 
   const handleContinueToCredentialsStep = () => {
     if (!suName.trim()) {
