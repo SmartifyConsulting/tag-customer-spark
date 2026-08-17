@@ -20,7 +20,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useTier } from "@/hooks/use-tier";
 import { useAuth, useIsAdmin, useIsSuperAdmin } from "@/hooks/use-auth";
 import { UserMenu } from "@/components/user-menu";
-import { UIVersionSwitcher } from "@/components/ui-version-switcher";
+import { TagLogo } from "@/components/tag-logo";
 import { sectionsForUser, isNavActive, type NavItem } from "@/lib/nav";
 import { useIsStaff } from "@/hooks/use-persona";
 
