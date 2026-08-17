@@ -66,15 +66,15 @@
 :root {
   --radius: 1rem;
 
-  /* Beach palette — crisp white, Dark Coral primary, Medium Tangerine
-     secondary, Navy Blue for depth, Light Steel Gray as the neutral breaker. */
-  --background: #FFFFFF;                         /* Crisp white */
-  --foreground: #1F3A5F;                         /* Navy Blue */
+  /* Beach palette on navy — Navy Blue canvas, Dark Coral primary,
+     Medium Tangerine secondary, Light Steel Gray as the neutral breaker. */
+  --background: #1F3A5F;                         /* Navy Blue */
+  --foreground: #F5F8FB;                         /* Near white */
 
-  --card: #FFFFFF;
-  --card-foreground: #1F3A5F;
-  --popover: #FFFFFF;
-  --popover-foreground: #1F3A5F;
+  --card: #26456E;                               /* Lighter navy surface */
+  --card-foreground: #F5F8FB;
+  --popover: #26456E;
+  --popover-foreground: #F5F8FB;
 
   --primary: #C1272D;                            /* Dark Coral */
   --primary-foreground: #FFFFFF;
@@ -82,23 +82,23 @@
   --secondary: #E8A317;                          /* Medium Tangerine */
   --secondary-foreground: #1F3A5F;
 
-  --muted: #F1F4F7;                              /* Light steel gray tint */
-  --muted-foreground: #64748B;
+  --muted: #2B4C77;                              /* Soft navy tint */
+  --muted-foreground: #A7B3C0;                   /* Light Steel Gray */
 
   --accent: #E8A317;                             /* Tangerine accent */
   --accent-foreground: #1F3A5F;
 
-  --destructive: #C1272D;                        /* Coral red — errors */
+  --destructive: #E2705E;                        /* Soft coral — errors on navy */
   --destructive-foreground: #FFFFFF;
 
-  --success: #10B981;
-  --success-foreground: #FFFFFF;
+  --success: #34D399;
+  --success-foreground: #10321F;
 
-  --mint: #1F3A5F;                               /* Navy */
-  --mint-foreground: #FFFFFF;
+  --mint: #7FB2E5;                               /* Light sky — readable on navy */
+  --mint-foreground: #1F3A5F;
 
-  --accent-secondary: #1F3A5F;                   /* Navy */
-  --accent-secondary-foreground: #FFFFFF;
+  --accent-secondary: #7FB2E5;
+  --accent-secondary-foreground: #1F3A5F;
 
   --warning: #E8A317;                            /* Tangerine */
   --warning-foreground: #1F3A5F;
@@ -106,25 +106,26 @@
   --steel: #A7B3C0;                              /* Light Steel Gray */
   --steel-foreground: #1F3A5F;
 
-  --border: #DDE3E9;                             /* Steel gray tint */
-  --input: #FFFFFF;
-  --ring: #C1272D;
+  --border: rgb(167 179 192 / 0.24);             /* Translucent steel on navy */
+  --input: #2B4C77;
+  --ring: #E8A317;
 
-  --chart-1: #C1272D;                            /* Dark Coral */
+  --chart-1: #E2705E;                            /* Soft coral */
   --chart-2: #E8A317;                            /* Medium Tangerine */
-  --chart-3: #1F3A5F;                            /* Navy Blue */
+  --chart-3: #7FB2E5;                            /* Light sky */
   --chart-4: #A7B3C0;                            /* Light Steel Gray */
-  --chart-5: #E2705E;                            /* Soft coral */
+  --chart-5: #34D399;                            /* Mint green */
 
-  /* Sidebar — white surface, coral active pill, steel gray hovers */
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #1F3A5F;
+  /* Sidebar — deep navy surface, coral active pill, soft navy hovers */
+  --sidebar: #18304F;
+  --sidebar-foreground: #E6ECF3;
   --sidebar-primary: #C1272D;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F1F4F7;                     /* Light steel gray hover */
-  --sidebar-accent-foreground: #1F3A5F;
-  --sidebar-border: #DDE3E9;
-  --sidebar-ring: #C1272D;
+  --sidebar-accent: #2B4C77;                     /* Soft navy hover */
+  --sidebar-accent-foreground: #F5F8FB;
+  --sidebar-border: rgb(167 179 192 / 0.20);
+  --sidebar-ring: #E8A317;
+
 }
 
 /* Dark mode is intentionally not supported — the app is locked to light. */
