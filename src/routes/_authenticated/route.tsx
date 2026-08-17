@@ -117,8 +117,8 @@ function AuthenticatedLayout() {
           <main
             className={
               isStaff
-                ? "flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10 md:pb-10"
-                : "flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10"
+                ? "relative z-30 flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10 md:pb-10"
+                : "relative z-30 flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10"
             }
           >
             <div className="mx-auto w-full max-w-7xl">
