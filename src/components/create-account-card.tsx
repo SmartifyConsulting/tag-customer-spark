@@ -90,9 +90,25 @@ export function CreateAccountCard({
     });
     if (error) {
       setLoading(false);
+      if (isExistingAccountError(error)) {
+        setInlineError(null);
+        setExistingEmail(suEmail);
+        toast.error("That email is already registered — please sign in.");
+        return;
+      }
       const friendly = mapAuthError(error, "signup");
       setInlineError(friendly);
       toast.error(friendly);
+      return;
+    }
+
+    // Supabase can mask an existing account: it returns a user with no
+    // identities and no session instead of an error.
+    if (data.user && (data.user.identities?.length ?? 0) === 0 && !data.session) {
+      setLoading(false);
+      setInlineError(null);
+      setExistingEmail(suEmail);
+      toast.error("That email is already registered — please sign in.");
       return;
     }
 
