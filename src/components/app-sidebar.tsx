@@ -7,7 +7,6 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -20,7 +19,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useTier } from "@/hooks/use-tier";
 import { useAuth, useIsAdmin, useIsSuperAdmin } from "@/hooks/use-auth";
 import { UserMenu } from "@/components/user-menu";
-import { TagLogo } from "@/components/tag-logo";
 import { sectionsForUser, isNavActive, type NavItem } from "@/lib/nav";
 import { useIsStaff } from "@/hooks/use-persona";
 
@@ -53,16 +51,8 @@ export function AppSidebar() {
   if (!isStaff) return null;
 
   return (
-    <Sidebar collapsible="icon" className="hidden border-r-0 overflow-visible md:flex">
-      <SidebarHeader
-        className={
-          collapsed
-            ? "bg-sidebar h-16 justify-center p-0 flex items-center"
-            : "flex items-center justify-center py-2 px-3 h-16"
-        }
-      >
-        {!collapsed && <TagLogo variant="wordmark" heightClass="h-12" />}
-      </SidebarHeader>
+    <Sidebar collapsible="icon" className="hidden border-r-0 md:flex">
+
 
 
       <SidebarContent className="px-1.5 pb-3 pt-2">
