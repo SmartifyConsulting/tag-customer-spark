@@ -103,7 +103,8 @@ function AuthenticatedLayout() {
 
             <TagLogo
               variant="wordmark"
-              heightClass="h-[14.798rem] sm:h-[10.608rem]"
+              size="lg"
+              heightClass="h-[10.4rem]"
               className="justify-self-center"
             />
 
