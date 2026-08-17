@@ -100,11 +100,6 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     ],
   },
   {
-    id: "purchase",
-    label: "Purchase",
-    items: [{ title: "Scanner", url: "/tagged", icon: Tag, match: ["/tagged"] }],
-  },
-  {
     id: "business",
     label: "Business",
     staffOnly: true,
