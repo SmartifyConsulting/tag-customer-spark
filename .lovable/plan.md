@@ -13,3 +13,5 @@
 - `src/components/tag-logo.tsx`: swap `Tag_logo_pink_horizontal.png` for the new asset pointer URL; keep the existing `variant` / `size` / `heightClass` API so every call site (auth, setup, dashboard, about, marketing, barcode reader) picks it up with no other edits.
 - `src/routes/_authenticated/route.tsx`: the header logo already has `branding.data?.logo_url` available from the existing `getRetailerBranding` query. Render that URL as a plain `<img>` with `object-contain`, transparent background, bounded height, and `alt` of the retailer name; fall back to `<TagLogo variant="wordmark" />` when `logo_url` is null.
 - No backend or data changes — retailer logos already upload through Settings > Branding.
+
+5. **Hero page logo alignment** — center the Tag logo horizontally over the sign-up / sign-in form so it sits on the same centre line as the card (`src/routes/auth.tsx`, the `<TagLogo variant="wordmark" size="lg" />` block), rather than being offset from it.
