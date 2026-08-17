@@ -36,6 +36,7 @@ Keep the white base but let coral, tangerine and navy carry much more of the UI:
 
 - Top-align the hero image column and the sign-up/sign-in frame (they currently vertically centre against each other).
 - Justify the paragraph under the hero image and stretch it to the full image width (remove the narrower max-width).
+- Colour the hero page's top menu items and the line "No more blind spots." in `#DF2F2F`.
 
 ## Technical notes
 
