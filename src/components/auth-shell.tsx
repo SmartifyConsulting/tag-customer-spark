@@ -17,7 +17,7 @@ export function AuthShell({
     <div className="min-h-screen bg-background px-4 py-6 lg:px-10">
       <MarketingHeader right={null} />
 
-      <div className="mx-auto grid max-w-6xl items-center gap-10 pt-10 lg:grid-cols-[1.05fr_1fr] lg:pt-16">
+      <div className="mx-auto grid max-w-6xl items-start gap-10 pt-10 lg:grid-cols-[1.05fr_1fr] lg:pt-16">
         {/* Hero column — beach/scan energy */}
         <div className="hidden lg:block">
           <div className="relative overflow-hidden rounded-[2rem] shadow-elevated">
@@ -38,12 +38,12 @@ export function AuthShell({
             </div>
           </div>
 
-          <p className="mt-6 max-w-md text-base text-muted-foreground">
+          <p className="mt-6 w-full text-justify text-base text-muted-foreground">
             You know exactly what sold. You don't know what almost did. Tag brings{" "}
             <span className="font-bold text-foreground">Retail Intelligence</span> to physical
             stores — capturing buying intent and reconnecting with shoppers after they leave.
           </p>
-          <p className="mt-3 text-base font-semibold text-secondary">No more blind spots.</p>
+          <p className="mt-3 text-base font-bold text-[#DF2F2F]">No more blind spots.</p>
         </div>
 
         {/* Form column */}
