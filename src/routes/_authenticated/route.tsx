@@ -94,6 +94,16 @@ function AuthenticatedLayout() {
           <header className="grid grid-cols-3 items-center gap-3 bg-background px-4 py-3 sm:px-6">
             <div className="flex items-center gap-3 justify-self-start">
               {isStaff && <SidebarTrigger className="md:hidden" />}
+              {/* Retailer's own logo, transparent — no card or white box. */}
+              {branding.data?.logo_url ? (
+                <img
+                  src={branding.data.logo_url}
+                  alt={branding.data.name ?? "Store logo"}
+                  className="h-12 w-auto max-w-[180px] bg-transparent object-contain sm:h-14"
+                />
+              ) : (
+                <TagLogo variant="wordmark" size="sm" heightClass="h-12 sm:h-14" />
+              )}
               {isStaff && showReaderTile && (
                 <div className="hidden sm:block">
                   <TagReaderTile compact />
