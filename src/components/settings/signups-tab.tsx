@@ -86,7 +86,7 @@ export function SignupsTab() {
             {(q.error as any)?.message ?? "Could not load signups"}
           </div>
         ) : visible.length === 0 ? (
-          <EmptyState title="No signups" description="Nobody matches this filter yet." />
+          <EmptyState icon={Users2} title="No signups" description="Nobody matches this filter yet." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
