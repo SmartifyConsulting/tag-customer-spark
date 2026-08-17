@@ -102,18 +102,6 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     staffOnly: true,
     items: [
       {
-        title: "Analytics",
-        url: "/intelligence",
-        icon: TrendingUp,
-        match: ["/intelligence", "/analytics", "/roi", "/commerce", "/dashboard"],
-        items: [
-          { title: "Overview", url: "/intelligence", match: ["/intelligence"] },
-          { title: "Insights", url: "/intelligence/insights", match: ["/intelligence/insights"] },
-          { title: "Analytics", url: "/analytics", match: ["/analytics"] },
-          { title: "ROI", url: "/roi", match: ["/roi"] },
-        ],
-      },
-      {
         title: "Admin",
         url: "/admin",
         icon: ShieldCheck,
