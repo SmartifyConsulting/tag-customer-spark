@@ -36,6 +36,8 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-mint: var(--mint);
   --color-mint-foreground: var(--mint-foreground);
+  --color-steel: var(--steel);
+  --color-steel-foreground: var(--steel-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -62,115 +64,71 @@
 }
 
 :root {
-  --radius: 0.9rem;
+  --radius: 1rem;
 
-  /* V2 Palette — Cream background, Forest Green primary, Orange secondary */
-  --background: #F5F1E8;                         /* Cream */
-  --foreground: #2C3E50;                         /* Dark charcoal */
+  /* Beach palette — crisp white, Dark Coral primary, Medium Tangerine
+     secondary, Navy Blue for depth, Light Steel Gray as the neutral breaker. */
+  --background: #FFFFFF;                         /* Crisp white */
+  --foreground: #1F3A5F;                         /* Navy Blue */
 
-  --card: #FFFFFF;                               /* White cards on cream */
-  --card-foreground: #2C3E50;
+  --card: #FFFFFF;
+  --card-foreground: #1F3A5F;
   --popover: #FFFFFF;
-  --popover-foreground: #2C3E50;
+  --popover-foreground: #1F3A5F;
 
-  --primary: #2C5F4F;                            /* Forest Green */
+  --primary: #C1272D;                            /* Dark Coral */
   --primary-foreground: #FFFFFF;
 
-  --secondary: #F5A623;                          /* Orange */
-  --secondary-foreground: #FFFFFF;
+  --secondary: #E8A317;                          /* Medium Tangerine */
+  --secondary-foreground: #1F3A5F;
 
-  --muted: #E8E4D8;
-  --muted-foreground: #6B7280;
+  --muted: #F1F4F7;                              /* Light steel gray tint */
+  --muted-foreground: #64748B;
 
-  --accent: #F5A623;                             /* Orange accent */
-  --accent-foreground: #FFFFFF;
+  --accent: #E8A317;                             /* Tangerine accent */
+  --accent-foreground: #1F3A5F;
 
-  --destructive: #DC2626;                        /* Red — errors only */
+  --destructive: #C1272D;                        /* Coral red — errors */
   --destructive-foreground: #FFFFFF;
 
-  --success: #10B981;                            /* Green */
+  --success: #10B981;
   --success-foreground: #FFFFFF;
 
-  --mint: #2C5F4F;                               /* Forest Green */
+  --mint: #1F3A5F;                               /* Navy */
   --mint-foreground: #FFFFFF;
 
-  --accent-secondary: #2C5F4F;                   /* Forest Green */
+  --accent-secondary: #1F3A5F;                   /* Navy */
   --accent-secondary-foreground: #FFFFFF;
 
-  --warning: #F59E0B;                            /* Amber */
-  --warning-foreground: #FFFFFF;
+  --warning: #E8A317;                            /* Tangerine */
+  --warning-foreground: #1F3A5F;
 
-  --border: #E8E4D8;                             /* Cream border */
-  --input: #F9F7F3;
-  --ring: #2C5F4F;
+  --steel: #A7B3C0;                              /* Light Steel Gray */
+  --steel-foreground: #1F3A5F;
 
-  --chart-1: #2C5F4F;                            /* Forest Green */
-  --chart-2: #F5A623;                            /* Orange */
-  --chart-3: #10B981;                            /* Green */
-  --chart-4: #F59E0B;                            /* Amber */
-  --chart-5: #6B7280;                            /* Grey */
+  --border: #DDE3E9;                             /* Steel gray tint */
+  --input: #FFFFFF;
+  --ring: #C1272D;
 
+  --chart-1: #C1272D;                            /* Dark Coral */
+  --chart-2: #E8A317;                            /* Medium Tangerine */
+  --chart-3: #1F3A5F;                            /* Navy Blue */
+  --chart-4: #A7B3C0;                            /* Light Steel Gray */
+  --chart-5: #E2705E;                            /* Soft coral */
 
-  /* Sidebar — cream surface, forest green active pill */
-  --sidebar: #F5F1E8;                            /* Cream */
-  --sidebar-foreground: #2C3E50;                 /* Dark text */
-  --sidebar-primary: #2C5F4F;                    /* Forest Green pill */
+  /* Sidebar — white surface, coral active pill, steel gray hovers */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1F3A5F;
+  --sidebar-primary: #C1272D;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F5A623;                     /* Orange selection */
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #E8E4D8;
-  --sidebar-ring: #2C5F4F;
+  --sidebar-accent: #F1F4F7;                     /* Light steel gray hover */
+  --sidebar-accent-foreground: #1F3A5F;
+  --sidebar-border: #DDE3E9;
+  --sidebar-ring: #C1272D;
 }
 
-.dark {
-  --background: #1F2937;                         /* Dark grey */
-  --foreground: #F5F1E8;                         /* Cream text on dark */
+/* Dark mode is intentionally not supported — the app is locked to light. */
 
-  --card: #2C3E50;                               /* Darker card */
-  --card-foreground: #F5F1E8;
-  --popover: #2C3E50;
-  --popover-foreground: #F5F1E8;
-
-  --primary: #7FBFA8;                            /* Light forest green */
-  --primary-foreground: #1F2937;
-
-  --secondary: #FFB74D;                          /* Light orange */
-  --secondary-foreground: #1F2937;
-
-  --muted: #374151;
-  --muted-foreground: #9CA3AF;
-
-  --accent: #FFB74D;                             /* Light orange accent */
-  --accent-foreground: #1F2937;
-
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-
-  --success: #34D399;
-  --success-foreground: #1F2937;
-
-  --mint: #7FBFA8;                               /* Light forest green */
-  --mint-foreground: #FFFFFF;
-
-  --accent-secondary: #7FBFA8;                   /* Light forest green */
-  --accent-secondary-foreground: #FFFFFF;
-
-  --warning: #FBBF24;
-  --warning-foreground: #1F2937;
-
-  --border: #374151;
-  --input: #1F2937;
-  --ring: #F5F1E8;
-
-  --sidebar: #1F2937;
-  --sidebar-foreground: #F5F1E8;
-  --sidebar-primary: #7FBFA8;
-  --sidebar-primary-foreground: #1F2937;
-  --sidebar-accent: #FFB74D;
-  --sidebar-accent-foreground: #1F2937;
-  --sidebar-border: #374151;
-  --sidebar-ring: #F5F1E8;
-}
 
 @layer base {
   * {
