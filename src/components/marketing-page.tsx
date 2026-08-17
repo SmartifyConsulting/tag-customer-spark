@@ -12,8 +12,10 @@ import { TagLogo } from "@/components/tag-logo";
 // logo as the right-most element, so nothing jumps between pages.
 export function MarketingHeader({
   right,
+  showLogo = true,
 }: {
   right?: ReactNode;
+  showLogo?: boolean;
 }) {
   const rightSlot = right === undefined ? <MarketingCtaGroup /> : right;
   return (
@@ -23,9 +25,11 @@ export function MarketingHeader({
       </div>
       <div className="flex items-center gap-4">
         {rightSlot}
-        <Link to="/about" className="shrink-0">
-          <TagLogo variant="wordmark" size="lg" heightClass="h-[10.4rem]" />
-        </Link>
+        {showLogo && (
+          <Link to="/about" className="shrink-0">
+            <TagLogo variant="wordmark" size="lg" heightClass="h-[10.4rem]" />
+          </Link>
+        )}
       </div>
     </header>
   );
