@@ -1,4 +1,6 @@
-import tagLogoHorizontal from "@/assets/Tag_logo_pink_horizontal.png";
+import tagLogoAsset from "@/assets/tag-logo-coral.png.asset.json";
+
+const tagLogoHorizontal = tagLogoAsset.url;
 
 export function TagLogo({
   className,

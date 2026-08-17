@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { MarketingHeader } from "@/components/marketing-page";
+import { TagLogo } from "@/components/tag-logo";
 import heroImage from "@/assets/auth-hero-surf.png.asset.json";
 
 export function AuthShell({
@@ -15,7 +17,7 @@ export function AuthShell({
 }) {
   return (
     <div className="min-h-screen bg-background px-4 py-6 lg:px-10">
-      <MarketingHeader right={null} />
+      <MarketingHeader right={null} showLogo={false} />
 
       <div className="mx-auto grid max-w-6xl items-start gap-10 pt-10 lg:grid-cols-[1.05fr_1fr] lg:pt-16">
         {/* Hero column — beach/scan energy */}
@@ -43,11 +45,17 @@ export function AuthShell({
             <span className="font-bold text-foreground">Retail Intelligence</span> to physical
             stores — capturing buying intent and reconnecting with shoppers after they leave.
           </p>
-          <p className="mt-3 text-base font-bold text-[#DF2F2F]">No more blind spots.</p>
+          <p className="mt-3 text-base font-bold text-[#F2A93B]">No more blind spots.</p>
         </div>
 
         {/* Form column */}
         <div className="mx-auto w-full max-w-md space-y-4">
+          {/* Logo sits centered directly above the form, on the same
+              centre line as the card below it. */}
+          <Link to="/about" className="flex justify-center">
+            <TagLogo variant="wordmark" size="lg" heightClass="h-[10.4rem]" />
+          </Link>
+
           {/* Compact hero banner on small screens */}
           <div className="relative overflow-hidden rounded-2xl lg:hidden">
             <img
