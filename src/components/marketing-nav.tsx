@@ -21,7 +21,7 @@ export function MarketingNav() {
         <Link
           key={l.to}
           to={l.to}
-          className="text-[#A6446B] transition-colors hover:text-[#7d3350]"
+          className="text-[#DF2F2F] transition-colors hover:text-[#b32424]"
         >
           {l.label}
         </Link>

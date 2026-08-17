@@ -89,6 +89,14 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { title: "Intent Engine", url: "/intelligence/intent", icon: Radar, match: ["/intelligence/intent", "/intent"] },
       { title: "Watchlists", url: "/watchlists", icon: Eye, match: ["/watchlists"] },
       { title: "Whatsapps", url: "/inbox", icon: MessageSquare, match: ["/inbox"] },
+      {
+        // Overview screen — Insights / Analytics / ROI already live there as
+        // tabs, so this is a single destination with no sub-menu.
+        title: "Analytics",
+        url: "/intelligence",
+        icon: TrendingUp,
+        match: ["/intelligence", "/analytics", "/roi", "/commerce", "/dashboard"],
+      },
     ],
   },
   {
@@ -101,18 +109,6 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     label: "Business",
     staffOnly: true,
     items: [
-      {
-        title: "Analytics",
-        url: "/intelligence",
-        icon: TrendingUp,
-        match: ["/intelligence", "/analytics", "/roi", "/commerce", "/dashboard"],
-        items: [
-          { title: "Overview", url: "/intelligence", match: ["/intelligence"] },
-          { title: "Insights", url: "/intelligence/insights", match: ["/intelligence/insights"] },
-          { title: "Analytics", url: "/analytics", match: ["/analytics"] },
-          { title: "ROI", url: "/roi", match: ["/roi"] },
-        ],
-      },
       {
         title: "Admin",
         url: "/admin",

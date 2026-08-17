@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaxonomyAdminSection } from "@/components/admin/taxonomy-admin-section";
 import { StoresView } from "@/components/stores/stores-view";
 import { UserAdminTab } from "@/components/settings/user-admin-tab";
+import { SignupsTab } from "@/components/settings/signups-tab";
 import { CustomersView } from "@/components/customers/customers-view";
 import { useIsAdmin } from "@/hooks/use-auth";
 
@@ -59,7 +60,8 @@ function AdminPage() {
         <TabsContent value="customers" className="pt-4">
           <CustomersView embedded />
         </TabsContent>
-        <TabsContent value="users" className="pt-4">
+        <TabsContent value="users" className="space-y-6 pt-4">
+          <SignupsTab />
           <UserAdminTab />
         </TabsContent>
       </Tabs>

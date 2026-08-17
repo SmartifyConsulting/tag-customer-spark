@@ -15,12 +15,12 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 pb-2 sm:flex sm:flex-wrap sm:items-end sm:justify-between sm:pb-4",
+        "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 rounded-2xl border-l-4 border-primary bg-gradient-to-r from-primary/10 via-secondary/10 to-transparent p-4 pb-3 sm:flex sm:flex-wrap sm:items-end sm:justify-between sm:p-5",
         className,
       )}
     >
       <div className="min-w-0">
-        <h1 className="truncate text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1 className="truncate text-3xl font-bold tracking-tight text-primary sm:text-4xl">
           {title}
         </h1>
         {description && (
