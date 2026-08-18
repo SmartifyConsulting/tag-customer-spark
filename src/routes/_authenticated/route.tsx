@@ -105,14 +105,14 @@ function AuthenticatedLayout() {
                 <img
                   src={branding.data.logo_url}
                   alt={branding.data.name ?? "Retailer logo"}
-                  className="h-10 w-10 object-contain bg-transparent"
+                  className="h-12 w-12 rounded-full object-contain bg-transparent"
                 />
               ) : (
                 <div
-                  className="flex h-10 w-10 items-center justify-center rounded-md bg-transparent text-muted-foreground/50"
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-transparent text-muted-foreground/50"
                   title="No logo uploaded yet — add one in Settings"
                 >
-                  <Store className="h-6 w-6" />
+                  <Store className="h-7 w-7" />
                 </div>
               )}
               {!isStaff && <UserMenu />}
