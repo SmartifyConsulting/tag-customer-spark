@@ -74,35 +74,24 @@ function AuthenticatedLayout() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Greeting banner above nav */}
-      {greetingName && (
-        <div className="bg-background px-4 py-4 sm:px-6">
-          <div className="mx-auto w-full max-w-7xl">
-            <p className="text-[14px] font-semibold tracking-tight">
-              Hello {greetingName}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Your daily briefing — freshly tagged products this month, and shoppers waiting on a reply.
-            </p>
-          </div>
-        </div>
-      )}
-
       <SidebarProvider style={themeStyle as any} className="flex-1">
         <AppSidebar />
         <SidebarInset className="bg-background">
           <header className="grid grid-cols-3 items-center gap-3 bg-background px-4 py-3 sm:px-6">
             <div className="flex items-center gap-3 justify-self-start">
               {isStaff && <SidebarTrigger className="md:hidden" />}
-              {/* Retailer's own logo, transparent — no card or white box. */}
-              {branding.data?.logo_url ? (
-                <img
-                  src={branding.data.logo_url}
-                  alt={branding.data.name ?? "Store logo"}
-                  className="h-12 w-auto max-w-[180px] bg-transparent object-contain sm:h-14"
-                />
-              ) : (
-                <TagLogo variant="wordmark" size="sm" heightClass="h-12 sm:h-14" />
+              {/* Greeting copy sits to the left, beside the nav — the small
+                  logo that used to live here is gone. */}
+              {greetingName && (
+                <div className="min-w-0">
+                  <p className="truncate text-[14px] font-semibold tracking-tight">
+                    Hello {greetingName}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Your daily briefing — freshly tagged products this month, and shoppers waiting
+                    on a reply.
+                  </p>
+                </div>
               )}
               {isStaff && showReaderTile && (
                 <div className="hidden sm:block">
