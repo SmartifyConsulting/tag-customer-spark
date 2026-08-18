@@ -26,7 +26,7 @@ export function AuthShell({
           nav text against the logo's own vertical center, which is where
           the tag mark's punch hole sits, so the hole lines up with the
           nav items rather than the top of the logo image. */}
-      <div className="mx-auto grid max-w-6xl items-center gap-10 pt-[calc(3.5rem+0px)] lg:grid-cols-[1.05fr_1fr] lg:pt-[calc(6rem+0px)]">
+      <div className="mx-auto grid max-w-6xl items-center gap-10 pt-14 lg:grid-cols-[1.05fr_1fr] lg:pt-24">
         <div className="hidden lg:block">
           <MarketingNav />
         </div>
