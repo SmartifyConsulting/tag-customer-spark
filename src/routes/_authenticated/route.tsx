@@ -92,7 +92,7 @@ function AuthenticatedLayout() {
               )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 sm:mr-10">
               {/* Retailer's own logo (uploaded in Settings), top-right. Shown
                   with a transparent background so it sits directly on the
                   header rather than in a card; falls back to a generic store
@@ -105,14 +105,14 @@ function AuthenticatedLayout() {
                 <img
                   src={branding.data.logo_url}
                   alt={branding.data.name ?? "Retailer logo"}
-                  className="h-12 w-12 rounded-full object-contain bg-transparent"
+                  className="h-[4.75rem] w-[4.75rem] rounded-full object-contain bg-transparent"
                 />
               ) : (
                 <div
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-transparent text-muted-foreground/50"
+                  className="flex h-[4.75rem] w-[4.75rem] items-center justify-center rounded-full bg-transparent text-muted-foreground/50"
                   title="No logo uploaded yet — add one in Settings"
                 >
-                  <Store className="h-7 w-7" />
+                  <Store className="h-11 w-11" />
                 </div>
               )}
               {!isStaff && <UserMenu />}
@@ -123,8 +123,8 @@ function AuthenticatedLayout() {
           <main
             className={
               isStaff
-                ? "relative z-30 flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10 md:pb-10"
-                : "relative z-30 flex-1 px-4 pb-24 pt-8 sm:px-8 sm:py-10"
+                ? "relative z-30 flex-1 px-4 pb-24 pt-8 sm:px-6 sm:py-10 md:pb-10"
+                : "relative z-30 flex-1 px-4 pb-24 pt-8 sm:px-6 sm:py-10"
             }
           >
             <div className="mx-auto w-full max-w-7xl">
