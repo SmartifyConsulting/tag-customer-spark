@@ -16,12 +16,12 @@ const LINKS = [
 // decide what sits in the right slot (see MarketingHeader).
 export function MarketingNav() {
   return (
-    <nav className="hidden items-center gap-8 text-sm font-semibold md:flex">
+    <nav className="hidden flex-nowrap items-center gap-8 text-sm font-semibold md:flex">
       {LINKS.map((l) => (
         <Link
           key={l.to}
           to={l.to}
-          className="text-[#F2A93B] transition-colors hover:text-[#ffc46b]"
+          className="shrink-0 whitespace-nowrap text-[#F2A93B] transition-colors hover:text-[#ffc46b]"
         >
           {l.label}
         </Link>

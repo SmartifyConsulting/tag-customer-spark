@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { MarketingHeader } from "@/components/marketing-page";
+import { MarketingNav } from "@/components/marketing-nav";
 import { TagLogo } from "@/components/tag-logo";
 import heroImage from "@/assets/auth-hero-surf.png.asset.json";
 
@@ -17,16 +17,27 @@ export function AuthShell({
 }) {
   return (
     <div className="min-h-screen bg-background px-4 py-6 lg:px-10">
-      {/* Nav sits lower on the hero, close above the image/form row. */}
-      <div className="pt-14 lg:pt-24">
-        <MarketingHeader right={null} showLogo={false} />
+      {/* Header row: nav's left edge matches the hero image's left edge
+          (same grid column, no extra centering); the logo sits in a
+          same-width/centering wrapper as the form card below it, so its
+          right edge lines up with the card's right edge even though
+          they're in different rows. Pushed down an extra ~1cm (37.8px)
+          from where it used to sit. */}
+      <div className="mx-auto grid max-w-6xl gap-10 pt-[calc(3.5rem+37.8px)] lg:grid-cols-[1.05fr_1fr] lg:pt-[calc(6rem+37.8px)]">
+        <div className="hidden lg:block">
+          <MarketingNav />
+        </div>
+        <div className="mx-auto flex w-full max-w-md justify-end">
+          <Link to="/about">
+            <TagLogo variant="wordmark" size="lg" heightClass="h-[6.24rem]" />
+          </Link>
+        </div>
       </div>
 
-      <div className="mx-auto grid max-w-6xl items-start gap-10 pt-0 lg:grid-cols-[1.05fr_1fr] lg:pt-1">
-        {/* Hero column — beach/scan energy. Top padding matches the logo's
-            height + gap above the form card, so the image lines up with the
-            top of the "Welcome back" card, not the top of the form column. */}
-        <div className="hidden lg:block lg:pt-[7.24rem]">
+      <div className="mx-auto grid max-w-6xl items-start gap-10 pt-6 lg:grid-cols-[1.05fr_1fr]">
+        {/* Hero column — beach/scan energy. Top-aligned with the "Welcome
+            back" card via the shared items-start on this grid. */}
+        <div className="hidden lg:block">
           <div className="relative overflow-hidden rounded-[2rem] shadow-elevated">
             <img
               src={heroImage.url}
@@ -39,7 +50,7 @@ export function AuthShell({
               <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-primary-foreground">
                 Scan. Follow. Engage.
               </span>
-              <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-white xl:text-4xl">
+              <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-[#B8600E] xl:text-4xl">
                 Your customers are interested—your products just don't know it yet.
               </h1>
             </div>
@@ -55,12 +66,6 @@ export function AuthShell({
 
         {/* Form column */}
         <div className="mx-auto w-full max-w-md space-y-4">
-          {/* Logo sits centered directly above the form, on the same
-              centre line as the card below it. */}
-          <Link to="/about" className="flex justify-center">
-            <TagLogo variant="wordmark" size="lg" heightClass="h-[6.24rem]" />
-          </Link>
-
           {/* Compact hero banner on small screens */}
           <div className="relative overflow-hidden rounded-2xl lg:hidden">
             <img
