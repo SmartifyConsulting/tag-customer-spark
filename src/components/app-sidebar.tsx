@@ -55,7 +55,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="hidden border-r-0 md:flex">
-      <SidebarHeader className="px-3 pb-2 pt-4">
+      <SidebarHeader className="px-3 pb-2 pt-[1.6rem]">
         {!collapsed && (
           <Link to="/about" className="flex justify-center">
             <TagLogo variant="wordmark" size="sm" heightClass="h-[8.1rem]" className="[&_img]:rounded-2xl" />
@@ -63,7 +63,7 @@ export function AppSidebar() {
         )}
       </SidebarHeader>
 
-      <SidebarContent className="px-1.5 pb-3 pt-[6.6875rem]">
+      <SidebarContent className="px-1.5 pb-3 pt-[3.1875rem]">
         {sections.map((section) => (
           <SidebarGroup key={section.id}>
             {!collapsed && section.id !== "purchase" && (
