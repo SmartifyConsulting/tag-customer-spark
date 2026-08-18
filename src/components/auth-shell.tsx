@@ -37,7 +37,7 @@ export function AuthShell({
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-6xl items-start gap-10 pt-6 lg:grid-cols-[1.05fr_1fr]">
+      <div className="mx-auto grid max-w-6xl items-start gap-10 pt-[3.9rem] lg:grid-cols-[1.05fr_1fr]">
         {/* Hero column — beach/scan energy. Top-aligned with the "Welcome
             back" card via the shared items-start on this grid. */}
         <div className="hidden lg:block">
@@ -48,12 +48,12 @@ export function AuthShell({
               className="h-[26rem] w-full object-cover"
               loading="eager"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/25 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-foreground/55 via-foreground/12 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-7">
               <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-primary-foreground">
                 Scan. Follow. Engage.
               </span>
-              <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-white xl:text-4xl">
+              <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-primary xl:text-4xl">
                 Your customers are interested—you just don't know it yet.
               </h1>
             </div>
