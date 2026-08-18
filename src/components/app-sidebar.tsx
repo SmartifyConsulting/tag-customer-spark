@@ -58,7 +58,7 @@ export function AppSidebar() {
       <SidebarHeader className="px-3 pb-2 pt-4">
         {!collapsed && (
           <Link to="/about" className="flex justify-center">
-            <TagLogo variant="wordmark" size="sm" heightClass="h-[11.25rem]" />
+            <TagLogo variant="wordmark" size="sm" heightClass="h-[9rem]" />
           </Link>
         )}
       </SidebarHeader>

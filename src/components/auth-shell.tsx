@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { MarketingNav } from "@/components/marketing-nav";
 import { TagLogo } from "@/components/tag-logo";
-import heroImage from "@/assets/auth-hero-scan.jpg.asset.json";
+import heroImage from "@/assets/auth-hero-surf-scan.png.asset.json";
 
 export function AuthShell({
   title,
@@ -26,13 +26,13 @@ export function AuthShell({
           nav text against the logo's own vertical center, which is where
           the tag mark's punch hole sits, so the hole lines up with the
           nav items rather than the top of the logo image. */}
-      <div className="mx-auto grid max-w-6xl items-center gap-10 pt-[calc(3.5rem+37.8px)] lg:grid-cols-[1.05fr_1fr] lg:pt-[calc(6rem+37.8px)]">
+      <div className="mx-auto grid max-w-6xl items-center gap-10 pt-14 lg:grid-cols-[1.05fr_1fr] lg:pt-24">
         <div className="hidden lg:block">
           <MarketingNav />
         </div>
         <div className="mx-auto flex w-full max-w-md justify-end">
           <Link to="/about">
-            <TagLogo variant="wordmark" size="lg" heightClass="h-[6.24rem]" />
+            <TagLogo variant="wordmark" size="lg" heightClass="h-[7.18rem]" />
           </Link>
         </div>
       </div>
