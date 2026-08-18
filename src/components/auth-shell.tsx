@@ -17,9 +17,13 @@ export function AuthShell({
 }) {
   return (
     <div className="min-h-screen bg-background px-4 py-6 lg:px-10">
-      <MarketingHeader right={null} showLogo={false} />
+      {/* Nav sits lower on the hero so its links line up with the top of the
+          Tag logo above the form (roughly the punch hole of the mark). */}
+      <div className="pt-8 lg:pt-16">
+        <MarketingHeader right={null} showLogo={false} />
+      </div>
 
-      <div className="mx-auto grid max-w-6xl items-start gap-10 pt-10 lg:grid-cols-[1.05fr_1fr] lg:pt-16">
+      <div className="mx-auto grid max-w-6xl items-center gap-10 pt-2 lg:grid-cols-[1.05fr_1fr] lg:pt-4">
         {/* Hero column — beach/scan energy */}
         <div className="hidden lg:block">
           <div className="relative overflow-hidden rounded-[2rem] shadow-elevated">
