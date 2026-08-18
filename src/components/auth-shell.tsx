@@ -22,8 +22,11 @@ export function AuthShell({
           same-width/centering wrapper as the form card below it, so its
           right edge lines up with the card's right edge even though
           they're in different rows. Pushed down an extra ~1cm (37.8px)
-          from where it used to sit. */}
-      <div className="mx-auto grid max-w-6xl gap-10 pt-[calc(3.5rem+37.8px)] lg:grid-cols-[1.05fr_1fr] lg:pt-[calc(6rem+37.8px)]">
+          from where it used to sit. items-center vertically centers the
+          nav text against the logo's own vertical center, which is where
+          the tag mark's punch hole sits, so the hole lines up with the
+          nav items rather than the top of the logo image. */}
+      <div className="mx-auto grid max-w-6xl items-center gap-10 pt-[calc(3.5rem+37.8px)] lg:grid-cols-[1.05fr_1fr] lg:pt-[calc(6rem+37.8px)]">
         <div className="hidden lg:block">
           <MarketingNav />
         </div>
@@ -50,8 +53,8 @@ export function AuthShell({
               <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-primary-foreground">
                 Scan. Follow. Engage.
               </span>
-              <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-[#B8600E] xl:text-4xl">
-                Your customers are interested—your products just don't know it yet.
+              <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-[#326D68] xl:text-4xl">
+                Your customers are interested—you just don't know it yet.
               </h1>
             </div>
           </div>

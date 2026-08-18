@@ -55,10 +55,10 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="hidden border-r-0 md:flex">
-      <SidebarHeader className="px-3 pt-4 pb-2">
+      <SidebarHeader className="px-3 pb-2 pt-4">
         {!collapsed && (
-          <Link to="/about" className="block">
-            <TagLogo variant="wordmark" size="sm" heightClass="h-9" className="!justify-start" />
+          <Link to="/about" className="flex justify-center">
+            <TagLogo variant="wordmark" size="sm" heightClass="h-[11.25rem]" />
           </Link>
         )}
       </SidebarHeader>

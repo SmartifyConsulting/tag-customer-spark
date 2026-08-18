@@ -95,12 +95,16 @@ function AuthenticatedLayout() {
               {/* Retailer's own logo (uploaded in Settings), top-right. Shown
                   with a transparent background so it sits directly on the
                   header rather than in a card; falls back to a generic store
-                  placeholder until the retailer uploads one. */}
+                  placeholder until the retailer uploads one. Always resized
+                  into the same fixed box as the Tag logo mark (h-10 w-10),
+                  regardless of the uploaded image's own dimensions, so
+                  wildly different logo sizes/aspect ratios don't throw off
+                  the header. */}
               {branding.data?.logo_url ? (
                 <img
                   src={branding.data.logo_url}
                   alt={branding.data.name ?? "Retailer logo"}
-                  className="h-10 w-auto max-w-[160px] object-contain bg-transparent"
+                  className="h-10 w-10 object-contain bg-transparent"
                 />
               ) : (
                 <div

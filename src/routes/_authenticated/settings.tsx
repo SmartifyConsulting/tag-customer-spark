@@ -28,7 +28,7 @@ import { reseedAsCapeUnionMart } from "@/lib/reseed.functions";
 import { sendTestEmail, sendDailyBriefingEmail, sendWeeklyRoiEmail } from "@/lib/email.functions";
 import { BillingTab } from "@/components/settings/billing-tab";
 import { PlanAdminTab } from "@/components/settings/plan-admin-tab";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, useIsAdmin } from "@/hooks/use-auth";
 import { TagReaderCardDialog } from "@/components/settings/tag-reader-card-dialog";
 import { QrPreview } from "@/components/qr/qr-preview";
 import { ScanLine } from "lucide-react";
@@ -45,6 +45,11 @@ function SettingsPage() {
   const { roles } = useAuth();
   const isSuperAdmin = (roles ?? []).includes("super_admin");
   const canReseed = isSuperAdmin || (roles ?? []).includes("retail_admin");
+  // Storage RLS (retailer_logos_write) only allows retail_admin,
+  // store_manager or super_admin to write to the retailer-logos bucket —
+  // gate the uploader the same way so other staff get a clear explanation
+  // instead of a raw "row-level security policy" error from Supabase.
+  const canEditBrand = useIsAdmin();
   const r = settings.data?.retailer;
   const [form, setForm] = useState<any>(null);
   const current = form ?? r ?? { name: "", contact_email: "", logo_url: "" };
@@ -82,20 +87,32 @@ function SettingsPage() {
               <CardContent className="space-y-4">
                 {settings.isLoading ? <Skeleton className="h-32 w-full" /> : (
                   <>
-                    <div><Label>Workspace name</Label><Input value={current.name ?? ""} onChange={(e) => setForm({ ...current, name: e.target.value })} /></div>
-                    <div><Label>Contact email</Label><Input value={current.contact_email ?? ""} onChange={(e) => setForm({ ...current, contact_email: e.target.value })} /></div>
+                    <div><Label>Workspace name</Label><Input value={current.name ?? ""} onChange={(e) => setForm({ ...current, name: e.target.value })} disabled={!canEditBrand} /></div>
+                    <div><Label>Contact email</Label><Input value={current.contact_email ?? ""} onChange={(e) => setForm({ ...current, contact_email: e.target.value })} disabled={!canEditBrand} /></div>
 
-                    <LogoUploader
-                      logoUrl={current.logo_url ?? ""}
-                      onUploaded={(url) => {
-                        setForm({ ...current, logo_url: url });
-                        qc.invalidateQueries({ queryKey: ["settings"] });
-                      }}
-                    />
+                    {canEditBrand ? (
+                      <LogoUploader
+                        logoUrl={current.logo_url ?? ""}
+                        onUploaded={(url) => {
+                          setForm({ ...current, logo_url: url });
+                          qc.invalidateQueries({ queryKey: ["settings"] });
+                        }}
+                      />
+                    ) : (
+                      <div>
+                        <p className="mb-2 text-sm font-medium">Company logo</p>
+                        <p className="text-xs text-muted-foreground">
+                          Only a store admin or manager can change the workspace logo. Ask one of
+                          them to update it here.
+                        </p>
+                      </div>
+                    )}
 
-                    <div className="flex justify-end">
-                      <Button onClick={() => save.mutate()} disabled={save.isPending}>Save</Button>
-                    </div>
+                    {canEditBrand && (
+                      <div className="flex justify-end">
+                        <Button onClick={() => save.mutate()} disabled={save.isPending}>Save</Button>
+                      </div>
+                    )}
                   </>
                 )}
               </CardContent>
@@ -283,7 +300,13 @@ function LogoUploader({ logoUrl, onUploaded }: { logoUrl: string; onUploaded: (u
       onUploaded(r.url);
       toast.success("Logo uploaded");
     },
-    onError: (e: any) => toast.error(e?.message ?? "Upload failed"),
+    onError: (e: any) => {
+      const raw = e?.message ?? "";
+      const friendly = raw.toLowerCase().includes("row-level security")
+        ? "You don't have permission to upload a logo — ask a store admin or manager."
+        : raw || "Upload failed";
+      toast.error(friendly);
+    },
     onSettled: () => setUploading(false),
   });
 
