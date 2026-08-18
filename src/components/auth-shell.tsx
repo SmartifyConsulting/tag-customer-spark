@@ -17,15 +17,16 @@ export function AuthShell({
 }) {
   return (
     <div className="min-h-screen bg-background px-4 py-6 lg:px-10">
-      {/* Nav sits lower on the hero so its links line up with the top of the
-          Tag logo above the form (roughly the punch hole of the mark). */}
-      <div className="pt-8 lg:pt-16">
+      {/* Nav sits lower on the hero, close above the image/form row. */}
+      <div className="pt-14 lg:pt-24">
         <MarketingHeader right={null} showLogo={false} />
       </div>
 
-      <div className="mx-auto grid max-w-6xl items-center gap-10 pt-2 lg:grid-cols-[1.05fr_1fr] lg:pt-4">
-        {/* Hero column — beach/scan energy */}
-        <div className="hidden lg:block">
+      <div className="mx-auto grid max-w-6xl items-start gap-10 pt-0 lg:grid-cols-[1.05fr_1fr] lg:pt-1">
+        {/* Hero column — beach/scan energy. Top padding matches the logo's
+            height + gap above the form card, so the image lines up with the
+            top of the "Welcome back" card, not the top of the form column. */}
+        <div className="hidden lg:block lg:pt-[7.24rem]">
           <div className="relative overflow-hidden rounded-[2rem] shadow-elevated">
             <img
               src={heroImage.url}
@@ -57,7 +58,7 @@ export function AuthShell({
           {/* Logo sits centered directly above the form, on the same
               centre line as the card below it. */}
           <Link to="/about" className="flex justify-center">
-            <TagLogo variant="wordmark" size="lg" heightClass="h-[10.4rem]" />
+            <TagLogo variant="wordmark" size="lg" heightClass="h-[6.24rem]" />
           </Link>
 
           {/* Compact hero banner on small screens */}

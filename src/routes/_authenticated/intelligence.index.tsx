@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/page-header";
+import { IntelligenceTabs } from "@/components/intelligence-tabs";
 import { OpportunityFeedCard } from "@/components/dashboard/opportunity-feed";
 import { listWeeklyReports, generateNowWeeklyReport, getExecutiveSummary } from "@/lib/ai.functions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -33,9 +34,11 @@ function IntelligencePage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="AI Retail Intelligence"
+        title="Analytics"
         description="Daily opportunities, executive briefings and weekly performance reports — generated automatically."
       />
+
+      <IntelligenceTabs />
 
       <OpportunityFeedCard />
 

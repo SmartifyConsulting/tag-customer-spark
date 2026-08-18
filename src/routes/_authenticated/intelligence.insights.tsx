@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
+import { IntelligenceTabs } from "@/components/intelligence-tabs";
 import { OpportunityFeedCard } from "@/components/dashboard/opportunity-feed";
 import { SignalContributionsCard } from "@/components/dashboard/signal-contributions-card";
 import { OverallIntentCard } from "@/components/intent/product-intent-panel";
@@ -18,6 +19,7 @@ function InsightsPage() {
         title="Demand Insights"
         description="Auto-generated explanations for every product — why scores moved, what to do about it."
       />
+      <IntelligenceTabs />
       <OverallIntentCard />
       <SignalContributionsCard />
       <OpportunityFeedCard />

@@ -1,16 +1,15 @@
-import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { TagLogo } from "@/components/tag-logo";
 import { CommandPalette } from "@/components/command-palette";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { getRetailerBranding } from "@/lib/branding.functions";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { briefingQueryOptions } from "@/lib/dashboard";
-import { TagReaderTile } from "@/components/qr/tag-reader-tile";
 import { UserMenu } from "@/components/user-menu";
 import { useIsStaff } from "@/hooks/use-persona";
 
@@ -61,9 +60,6 @@ function AuthenticatedLayout() {
   // the Briefing page uses so it stays in sync ("Hello Makro Woodmead").
   const briefing = useQuery(briefingQueryOptions);
   const greetingName = briefing.data?.greetingName ?? null;
-  // The reader frame belongs on the dashboard/briefing surface only.
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const showReaderTile = pathname === "/briefing" || pathname === "/dashboard";
   const isStaff = useIsStaff();
 
 
@@ -77,14 +73,14 @@ function AuthenticatedLayout() {
       <SidebarProvider style={themeStyle as any} className="flex-1">
         <AppSidebar />
         <SidebarInset className="bg-background">
-          <header className="grid grid-cols-3 items-center gap-3 bg-background px-4 py-3 sm:px-6">
-            <div className="flex items-center gap-3 justify-self-start">
+          <header className="flex items-center justify-between gap-3 bg-background px-4 pb-3 pt-8 sm:px-6 sm:pt-10">
+            <div className="flex items-center gap-3">
               {isStaff && <SidebarTrigger className="md:hidden" />}
-              {/* Greeting copy sits to the left, beside the nav — the small
-                  logo that used to live here is gone. */}
+              {/* Greeting copy sits to the left, beside the nav — the logo
+                  now lives at the top of the left nav panel instead. */}
               {greetingName && (
                 <div className="min-w-0">
-                  <p className="truncate text-[14px] font-semibold tracking-tight">
+                  <p className="truncate font-display text-[42px] font-semibold tracking-tight">
                     Hello {greetingName}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -93,21 +89,27 @@ function AuthenticatedLayout() {
                   </p>
                 </div>
               )}
-              {isStaff && showReaderTile && (
-                <div className="hidden sm:block">
-                  <TagReaderTile compact />
-                </div>
-              )}
             </div>
 
-            <TagLogo
-              variant="wordmark"
-              size="lg"
-              heightClass="h-[10.4rem]"
-              className="justify-self-center"
-            />
-
-            <div className="flex items-center gap-3 justify-self-end">
+            <div className="flex items-center gap-3">
+              {/* Retailer's own logo (uploaded in Settings), top-right. Shown
+                  with a transparent background so it sits directly on the
+                  header rather than in a card; falls back to a generic store
+                  placeholder until the retailer uploads one. */}
+              {branding.data?.logo_url ? (
+                <img
+                  src={branding.data.logo_url}
+                  alt={branding.data.name ?? "Retailer logo"}
+                  className="h-10 w-auto max-w-[160px] object-contain bg-transparent"
+                />
+              ) : (
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-md bg-transparent text-muted-foreground/50"
+                  title="No logo uploaded yet — add one in Settings"
+                >
+                  <Store className="h-6 w-6" />
+                </div>
+              )}
               {!isStaff && <UserMenu />}
             </div>
           </header>

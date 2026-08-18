@@ -52,7 +52,6 @@ function RoiPage() {
 
   return (
     <div className="space-y-8">
-      <IntelligenceTabs />
       <PageHeader
         title="ROI Engine"
         description="Attribute revenue to scans, watchlists, and notifications — and prove the platform's value to your CFO."
@@ -71,6 +70,8 @@ function RoiPage() {
           </div>
         }
       />
+
+      <IntelligenceTabs />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {overview.isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />) : (

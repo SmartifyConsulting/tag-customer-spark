@@ -55,7 +55,7 @@ export type NavItem = {
 // PURCHASE is visible to EVERY signed-in user, because a staff member is
 // also a shopper. PRODUCT and BUSINESS are staff-only.
 export type NavSection = {
-  id: "product" | "purchase" | "business";
+  id: "product" | "retail-intelligence" | "purchase" | "business";
   label: string;
   staffOnly?: boolean;
   items: readonly NavItem[];
@@ -86,16 +86,35 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         icon: Boxes,
         match: ["/admin/inventory", "/products"],
       },
-      { title: "Intent Engine", url: "/intelligence/intent", icon: Radar, match: ["/intelligence/intent", "/intent"] },
-      { title: "Watchlists", url: "/watchlists", icon: Eye, match: ["/watchlists"] },
       { title: "Whatsapps", url: "/inbox", icon: MessageSquare, match: ["/inbox"] },
+      { title: "Watchlists", url: "/watchlists", icon: Eye, match: ["/watchlists"] },
+    ],
+  },
+  {
+    id: "retail-intelligence",
+    label: "Retail Intelligence",
+    staffOnly: true,
+    items: [
+      { title: "Intent Engine", url: "/intelligence/intent", icon: Radar, match: ["/intelligence/intent", "/intent"] },
       {
         // Overview screen — Insights / Analytics / ROI already live there as
-        // tabs, so this is a single destination with no sub-menu.
+        // tabs, so this is a single destination with no sub-menu. Listed
+        // explicitly (not a bare "/intelligence" prefix) so this doesn't
+        // also light up for "/intelligence/intent", which is its own nav
+        // item (Intent Engine) under a sibling subtree.
         title: "Analytics",
         url: "/intelligence",
         icon: TrendingUp,
-        match: ["/intelligence", "/analytics", "/roi", "/commerce", "/dashboard"],
+        match: [
+          "/intelligence",
+          "/intelligence/insights",
+          "/intelligence/trends",
+          "/intelligence/forecasting",
+          "/analytics",
+          "/roi",
+          "/commerce",
+          "/dashboard",
+        ],
       },
     ],
   },

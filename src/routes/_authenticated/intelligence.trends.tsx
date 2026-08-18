@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Activity, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { IntelligenceTabs } from "@/components/intelligence-tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,6 +43,8 @@ function TrendsPage() {
         title="Trend Detection"
         description="Automatic classification of every product as rising, stable or falling — based on Intent Score momentum."
       />
+
+      <IntelligenceTabs />
 
       <div className="grid gap-6 lg:grid-cols-3">
         {(["rising", "stable", "falling"] as const).map((kind) => {

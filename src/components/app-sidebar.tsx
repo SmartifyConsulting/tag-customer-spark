@@ -7,6 +7,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -19,6 +20,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useTier } from "@/hooks/use-tier";
 import { useAuth, useIsAdmin, useIsSuperAdmin } from "@/hooks/use-auth";
 import { UserMenu } from "@/components/user-menu";
+import { TagLogo } from "@/components/tag-logo";
+import { TagReaderTile } from "@/components/qr/tag-reader-tile";
 import { sectionsForUser, isNavActive, type NavItem } from "@/lib/nav";
 import { useIsStaff } from "@/hooks/use-persona";
 
@@ -52,10 +55,15 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="hidden border-r-0 md:flex">
+      <SidebarHeader className="px-3 pt-4 pb-2">
+        {!collapsed && (
+          <Link to="/about" className="block">
+            <TagLogo variant="wordmark" size="sm" heightClass="h-9" className="!justify-start" />
+          </Link>
+        )}
+      </SidebarHeader>
 
-
-
-      <SidebarContent className="px-1.5 pb-3 pt-2">
+      <SidebarContent className="px-1.5 pb-3 pt-[6.6875rem]">
         {sections.map((section) => (
           <SidebarGroup key={section.id}>
             {!collapsed && section.id !== "purchase" && (
@@ -141,6 +149,9 @@ export function AppSidebar() {
       <SidebarFooter>
         {!collapsed && (
           <div className="space-y-2 px-3 py-3">
+            <div className="flex justify-start pb-4 pl-[18px]">
+              <TagReaderTile compact />
+            </div>
             <input
               type="text"
               placeholder="Search anything..."

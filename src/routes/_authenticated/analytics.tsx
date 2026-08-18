@@ -38,7 +38,6 @@ function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <IntelligenceTabs />
       <PageHeader
         title="Analytics"
         description="Deep-dive view of scans, customer growth, and revenue attribution."
@@ -52,6 +51,8 @@ function AnalyticsPage() {
           </Tabs>
         }
       />
+
+      <IntelligenceTabs />
 
 
       <div className="grid grid-cols-12 gap-4">

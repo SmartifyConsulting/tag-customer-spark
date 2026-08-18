@@ -22,12 +22,16 @@ export function ScanHeatmap({ data }: { data: number[][] }) {
                 <div className="text-muted-foreground self-center">{days[d]}</div>
                 {row.map((v, h) => {
                   const op = v / max;
+                  // Orange shading: pale orange for fewer scans, deep orange
+                  // for more — pure lightness change on a fixed orange hue,
+                  // so it stays legible against the navy background.
+                  const lightness = 88 - op * 48;
                   return (
                     <div
                       key={`${d}-${h}`}
                       title={`${days[d]} ${h}:00 — ${v} scans`}
                       className="aspect-square rounded-sm"
-                      style={{ backgroundColor: `rgba(3, 28, 77, ${0.08 + op * 0.85})` }}
+                      style={{ backgroundColor: `hsl(28, 90%, ${lightness}%)` }}
                     />
                   );
                 })}
@@ -50,8 +54,7 @@ export function ScanHeatmapLegend() {
       <div
         className="h-2 w-24 rounded-full"
         style={{
-          background:
-            "linear-gradient(to right, rgba(3,28,77,0.08), rgba(3,28,77,0.93))",
+          background: "linear-gradient(to right, hsl(28, 90%, 88%), hsl(28, 90%, 40%))",
         }}
       />
       <span>More scans</span>

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { TrendingUp, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { IntelligenceTabs } from "@/components/intelligence-tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IntentSectionsCard } from "@/components/dashboard/intent-sections-card";
@@ -26,6 +27,8 @@ function ForecastingPage() {
           </Button>
         }
       />
+
+      <IntelligenceTabs />
 
       <Card className="rounded-xl shadow-[var(--shadow-card)]">
         <CardHeader>

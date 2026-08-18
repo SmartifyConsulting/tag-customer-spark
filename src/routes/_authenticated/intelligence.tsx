@@ -1,5 +1,4 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
-import { IntelligenceTabs } from "@/components/intelligence-tabs";
 import { requireFeature } from "@/lib/tier-guard";
 
 export const Route = createFileRoute("/_authenticated/intelligence")({
@@ -8,12 +7,10 @@ export const Route = createFileRoute("/_authenticated/intelligence")({
   component: IntelligenceLayout,
 });
 
+// Each child page renders its own PageHeader followed by <IntelligenceTabs />
+// (heading first, tabs directly under it, then the page's own content) —
+// see intelligence.index.tsx etc. Nothing shared belongs above the Outlet.
 function IntelligenceLayout() {
-  return (
-    <div className="space-y-8">
-      <IntelligenceTabs />
-      <Outlet />
-    </div>
-  );
+  return <Outlet />;
 }
 
