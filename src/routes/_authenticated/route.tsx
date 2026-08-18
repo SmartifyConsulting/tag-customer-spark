@@ -64,7 +64,8 @@ function AuthenticatedLayout() {
 
 
   const themeStyle: Record<string, string> = {};
-  if (brandTheme?.background) themeStyle["--background"] = brandTheme.background;
+  // NOTE: the app background stays fixed — never derive it from the uploaded
+  // retailer logo, that was tinting the whole canvas.
   if (brandTheme?.primary) themeStyle["--primary"] = brandTheme.primary;
   if (brandTheme?.primaryForeground) themeStyle["--primary-foreground"] = brandTheme.primaryForeground;
 
