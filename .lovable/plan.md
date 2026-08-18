@@ -25,3 +25,9 @@ Steps:
 
 - Files touched: `src/hooks/use-auth.ts` (role list), `src/routes/_authenticated/settings.tsx` (loading-aware gate), `src/components/auth-shell.tsx` (hero image), plus a new asset pointer in `src/assets/`.
 - No database migration expected; storage policies for `retailer-logos` are already in place.
+
+## 3. Sizing and alignment tweaks
+
+- Reduce the Tag logo in the app's side navigation bar by 20%.
+- On the hero (sign-in / sign-up) page: raise the nav menu items and the Tag logo by roughly 1 cm (~38px).
+- Increase the hero page logo size by 15%.
