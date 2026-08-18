@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { MarketingNav } from "@/components/marketing-nav";
 import { TagLogo } from "@/components/tag-logo";
-import heroImage from "@/assets/auth-hero-surf.png.asset.json";
+import heroImage from "@/assets/auth-hero-scan.jpg.asset.json";
 
 export function AuthShell({
   title,
@@ -44,7 +44,7 @@ export function AuthShell({
           <div className="relative overflow-hidden rounded-[2rem] shadow-elevated">
             <img
               src={heroImage.url}
-              alt="Shopper scanning a Tag barcode on a surfboard in a beach store"
+              alt="Shopper scanning a Tag barcode sticker on a surfboard in a beach surf shop"
               className="h-[26rem] w-full object-cover"
               loading="eager"
             />
@@ -73,7 +73,7 @@ export function AuthShell({
           <div className="relative overflow-hidden rounded-2xl lg:hidden">
             <img
               src={heroImage.url}
-              alt="Shopper scanning a Tag barcode on a surfboard in a beach store"
+              alt="Shopper scanning a Tag barcode sticker on a surfboard in a beach surf shop"
               className="h-36 w-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent" />
