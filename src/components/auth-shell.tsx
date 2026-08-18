@@ -53,7 +53,7 @@ export function AuthShell({
               <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-primary-foreground">
                 Scan. Follow. Engage.
               </span>
-              <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-[#326D68] xl:text-4xl">
+              <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-white xl:text-4xl">
                 Your customers are interested—you just don't know it yet.
               </h1>
             </div>
