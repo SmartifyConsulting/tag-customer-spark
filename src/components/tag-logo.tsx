@@ -1,4 +1,4 @@
-import tagLogoAsset from "@/assets/tag-logo-2026d.png.asset.json";
+import tagLogoAsset from "@/assets/tag-logo-2026e.png.asset.json";
 
 const tagLogoHorizontal = tagLogoAsset.url;
 
