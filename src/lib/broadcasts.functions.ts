@@ -48,7 +48,7 @@ async function loadOptedInCustomers(
     .select("id, whatsapp_e164, full_name, status, marketing_consent_at")
     .eq("retailer_id", retailerId)
     .not("marketing_consent_at", "is", null)
-    .eq("status", "active")
+    .in("status", ["subscribed", "registered"])
     .not("whatsapp_e164", "is", null)
     .limit(MAX_RECIPIENTS + 1);
   if (error) throw new Error(error.message);
