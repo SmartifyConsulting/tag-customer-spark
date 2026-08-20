@@ -166,11 +166,20 @@ export const testInfobipDelivery = createServerFn({ method: "POST" })
       templateName: data.templateName ?? "tag_scan_v5",
       to: data.recipient,
       headerImageUrl: imageUrl,
-      variables: buildScanTemplateVariables({
-        productName: withImage?.name ?? "this product",
-        priceCents: withImage?.sale_price_cents ?? withImage?.price_cents ?? null,
-        originalPriceCents: withImage?.price_cents ?? null,
-      }),
+      // Supply every variable name any known template might ask for —
+      // scan/alert-style templates want productName/price/etc., the
+      // broadcast template wants heading/body. Extra keys a given
+      // template doesn't declare are simply ignored by buildTemplatePayload,
+      // so this works regardless of which template the dropdown picks.
+      variables: {
+        ...buildScanTemplateVariables({
+          productName: withImage?.name ?? "this product",
+          priceCents: withImage?.sale_price_cents ?? withImage?.price_cents ?? null,
+          originalPriceCents: withImage?.price_cents ?? null,
+        }),
+        heading: "Test broadcast",
+        body: `This is a test send of "${data.templateName ?? "tag_scan_v5"}" from Tag's Automations page.`,
+      },
     });
 
     return {
