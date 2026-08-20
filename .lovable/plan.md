@@ -16,3 +16,8 @@ Add an optional `email` field to the customer record so the app and the database
 ## Alternative
 
 If email should not be stored on customers at all, the other route is to strip the email field from the customer form and the create/update logic instead. Say the word and I'll switch the plan to that.
+
+## Logo sizing
+
+- Hero / sign-in logo: increase 30% (from `h-[7.18rem]` to about `h-[9.33rem]` in `src/components/auth-shell.tsx`), keeping its right alignment with the "Welcome back" card.
+- Sidebar nav logo: increase 40% (from `h-[8.1rem]` to about `h-[11.34rem]` in `src/components/app-sidebar.tsx`), same rounding and placement.
