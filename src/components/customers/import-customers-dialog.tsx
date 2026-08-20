@@ -129,7 +129,7 @@ export function ImportCustomersDialog({
               <FileUp className="mb-3 h-8 w-8 text-muted-foreground" />
               <span className="font-medium">Choose XLSX or CSV</span>
               <span className="mt-1 text-xs text-muted-foreground">
-                Name, phone number, and email columns
+                Name and phone number columns
               </span>
               <input
                 ref={inputRef}
@@ -169,7 +169,6 @@ export function ImportCustomersDialog({
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Phone</TableHead>
-                    <TableHead>Email</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -177,7 +176,6 @@ export function ImportCustomersDialog({
                     <TableRow key={`${r.whatsapp_e164}-${i}`}>
                       <TableCell className="font-medium">{r.full_name}</TableCell>
                       <TableCell className="font-mono text-xs">{r.whatsapp_e164}</TableCell>
-                      <TableCell>{r.email || "—"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
