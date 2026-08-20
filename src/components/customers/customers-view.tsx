@@ -209,7 +209,7 @@ export function CustomersView({ embedded = false }: { embedded?: boolean }) {
               (list.data!.rows as any[]).map((c) => (
                 <div
                   key={c.id}
-                  className="grid w-full grid-cols-[1.5fr_1fr_0.8fr_0.8fr_1fr_1fr_auto] items-center gap-3 px-6 py-3 hover:bg-muted/40"
+                  className="grid w-full grid-cols-[1.5fr_0.8fr_1.5fr_0.6fr_0.7fr_0.9fr_0.9fr_auto] items-center gap-3 px-6 py-3 hover:bg-muted/40"
                 >
                   <button onClick={() => setActiveId(c.id)} className="min-w-0 text-left">
                     <p className="flex items-center gap-2 truncate text-sm font-medium">
