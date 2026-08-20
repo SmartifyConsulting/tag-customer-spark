@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { EmptyState } from "@/components/empty-state";
 import {
   Sheet,
@@ -40,6 +41,7 @@ import {
   getCustomerDetail,
   deleteCustomer,
   markCustomersViewed,
+  updateCustomer,
 } from "@/lib/customers.functions";
 import { CustomerFormDialog } from "@/components/customers/customer-form-dialog";
 import { ImportCustomersDialog } from "@/components/customers/import-customers-dialog";
