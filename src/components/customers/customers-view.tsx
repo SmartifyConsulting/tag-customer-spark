@@ -181,9 +181,10 @@ export function CustomersView({ embedded = false }: { embedded?: boolean }) {
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y">
-            <div className="grid grid-cols-[1.5fr_1fr_0.8fr_0.8fr_1fr_1fr_auto] gap-3 px-6 py-3 text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="grid grid-cols-[1.5fr_0.8fr_1.5fr_0.6fr_0.7fr_0.9fr_0.9fr_auto] gap-3 px-6 py-3 text-xs uppercase tracking-wide text-muted-foreground">
               <span className="text-left">Customer</span>
               <span className="text-left">Status</span>
+              <span className="text-left">Consent</span>
               <span className="text-center">Scans</span>
               <span className="text-center">Interests</span>
               <span className="text-center">Revenue</span>
