@@ -44,7 +44,9 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     description:
       "The WhatsApp sent the moment a customer taps Follow Me after scanning. Switch the template here if the current one is rejected.",
     threshold: null,
-    templateName: "tag_scan_confirm_and_install",
+    // v2 approved 2026-08-20 — has the real Visit Website install button,
+    // replacing v1's mislabeled QUICK_REPLY.
+    templateName: "tag_scan_confirm_and_install_v2",
   },
   {
     key: "price_drop",
