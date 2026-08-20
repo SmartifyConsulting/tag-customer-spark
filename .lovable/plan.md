@@ -21,3 +21,12 @@ If email should not be stored on customers at all, the other route is to strip t
 
 - Hero / sign-in logo: increase 30% (from `h-[7.18rem]` to about `h-[9.33rem]` in `src/components/auth-shell.tsx`), keeping its right alignment with the "Welcome back" card.
 - Sidebar nav logo: increase 40% (from `h-[8.1rem]` to about `h-[11.34rem]` in `src/components/app-sidebar.tsx`), same rounding and placement.
+
+## Inline subscribe / notify toggles
+
+In the Customers list (`src/components/customers/customers-view.tsx`), add two switches directly on each row so no dialog is needed:
+
+- Subscribed — flips status between `subscribed` and `registered` (and sets/clears the marketing consent timestamp).
+- Notifications — sets/clears the notify consent timestamp.
+
+Each switch calls the existing update-customer function with only that one field, shows an optimistic state, and reverts with a toast if the save fails. The Edit dialog stays available for everything else.
