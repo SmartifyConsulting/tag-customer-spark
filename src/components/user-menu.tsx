@@ -36,12 +36,17 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-9 gap-2 px-2">
+        {/* hover:bg-transparent on the button itself so the ghost-hover
+            highlight doesn't wash over the QR — only the name span below
+            carries its own hover background, scoped to just that area. */}
+        <Button variant="ghost" className="h-9 gap-2 px-2 hover:bg-transparent">
           {/* The Tag Barcode Reader QR stands in for the avatar — square
               (no rounding, corners matter for scanning), sized to actually
               be scannable rather than decorative. */}
           <TagReaderQrBadge size={48} />
-          <span className="hidden sm:inline text-sm font-medium max-w-[140px] truncate">{name}</span>
+          <span className="ml-1 hidden truncate rounded-md px-2 py-1 text-sm font-medium max-w-[140px] hover:bg-accent sm:inline">
+            {name}
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
