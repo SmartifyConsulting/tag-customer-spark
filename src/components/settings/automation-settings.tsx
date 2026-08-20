@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AUTOMATIONS, ALL_WHATSAPP_TEMPLATES, type AutomationSetting } from "@/lib/automation";
@@ -121,19 +122,18 @@ export function AutomationSettings() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                aria-label="Template to test"
-                value={testTemplate}
-                onChange={(event) => setTestTemplate(event.target.value)}
-                list="tag-template-options"
-                placeholder="tag_scan_v5"
-                className="font-mono text-xs sm:max-w-[220px]"
-              />
-              <datalist id="tag-template-options">
-                {ALL_WHATSAPP_TEMPLATES.map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
+              <Select value={testTemplate} onValueChange={setTestTemplate}>
+                <SelectTrigger aria-label="Template to test" className="font-mono text-xs sm:max-w-[220px]">
+                  <SelectValue placeholder="Choose a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_WHATSAPP_TEMPLATES.map((name) => (
+                    <SelectItem key={name} value={name} className="font-mono text-xs">
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Input
                 aria-label="WhatsApp test recipient"
                 value={testRecipient}

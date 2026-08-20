@@ -58,12 +58,12 @@ export function AppSidebar() {
       <SidebarHeader className="px-3 pb-2 pt-[1.6rem]">
         {!collapsed && (
           <Link to="/about" className="flex justify-center">
-            <TagLogo variant="wordmark" size="sm" heightClass="h-[11.34rem]" className="[&_img]:rounded-2xl" />
+            <TagLogo variant="wordmark" size="sm" heightClass="h-[12rem]" className="[&_img]:rounded-2xl" />
           </Link>
         )}
       </SidebarHeader>
 
-      <SidebarContent className="px-1.5 pb-3 pt-[3.1875rem]">
+      <SidebarContent className="px-1.5 pb-0 pt-[3.1875rem]">
         {sections.map((section) => (
           <SidebarGroup key={section.id} className="py-1">
             {!collapsed && section.id !== "purchase" && (

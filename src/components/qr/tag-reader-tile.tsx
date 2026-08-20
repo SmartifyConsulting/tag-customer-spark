@@ -1,12 +1,9 @@
 import { QrPreview } from "@/components/qr/qr-preview";
 
 // Compact Tag Barcode Reader QR tile — sits at the bottom of the left nav
-// panel, just above the search bar. White rounded frame, matching the Tag
-// logo's own white card treatment at the top of the sidebar. The logo has
-// a scale-[1.2] transform (see TagLogo), so its true visual footprint is
-// 11.34rem * 1.2 — this frame has no scale of its own, so it's sized down
-// to 11.34rem / 1.2 (9.45rem) to visually match that, not the logo's
-// unscaled declared height.
+// panel, just above the search bar. White rounded frame sized to snugly
+// fit the QR code's dark modules (minimal padding, tight quiet zone), at
+// 12rem — the Tag logo above it is sized to match (see app-sidebar.tsx).
 export function TagReaderTile({ compact = false }: { compact?: boolean }) {
   const readerUrl =
     typeof window !== "undefined"
@@ -16,10 +13,10 @@ export function TagReaderTile({ compact = false }: { compact?: boolean }) {
   return (
     <div
       className={`flex items-center justify-center rounded-2xl bg-white ${
-        compact ? "h-[9.45rem] w-[9.45rem] p-1" : "p-5"
+        compact ? "h-[12rem] w-[12rem] p-2" : "p-5"
       }`}
     >
-      <QrPreview value={readerUrl} size={compact ? 143 : 192} bare margin={compact ? 2 : 4} />
+      <QrPreview value={readerUrl} size={compact ? 176 : 192} bare margin={compact ? 2 : 4} />
     </div>
   );
 }
