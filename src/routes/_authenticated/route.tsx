@@ -8,7 +8,6 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { CommandPalette } from "@/components/command-palette";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { getRetailerBranding } from "@/lib/branding.functions";
-import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { briefingQueryOptions } from "@/lib/dashboard";
 import { UserMenu } from "@/components/user-menu";
 import { useIsStaff } from "@/hooks/use-persona";
@@ -55,7 +54,6 @@ function AuthenticatedLayout() {
     retry: false,
     staleTime: 5 * 60_000,
   });
-  const brandTheme = useBrandTheme(branding.data?.logo_url);
   // Greeting name shown in the top-left of the app header — same source
   // the Briefing page uses so it stays in sync ("Hello Makro Woodmead").
   const briefing = useQuery(briefingQueryOptions);
@@ -63,11 +61,11 @@ function AuthenticatedLayout() {
   const isStaff = useIsStaff();
 
 
+  // The app's colors stay fixed — never derived from the uploaded retailer
+  // logo. This used to tint --background (a light wash from the logo's
+  // hue) and --primary (screen headings, buttons, etc.), which is why the
+  // Checkers logo — teal — was turning headings teal instead of Tag's red.
   const themeStyle: Record<string, string> = {};
-  // NOTE: the app background stays fixed — never derive it from the uploaded
-  // retailer logo, that was tinting the whole canvas.
-  if (brandTheme?.primary) themeStyle["--primary"] = brandTheme.primary;
-  if (brandTheme?.primaryForeground) themeStyle["--primary-foreground"] = brandTheme.primaryForeground;
 
   return (
     <div className="flex flex-col min-h-screen">
