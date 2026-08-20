@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import PhoneInput from "react-phone-number-input";
+// Bundled flag SVGs instead of the library's default, which fetches each
+// flag from a remote CDN on demand — that's what was making the country
+// flag take a long time (or fail) to appear on a slow connection.
+import flags from "react-phone-number-input/flags";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import { CheckCircle2, Loader2, MessageCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -159,6 +163,7 @@ function NotifyForm({
           <PhoneInput
             defaultCountry="ZA"
             international
+            flags={flags}
             placeholder="Enter phone number"
             value={phone}
             onChange={setPhone}

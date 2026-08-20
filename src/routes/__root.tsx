@@ -92,10 +92,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "Tag helps retailers reconnect with in-store shoppers via QR-driven WhatsApp notifications." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/68bf0c5d-98b1-4dd5-b79b-4203f05793a9/id-preview-424c7c45--75617866-85eb-4b73-8950-80b01effc349.lovable.app-1782753204670.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/68bf0c5d-98b1-4dd5-b79b-4203f05793a9/id-preview-424c7c45--75617866-85eb-4b73-8950-80b01effc349.lovable.app-1782753204670.png" },
+      { name: "theme-color", content: "#18304F" },
+      // iOS has no manifest/install-prompt support — these are the meta
+      // tags Safari actually reads for "Add to Home Screen" (standalone
+      // launch, status bar style, and the home-screen icon).
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Tag" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/png", href: faviconAsset.url },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: faviconAsset.url },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -126,6 +135,16 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // Installability is a nice-to-have, not a requirement — never let a
+        // registration failure (e.g. served over http in local dev) break
+        // the app.
+      });
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

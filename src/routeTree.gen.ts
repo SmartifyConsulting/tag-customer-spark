@@ -18,6 +18,7 @@ import { Route as PopiaRouteImport } from './routes/popia'
 import { Route as PatentRouteImport } from './routes/patent'
 import { Route as IntentGapAnalyticsRouteImport } from './routes/intent-gap-analytics'
 import { Route as IntelligenceEngineRouteImport } from './routes/intelligence-engine'
+import { Route as InstallRouteImport } from './routes/install'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as FeaturesRouteImport } from './routes/features'
@@ -126,6 +127,11 @@ const IntentGapAnalyticsRoute = IntentGapAnalyticsRouteImport.update({
 const IntelligenceEngineRoute = IntelligenceEngineRouteImport.update({
   id: '/intelligence-engine',
   path: '/intelligence-engine',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstallRoute = InstallRouteImport.update({
+  id: '/install',
+  path: '/install',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HowItWorksRoute = HowItWorksRouteImport.update({
@@ -486,6 +492,7 @@ export interface FileRoutesByFullPath {
   '/features': typeof FeaturesRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/install': typeof InstallRoute
   '/intelligence-engine': typeof IntelligenceEngineRoute
   '/intent-gap-analytics': typeof IntentGapAnalyticsRoute
   '/patent': typeof PatentRoute
@@ -560,6 +567,7 @@ export interface FileRoutesByTo {
   '/features': typeof FeaturesRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/install': typeof InstallRoute
   '/intelligence-engine': typeof IntelligenceEngineRoute
   '/intent-gap-analytics': typeof IntentGapAnalyticsRoute
   '/patent': typeof PatentRoute
@@ -633,6 +641,7 @@ export interface FileRoutesById {
   '/features': typeof FeaturesRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/install': typeof InstallRoute
   '/intelligence-engine': typeof IntelligenceEngineRoute
   '/intent-gap-analytics': typeof IntentGapAnalyticsRoute
   '/patent': typeof PatentRoute
@@ -709,6 +718,7 @@ export interface FileRouteTypes {
     | '/features'
     | '/forgot-password'
     | '/how-it-works'
+    | '/install'
     | '/intelligence-engine'
     | '/intent-gap-analytics'
     | '/patent'
@@ -783,6 +793,7 @@ export interface FileRouteTypes {
     | '/features'
     | '/forgot-password'
     | '/how-it-works'
+    | '/install'
     | '/intelligence-engine'
     | '/intent-gap-analytics'
     | '/patent'
@@ -855,6 +866,7 @@ export interface FileRouteTypes {
     | '/features'
     | '/forgot-password'
     | '/how-it-works'
+    | '/install'
     | '/intelligence-engine'
     | '/intent-gap-analytics'
     | '/patent'
@@ -931,6 +943,7 @@ export interface RootRouteChildren {
   FeaturesRoute: typeof FeaturesRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   HowItWorksRoute: typeof HowItWorksRoute
+  InstallRoute: typeof InstallRoute
   IntelligenceEngineRoute: typeof IntelligenceEngineRoute
   IntentGapAnalyticsRoute: typeof IntentGapAnalyticsRoute
   PatentRoute: typeof PatentRoute
@@ -1022,6 +1035,13 @@ declare module '@tanstack/react-router' {
       path: '/intelligence-engine'
       fullPath: '/intelligence-engine'
       preLoaderRoute: typeof IntelligenceEngineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/install': {
+      id: '/install'
+      path: '/install'
+      fullPath: '/install'
+      preLoaderRoute: typeof InstallRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/how-it-works': {
@@ -1637,6 +1657,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeaturesRoute: FeaturesRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   HowItWorksRoute: HowItWorksRoute,
+  InstallRoute: InstallRoute,
   IntelligenceEngineRoute: IntelligenceEngineRoute,
   IntentGapAnalyticsRoute: IntentGapAnalyticsRoute,
   PatentRoute: PatentRoute,
