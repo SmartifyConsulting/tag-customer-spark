@@ -58,16 +58,19 @@ export const TEMPLATE_CONTRACTS: Record<string, TemplateContract> = {
   // be set here, with the suffix value threaded through from the sender.
   tag_scan_confirm_and_install: {
     name: "tag_scan_confirm_and_install",
-    // UNCONFIRMED — changed from "en" on the hypothesis that this template
-    // was also registered as "English (UK)" (en_GB) in Infobip, like
-    // tag_broadcast_v1 turned out to be, which would explain its identical
-    // recurring "Bad request" failures. Verify in Infobip's template list
-    // (Language column) and revert to "en" here if it actually says plain
-    // "English".
-    language: "en_GB",
+    // Confirmed via Infobip's template dashboard: Language = "English"
+    // (plain en, not en_GB like tag_broadcast_v1 — don't copy that fix here).
+    language: "en",
     header: "IMAGE",
     placeholders: [],
-    urlButton: {},
+    // The approved button ("Install TAG") shows Infobip's quick-reply icon
+    // in the template preview, not a URL-button icon — likely cloned from
+    // tag_scan_v5's QUICK_REPLY button and re-labeled without changing its
+    // type. Sending type:"URL" against an approved QUICK_REPLY button would
+    // explain the persistent "Bad request". Switched to match; if this
+    // guess is wrong, WhatsApp's error will be more specific than a plain
+    // "Bad request" and point elsewhere.
+    quickReplies: ["Install TAG"],
   },
 
   // Price drop: "My price has dropped from {{1}} to {{2}}".
