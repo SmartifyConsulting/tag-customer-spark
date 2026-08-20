@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { LogOut, Repeat, Settings as SettingsIcon, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { TagReaderQrBadge } from "@/components/qr/tag-reader-tile";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,13 +14,6 @@ import {
 import { useAuth, ROLE_LABELS } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { listRememberedSessions } from "@/lib/session-switcher";
-
-function initials(name?: string | null, email?: string | null) {
-  const src = (name || email || "?").trim();
-  const parts = src.split(/\s+/);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return src.slice(0, 2).toUpperCase();
-}
 
 async function switchTo(session: { access_token: string; refresh_token: string; email: string }) {
   const { error } = await supabase.auth.setSession({
@@ -44,12 +37,10 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-9 gap-2 px-2">
-          <Avatar className="h-7 w-7">
-            {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-              {initials(profile?.full_name, user.email)}
-            </AvatarFallback>
-          </Avatar>
+          {/* The Tag Barcode Reader QR stands in for the avatar — square
+              (no rounding, corners matter for scanning), sized to actually
+              be scannable rather than decorative. */}
+          <TagReaderQrBadge size={36} />
           <span className="hidden sm:inline text-sm font-medium max-w-[140px] truncate">{name}</span>
         </Button>
       </DropdownMenuTrigger>

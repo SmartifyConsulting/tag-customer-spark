@@ -21,7 +21,6 @@ import { useTier } from "@/hooks/use-tier";
 import { useAuth, useIsAdmin, useIsSuperAdmin } from "@/hooks/use-auth";
 import { UserMenu } from "@/components/user-menu";
 import { TagLogo } from "@/components/tag-logo";
-import { TagReaderTile } from "@/components/qr/tag-reader-tile";
 import { sectionsForUser, isNavActive, type NavItem } from "@/lib/nav";
 import { useIsStaff } from "@/hooks/use-persona";
 
@@ -154,11 +153,9 @@ export function AppSidebar() {
               placeholder="Search anything..."
               className="w-full rounded-lg border border-sidebar-border bg-sidebar px-3 py-2 text-sm placeholder:text-sidebar-foreground/40 text-sidebar-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
             />
-            {/* User avatar/name bottom-left, the Tag Barcode Reader's micro
-                QR bottom-right — both on the same row. */}
-            <div className="flex items-center justify-between gap-2 pt-1">
+            {/* UserMenu's own "avatar" is now the Tag Barcode Reader QR. */}
+            <div className="pt-1">
               <UserMenu />
-              <TagReaderTile micro />
             </div>
           </div>
         )}
