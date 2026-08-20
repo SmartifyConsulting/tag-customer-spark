@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AUTOMATIONS, SCAN_TEMPLATE_OPTIONS, type AutomationSetting } from "@/lib/automation";
+import { AUTOMATIONS, ALL_WHATSAPP_TEMPLATES, type AutomationSetting } from "@/lib/automation";
 import {
   checkInfobipConnection,
   listAutomationSettings,
@@ -130,7 +130,7 @@ export function AutomationSettings() {
                 className="font-mono text-xs sm:max-w-[220px]"
               />
               <datalist id="tag-template-options">
-                {SCAN_TEMPLATE_OPTIONS.map((name) => (
+                {ALL_WHATSAPP_TEMPLATES.map((name) => (
                   <option key={name} value={name} />
                 ))}
               </datalist>

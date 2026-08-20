@@ -96,6 +96,18 @@ export const AUTOMATION_BY_KEY: Record<AutomationKey, AutomationDefinition> = Ob
   AUTOMATIONS.map((a) => [a.key, a]),
 ) as Record<AutomationKey, AutomationDefinition>;
 
+/**
+ * Every WhatsApp template name Tag knows about — every automation's
+ * template plus any template that isn't tied to an automation trigger
+ * (currently just the marketing broadcast). Used to populate the "Template
+ * to test" suggestions in Settings > Automations' live delivery test, so a
+ * super admin can test-send anything, not just the scan-confirmation
+ * options. Free text is still accepted — this only fills the datalist.
+ */
+export const ALL_WHATSAPP_TEMPLATES = Array.from(
+  new Set<string>([...SCAN_TEMPLATE_OPTIONS, ...AUTOMATIONS.map((a) => a.templateName), "tag_broadcast_v1"]),
+);
+
 export type AutomationSetting = {
   automation_key: AutomationKey;
   enabled: boolean;
