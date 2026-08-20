@@ -156,7 +156,7 @@ const customerInputSchema = z.object({
     .trim()
     .regex(/^\+?[1-9]\d{7,14}$/, "Enter a valid phone number in international format")
     .transform((v) => (v.startsWith("+") ? v : `+${v}`)),
-  email: z.string().trim().email().max(200).nullable().optional().or(z.literal("")),
+  
   status: z.enum(["registered", "subscribed", "unsubscribed", "blocked"]).optional(),
   marketing_consent: z.boolean().default(false),
   notify_consent: z.boolean().default(true),
