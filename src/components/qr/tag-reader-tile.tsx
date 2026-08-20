@@ -12,10 +12,10 @@ export function readerUrl() {
 // Sized to actually be scannable, unlike a tiny rounded badge. Meant to
 // stand in for the user's avatar (see UserMenu) — no Link wrapper, since
 // it's embedded inside that button, which is already clickable.
-export function TagReaderQrBadge({ size = 36 }: { size?: number }) {
+export function TagReaderQrBadge({ size = 56 }: { size?: number }) {
   return (
     <div className="flex shrink-0 items-center justify-center bg-white" style={{ height: size, width: size }}>
-      <QrPreview value={readerUrl()} size={size} bare margin={1} />
+      <QrPreview value={readerUrl()} size={size} bare margin={0} />
     </div>
   );
 }
