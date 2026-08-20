@@ -49,7 +49,7 @@ export function TagLogo({
       <img
         src={logoSrc}
         alt="Tag"
-        className={`${dim} object-contain`}
+        className={`${dim} scale-[1.2] object-contain`}
       />
       {withWordmark && (
         <span className="ml-2 text-lg font-bold tracking-tight">Tag</span>
