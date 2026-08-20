@@ -56,7 +56,7 @@ function AuthenticatedLayout() {
   });
   // Greeting name shown in the top-left of the app header — same source
   // the Briefing page uses so it stays in sync ("Hello Makro Woodmead").
-  const briefing = useQuery(briefingQueryOptions);
+  const briefing = useQuery({ ...briefingQueryOptions, enabled: !!user, retry: false });
   const greetingName = briefing.data?.greetingName ?? null;
   const isStaff = useIsStaff();
 
