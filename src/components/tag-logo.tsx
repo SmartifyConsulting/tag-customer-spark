@@ -36,7 +36,7 @@ export function TagLogo({
         <img
           src={logoSrc}
           alt="Tag"
-          className={`${h} w-auto object-contain`}
+          className={`${h} w-auto scale-[1.2] object-contain`}
         />
       </div>
     );
