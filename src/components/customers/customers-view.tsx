@@ -53,6 +53,65 @@ function money(c?: number | null) {
 
 const LETTERS = ["all", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""), "#"] as const;
 
+// Inline consent switches so a shopper can be subscribed / unsubscribed and
+// have their marketing + notification consent flipped without opening Edit.
+function ConsentToggles({ customer }: { customer: any }) {
+  const qc = useQueryClient();
+  const updateFn = useServerFn(updateCustomer);
+  const [subscribed, setSubscribed] = useState(customer.status === "subscribed");
+  const [marketing, setMarketing] = useState(customer.marketing_consent_at != null);
+  const [notify, setNotify] = useState(customer.notify_consent_at != null);
+
+  useEffect(() => {
+    setSubscribed(customer.status === "subscribed");
+    setMarketing(customer.marketing_consent_at != null);
+    setNotify(customer.notify_consent_at != null);
+  }, [customer.status, customer.marketing_consent_at, customer.notify_consent_at]);
+
+  async function save(patch: Record<string, unknown>, revert: () => void, label: string) {
+    try {
+      await updateFn({ data: { id: customer.id, patch: patch as any } });
+      qc.invalidateQueries({ queryKey: ["customers"] });
+    } catch (e: any) {
+      revert();
+      toast.error(e?.message ?? `Could not update ${label}`);
+    }
+  }
+
+  const item = (
+    label: string,
+    checked: boolean,
+    onChange: (v: boolean) => void,
+  ) => (
+    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+      <Switch
+        checked={checked}
+        onCheckedChange={onChange}
+        className="scale-75"
+        aria-label={label}
+      />
+      <span>{label}</span>
+    </label>
+  );
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      {item("Sub", subscribed, (v) => {
+        setSubscribed(v);
+        void save({ status: v ? "subscribed" : "unsubscribed" }, () => setSubscribed(!v), "subscription");
+      })}
+      {item("Mkt", marketing, (v) => {
+        setMarketing(v);
+        void save({ marketing_consent: v, status: subscribed ? "subscribed" : "unsubscribed" }, () => setMarketing(!v), "marketing consent");
+      })}
+      {item("Notify", notify, (v) => {
+        setNotify(v);
+        void save({ notify_consent: v }, () => setNotify(!v), "notifications");
+      })}
+    </div>
+  );
+}
+
 // Extracted from the /customers route so both the (now-legacy) top-level
 // route and the Admin → Customers tab render the same UI.
 export function CustomersView({ embedded = false }: { embedded?: boolean }) {
