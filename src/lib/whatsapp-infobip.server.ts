@@ -24,9 +24,10 @@ export type InfobipSendInput = {
   /**
    * Button components the approved template declares. WhatsApp requires every
    * QUICK_REPLY button to carry its payload parameter at send time; omitting
-   * them is rejected with error 7008 (EC_INVALID_TEMPLATE_ARGS).
+   * them is rejected with error 7008 (EC_INVALID_TEMPLATE_ARGS). A static URL
+   * button carries no parameter; a dynamic-suffix URL button does.
    */
-  buttons?: Array<{ type: "QUICK_REPLY"; parameter: string }>;
+  buttons?: Array<{ type: "QUICK_REPLY" | "URL"; parameter?: string }>;
 };
 
 export type InfobipSendResult = {

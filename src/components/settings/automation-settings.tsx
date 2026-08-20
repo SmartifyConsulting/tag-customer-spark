@@ -28,7 +28,7 @@ export function AutomationSettings() {
 
   const [draft, setDraft] = useState<Record<string, AutomationSetting>>({});
   const [testRecipient, setTestRecipient] = useState("");
-  const [testTemplate, setTestTemplate] = useState<string>("tag_scan_v5");
+  const [testTemplate, setTestTemplate] = useState<string>("tag_scan_confirm_and_install");
 
   useEffect(() => {
     if (!data?.settings) return;

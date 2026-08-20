@@ -25,8 +25,12 @@ export type SendWhatsAppInput = {
   templateLanguage?: string;
   placeholders?: string[];
   headerImageUrl?: string | null;
-  /** QUICK_REPLY button parameters the approved template declares. */
-  buttons?: Array<{ type: "QUICK_REPLY"; parameter: string }>;
+  /**
+   * Button parameters the approved template declares. QUICK_REPLY always
+   * carries a parameter (the echoed payload text); URL only carries one for
+   * a dynamic-suffix button — a static URL button has none.
+   */
+  buttons?: Array<{ type: "QUICK_REPLY" | "URL"; parameter?: string }>;
 };
 
 export type SendWhatsAppResult = {

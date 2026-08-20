@@ -13,6 +13,7 @@ export type AutomationKey =
 
 /** Approved TAG templates that can be used as the scan confirmation. */
 export const SCAN_TEMPLATE_OPTIONS = [
+  "tag_scan_confirm_and_install",
   "tag_scan_v5",
   "tag_interest",
   "tag_lastunit",
@@ -38,7 +39,7 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     description:
       "The WhatsApp sent the moment a customer taps Follow Me after scanning. Switch the template here if the current one is rejected.",
     threshold: null,
-    templateName: "tag_scan_v5",
+    templateName: "tag_scan_confirm_and_install",
   },
   {
     key: "price_drop",

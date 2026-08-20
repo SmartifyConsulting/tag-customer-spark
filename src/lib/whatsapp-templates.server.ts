@@ -25,6 +25,16 @@ export type TemplateContract = {
    * button at send time; omitting them is rejected with error 7008.
    */
   quickReplies?: string[];
+  /**
+   * A single approved URL button. `dynamicSuffix: true` means the approved
+   * button URL ends in a WhatsApp variable (e.g. ".../install/{{1}}") that
+   * needs a value supplied per send — set via `urlButtonValue` in
+   * buildTemplatePayload's values map, keyed "urlButton". Leave undefined
+   * (static link, nothing to fill in) unless told otherwise: that's the
+   * simpler, more common setup and what a template author reaches for
+   * unless a per-recipient link was specifically requested.
+   */
+  urlButton?: { dynamicSuffix?: boolean };
 };
 
 export const TEMPLATE_CONTRACTS: Record<string, TemplateContract> = {
@@ -38,6 +48,20 @@ export const TEMPLATE_CONTRACTS: Record<string, TemplateContract> = {
     // Single approved QUICK_REPLY button. The payload is echoed back on the
     // inbound webhook, which matches on this exact text.
     quickReplies: ["Keep an eye on me"],
+  },
+
+  // Scan confirmation + "install Tag" link. Same as tag_scan_v5 (IMAGE
+  // header, no body variables) but the quick-reply button was replaced with
+  // a single URL button pointing at /install. Assumed static (no dynamic
+  // suffix) per the template author — if WhatsApp rejects sends with error
+  // 7008, the button is actually dynamic and `dynamicSuffix: true` needs to
+  // be set here, with the suffix value threaded through from the sender.
+  tag_scan_confirm_and_install: {
+    name: "tag_scan_confirm_and_install",
+    language: "en",
+    header: "IMAGE",
+    placeholders: [],
+    urlButton: {},
   },
 
   // Price drop: "My price has dropped from {{1}} to {{2}}".
@@ -89,7 +113,7 @@ export type BuiltTemplate = {
   language: string;
   placeholders: string[];
   headerImageUrl: string | null;
-  buttons: Array<{ type: "QUICK_REPLY"; parameter: string }>;
+  buttons: Array<{ type: "QUICK_REPLY" | "URL"; parameter?: string }>;
 };
 
 export type BuildFailure = { ok: false; error: string };
@@ -122,15 +146,30 @@ export function buildTemplatePayload(
     };
   }
 
+  const buttons: BuiltTemplate["buttons"] = (contract.quickReplies ?? []).map((parameter) => ({
+    type: "QUICK_REPLY" as const,
+    parameter,
+  }));
+
+  if (contract.urlButton) {
+    if (contract.urlButton.dynamicSuffix) {
+      const suffix = values.urlButton;
+      if (suffix == null || suffix === "") {
+        return { ok: false, error: `Template "${templateName}" is missing value for its URL button` };
+      }
+      buttons.push({ type: "URL", parameter: suffix });
+    } else {
+      // Static URL button — nothing to fill in at send time.
+      buttons.push({ type: "URL" });
+    }
+  }
+
   return {
     ok: true,
     templateName: contract.name,
     language: contract.language,
     placeholders,
     headerImageUrl: contract.header === "IMAGE" ? (headerImageUrl as string) : null,
-    buttons: (contract.quickReplies ?? []).map((parameter) => ({
-      type: "QUICK_REPLY" as const,
-      parameter,
-    })),
+    buttons,
   };
 }
