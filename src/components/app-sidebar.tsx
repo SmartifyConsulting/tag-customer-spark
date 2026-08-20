@@ -149,16 +149,16 @@ export function AppSidebar() {
       <SidebarFooter>
         {!collapsed && (
           <div className="space-y-2 px-3 py-3">
-            <div className="flex justify-center pb-4">
-              <TagReaderTile compact />
-            </div>
             <input
               type="text"
               placeholder="Search anything..."
               className="w-full rounded-lg border border-sidebar-border bg-sidebar px-3 py-2 text-sm placeholder:text-sidebar-foreground/40 text-sidebar-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
             />
-            <div className="pt-1">
+            {/* User avatar/name bottom-left, the Tag Barcode Reader's micro
+                QR bottom-right — both on the same row. */}
+            <div className="flex items-center justify-between gap-2 pt-1">
               <UserMenu />
+              <TagReaderTile micro />
             </div>
           </div>
         )}

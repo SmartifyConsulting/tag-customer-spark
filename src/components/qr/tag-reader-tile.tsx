@@ -1,20 +1,34 @@
+import { Link } from "@tanstack/react-router";
 import { QrPreview } from "@/components/qr/qr-preview";
 
-// Compact Tag Barcode Reader QR tile — sits at the bottom of the left nav
-// panel, just above the search bar. White rounded frame sized to snugly
-// fit the QR code's dark modules (minimal padding, tight quiet zone).
-//
-// The logo above it (app-sidebar.tsx) is declared at 12rem, but its source
-// PNG has a lot of transparent padding baked in — measured directly from
-// the asset, the actual opaque icon only fills ~75-78% of that square, so
-// its true visible footprint is ~11rem, not 12rem. The QR card has no such
-// transparent margin (solid white, corner to corner), so it's sized to
-// that true 11rem to visually match rather than the logo's declared box.
-export function TagReaderTile({ compact = false }: { compact?: boolean }) {
+// Tag Barcode Reader QR — launches /tools/barcode-reader when scanned (or
+// tapped, on the device that's already signed in). Two sizes:
+//  - "compact": white rounded frame, used standalone in the sidebar
+//  - "micro": a small badge meant to sit right next to the user's avatar
+export function TagReaderTile({
+  compact = false,
+  micro = false,
+}: {
+  compact?: boolean;
+  micro?: boolean;
+}) {
   const readerUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/tools/barcode-reader`
       : "/tools/barcode-reader";
+
+  if (micro) {
+    return (
+      <Link
+        to="/tools/barcode-reader"
+        target="_blank"
+        title="Open Tag Barcode Reader"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white p-0.5"
+      >
+        <QrPreview value={readerUrl} size={24} bare margin={1} />
+      </Link>
+    );
+  }
 
   return (
     <div
