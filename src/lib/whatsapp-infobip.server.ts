@@ -528,9 +528,12 @@ async function sendWithConfig(
       templateData.header = { type: "IMAGE", mediaUrl: input.headerImageUrl };
     }
     if (input.buttons?.length) {
+      // Infobip's schema appears to require a `parameter` string on every
+      // button entry, even a static URL button with nothing to fill in —
+      // omitting it entirely caused a generic 400 "Bad request".
       templateData.buttons = input.buttons.map((b) => ({
         type: b.type,
-        parameter: b.parameter,
+        parameter: b.parameter ?? "",
       }));
     }
     payload = {

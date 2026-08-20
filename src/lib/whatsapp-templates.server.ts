@@ -179,8 +179,13 @@ export function buildTemplatePayload(
       }
       buttons.push({ type: "URL", parameter: suffix });
     } else {
-      // Static URL button — nothing to fill in at send time.
-      buttons.push({ type: "URL" });
+      // Static URL button — nothing to fill in at send time, but Infobip's
+      // API appears to require a `parameter` field on every button entry
+      // regardless of type (omitting it entirely triggered a generic "Bad
+      // request" — Infobip's own payload validation, not a WhatsApp/Meta
+      // template-mismatch error). Empty string satisfies that without
+      // implying a dynamic suffix.
+      buttons.push({ type: "URL", parameter: "" });
     }
   }
 
