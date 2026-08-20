@@ -97,22 +97,26 @@ function AuthenticatedLayout() {
                   with a transparent background so it sits directly on the
                   header rather than in a card; falls back to a generic store
                   placeholder until the retailer uploads one. Always resized
-                  into the same fixed box as the Tag logo mark (h-10 w-10),
-                  regardless of the uploaded image's own dimensions, so
-                  wildly different logo sizes/aspect ratios don't throw off
-                  the header. */}
+                  into the same fixed circular box, regardless of the
+                  uploaded image's own dimensions/shape, so wildly different
+                  logo sizes/aspect ratios don't throw off the header. The
+                  extra overflow-hidden wrapper (on top of rounded-full on
+                  the img itself) guarantees the circular clip holds even
+                  for a logo whose own bitmap fills its box edge-to-edge. */}
               {branding.data?.logo_url ? (
-                <img
-                  src={branding.data.logo_url}
-                  alt={branding.data.name ?? "Retailer logo"}
-                  className="h-[4.75rem] w-[4.75rem] rounded-full object-contain bg-transparent"
-                />
+                <div className="h-[6.175rem] w-[6.175rem] overflow-hidden rounded-full">
+                  <img
+                    src={branding.data.logo_url}
+                    alt={branding.data.name ?? "Retailer logo"}
+                    className="h-full w-full rounded-full object-cover bg-transparent"
+                  />
+                </div>
               ) : (
                 <div
-                  className="flex h-[4.75rem] w-[4.75rem] items-center justify-center rounded-full bg-transparent text-muted-foreground/50"
+                  className="flex h-[6.175rem] w-[6.175rem] items-center justify-center rounded-full bg-transparent text-muted-foreground/50"
                   title="No logo uploaded yet — add one in Settings"
                 >
-                  <Store className="h-11 w-11" />
+                  <Store className="h-14 w-14" />
                 </div>
               )}
               {!isStaff && <UserMenu />}
