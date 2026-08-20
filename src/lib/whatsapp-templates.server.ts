@@ -29,12 +29,13 @@ export type TemplateContract = {
    * A single approved URL button. `dynamicSuffix: true` means the approved
    * button URL ends in a WhatsApp variable (e.g. ".../install/{{1}}") that
    * needs a value supplied per send — set via `urlButtonValue` in
-   * buildTemplatePayload's values map, keyed "urlButton". Leave undefined
-   * (static link, nothing to fill in) unless told otherwise: that's the
-   * simpler, more common setup and what a template author reaches for
-   * unless a per-recipient link was specifically requested.
+   * buildTemplatePayload's values map, keyed "urlButton". `staticUrl` is
+   * the button's full approved URL for a non-dynamic button — Infobip's
+   * validation rejects the button entry with a generic "Bad request" if
+   * `parameter` is omitted OR empty, so a static button still needs its
+   * (unchanging) destination sent as the parameter every time.
    */
-  urlButton?: { dynamicSuffix?: boolean };
+  urlButton?: { dynamicSuffix?: boolean; staticUrl?: string };
 };
 
 export const TEMPLATE_CONTRACTS: Record<string, TemplateContract> = {
@@ -76,7 +77,7 @@ export const TEMPLATE_CONTRACTS: Record<string, TemplateContract> = {
     language: "en",
     header: "IMAGE",
     placeholders: [],
-    urlButton: {},
+    urlButton: { staticUrl: "https://tag-tech.co.za/install" },
   },
 
   // Price drop: "My price has dropped from {{1}} to {{2}}".
@@ -198,13 +199,12 @@ export function buildTemplatePayload(
       }
       buttons.push({ type: "URL", parameter: suffix });
     } else {
-      // Static URL button — nothing to fill in at send time, but Infobip's
-      // API appears to require a `parameter` field on every button entry
-      // regardless of type (omitting it entirely triggered a generic "Bad
-      // request" — Infobip's own payload validation, not a WhatsApp/Meta
-      // template-mismatch error). Empty string satisfies that without
-      // implying a dynamic suffix.
-      buttons.push({ type: "URL", parameter: "" });
+      // Static URL button. Infobip's API rejects the send with a generic
+      // "Bad request" if `parameter` is omitted (confirmed) or empty
+      // (also confirmed, on tag_scan_confirm_and_install_v2) — it needs
+      // the button's actual destination URL sent as the parameter every
+      // time, even though it never changes.
+      buttons.push({ type: "URL", parameter: contract.urlButton.staticUrl ?? "" });
     }
   }
 
