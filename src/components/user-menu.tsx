@@ -40,7 +40,7 @@ export function UserMenu() {
           {/* The Tag Barcode Reader QR stands in for the avatar — square
               (no rounding, corners matter for scanning), sized to actually
               be scannable rather than decorative. */}
-          <TagReaderQrBadge size={36} />
+          <TagReaderQrBadge size={48} />
           <span className="hidden sm:inline text-sm font-medium max-w-[140px] truncate">{name}</span>
         </Button>
       </DropdownMenuTrigger>
