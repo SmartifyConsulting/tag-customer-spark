@@ -50,27 +50,33 @@ export const TEMPLATE_CONTRACTS: Record<string, TemplateContract> = {
     quickReplies: ["Keep an eye on me"],
   },
 
-  // Scan confirmation + "install Tag" link. Same as tag_scan_v5 (IMAGE
-  // header, no body variables) but the quick-reply button was replaced with
-  // a single URL button pointing at /install. Assumed static (no dynamic
-  // suffix) per the template author — if WhatsApp rejects sends with error
-  // 7008, the button is actually dynamic and `dynamicSuffix: true` needs to
-  // be set here, with the suffix value threaded through from the sender.
+  // First attempt at scan confirmation + "install Tag" link — approved
+  // with a QUICK_REPLY button (see git history), which meant "Install TAG"
+  // never actually opened anything. Kept registered in case a retailer's
+  // automation setting still points at it, but tag_scan_confirm_and_install_v2
+  // (below) is the real one — a proper Call to Action / Visit Website
+  // button — and is now the default.
   tag_scan_confirm_and_install: {
     name: "tag_scan_confirm_and_install",
-    // Confirmed via Infobip's template dashboard: Language = "English"
-    // (plain en, not en_GB like tag_broadcast_v1 — don't copy that fix here).
     language: "en",
     header: "IMAGE",
     placeholders: [],
-    // The approved button ("Install TAG") shows Infobip's quick-reply icon
-    // in the template preview, not a URL-button icon — likely cloned from
-    // tag_scan_v5's QUICK_REPLY button and re-labeled without changing its
-    // type. Sending type:"URL" against an approved QUICK_REPLY button would
-    // explain the persistent "Bad request". Switched to match; if this
-    // guess is wrong, WhatsApp's error will be more specific than a plain
-    // "Bad request" and point elsewhere.
     quickReplies: ["Install TAG"],
+  },
+
+  // v2 — same as above but the button was rebuilt in Infobip as a proper
+  // Call to Action → Visit Website button (static URL, not a dynamic
+  // suffix) pointing at /install, instead of a mislabeled QUICK_REPLY.
+  // Submitted to Meta for approval on 2026-08-20 — will not actually
+  // deliver until that clears. Update urlButton.dynamicSuffix to true
+  // (and thread a suffix value through) if it turns out the approved
+  // button does use a variable suffix after all.
+  tag_scan_confirm_and_install_v2: {
+    name: "tag_scan_confirm_and_install_v2",
+    language: "en",
+    header: "IMAGE",
+    placeholders: [],
+    urlButton: {},
   },
 
   // Price drop: "My price has dropped from {{1}} to {{2}}".

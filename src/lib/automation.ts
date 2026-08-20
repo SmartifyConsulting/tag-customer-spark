@@ -14,6 +14,11 @@ export type AutomationKey =
 /** Approved TAG templates that can be used as the scan confirmation. */
 export const SCAN_TEMPLATE_OPTIONS = [
   "tag_scan_confirm_and_install",
+  // Pending Meta approval as of 2026-08-20 — has the real Visit Website
+  // install button, but won't deliver until that clears. Once approved,
+  // switch the "Scan confirmation" template to this one (here or directly
+  // in Settings/Admin > Automations) to make it the live default.
+  "tag_scan_confirm_and_install_v2",
   "tag_scan_v5",
   "tag_interest",
   "tag_lastunit",
