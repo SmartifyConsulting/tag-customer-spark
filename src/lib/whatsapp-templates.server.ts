@@ -77,6 +77,26 @@ export const TEMPLATE_CONTRACTS: Record<string, TemplateContract> = {
 
   // Last unit remaining. Approved body has NO variables.
   tag_lastunit: { name: "tag_lastunit", language: "en", header: "IMAGE", placeholders: [] },
+
+  // Marketing broadcast — the "Broadcast" button in Inbox. NOT YET APPROVED;
+  // this contract is a proposal. Submit exactly this shape to Infobip/Meta:
+  //   Category: MARKETING, Language: en, Header: IMAGE
+  //   Body:     "*{{1}}*\n\n{{2}}"
+  //     {{1}} = broadcast heading
+  //     {{2}} = broadcast body text (the optional CTA link is appended to
+  //             this value server-side, not sent as a separate variable)
+  //   Buttons:  none — a broadcast's link target is arbitrary per send, and
+  //             WhatsApp URL buttons only allow a variable *suffix* on a
+  //             fixed base domain, not a fully dynamic URL, so the link
+  //             stays as plain text in the body instead.
+  // Once approved, if the name differs from "tag_broadcast_v1", update the
+  // key below (and the constant of the same name in broadcasts.functions.ts).
+  tag_broadcast_v1: {
+    name: "tag_broadcast_v1",
+    language: "en",
+    header: "IMAGE",
+    placeholders: ["heading", "body"],
+  },
 };
 
 /** Templates a watcher may receive after opting in. */

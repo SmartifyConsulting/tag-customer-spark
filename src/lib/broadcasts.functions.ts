@@ -5,6 +5,14 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 const MAX_RECIPIENTS = 500;
 const CHUNK = 25;
 
+// Marketing broadcasts must use an approved WhatsApp template — freeform
+// text/image sends are only allowed within 24h of the customer's last
+// inbound message, which defeats the purpose of a broadcast to an opted-in
+// list. See the tag_broadcast_v1 contract in whatsapp-templates.server.ts
+// for the exact shape to get approved in Infobip/Meta; update this constant
+// if the approved name ends up different.
+const BROADCAST_TEMPLATE = "tag_broadcast_v1";
+
 async function resolveRetailerId(
   supabase: any,
   userId: string,
@@ -105,10 +113,12 @@ export const sendMarketingBroadcast = createServerFn({ method: "POST" })
       throw new Error("You don't have permission to send broadcasts");
 
     const [
-      { sendWhatsApp },
+      { sendTemplate },
+      { isPublicMediaUrl },
       { canSendNotification, incrementNotificationUsage },
     ] = await Promise.all([
-      import("@/lib/whatsapp.server"),
+      import("@/lib/whatsapp-service.server"),
+      import("@/lib/whatsapp-templates.server"),
       import("@/lib/billing/overage.server"),
     ]);
 
@@ -122,6 +132,27 @@ export const sendMarketingBroadcast = createServerFn({ method: "POST" })
       throw new Error(
         `Audience of ${audience.length} exceeds the ${MAX_RECIPIENTS}-recipient cap per broadcast.`,
       );
+
+    // Broadcasts must use an approved template (see BROADCAST_TEMPLATE),
+    // which requires an IMAGE header — fall back to the retailer's own logo
+    // when no broadcast image was supplied, same pattern as scan
+    // confirmations. Fail before creating the campaign row if neither is a
+    // usable public https URL, since every send would otherwise fail.
+    let headerImage = isPublicMediaUrl(data.imageUrl) ? data.imageUrl! : null;
+    if (!headerImage) {
+      const { data: retailer } = await supabase
+        .from("retailers")
+        .select("logo_url")
+        .eq("id", retailerId)
+        .maybeSingle();
+      const logo = (retailer as any)?.logo_url ?? null;
+      headerImage = isPublicMediaUrl(logo) ? logo : null;
+    }
+    if (!headerImage) {
+      throw new Error(
+        "Broadcasts need an image — add one to this broadcast or upload a workspace logo in Settings.",
+      );
+    }
 
     // Create the broadcast row
     const now = new Date().toISOString();
@@ -145,7 +176,10 @@ export const sendMarketingBroadcast = createServerFn({ method: "POST" })
       .single();
     if (bErr || !broadcast) throw new Error(bErr?.message ?? "Failed to create broadcast");
 
-    const composed = `*${data.heading}*\n\n${data.body}${data.ctaUrl ? `\n\n${data.ctaUrl}` : ""}`;
+    // The CTA link (if any) rides inside the "body" template variable —
+    // WhatsApp URL buttons only support a variable *suffix* on a fixed base
+    // domain, not an arbitrary per-broadcast URL, so a button can't carry it.
+    const bodyWithCta = data.ctaUrl ? `${data.body}\n\n${data.ctaUrl}` : data.body;
 
     let sent = 0;
     let failed = 0;
@@ -154,10 +188,11 @@ export const sendMarketingBroadcast = createServerFn({ method: "POST" })
       const slice = audience.slice(i, i + CHUNK);
       const results = await Promise.allSettled(
         slice.map(async (cust) => {
-          const res = await sendWhatsApp({
+          const res = await sendTemplate({
+            templateName: BROADCAST_TEMPLATE,
             to: cust.whatsapp_e164,
-            body: composed,
-            mediaUrl: data.imageUrl ?? null,
+            headerImageUrl: headerImage,
+            variables: { heading: data.heading, body: bodyWithCta },
           });
           await supabase.from("notification_history").insert({
             retailer_id: retailerId,
