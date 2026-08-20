@@ -28,7 +28,6 @@ type Initial = {
   id?: string;
   full_name?: string | null;
   whatsapp_e164?: string | null;
-  email?: string | null;
   status?: "subscribed" | "unsubscribed" | "blocked";
   marketing_consent_at?: string | null;
   notify_consent_at?: string | null;
@@ -50,7 +49,6 @@ export function CustomerFormDialog({
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"subscribed" | "unsubscribed" | "blocked">("subscribed");
   const [marketing, setMarketing] = useState(false);
   const [notify, setNotify] = useState(true);
@@ -59,7 +57,6 @@ export function CustomerFormDialog({
     if (!open) return;
     setFullName(initial?.full_name ?? "");
     setPhone(initial?.whatsapp_e164 ?? "");
-    setEmail(initial?.email ?? "");
     setStatus((initial?.status as any) ?? "subscribed");
     setMarketing(Boolean(initial?.marketing_consent_at));
     setNotify(initial?.notify_consent_at != null || !isEdit);
@@ -70,7 +67,6 @@ export function CustomerFormDialog({
       const payload = {
         full_name: fullName.trim() || null,
         whatsapp_e164: phone.trim(),
-        email: email.trim() || null,
         status,
         marketing_consent: marketing,
         notify_consent: notify,
@@ -113,10 +109,6 @@ export function CustomerFormDialog({
               inputMode="tel"
             />
             <p className="text-[11px] text-muted-foreground">International format, e.g. +27821234567</p>
-          </div>
-          <div className="grid gap-1.5">
-            <Label>Email (optional)</Label>
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="jane@example.com" />
           </div>
           <div className="grid gap-1.5">
             <Label>Status</Label>
