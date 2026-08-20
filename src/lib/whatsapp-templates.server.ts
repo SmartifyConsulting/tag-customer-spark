@@ -58,7 +58,13 @@ export const TEMPLATE_CONTRACTS: Record<string, TemplateContract> = {
   // be set here, with the suffix value threaded through from the sender.
   tag_scan_confirm_and_install: {
     name: "tag_scan_confirm_and_install",
-    language: "en",
+    // UNCONFIRMED — changed from "en" on the hypothesis that this template
+    // was also registered as "English (UK)" (en_GB) in Infobip, like
+    // tag_broadcast_v1 turned out to be, which would explain its identical
+    // recurring "Bad request" failures. Verify in Infobip's template list
+    // (Language column) and revert to "en" here if it actually says plain
+    // "English".
+    language: "en_GB",
     header: "IMAGE",
     placeholders: [],
     urlButton: {},
@@ -93,7 +99,11 @@ export const TEMPLATE_CONTRACTS: Record<string, TemplateContract> = {
   // key below (and the constant of the same name in broadcasts.functions.ts).
   tag_broadcast_v1: {
     name: "tag_broadcast_v1",
-    language: "en",
+    // Registered in Infobip as "English (UK)" — that's language code
+    // en_GB, not the generic "en". A language mismatch is rejected by
+    // Infobip's own validation before it even checks against the
+    // approved template body, so this needs to match exactly.
+    language: "en_GB",
     header: "IMAGE",
     placeholders: ["heading", "body"],
   },
