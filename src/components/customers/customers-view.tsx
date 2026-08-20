@@ -234,6 +234,8 @@ export function CustomersView({ embedded = false }: { embedded?: boolean }) {
                   >
                     {c.status}
                   </Badge>
+                  <ConsentToggles customer={c} />
+
                   <span className="text-center text-sm tabular-nums">{c.scans}</span>
                   <span className="text-center text-sm tabular-nums">{c.interests}</span>
                   <span className="text-center text-sm tabular-nums">
