@@ -65,7 +65,7 @@ export function AppSidebar() {
 
       <SidebarContent className="px-1.5 pb-3 pt-[3.1875rem]">
         {sections.map((section) => (
-          <SidebarGroup key={section.id}>
+          <SidebarGroup key={section.id} className="py-1">
             {!collapsed && section.id !== "purchase" && (
               <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/45">
                 {section.label}
@@ -149,7 +149,7 @@ export function AppSidebar() {
       <SidebarFooter>
         {!collapsed && (
           <div className="space-y-2 px-3 py-3">
-            <div className="flex justify-start pb-4 pl-[18px]">
+            <div className="flex justify-start pb-4 pl-[28px]">
               <TagReaderTile compact />
             </div>
             <input
