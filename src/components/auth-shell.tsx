@@ -32,7 +32,7 @@ export function AuthShell({
         </div>
         <div className="mx-auto flex w-full max-w-md justify-end [&_img]:origin-right">
           <Link to="/about">
-            <TagLogo variant="wordmark" size="lg" heightClass="h-[7.18rem]" />
+            <TagLogo variant="wordmark" size="lg" heightClass="h-[9.33rem]" />
           </Link>
         </div>
       </div>
