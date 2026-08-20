@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { EmptyState } from "@/components/empty-state";
 import {
   Sheet,
@@ -40,6 +41,7 @@ import {
   getCustomerDetail,
   deleteCustomer,
   markCustomersViewed,
+  updateCustomer,
 } from "@/lib/customers.functions";
 import { CustomerFormDialog } from "@/components/customers/customer-form-dialog";
 import { ImportCustomersDialog } from "@/components/customers/import-customers-dialog";
@@ -52,6 +54,65 @@ function money(c?: number | null) {
 }
 
 const LETTERS = ["all", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""), "#"] as const;
+
+// Inline consent switches so a shopper can be subscribed / unsubscribed and
+// have their marketing + notification consent flipped without opening Edit.
+function ConsentToggles({ customer }: { customer: any }) {
+  const qc = useQueryClient();
+  const updateFn = useServerFn(updateCustomer);
+  const [subscribed, setSubscribed] = useState(customer.status === "subscribed");
+  const [marketing, setMarketing] = useState(customer.marketing_consent_at != null);
+  const [notify, setNotify] = useState(customer.notify_consent_at != null);
+
+  useEffect(() => {
+    setSubscribed(customer.status === "subscribed");
+    setMarketing(customer.marketing_consent_at != null);
+    setNotify(customer.notify_consent_at != null);
+  }, [customer.status, customer.marketing_consent_at, customer.notify_consent_at]);
+
+  async function save(patch: Record<string, unknown>, revert: () => void, label: string) {
+    try {
+      await updateFn({ data: { id: customer.id, patch: patch as any } });
+      qc.invalidateQueries({ queryKey: ["customers"] });
+    } catch (e: any) {
+      revert();
+      toast.error(e?.message ?? `Could not update ${label}`);
+    }
+  }
+
+  const item = (
+    label: string,
+    checked: boolean,
+    onChange: (v: boolean) => void,
+  ) => (
+    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+      <Switch
+        checked={checked}
+        onCheckedChange={onChange}
+        className="scale-75"
+        aria-label={label}
+      />
+      <span>{label}</span>
+    </label>
+  );
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      {item("Sub", subscribed, (v) => {
+        setSubscribed(v);
+        void save({ status: v ? "subscribed" : "unsubscribed" }, () => setSubscribed(!v), "subscription");
+      })}
+      {item("Mkt", marketing, (v) => {
+        setMarketing(v);
+        void save({ marketing_consent: v, status: subscribed ? "subscribed" : "unsubscribed" }, () => setMarketing(!v), "marketing consent");
+      })}
+      {item("Notify", notify, (v) => {
+        setNotify(v);
+        void save({ notify_consent: v }, () => setNotify(!v), "notifications");
+      })}
+    </div>
+  );
+}
 
 // Extracted from the /customers route so both the (now-legacy) top-level
 // route and the Admin → Customers tab render the same UI.
@@ -181,9 +242,10 @@ export function CustomersView({ embedded = false }: { embedded?: boolean }) {
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y">
-            <div className="grid grid-cols-[1.5fr_1fr_0.8fr_0.8fr_1fr_1fr_auto] gap-3 px-6 py-3 text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="grid grid-cols-[1.5fr_0.8fr_1.5fr_0.6fr_0.7fr_0.9fr_0.9fr_auto] gap-3 px-6 py-3 text-xs uppercase tracking-wide text-muted-foreground">
               <span className="text-left">Customer</span>
               <span className="text-left">Status</span>
+              <span className="text-left">Consent</span>
               <span className="text-center">Scans</span>
               <span className="text-center">Interests</span>
               <span className="text-center">Revenue</span>
@@ -208,7 +270,7 @@ export function CustomersView({ embedded = false }: { embedded?: boolean }) {
               (list.data!.rows as any[]).map((c) => (
                 <div
                   key={c.id}
-                  className="grid w-full grid-cols-[1.5fr_1fr_0.8fr_0.8fr_1fr_1fr_auto] items-center gap-3 px-6 py-3 hover:bg-muted/40"
+                  className="grid w-full grid-cols-[1.5fr_0.8fr_1.5fr_0.6fr_0.7fr_0.9fr_0.9fr_auto] items-center gap-3 px-6 py-3 hover:bg-muted/40"
                 >
                   <button onClick={() => setActiveId(c.id)} className="min-w-0 text-left">
                     <p className="flex items-center gap-2 truncate text-sm font-medium">
@@ -233,6 +295,8 @@ export function CustomersView({ embedded = false }: { embedded?: boolean }) {
                   >
                     {c.status}
                   </Badge>
+                  <ConsentToggles customer={c} />
+
                   <span className="text-center text-sm tabular-nums">{c.scans}</span>
                   <span className="text-center text-sm tabular-nums">{c.interests}</span>
                   <span className="text-center text-sm tabular-nums">

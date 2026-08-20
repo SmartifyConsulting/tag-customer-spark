@@ -17,10 +17,9 @@ const CUSTOMER_HEADER_SYNONYMS: Record<string, string[]> = {
     "cell number", "whatsapp", "whatsapp number", "contact number", "tel", "telephone",
   ],
   phone_country_code: ["country code", "dial code", "phone country code", "calling code"],
-  email: ["email", "email address", "e mail"],
 };
 const CUSTOMER_CANONICAL_ORDER = [
-  "full_name", "first_name", "last_name", "phone", "phone_country_code", "email",
+  "full_name", "first_name", "last_name", "phone", "phone_country_code",
 ];
 
 function normaliseHeader(h: string): string {
@@ -56,7 +55,6 @@ function deterministicCustomerHeaderMap(headers: string[]): Record<string, strin
 const customerRowSchema = z.object({
   full_name: z.string().trim().min(1),
   whatsapp_e164: z.string().trim().min(8),
-  email: z.string().trim().optional().nullable(),
 });
 export type CustomerImportRow = z.infer<typeof customerRowSchema>;
 
@@ -119,7 +117,6 @@ function normaliseRow(r: any): CustomerImportRow | null {
   const parsed = customerRowSchema.safeParse({
     full_name: name,
     whatsapp_e164: phone,
-    email: r.email ? String(r.email) : null,
   });
   return parsed.success ? parsed.data : null;
 }
@@ -162,7 +159,7 @@ export const previewCustomerImport = createServerFn({ method: "POST" })
       try {
         const sample = rawRows.slice(0, 5);
         const mapping = await callAiJson(
-          `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {full_name, first_name, last_name, phone, phone_country_code, email} to the best-matching source header (or null if absent).
+          `Column headers: ${JSON.stringify(headers)}\nSample rows: ${JSON.stringify(sample)}\n\nReturn JSON: {"map": { canonicalField: sourceHeader }} mapping any of {full_name, first_name, last_name, phone, phone_country_code} to the best-matching source header (or null if absent).
 Rules:
 - If the sheet has one combined name column, map it to full_name.
 - If the sheet has separate first/last name columns instead, map those to first_name and last_name (leave full_name null) — do not skip the row for lacking a single full_name column.
@@ -190,7 +187,6 @@ Rules:
           last_name: get(row, "last_name"),
           phone: get(row, "phone"),
           phone_country_code: get(row, "phone_country_code"),
-          email: get(row, "email"),
         }),
       )
       .filter((r): r is CustomerImportRow => r !== null);
@@ -231,7 +227,6 @@ export const commitCustomerImport = createServerFn({ method: "POST" })
           retailer_id: retailerId,
           full_name: row.full_name,
           whatsapp_e164: row.whatsapp_e164,
-          email: row.email || null,
         };
 
         if (existing) {

@@ -156,7 +156,7 @@ const customerInputSchema = z.object({
     .trim()
     .regex(/^\+?[1-9]\d{7,14}$/, "Enter a valid phone number in international format")
     .transform((v) => (v.startsWith("+") ? v : `+${v}`)),
-  email: z.string().trim().email().max(200).nullable().optional().or(z.literal("")),
+  
   status: z.enum(["registered", "subscribed", "unsubscribed", "blocked"]).optional(),
   marketing_consent: z.boolean().default(false),
   notify_consent: z.boolean().default(true),
@@ -177,7 +177,6 @@ export const createCustomer = createServerFn({ method: "POST" })
       retailer_id: retailerId,
       full_name: data.full_name || null,
       whatsapp_e164: data.whatsapp_e164,
-      email: data.email || null,
       status: resolvedStatus,
       opted_in_at: now,
       marketing_consent_at: data.marketing_consent ? now : null,
@@ -202,7 +201,6 @@ export const updateCustomer = createServerFn({ method: "POST" })
     const patch: any = {};
     if (p.full_name !== undefined) patch.full_name = p.full_name || null;
     if (p.whatsapp_e164 !== undefined) patch.whatsapp_e164 = p.whatsapp_e164;
-    if (p.email !== undefined) patch.email = p.email || null;
     if (p.status !== undefined) patch.status = p.status;
     if (p.marketing_consent !== undefined) {
       patch.marketing_consent_at = p.marketing_consent ? new Date().toISOString() : null;
