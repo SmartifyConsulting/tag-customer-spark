@@ -7,14 +7,17 @@ import { StoresView } from "@/components/stores/stores-view";
 import { UserAdminTab } from "@/components/settings/user-admin-tab";
 import { SignupsTab } from "@/components/settings/signups-tab";
 import { CustomersView } from "@/components/customers/customers-view";
+import { AutomationSettings } from "@/components/settings/automation-settings";
 import { useIsAdmin } from "@/hooks/use-auth";
 
-// Consolidated admin surface — Taxonomy, Stores, Customers, and Users are
-// tabs on one screen rather than four separate pages. Customers moved here
-// because it's a configuration/admin surface (bulk import, delete, edit),
-// not an everyday destination like Messages/Inventory.
+// Consolidated admin surface — Taxonomy, Stores, Customers, Users, and
+// Automations are tabs on one screen rather than separate pages. Customers
+// lives here because it's a configuration/admin surface (bulk import,
+// delete, edit), not an everyday destination like Messages/Inventory.
+// Automations also still appears under Settings — this restores it here
+// too, since Admin is where it used to live.
 const searchSchema = z.object({
-  tab: z.enum(["taxonomy", "stores", "customers", "users"]).optional(),
+  tab: z.enum(["taxonomy", "stores", "customers", "users", "automations"]).optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -41,7 +44,7 @@ function AdminPage() {
         onValueChange={(v) =>
           navigate({
             to: "/admin",
-            search: { tab: v as "taxonomy" | "stores" | "customers" | "users" },
+            search: { tab: v as "taxonomy" | "stores" | "customers" | "users" | "automations" },
           })
         }
       >
@@ -50,6 +53,7 @@ function AdminPage() {
           <TabsTrigger value="stores">Stores</TabsTrigger>
           <TabsTrigger value="customers">Customers</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="automations">Automations</TabsTrigger>
         </TabsList>
         <TabsContent value="taxonomy" className="pt-4">
           <TaxonomyAdminSection />
@@ -63,6 +67,9 @@ function AdminPage() {
         <TabsContent value="users" className="space-y-6 pt-4">
           <SignupsTab />
           <UserAdminTab />
+        </TabsContent>
+        <TabsContent value="automations" className="pt-4">
+          <AutomationSettings />
         </TabsContent>
       </Tabs>
     </div>

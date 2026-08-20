@@ -13,19 +13,25 @@ export function QrPreview({
   // (e.g. the sidebar) can invert to white-on-navy.
   darkColor = "#0A1F5C",
   lightColor = "#ffffff",
+  // Quiet-zone width in QR *modules* (not px), baked into the SVG itself by
+  // the qrcode library. 4 is the spec-safe default; a caller placing the
+  // code in a tight decorative frame can go lower (2 is still generally
+  // scannable) to shrink the white margin around the dark modules.
+  margin = 4,
 }: {
   value: string;
   size?: number;
   bare?: boolean;
   darkColor?: string;
   lightColor?: string;
+  margin?: number;
 }) {
   const { data } = useQuery({
-    queryKey: ["qr-svg", value, size, darkColor, lightColor],
+    queryKey: ["qr-svg", value, size, darkColor, lightColor, margin],
     queryFn: () =>
       QRCode.toString(value, {
         type: "svg",
-        margin: 4,
+        margin,
         errorCorrectionLevel: "Q",
         width: size,
         color: { dark: darkColor, light: lightColor },
@@ -33,10 +39,12 @@ export function QrPreview({
     staleTime: Infinity,
   });
   if (bare) {
+    // No extra breathing room beyond the SVG's own baked-in quiet zone —
+    // the SVG is already `size` px square including that margin.
     return (
       <div
         className="grid place-items-center"
-        style={{ width: size + 24, height: size + 24 }}
+        style={{ width: size, height: size }}
         dangerouslySetInnerHTML={{ __html: data ?? "" }}
       />
     );
