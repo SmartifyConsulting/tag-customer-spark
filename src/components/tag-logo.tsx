@@ -1,4 +1,4 @@
-import tagLogoAsset from "@/assets/tag-logo-2026c.png.asset.json";
+import tagLogoAsset from "@/assets/tag-logo-2026d.png.asset.json";
 
 const tagLogoHorizontal = tagLogoAsset.url;
 
@@ -36,7 +36,7 @@ export function TagLogo({
         <img
           src={logoSrc}
           alt="Tag"
-          className={`${h} w-auto object-contain`}
+          className={`${h} w-auto scale-[1.2] object-contain`}
         />
       </div>
     );
@@ -49,7 +49,7 @@ export function TagLogo({
       <img
         src={logoSrc}
         alt="Tag"
-        className={`${dim} object-contain`}
+        className={`${dim} scale-[1.2] object-contain`}
       />
       {withWordmark && (
         <span className="ml-2 text-lg font-bold tracking-tight">Tag</span>
