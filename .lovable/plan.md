@@ -6,16 +6,15 @@ The customer record in the database has no email field, but the app's customer f
 
 Confirmed: the `customers` table currently stores full name, WhatsApp number, status, consent timestamps, source, locale, retailer — no email column.
 
-## The fix
+## The fix — remove email entirely
 
-Add an optional `email` field to the customer record so the app and the database agree. The existing email box in the Add/Edit customer dialog then saves properly, and unsubscribing stops erroring.
+Customers are WhatsApp-only, so email is dropped rather than added to the database:
 
-- Database migration: add a nullable `email` text column to `customers`.
-- No code changes needed — the form, validation, and update logic already handle email.
+- Remove the email input from the Add/Edit customer dialog.
+- Remove email from the customer validation schema and from the create/update customer logic so it is never sent to the database.
+- No database change.
 
-## Alternative
-
-If email should not be stored on customers at all, the other route is to strip the email field from the customer form and the create/update logic instead. Say the word and I'll switch the plan to that.
+Unsubscribing then writes only real fields and succeeds.
 
 ## Logo sizing
 
