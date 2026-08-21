@@ -43,7 +43,7 @@ export function UserMenu() {
           {/* The Tag Barcode Reader QR stands in for the avatar — square
               (no rounding, corners matter for scanning), sized to actually
               be scannable rather than decorative. */}
-          <TagReaderQrBadge size={56} />
+          <TagReaderQrBadge size={76} />
           <span className="ml-1 hidden truncate rounded-md px-2 py-1 text-sm font-medium max-w-[140px] hover:bg-accent sm:inline">
             {name}
           </span>
