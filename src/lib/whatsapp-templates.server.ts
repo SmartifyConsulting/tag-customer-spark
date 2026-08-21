@@ -94,29 +94,29 @@ export const TEMPLATE_CONTRACTS: Record<string, TemplateContract> = {
   // Last unit remaining. Approved body has NO variables.
   tag_lastunit: { name: "tag_lastunit", language: "en", header: "IMAGE", placeholders: [] },
 
-  // Marketing broadcast — the "Broadcast" button in Inbox. NOT YET APPROVED;
-  // this contract is a proposal. Submit exactly this shape to Infobip/Meta:
-  //   Category: MARKETING, Language: en, Header: IMAGE
-  //   Body:     "*{{1}}*\n\n{{2}}"
-  //     {{1}} = broadcast heading
-  //     {{2}} = broadcast body text (the optional CTA link is appended to
-  //             this value server-side, not sent as a separate variable)
-  //   Buttons:  none — a broadcast's link target is arbitrary per send, and
-  //             WhatsApp URL buttons only allow a variable *suffix* on a
-  //             fixed base domain, not a fully dynamic URL, so the link
-  //             stays as plain text in the body instead.
-  // Once approved, if the name differs from "tag_broadcast_v1", update the
-  // key below (and the constant of the same name in broadcasts.functions.ts).
+  // Marketing broadcast — the "Broadcast" button in Inbox.
+  //
+  // As registered today, tag_broadcast_v1 is APPROVED in "English (UK)"
+  // (en_GB) with an IMAGE header and a FIXED body containing NO variables.
+  // Sending it with heading/body placeholders is what caused every broadcast
+  // to be permanently rejected with EC_INVALID_TEMPLATE (7009).
+  //
+  // The registry therefore mirrors reality: zero placeholders. The broadcast
+  // send path resolves the actual approved contract live from the provider
+  // and requires a template whose body declares two variables:
+  //   Category: MARKETING, Header: IMAGE
+  //   Body:     "*{{1}}*\n\n{{2}}"   ({{1}} = heading, {{2}} = message body,
+  //             with the optional CTA link appended to {{2}} server-side)
+  //   Buttons:  none
+  // Get that approved (e.g. as tag_broadcast_v2) and broadcasts with custom
+  // text start delivering with no code change.
   tag_broadcast_v1: {
     name: "tag_broadcast_v1",
-    // Registered in Infobip as "English (UK)" — that's language code
-    // en_GB, not the generic "en". A language mismatch is rejected by
-    // Infobip's own validation before it even checks against the
-    // approved template body, so this needs to match exactly.
     language: "en_GB",
     header: "IMAGE",
-    placeholders: ["heading", "body"],
+    placeholders: [],
   },
+
 };
 
 /** Templates a watcher may receive after opting in. */
