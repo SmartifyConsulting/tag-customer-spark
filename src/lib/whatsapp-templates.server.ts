@@ -167,8 +167,15 @@ export function buildTemplatePayload(
   templateName: string,
   values: Record<string, string | undefined>,
   headerImageUrl: string | null | undefined,
+  /**
+   * Overrides the registry contract with one resolved live from the provider's
+   * approved-template list. Used by broadcasts, where the approved body's
+   * variable count is whatever the retailer got approved.
+   */
+  contractOverride?: TemplateContract,
 ): BuiltTemplate | BuildFailure {
-  const contract = getTemplateContract(templateName);
+  const contract = contractOverride ?? getTemplateContract(templateName);
+
 
   const placeholders: string[] = [];
   for (const key of contract.placeholders) {
