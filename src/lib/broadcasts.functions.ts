@@ -8,10 +8,9 @@ const CHUNK = 25;
 // Marketing broadcasts must use an approved WhatsApp template — freeform
 // text/image sends are only allowed within 24h of the customer's last
 // inbound message, which defeats the purpose of a broadcast to an opted-in
-// list. See the tag_broadcast_v1 contract in whatsapp-templates.server.ts
-// for the exact shape to get approved in Infobip/Meta; update this constant
-// if the approved name ends up different.
-const BROADCAST_TEMPLATE = "tag_broadcast_v1";
+// list. The template is resolved live from the provider (see
+// broadcast-template.server.ts) because WhatsApp permanently rejects a send
+// whose variable count doesn't match the APPROVED body.
 
 async function resolveRetailerId(
   supabase: any,
@@ -98,7 +97,7 @@ const sendSchema = z.object({
   heading: z.string().trim().min(1).max(120),
   body: z.string().trim().min(1).max(1000),
   productId: z.string().uuid().nullable().optional(),
-  imageUrl: z.string().url().nullable().optional(),
+  imageUrl: z.string().url(),
   ctaUrl: z.string().url().nullable().optional(),
 });
 
@@ -133,24 +132,21 @@ export const sendMarketingBroadcast = createServerFn({ method: "POST" })
         `Audience of ${audience.length} exceeds the ${MAX_RECIPIENTS}-recipient cap per broadcast.`,
       );
 
-    // Broadcasts must use an approved template (see BROADCAST_TEMPLATE),
-    // which requires an IMAGE header — fall back to the retailer's own logo
-    // when no broadcast image was supplied, same pattern as scan
-    // confirmations. Fail before creating the campaign row if neither is a
-    // usable public https URL, since every send would otherwise fail.
-    let headerImage = isPublicMediaUrl(data.imageUrl) ? data.imageUrl! : null;
-    if (!headerImage) {
-      const { data: retailer } = await supabase
-        .from("retailers")
-        .select("logo_url")
-        .eq("id", retailerId)
-        .maybeSingle();
-      const logo = (retailer as any)?.logo_url ?? null;
-      headerImage = isPublicMediaUrl(logo) ? logo : null;
-    }
-    if (!headerImage) {
+    // Preflight the approved template before anything is written. A mismatch
+    // here is why broadcasts were accepted by the API and then never
+    // delivered, so surface it as a plain error the sender can act on.
+    const { resolveBroadcastTemplate } = await import("@/lib/broadcast-template.server");
+    const resolved = await resolveBroadcastTemplate();
+    if (!resolved.ok) throw new Error(resolved.error);
+
+    // The approved template carries an IMAGE header, so an image is
+    // compulsory — there is no silent logo fallback, because a broadcast that
+    // quietly goes out branded with the workspace logo is not what was
+    // composed.
+    const headerImage = isPublicMediaUrl(data.imageUrl) ? data.imageUrl! : null;
+    if (resolved.requiresImage && !headerImage) {
       throw new Error(
-        "Broadcasts need an image — add one to this broadcast or upload a workspace logo in Settings.",
+        "Every broadcast needs an image. Upload one, or paste a public https image link.",
       );
     }
 
@@ -189,7 +185,8 @@ export const sendMarketingBroadcast = createServerFn({ method: "POST" })
       const results = await Promise.allSettled(
         slice.map(async (cust) => {
           const res = await sendTemplate({
-            templateName: BROADCAST_TEMPLATE,
+            templateName: resolved.contract.name,
+            contract: resolved.contract,
             to: cust.whatsapp_e164,
             headerImageUrl: headerImage,
             variables: { heading: data.heading, body: bodyWithCta },
