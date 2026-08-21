@@ -10,7 +10,7 @@ export function readerUrl() {
 // No white frame or backing tile — the code is rendered directly on the
 // surface using white modules on a transparent background, sized ~2cm
 // (76px @96dpi) so it stays comfortably scannable.
-export function TagReaderQrBadge({ size = 76 }: { size?: number }) {
+export function TagReaderQrBadge({ size = 228 }: { size?: number }) {
   return (
     <QrPreview
       value={readerUrl()}
