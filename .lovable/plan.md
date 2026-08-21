@@ -27,6 +27,6 @@ The broadcast path uses template `tag_broadcast_v1`, language `en_GB`, an IMAGE 
 
 ## Technical notes
 
-- Files touched: `src/lib/broadcasts.functions.ts` (report lookup, status rollup), `src/lib/whatsapp-templates.server.ts` (`tag_broadcast_v1` contract), `src/lib/whatsapp-infobip.server.ts` (reuse the existing reports call), and the broadcasts list UI.
+- Files touched: `src/lib/broadcasts.functions.ts` (report lookup, status rollup, required-image validation), `src/components/notifications/broadcast-composer-dialog.tsx` (required image field + upload), `src/lib/whatsapp-templates.server.ts` (`tag_broadcast_v1` contract), `src/lib/whatsapp-infobip.server.ts` (reuse the existing reports call), and the broadcasts list UI.
 - No schema change is expected; `notification_history` already carries `provider_message_sid`, `status` and `error`, and the delivery-report webhook already maps provider statuses onto those rows.
 - No new secrets are needed, and the service-role key should not be re-entered.
