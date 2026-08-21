@@ -20,9 +20,10 @@ The broadcast path uses template `tag_broadcast_v1`, language `en_GB`, an IMAGE 
 3. **Make the broadcast image compulsory.** The approved broadcast template carries an image header, and today the composer lets a broadcast go out with no image, silently falling back to the workspace logo (or failing late). Instead: the image becomes a required field in the broadcast composer — the "Send broadcast" button stays disabled until an image is supplied, with an upload option as well as a URL field, and the image is validated as a publicly reachable https URL before send. The server keeps rejecting an imageless broadcast as a safety net, with a clear message. No silent logo substitution.
 
 
-3. **Surface delivery status in the UI.** The broadcast list currently only shows "sent" (accepted by the provider). Add a delivered / read / failed breakdown per broadcast, sourced from the delivery-report rows, so a silent non-delivery is visible immediately instead of looking like a success.
+4. **Surface delivery status in the UI.** The broadcast list currently only shows "sent" (accepted by the provider). Add a delivered / read / failed breakdown per broadcast, sourced from the delivery-report rows, so a silent non-delivery is visible immediately instead of looking like a success.
 
-4. **Stop reporting silent successes.** When a broadcast's messages are all accepted but no delivery report arrives within a short window, mark the broadcast as needing attention rather than leaving it green.
+5. **Stop reporting silent successes.** When a broadcast's messages are all accepted but no delivery report arrives within a short window, mark the broadcast as needing attention rather than leaving it green.
+
 
 ## Technical notes
 
