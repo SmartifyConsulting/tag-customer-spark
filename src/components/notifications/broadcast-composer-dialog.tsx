@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, Megaphone, Send, Users } from "lucide-react";
+import { ImagePlus, Loader2, Megaphone, Send, Users } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
+  createBroadcastImageUploadUrl,
   previewBroadcastAudience,
   sendMarketingBroadcast,
 } from "@/lib/broadcasts.functions";
@@ -31,12 +32,14 @@ export function BroadcastComposerDialog({
   const qc = useQueryClient();
   const previewFn = useServerFn(previewBroadcastAudience);
   const sendFn = useServerFn(sendMarketingBroadcast);
+  const uploadUrlFn = useServerFn(createBroadcastImageUploadUrl);
 
   const [heading, setHeading] = useState("");
   const [body, setBody] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [ctaUrl, setCtaUrl] = useState("");
   const [confirm, setConfirm] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const { data: audience, isLoading: audienceLoading } = useQuery({
     queryKey: ["broadcast-audience"],
@@ -45,10 +48,35 @@ export function BroadcastComposerDialog({
     staleTime: 60_000,
   });
 
+  // The approved WhatsApp broadcast template carries an IMAGE header, so a
+  // broadcast without an image is rejected by WhatsApp — block it here rather
+  // than let it fail after the send.
+  const imageOk = /^https:\/\/\S+$/i.test(imageUrl.trim());
   const disabled = useMemo(
-    () => heading.trim().length === 0 || body.trim().length === 0,
-    [heading, body],
+    () => heading.trim().length === 0 || body.trim().length === 0 || !imageOk || uploading,
+    [heading, body, imageOk, uploading],
   );
+
+  async function handleFile(file: File) {
+    setUploading(true);
+    try {
+      const signed = await uploadUrlFn({
+        data: { filename: file.name, contentType: file.type || "image/jpeg" },
+      });
+      const res = await fetch(signed.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type || "image/jpeg" },
+        body: file,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      setImageUrl(signed.publicUrl);
+      toast.success("Image ready");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not upload that image");
+    } finally {
+        setUploading(false);
+    }
+  }
 
   const send = useMutation({
     mutationFn: () =>
@@ -56,7 +84,7 @@ export function BroadcastComposerDialog({
         data: {
           heading: heading.trim(),
           body: body.trim(),
-          imageUrl: imageUrl.trim() ? imageUrl.trim() : null,
+          imageUrl: imageUrl.trim(),
           ctaUrl: ctaUrl.trim() ? ctaUrl.trim() : null,
         },
       }),
@@ -138,7 +166,7 @@ export function BroadcastComposerDialog({
 
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="bc-image">Image URL (optional)</Label>
+              <Label htmlFor="bc-image">Image (required)</Label>
               <Input
                 id="bc-image"
                 value={imageUrl}
@@ -146,6 +174,30 @@ export function BroadcastComposerDialog({
                 placeholder="https://…"
                 type="url"
               />
+              <label className="inline-flex cursor-pointer items-center gap-2 text-[11px] text-muted-foreground hover:text-foreground">
+                {uploading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ImagePlus className="h-3.5 w-3.5" />
+                )}
+                {uploading ? "Uploading…" : "Upload an image"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) void handleFile(f);
+                  }}
+                />
+              </label>
+              {!imageOk && imageUrl.trim().length > 0 ? (
+                <p className="text-[11px] text-destructive">
+                  Use a public https image link.
+                </p>
+              ) : null}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="bc-cta">Link (optional)</Label>

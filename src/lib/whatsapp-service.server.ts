@@ -4,7 +4,10 @@
 // knows nothing about watches, prices, stock or business rules.
 
 import { sendWhatsApp, type SendWhatsAppResult } from "@/lib/whatsapp.server";
-import { buildTemplatePayload } from "@/lib/whatsapp-templates.server";
+import {
+  buildTemplatePayload,
+  type TemplateContract,
+} from "@/lib/whatsapp-templates.server";
 
 /**
  * Infobip addresses templates by their registered NAME, so no per-template
@@ -23,6 +26,11 @@ export type SendTemplateInput = {
   /** Media header for templates that define one. */
   headerImageUrl?: string | null;
   /**
+   * Contract resolved live from the provider's approved-template list, used
+   * instead of the static registry (broadcasts).
+   */
+  contract?: TemplateContract;
+  /**
    * Plain-text used only when no approved template can be built.
    * WhatsApp accepts freeform sends within the 24h customer session window.
    */
@@ -37,7 +45,9 @@ export async function sendTemplate(input: SendTemplateInput): Promise<SendWhatsA
     resolveInfobipTemplateName(input.templateName),
     input.variables ?? {},
     input.headerImageUrl ?? null,
+    input.contract,
   );
+
 
   if (!built.ok) {
     console.error(`[whatsapp-service] ${built.error}`);

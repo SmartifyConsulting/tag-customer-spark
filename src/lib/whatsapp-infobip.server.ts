@@ -393,12 +393,78 @@ export async function lookupInfobipMessageStatus(messageId: string): Promise<{
   };
 }
 
+/**
+ * Read-only listing of the WhatsApp templates registered on this sender,
+ * reduced to the parts a send must match: name, language, approval status,
+ * header format and how many body placeholders the approved body declares.
+ *
+ * Sending more (or fewer) placeholders than the approved body declares is
+ * accepted by the API and then permanently rejected downstream with
+ * EC_INVALID_TEMPLATE, so the send path preflights against this.
+ */
+export type InfobipTemplateSummary = {
+  name: string;
+  language: string;
+  status: string;
+  header: "IMAGE" | "NONE" | string;
+  placeholderCount: number;
+  buttonCount: number;
+};
+
+export async function listInfobipTemplates(): Promise<{
+  ok: boolean;
+  error: string | null;
+  templates: InfobipTemplateSummary[];
+}> {
+  const config = await readRuntimeConfig();
+  if (!config) return { ok: false, error: missingBindingMessage(), templates: [] };
+
+  const resp = await infobipCall(
+    config,
+    `/whatsapp/2/senders/${encodeURIComponent(config.sender)}/templates`,
+    null,
+  );
+  if (!resp.ok) {
+    return {
+      ok: false,
+      error: `Infobip returned ${resp.status} when listing templates`,
+      templates: [],
+    };
+  }
+
+  let json: any = null;
+  try {
+    json = resp.text ? JSON.parse(resp.text) : null;
+  } catch {
+    return { ok: false, error: "Could not parse the template list response", templates: [] };
+  }
+
+  const rows: any[] = Array.isArray(json?.templates) ? json.templates : [];
+  return {
+    ok: true,
+    error: null,
+    templates: rows.map((t) => {
+      const bodyText: string = t?.structure?.body?.text ?? t?.structure?.body ?? "";
+      const matches = String(bodyText).match(/\{\{[^}]+\}\}/g) ?? [];
+      return {
+        name: String(t?.name ?? ""),
+        language: String(t?.language ?? "en"),
+        status: String(t?.status ?? "UNKNOWN"),
+        header: String(t?.structure?.header?.format ?? "NONE"),
+        placeholderCount: new Set(matches).size,
+        buttonCount: Array.isArray(t?.structure?.buttons) ? t.structure.buttons.length : 0,
+      };
+    }),
+  };
+}
+
 /** Keeps country context but hides the subscriber number. */
 function maskMsisdn(value: unknown): string | null {
   const digits = String(value ?? "").replace(/\D/g, "");
   if (!digits) return null;
   return `${digits.slice(0, 3)}${"*".repeat(Math.max(0, digits.length - 6))}${digits.slice(-3)}`;
 }
+
 
 
 /**
