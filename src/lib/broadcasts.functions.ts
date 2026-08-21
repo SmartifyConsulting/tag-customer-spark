@@ -231,3 +231,125 @@ export const sendMarketingBroadcast = createServerFn({ method: "POST" })
 
     return { broadcastId: broadcast.id, sent, failed, audience: audience.length };
   });
+
+// ---------- delivery breakdown ----------
+
+/**
+ * Per-broadcast delivery rollup. `sent_count` only means the provider accepted
+ * the message; a broadcast can be fully "sent" and entirely undelivered (that
+ * is exactly what a template mismatch looks like), so the UI reads delivery
+ * receipts rather than the hand-off count.
+ */
+export const getBroadcastDelivery = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ ids: z.array(z.string().uuid()).max(50) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId || data.ids.length === 0) return { rows: {} as Record<string, any> };
+
+    const { data: rows, error } = await supabase
+      .from("notification_history")
+      .select("broadcast_id, status")
+      .eq("retailer_id", retailerId)
+      .in("broadcast_id", data.ids)
+      .limit(20000);
+    if (error) throw new Error(error.message);
+
+    const out: Record<string, { accepted: number; delivered: number; read: number; failed: number }> = {};
+    for (const id of data.ids) out[id] = { accepted: 0, delivered: 0, read: 0, failed: 0 };
+    for (const r of (rows ?? []) as Array<{ broadcast_id: string; status: string }>) {
+      const bucket = out[r.broadcast_id];
+      if (!bucket) continue;
+      const status = (r.status ?? "").toLowerCase();
+      if (status === "failed" || status === "undelivered" || status === "rejected") bucket.failed += 1;
+      else if (status === "read" || status === "clicked" || status === "redeemed") {
+        bucket.read += 1;
+        bucket.delivered += 1;
+      } else if (status === "delivered") bucket.delivered += 1;
+      else bucket.accepted += 1;
+    }
+    return { rows: out };
+  });
+
+/**
+ * Reads the provider's own delivery log for a broadcast's messages. This is
+ * how a downstream rejection (e.g. EC_INVALID_TEMPLATE) becomes visible —
+ * those never appear as an error on the send call itself.
+ */
+export const diagnoseBroadcast = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ broadcastId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) throw new Error("No retailer assigned to your account");
+    if (!(await canManage(supabase, userId, retailerId)))
+      throw new Error("You don't have permission to inspect broadcasts");
+
+    const { data: rows } = await supabase
+      .from("notification_history")
+      .select("provider_message_sid")
+      .eq("retailer_id", retailerId)
+      .eq("broadcast_id", data.broadcastId)
+      .not("provider_message_sid", "is", null)
+      .limit(5);
+
+    const { lookupInfobipMessageStatus } = await import("@/lib/whatsapp-infobip.server");
+    const reports = await Promise.all(
+      ((rows ?? []) as Array<{ provider_message_sid: string }>).map(async (r) => {
+        const res = await lookupInfobipMessageStatus(r.provider_message_sid);
+        const result = (res.result ?? {}) as any;
+        return {
+          messageId: r.provider_message_sid,
+          groupName: result?.status?.groupName ?? null,
+          description: result?.status?.description ?? null,
+          errorName: result?.error?.name ?? null,
+          errorDescription: result?.error?.description ?? null,
+        };
+      }),
+    );
+
+    const { resolveBroadcastTemplate } = await import("@/lib/broadcast-template.server");
+    const template = await resolveBroadcastTemplate();
+
+    return {
+      reports,
+      template: template.ok
+        ? { ok: true as const, name: template.contract.name, language: template.contract.language }
+        : { ok: false as const, error: template.error },
+    };
+  });
+
+// ---------- broadcast image upload ----------
+
+export const createBroadcastImageUploadUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        filename: z.string().min(1).max(200),
+        contentType: z.string().min(1).max(120),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) throw new Error("No retailer assigned to your account");
+    if (!(await canManage(supabase, userId, retailerId)))
+      throw new Error("You don't have permission to send broadcasts");
+    if (!/^image\//i.test(data.contentType)) throw new Error("Only image files are supported");
+
+    const safe = data.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `${retailerId}/broadcasts/${crypto.randomUUID()}-${safe}`;
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signed, error } = await supabaseAdmin.storage
+      .from("product-images")
+      .createSignedUploadUrl(path);
+    if (error) throw new Error(error.message);
+    const { data: pub } = supabaseAdmin.storage.from("product-images").getPublicUrl(path);
+
+    return { path, uploadUrl: signed.signedUrl, token: signed.token, publicUrl: pub.publicUrl };
+  });
