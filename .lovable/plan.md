@@ -15,7 +15,10 @@ The broadcast path uses template `tag_broadcast_v1`, language `en_GB`, an IMAGE 
 
 1. **Confirm the real cause before changing anything.** Add an admin-only diagnostic that pulls the provider's delivery report for a given broadcast's message IDs and shows the exact rejection text (the app already has the report-fetch call, it is just not wired to broadcasts). Run it against the "50% Weekend Sale" broadcast. This turns "probably template rejection" into the actual provider error string.
 
-2. **Reconcile the broadcast template with what is approved.** Using the report from step 1, correct the stored contract for `tag_broadcast_v1` — name, language code, header type, and variable count — so the payload matches the approved template exactly. If the approved template has no image header, drop the image header and the logo-fallback requirement for broadcasts.
+2. **Reconcile the broadcast template with what is approved.** Using the report from step 1, correct the stored contract for `tag_broadcast_v1` — name, language code, header type, and variable count — so the payload matches the approved template exactly.
+
+3. **Make the broadcast image compulsory.** The approved broadcast template carries an image header, and today the composer lets a broadcast go out with no image, silently falling back to the workspace logo (or failing late). Instead: the image becomes a required field in the broadcast composer — the "Send broadcast" button stays disabled until an image is supplied, with an upload option as well as a URL field, and the image is validated as a publicly reachable https URL before send. The server keeps rejecting an imageless broadcast as a safety net, with a clear message. No silent logo substitution.
+
 
 3. **Surface delivery status in the UI.** The broadcast list currently only shows "sent" (accepted by the provider). Add a delivered / read / failed breakdown per broadcast, sourced from the delivery-report rows, so a silent non-delivery is visible immediately instead of looking like a success.
 
