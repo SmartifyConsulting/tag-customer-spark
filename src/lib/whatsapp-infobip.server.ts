@@ -409,6 +409,8 @@ export type InfobipTemplateSummary = {
   header: "IMAGE" | "NONE" | string;
   placeholderCount: number;
   buttonCount: number;
+  /** The approved body text, useful when the template has no variables. */
+  bodyText: string;
 };
 
 export async function listInfobipTemplates(): Promise<{
