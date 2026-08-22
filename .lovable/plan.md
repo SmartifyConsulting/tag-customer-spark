@@ -18,9 +18,13 @@ So v2 can carry your image, but not the heading and body you type. The app curre
 
 4. **Keep the delivery truth visible.** The existing delivered / read / failed breakdown and the per-broadcast diagnostic stay as they are, so a downstream rejection is never mistaken for a success again.
 
+5. **Live template picker in Admin > Automations.** The "Live Infobip delivery test" picker currently lists a hardcoded set of template names, so newly approved templates (like `tag_broadcast_v2`) never appear. Replace it with the live template list read from your WhatsApp sender: each entry shows the template name plus its status (Approved / Pending / Rejected), approved ones first, with a refresh button and an automatic refresh each time the Automations tab is opened. Pending or rejected templates are still selectable for testing but visibly flagged.
+
 ## Technical notes
 
 - `src/lib/broadcast-template.server.ts`: accept `placeholderCount === 0` as a fallback tier, still ranking two-variable templates first; return the variable count to callers.
 - `src/lib/broadcasts.functions.ts`: only pass `heading`/`body` variables when the resolved contract declares placeholders; always require a public https image.
 - `src/components/notifications/broadcast-composer-dialog.tsx`: fetch the resolved template capability and render the fixed-text notice.
+- Template picker: new admin-only server function wrapping the existing `listInfobipTemplates` helper, consumed by `src/components/settings/automation-settings.tsx` via a query with no stale cache, replacing the static `ALL_WHATSAPP_TEMPLATES` list.
 - No schema change, no new secrets.
+
