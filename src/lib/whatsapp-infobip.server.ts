@@ -409,6 +409,8 @@ export type InfobipTemplateSummary = {
   header: "IMAGE" | "NONE" | string;
   placeholderCount: number;
   buttonCount: number;
+  /** The approved body text, useful when the template has no variables. */
+  bodyText: string;
 };
 
 export async function listInfobipTemplates(): Promise<{
@@ -453,6 +455,7 @@ export async function listInfobipTemplates(): Promise<{
         header: String(t?.structure?.header?.format ?? "NONE"),
         placeholderCount: new Set(matches).size,
         buttonCount: Array.isArray(t?.structure?.buttons) ? t.structure.buttons.length : 0,
+        bodyText: String(bodyText),
       };
     }),
   };

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, Loader2, PlugZap, Send, Zap } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, PlugZap, RefreshCw, Send, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { AUTOMATIONS, ALL_WHATSAPP_TEMPLATES, type AutomationSetting } from "@/l
 import {
   checkInfobipConnection,
   listAutomationSettings,
+  listWhatsAppTemplates,
   saveAutomationSetting,
   testInfobipDelivery,
 } from "@/lib/automation.functions";
@@ -30,6 +31,24 @@ export function AutomationSettings() {
   const [draft, setDraft] = useState<Record<string, AutomationSetting>>({});
   const [testRecipient, setTestRecipient] = useState("");
   const [testTemplate, setTestTemplate] = useState<string>("tag_scan_confirm_and_install_v2");
+
+  // Always read the live template list from the sender so newly approved
+  // templates appear here without a code change.
+  const templates = useQuery({
+    queryKey: ["whatsapp-templates"],
+    queryFn: () => listWhatsAppTemplates(),
+    enabled: isSuperAdmin,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
+
+  const liveTemplates = templates.data?.templates ?? [];
+  const templateOptions: Array<{ name: string; status: string }> =
+    liveTemplates.length > 0
+      ? liveTemplates.map((t) => ({ name: t.name, status: t.status }))
+      : ALL_WHATSAPP_TEMPLATES.map((name) => ({ name, status: "" }));
 
   useEffect(() => {
     if (!data?.settings) return;
@@ -114,26 +133,52 @@ export function AutomationSettings() {
       {isSuperAdmin && data?.provider === "infobip" ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Live Infobip delivery test</CardTitle>
-            <CardDescription>
-              Sends the chosen template through the same runtime adapter used by Follow Me and
-              barcode scans, so you can prove a template delivers before making it the default.
-            </CardDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle className="text-base">Live Infobip delivery test</CardTitle>
+                <CardDescription>
+                  Sends the chosen template through the same runtime adapter used by Follow Me and
+                  barcode scans, so you can prove a template delivers before making it the default.
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => void templates.refetch()}
+                disabled={templates.isFetching}
+              >
+                {templates.isFetching ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                Refresh
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-2 sm:flex-row">
               <Select value={testTemplate} onValueChange={setTestTemplate}>
-                <SelectTrigger aria-label="Template to test" className="font-mono text-xs sm:max-w-[220px]">
+                <SelectTrigger aria-label="Template to test" className="font-mono text-xs sm:max-w-[280px]">
                   <SelectValue placeholder="Choose a template" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ALL_WHATSAPP_TEMPLATES.map((name) => (
-                    <SelectItem key={name} value={name} className="font-mono text-xs">
-                      {name}
+                  {templateOptions.map((t) => (
+                    <SelectItem key={t.name} value={t.name} className="font-mono text-xs">
+                      <span className="flex items-center gap-2">
+                        {t.name}
+                        {t.status && t.status !== "APPROVED" ? (
+                          <Badge variant="outline" className="text-[10px] uppercase">
+                            {t.status.toLowerCase()}
+                          </Badge>
+                        ) : null}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+
               <Input
                 aria-label="WhatsApp test recipient"
                 value={testRecipient}
