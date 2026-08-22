@@ -367,8 +367,8 @@ export const createBroadcastImageUploadUrl = createServerFn({ method: "POST" })
 
 /**
  * Tells the composer what the approved broadcast template can actually carry.
- * A zero-variable template still sends (image + approved fixed wording), so
- * the UI must say so rather than imply the typed text goes out.
+ * Broadcasts are pinned to tag_broadcast_v3; when it isn't approved on the
+ * sender the composer blocks sending and shows the reason.
  */
 export const getBroadcastTemplateInfo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -381,7 +381,9 @@ export const getBroadcastTemplateInfo = createServerFn({ method: "POST" })
       name: resolved.contract.name,
       language: resolved.contract.language,
       variableCount: resolved.variableCount,
-      fixedBody: resolved.fixedBody,
+      bodyText: resolved.bodyText,
+      hasUrlButton: resolved.hasUrlButton,
+      dynamicUrlButton: resolved.dynamicUrlButton,
       requiresImage: resolved.requiresImage,
     };
   });
