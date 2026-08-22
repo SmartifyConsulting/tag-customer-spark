@@ -94,11 +94,12 @@ export const listBroadcasts = createServerFn({ method: "GET" })
 // ---------- send ----------
 
 const sendSchema = z.object({
-  heading: z.string().trim().min(1).max(120),
-  body: z.string().trim().min(1).max(1000),
-  productId: z.string().uuid().nullable().optional(),
+  /** Internal label only — never sent to WhatsApp. */
+  internalName: z.string().trim().min(1).max(120),
+  /** Feeds the approved template's {{expiry_date}} variable. */
+  expiryDate: z.string().trim().min(1).max(40),
   imageUrl: z.string().url(),
-  ctaUrl: z.string().url().nullable().optional(),
+  catalogueUrl: z.string().url(),
 });
 
 export const sendMarketingBroadcast = createServerFn({ method: "POST" })
