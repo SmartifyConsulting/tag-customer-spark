@@ -80,6 +80,7 @@ export async function resolveBroadcastTemplate(): Promise<BroadcastTemplateResol
     bodyText: chosen.bodyText,
     dynamicUrlButton,
     hasUrlButton: !!urlButton,
+    status: chosen.status,
     contract: {
       name: chosen.name,
       language: chosen.language,
