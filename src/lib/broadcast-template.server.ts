@@ -15,7 +15,15 @@ import { listInfobipTemplates } from "@/lib/whatsapp-infobip.server";
 const BROADCAST_NAME_PREFIX = "tag_broadcast";
 
 export type BroadcastTemplateResolution =
-  | { ok: true; contract: TemplateContract; requiresImage: boolean }
+  | {
+      ok: true;
+      contract: TemplateContract;
+      requiresImage: boolean;
+      /** 2 = custom heading + body; 0 = approved fixed body text. */
+      variableCount: number;
+      /** The approved fixed body text, when the template has no variables. */
+      fixedBody: string | null;
+    }
   | { ok: false; error: string };
 
 export async function resolveBroadcastTemplate(): Promise<BroadcastTemplateResolution> {
@@ -32,6 +40,7 @@ export async function resolveBroadcastTemplate(): Promise<BroadcastTemplateResol
   const approved = listed.templates.filter(
     (t) =>
       t.status.toUpperCase() === "APPROVED" &&
+      t.buttonCount === 0 &&
       (override ? t.name === override : t.name.startsWith(BROADCAST_NAME_PREFIX)),
   );
 
@@ -39,37 +48,42 @@ export async function resolveBroadcastTemplate(): Promise<BroadcastTemplateResol
     return {
       ok: false,
       error:
-        "No approved WhatsApp broadcast template is registered on this sender. Submit a MARKETING template named tag_broadcast_v2 with an IMAGE header and body \"*{{1}}*\\n\\n{{2}}\".",
+        "No approved WhatsApp broadcast template is registered on this sender. Submit a MARKETING template named tag_broadcast_v3 with an IMAGE header and body \"*{{1}}*\\n\\n{{2}}\".",
     };
   }
 
-  // Needs exactly the two variables a broadcast fills: heading and body.
-  const usable = approved
-    .filter((t) => t.placeholderCount === 2 && t.buttonCount === 0)
-    .sort((a, b) => b.name.localeCompare(a.name));
+  // Prefer a template that can actually carry a custom heading + body. Fall
+  // back to an approved fixed-text template so a broadcast can still go out
+  // (image + the approved wording) until a variable template is approved.
+  const byName = (a: { name: string }, b: { name: string }) => b.name.localeCompare(a.name);
+  const chosen =
+    approved.filter((t) => t.placeholderCount === 2).sort(byName)[0] ??
+    approved.filter((t) => t.placeholderCount === 0).sort(byName)[0];
 
-  if (usable.length === 0) {
+  if (!chosen) {
     const names = approved
       .map((t) => `${t.name} (${t.placeholderCount} variable${t.placeholderCount === 1 ? "" : "s"})`)
       .join(", ");
     return {
       ok: false,
       error:
-        `The approved broadcast template can't carry custom text — ${names}. ` +
-        "WhatsApp rejects a send whose variable count doesn't match the approved body, which is why earlier broadcasts never arrived. " +
-        "Submit a MARKETING template named tag_broadcast_v2, language English (UK), IMAGE header, body \"*{{1}}*\\n\\n{{2}}\" and no buttons, then send again.",
+        `The approved broadcast template's variable count can't be satisfied — ${names}. ` +
+        "Submit a MARKETING template named tag_broadcast_v3, IMAGE header, body \"*{{1}}*\\n\\n{{2}}\" and no buttons.",
     };
   }
 
-  const chosen = usable[0]!;
+  const variableCount = chosen.placeholderCount === 2 ? 2 : 0;
   return {
     ok: true,
     requiresImage: chosen.header.toUpperCase() === "IMAGE",
+    variableCount,
+    fixedBody: variableCount === 0 ? (chosen.bodyText ?? null) : null,
     contract: {
       name: chosen.name,
       language: chosen.language,
       header: chosen.header.toUpperCase() === "IMAGE" ? "IMAGE" : "NONE",
-      placeholders: ["heading", "body"],
+      placeholders: variableCount === 2 ? ["heading", "body"] : [],
     } as TemplateContract,
   };
 }
+
