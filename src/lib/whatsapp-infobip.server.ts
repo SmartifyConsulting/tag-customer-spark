@@ -213,39 +213,6 @@ export async function sendInfobipWhatsApp(
 }
 
 /**
- * Lists this WhatsApp sender's templates directly from Infobip's Template
- * Manager API and returns only the ones actually approved to send — so the
- * "Template to test" picker in Settings/Admin > Automations always reflects
- * what's real in Infobip, including anything created after this code was
- * last touched, instead of a hand-maintained list that silently goes stale
- * (and can offer a still-pending/rejected template that will only fail).
- */
-export async function listApprovedInfobipTemplates(): Promise<{
-  ok: boolean;
-  names: string[];
-  error: string | null;
-}> {
-  const config = await readRuntimeConfig();
-  if (!config) return { ok: false, names: [], error: missingBindingMessage() };
-
-  try {
-    const resp = await infobipCall(config, `/whatsapp/2/senders/${config.sender}/templates`, null);
-    if (!resp.ok) {
-      return { ok: false, names: [], error: resp.text.slice(0, 300) || `Infobip returned ${resp.status}` };
-    }
-    const json = JSON.parse(resp.text);
-    const templates: any[] = Array.isArray(json?.templates) ? json.templates : [];
-    const names = templates
-      .filter((t) => String(t?.status ?? "").toUpperCase() === "APPROVED")
-      .map((t) => t?.name as string)
-      .filter((name): name is string => !!name);
-    return { ok: true, names, error: null };
-  } catch (e) {
-    return { ok: false, names: [], error: (e as Error).message };
-  }
-}
-
-/**
  * Read-only authentication check against Infobip from this exact runtime.
  * Sends no WhatsApp message, so it can be run safely at any time to tell an
  * authentication failure apart from a template or recipient failure.
@@ -426,12 +393,119 @@ export async function lookupInfobipMessageStatus(messageId: string): Promise<{
   };
 }
 
+/**
+ * Read-only listing of the WhatsApp templates registered on this sender,
+ * reduced to the parts a send must match: name, language, approval status,
+ * header format and how many body placeholders the approved body declares.
+ *
+ * Sending more (or fewer) placeholders than the approved body declares is
+ * accepted by the API and then permanently rejected downstream with
+ * EC_INVALID_TEMPLATE, so the send path preflights against this.
+ */
+export type InfobipTemplateSummary = {
+  name: string;
+  language: string;
+  status: string;
+  header: "IMAGE" | "NONE" | string;
+  placeholderCount: number;
+  buttonCount: number;
+  /** Approved buttons, in order (type + the approved URL for URL buttons). */
+  buttons: Array<{ type: string; url: string | null; text: string | null }>;
+  /** The approved body text, useful when the template has no variables. */
+  bodyText: string;
+};
+
+export async function listInfobipTemplates(): Promise<{
+  ok: boolean;
+  error: string | null;
+  templates: InfobipTemplateSummary[];
+}> {
+  const config = await readRuntimeConfig();
+  if (!config) return { ok: false, error: missingBindingMessage(), templates: [] };
+
+  const senderResp = await infobipCall(
+    config,
+    `/whatsapp/2/senders/${encodeURIComponent(config.sender)}/templates`,
+    null,
+  );
+  if (!senderResp.ok) {
+    return {
+      ok: false,
+      error: `Infobip returned ${senderResp.status} when listing templates`,
+      templates: [],
+    };
+  }
+
+  let senderJson: any = null;
+  try {
+    senderJson = senderResp.text ? JSON.parse(senderResp.text) : null;
+  } catch {
+    return { ok: false, error: "Could not parse the template list response", templates: [] };
+  }
+
+  const senderRows: any[] = Array.isArray(senderJson?.templates) ? senderJson.templates : [];
+
+  // Infobip's sender endpoint can return only the sender's first page in some
+  // accounts. The account endpoint supports filtering and a larger page, so
+  // merge it in to ensure newly-created templates are discoverable.
+  let accountRows: any[] = [];
+  const accountResp = await infobipCall(
+    config,
+    `/whatsapp/1/templates?sender=${encodeURIComponent(config.sender)}&page=0&pageSize=100`,
+    null,
+  );
+  if (accountResp.ok) {
+    try {
+      const accountJson: any = accountResp.text ? JSON.parse(accountResp.text) : null;
+      const candidate = accountJson?.templates ?? accountJson?.results ?? accountJson?.items;
+      accountRows = Array.isArray(candidate) ? candidate : [];
+    } catch {
+      // Keep the valid sender-specific response when the optional account
+      // response has an unfamiliar shape.
+    }
+  }
+
+  const byTemplate = new Map<string, any>();
+  for (const row of [...senderRows, ...accountRows]) {
+    const key = `${String(row?.name ?? "").trim().toLocaleLowerCase("en")}:${String(
+      row?.language ?? "en",
+    ).trim().toLocaleLowerCase("en")}`;
+    if (key !== ":en") byTemplate.set(key, row);
+  }
+  const rows = [...byTemplate.values()];
+  return {
+    ok: true,
+    error: null,
+    templates: rows.map((t) => {
+      const bodyText: string = t?.structure?.body?.text ?? t?.structure?.body ?? "";
+      const matches = String(bodyText).match(/\{\{[^}]+\}\}/g) ?? [];
+      return {
+        name: String(t?.name ?? ""),
+        language: String(t?.language ?? "en"),
+        status: String(t?.status ?? "UNKNOWN"),
+        header: String(t?.structure?.header?.format ?? "NONE"),
+        placeholderCount: new Set(matches).size,
+        buttonCount: Array.isArray(t?.structure?.buttons) ? t.structure.buttons.length : 0,
+        buttons: (Array.isArray(t?.structure?.buttons) ? t.structure.buttons : []).map(
+          (b: any) => ({
+            type: String(b?.type ?? ""),
+            url: b?.url ? String(b.url) : null,
+            text: b?.text ? String(b.text) : null,
+          }),
+        ),
+        bodyText: String(bodyText),
+      };
+    }),
+  };
+}
+
 /** Keeps country context but hides the subscriber number. */
 function maskMsisdn(value: unknown): string | null {
   const digits = String(value ?? "").replace(/\D/g, "");
   if (!digits) return null;
   return `${digits.slice(0, 3)}${"*".repeat(Math.max(0, digits.length - 6))}${digits.slice(-3)}`;
 }
+
 
 
 /**

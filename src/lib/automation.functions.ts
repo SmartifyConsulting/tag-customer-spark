@@ -117,30 +117,6 @@ export const checkInfobipConnection = createServerFn({ method: "POST" })
     return checkInfobipAuth();
   });
 
-/**
- * Live-fetches this sender's approved WhatsApp templates from Infobip, so
- * the "Template to test" picker always reflects what's actually approved —
- * including anything created after this code was last touched — instead of
- * a hand-maintained list that can offer a pending/rejected template.
- */
-export const listApprovedTemplates = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { supabase, userId } = context;
-    const { data: role } = await supabase
-      .from("user_roles")
-      .select("retailer_id")
-      .eq("user_id", userId)
-      .eq("role", "super_admin")
-      .limit(1)
-      .maybeSingle();
-    if (!role) throw new Error("Super administrator access required");
-
-    const { listApprovedInfobipTemplates } = await import("@/lib/whatsapp-infobip.server");
-    return listApprovedInfobipTemplates();
-  });
-
-
 export const testInfobipDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -211,5 +187,36 @@ export const testInfobipDelivery = createServerFn({ method: "POST" })
       messageId: result.sid ?? null,
       error: result.error ?? null,
       diagnostic: result.diagnostic ?? null,
+    };
+  });
+
+/**
+ * Live list of the WhatsApp templates registered on this sender, so the
+ * delivery test always reflects newly approved templates instead of a
+ * hardcoded list that goes stale.
+ */
+export const listWhatsAppTemplates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: role } = await supabase
+      .from("user_roles")
+      .select("retailer_id")
+      .eq("user_id", userId)
+      .eq("role", "super_admin")
+      .limit(1)
+      .maybeSingle();
+    if (!role) throw new Error("Super administrator access required");
+
+    const { listInfobipTemplates } = await import("@/lib/whatsapp-infobip.server");
+    const listed = await listInfobipTemplates();
+    const rank = (s: string) =>
+      s.toUpperCase() === "APPROVED" ? 0 : s.toUpperCase() === "PENDING" ? 1 : 2;
+    return {
+      ok: listed.ok,
+      error: listed.error,
+      templates: listed.templates
+        .map((t) => ({ name: t.name, status: t.status.toUpperCase(), language: t.language }))
+        .sort((a, b) => rank(a.status) - rank(b.status) || a.name.localeCompare(b.name)),
     };
   });

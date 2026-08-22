@@ -7,18 +7,22 @@ export function readerUrl() {
     : "/tools/barcode-reader";
 }
 
-// Square (no rounding — corners matter for scan reliability), no extra
-// frame/padding beyond the plain white background a QR needs for contrast.
-// Sized to actually be scannable, unlike a tiny rounded badge. Meant to
-// stand in for the user's avatar (see UserMenu) — no Link wrapper, since
-// it's embedded inside that button, which is already clickable.
-export function TagReaderQrBadge({ size = 56 }: { size?: number }) {
+// No white frame or backing tile — the code is rendered directly on the
+// surface using white modules on a transparent background, sized ~2cm
+// (76px @96dpi) so it stays comfortably scannable.
+export function TagReaderQrBadge({ size = 228 }: { size?: number }) {
   return (
-    <div className="flex shrink-0 items-center justify-center bg-white" style={{ height: size, width: size }}>
-      <QrPreview value={readerUrl()} size={size} bare margin={0} />
-    </div>
+    <QrPreview
+      value={readerUrl()}
+      size={size}
+      bare
+      margin={0}
+      darkColor="#FFFFFF"
+      lightColor="#00000000"
+    />
   );
 }
+
 
 // Tag Barcode Reader QR — launches /tools/barcode-reader when scanned (or
 // tapped, on the device that's already signed in). Two sizes:

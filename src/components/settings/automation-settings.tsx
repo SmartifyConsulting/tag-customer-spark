@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, Loader2, PlugZap, Send, Zap } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, PlugZap, RefreshCw, Send, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { AUTOMATIONS, ALL_WHATSAPP_TEMPLATES, type AutomationSetting } from "@/lib/automation";
 import {
   checkInfobipConnection,
-  listApprovedTemplates,
   listAutomationSettings,
+  listWhatsAppTemplates,
   saveAutomationSetting,
   testInfobipDelivery,
 } from "@/lib/automation.functions";
@@ -32,19 +32,25 @@ export function AutomationSettings() {
   const [testRecipient, setTestRecipient] = useState("");
   const [testTemplate, setTestTemplate] = useState<string>("tag_scan_confirm_and_install_v2");
 
-  // Live from Infobip — only templates it currently reports as APPROVED, so
-  // a pending/rejected template (which would only ever fail) never shows up
-  // as an option, and anything newly approved appears without a code change.
-  // Falls back to the static list if the live fetch fails for any reason
-  // (e.g. Infobip unreachable), so the picker never goes empty.
-  const approvedTemplates = useQuery({
-    queryKey: ["infobip-approved-templates"],
-    queryFn: () => listApprovedTemplates(),
-    staleTime: 60_000,
+  // Always read the live template list from the sender so newly approved
+  // templates appear here without a code change — then keep only APPROVED
+  // ones, so a pending/rejected template (which would only ever fail) never
+  // shows up as an option at all.
+  const templates = useQuery({
+    queryKey: ["whatsapp-templates"],
+    queryFn: () => listWhatsAppTemplates(),
+    enabled: isSuperAdmin,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
-  const templateOptions =
-    approvedTemplates.data?.ok && approvedTemplates.data.names.length > 0
-      ? approvedTemplates.data.names
+
+  const liveTemplates = templates.data?.templates ?? [];
+  const approvedLiveTemplates = liveTemplates.filter((t) => t.status === "APPROVED");
+  const templateOptions: string[] =
+    approvedLiveTemplates.length > 0
+      ? approvedLiveTemplates.map((t) => t.name)
       : ALL_WHATSAPP_TEMPLATES;
 
   useEffect(() => {
@@ -130,16 +136,34 @@ export function AutomationSettings() {
       {isSuperAdmin && data?.provider === "infobip" ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Live Infobip delivery test</CardTitle>
-            <CardDescription>
-              Sends the chosen template through the same runtime adapter used by Follow Me and
-              barcode scans, so you can prove a template delivers before making it the default.
-            </CardDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle className="text-base">Live Infobip delivery test</CardTitle>
+                <CardDescription>
+                  Sends the chosen template through the same runtime adapter used by Follow Me and
+                  barcode scans, so you can prove a template delivers before making it the default.
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => void templates.refetch()}
+                disabled={templates.isFetching}
+              >
+                {templates.isFetching ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                Refresh
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex flex-col gap-2 sm:flex-row">
               <Select value={testTemplate} onValueChange={setTestTemplate}>
-                <SelectTrigger aria-label="Template to test" className="font-mono text-xs sm:max-w-[220px]">
+                <SelectTrigger aria-label="Template to test" className="font-mono text-xs sm:max-w-[280px]">
                   <SelectValue placeholder="Choose a template" />
                 </SelectTrigger>
                 <SelectContent>
@@ -150,6 +174,7 @@ export function AutomationSettings() {
                   ))}
                 </SelectContent>
               </Select>
+
               <Input
                 aria-label="WhatsApp test recipient"
                 value={testRecipient}
@@ -174,12 +199,12 @@ export function AutomationSettings() {
               </Button>
             </div>
 
-            {approvedTemplates.isLoading ? (
+            {templates.isLoading ? (
               <p className="flex items-center text-xs text-muted-foreground">
                 <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Loading approved templates from
                 Infobip…
               </p>
-            ) : !approvedTemplates.data?.ok ? (
+            ) : !templates.data?.ok ? (
               <p className="text-xs text-destructive">
                 Couldn't load live templates from Infobip — showing the built-in list instead.
               </p>

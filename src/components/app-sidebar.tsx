@@ -21,6 +21,7 @@ import { useTier } from "@/hooks/use-tier";
 import { useAuth, useIsAdmin, useIsSuperAdmin } from "@/hooks/use-auth";
 import { UserMenu } from "@/components/user-menu";
 import { TagLogo } from "@/components/tag-logo";
+import { TagReaderQrBadge } from "@/components/qr/tag-reader-tile";
 import { sectionsForUser, isNavActive, type NavItem } from "@/lib/nav";
 import { useIsStaff } from "@/hooks/use-persona";
 
@@ -62,7 +63,7 @@ export function AppSidebar() {
         )}
       </SidebarHeader>
 
-      <SidebarContent className="px-1.5 pb-0 pt-[3.1875rem]">
+      <SidebarContent className="px-1.5 pb-0 pt-4">
         {sections.map((section) => (
           <SidebarGroup key={section.id} className="py-1">
             {!collapsed && section.id !== "purchase" && (
@@ -148,14 +149,21 @@ export function AppSidebar() {
       <SidebarFooter>
         {!collapsed && (
           <div className="space-y-2 px-3 py-3">
-            {/* Left edge lines up with the QR code below it (Button's own
-                px-2 offsets the QR by 0.5rem from this container's edge). */}
+            {/* Tag Barcode Reader QR, then search, then the profile row —
+                all left-aligned (the ml-2 matches the Button's own px-2). */}
+            <Link
+              to="/tools/barcode-reader"
+              target="_blank"
+              title="Open Tag Barcode Reader"
+              className="ml-2 block w-fit"
+            >
+              <TagReaderQrBadge size={96} />
+            </Link>
             <input
               type="text"
               placeholder="Search anything..."
               className="ml-2 w-[calc(100%-0.5rem)] rounded-lg border border-sidebar-border bg-sidebar px-3 py-2 text-sm placeholder:text-sidebar-foreground/40 text-sidebar-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
             />
-            {/* UserMenu's own "avatar" is now the Tag Barcode Reader QR. */}
             <div className="pt-1">
               <UserMenu />
             </div>
