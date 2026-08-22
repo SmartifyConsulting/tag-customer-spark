@@ -10,6 +10,7 @@ import {
   Eye,
   Tag,
   Barcode,
+  Workflow,
 } from "lucide-react";
 
 import type { TierFeatureKey } from "@/lib/tier";

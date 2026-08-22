@@ -63,7 +63,7 @@ export function AppSidebar() {
         )}
       </SidebarHeader>
 
-      <SidebarContent className="px-1.5 pb-0 pt-[3.1875rem]">
+      <SidebarContent className="px-1.5 pb-0 pt-4">
         {sections.map((section) => (
           <SidebarGroup key={section.id} className="py-1">
             {!collapsed && section.id !== "purchase" && (
