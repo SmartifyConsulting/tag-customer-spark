@@ -137,6 +137,16 @@ export function BroadcastComposerDialog({
 
   const count = audience?.count ?? 0;
 
+  const blockers: string[] = [];
+  if (templateInfo?.ok === false) blockers.push(templateInfo.error);
+  if (!imageOk) blockers.push("Upload a header image.");
+  if (internalName.trim().length === 0) blockers.push("Give the broadcast an internal name.");
+  if (expiry.trim().length === 0) blockers.push("Choose the “Offer valid till” date.");
+  if (!urlOk) blockers.push("Add a valid https:// online shopping catalogue URL.");
+  if (!audienceLoading && count === 0)
+    blockers.push("No customers have opted in to marketing yet, so there is nobody to send to.");
+  if (uploading) blockers.push("Waiting for the image upload to finish.");
+
   return (
     <Dialog open={open} onOpenChange={(v) => (!send.isPending ? onOpenChange(v) : null)}>
       <DialogContent className="sm:max-w-lg">
