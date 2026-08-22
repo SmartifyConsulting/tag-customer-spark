@@ -132,9 +132,13 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         match: ["/admin", "/stores"],
         exact: true,
         adminOnly: true,
-        items: [
-          { title: "Automations", url: "/automations", match: ["/automations"] },
-        ],
+      },
+      {
+        title: "Automations",
+        url: "/automations",
+        icon: Workflow,
+        match: ["/automations"],
+        adminOnly: true,
       },
       {
         title: "Pricing",
