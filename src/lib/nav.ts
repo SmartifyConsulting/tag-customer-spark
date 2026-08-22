@@ -123,14 +123,18 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     label: "Business",
     staffOnly: true,
     items: [
+      { title: "Customers", url: "/customers", icon: Users, match: ["/customers"] },
       {
         title: "Admin",
         url: "/admin",
         icon: ShieldCheck,
         // Exact-only — see NavItem.exact above.
-        match: ["/admin", "/stores", "/customers"],
+        match: ["/admin", "/stores"],
         exact: true,
         adminOnly: true,
+        items: [
+          { title: "Automations", url: "/automations", match: ["/automations"] },
+        ],
       },
       {
         title: "Pricing",
