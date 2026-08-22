@@ -356,3 +356,26 @@ export const createBroadcastImageUploadUrl = createServerFn({ method: "POST" })
 
     return { path, uploadUrl: signed.signedUrl, token: signed.token, publicUrl: pub.publicUrl };
   });
+
+// ---------- template capability (composer notice) ----------
+
+/**
+ * Tells the composer what the approved broadcast template can actually carry.
+ * A zero-variable template still sends (image + approved fixed wording), so
+ * the UI must say so rather than imply the typed text goes out.
+ */
+export const getBroadcastTemplateInfo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const { resolveBroadcastTemplate } = await import("@/lib/broadcast-template.server");
+    const resolved = await resolveBroadcastTemplate();
+    if (!resolved.ok) return { ok: false as const, error: resolved.error };
+    return {
+      ok: true as const,
+      name: resolved.contract.name,
+      language: resolved.contract.language,
+      variableCount: resolved.variableCount,
+      fixedBody: resolved.fixedBody,
+      requiresImage: resolved.requiresImage,
+    };
+  });
