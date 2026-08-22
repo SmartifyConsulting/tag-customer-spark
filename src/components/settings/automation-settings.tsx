@@ -114,26 +114,52 @@ export function AutomationSettings() {
       {isSuperAdmin && data?.provider === "infobip" ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Live Infobip delivery test</CardTitle>
-            <CardDescription>
-              Sends the chosen template through the same runtime adapter used by Follow Me and
-              barcode scans, so you can prove a template delivers before making it the default.
-            </CardDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle className="text-base">Live Infobip delivery test</CardTitle>
+                <CardDescription>
+                  Sends the chosen template through the same runtime adapter used by Follow Me and
+                  barcode scans, so you can prove a template delivers before making it the default.
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => void templates.refetch()}
+                disabled={templates.isFetching}
+              >
+                {templates.isFetching ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                Refresh
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-2 sm:flex-row">
               <Select value={testTemplate} onValueChange={setTestTemplate}>
-                <SelectTrigger aria-label="Template to test" className="font-mono text-xs sm:max-w-[220px]">
+                <SelectTrigger aria-label="Template to test" className="font-mono text-xs sm:max-w-[280px]">
                   <SelectValue placeholder="Choose a template" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ALL_WHATSAPP_TEMPLATES.map((name) => (
-                    <SelectItem key={name} value={name} className="font-mono text-xs">
-                      {name}
+                  {templateOptions.map((t) => (
+                    <SelectItem key={t.name} value={t.name} className="font-mono text-xs">
+                      <span className="flex items-center gap-2">
+                        {t.name}
+                        {t.status && t.status !== "APPROVED" ? (
+                          <Badge variant="outline" className="text-[10px] uppercase">
+                            {t.status.toLowerCase()}
+                          </Badge>
+                        ) : null}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+
               <Input
                 aria-label="WhatsApp test recipient"
                 value={testRecipient}
