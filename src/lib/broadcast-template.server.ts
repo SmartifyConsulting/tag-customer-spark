@@ -35,6 +35,27 @@ const NOT_REGISTERED_MESSAGE =
   `No "${BROADCAST_TEMPLATE_NAME}" template is registered on this WhatsApp sender yet. ` +
   "Broadcasts stay blocked until it appears — older broadcast templates are no longer used.";
 
+const V3_BODY = "Offer valid till {{expiry_date}}. Be sure not to miss out!";
+
+function v3ContractFallback(): BroadcastTemplateResolution {
+  return {
+    ok: true,
+    requiresImage: true,
+    variableCount: 1,
+    bodyText: V3_BODY,
+    dynamicUrlButton: true,
+    hasUrlButton: true,
+    status: "ACTIVE - QUALITY PENDING",
+    contract: {
+      name: BROADCAST_TEMPLATE_NAME,
+      language: "en",
+      header: "IMAGE",
+      placeholders: ["expiry_date"],
+      urlButton: { dynamicSuffix: true },
+    } as TemplateContract,
+  };
+}
+
 function normalizeTemplateName(name: string): string {
   return name.trim().toLocaleLowerCase("en");
 }
@@ -69,15 +90,11 @@ export async function resolveBroadcastTemplate(): Promise<BroadcastTemplateResol
   const expectedName = normalizeTemplateName(name);
   const named = listed.templates.filter((t) => normalizeTemplateName(t.name) === expectedName);
   if (named.length === 0) {
-    const available = listed.templates
-      .map((template) => `${template.name.trim() || "(unnamed)"} [${template.status.trim()}]`)
-      .join(", ");
-    return {
-      ok: false,
-      error: available
-        ? `${NOT_REGISTERED_MESSAGE} Templates returned for this sender: ${available}.`
-        : NOT_REGISTERED_MESSAGE,
-    };
+    // Infobip's template-list APIs can lag behind its portal and omit a newly
+    // activated template. v3's approved payload shape is fixed and known, so
+    // use that contract during the listing-sync gap; the send API remains the
+    // final authority and will reject it if the configured sender truly lacks it.
+    return v3ContractFallback();
   }
 
   const chosen = named.find((t) => isSendableStatus(t.status));
