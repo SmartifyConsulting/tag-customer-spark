@@ -455,6 +455,7 @@ export async function listInfobipTemplates(): Promise<{
         header: String(t?.structure?.header?.format ?? "NONE"),
         placeholderCount: new Set(matches).size,
         buttonCount: Array.isArray(t?.structure?.buttons) ? t.structure.buttons.length : 0,
+        bodyText: String(bodyText),
       };
     }),
   };
