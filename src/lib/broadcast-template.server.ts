@@ -26,6 +26,8 @@ export type BroadcastTemplateResolution =
       dynamicUrlButton: boolean;
       /** True when the template declares a URL button at all. */
       hasUrlButton: boolean;
+      /** Raw provider status string, surfaced in the composer notice. */
+      status: string;
     }
   | { ok: false; error: string };
 
