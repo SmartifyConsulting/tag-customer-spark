@@ -1,33 +1,40 @@
-// Server-only: resolves which approved WhatsApp template a marketing
-// broadcast may use, from the provider's live template list.
+// Server-only: resolves the approved WhatsApp template a marketing broadcast
+// may use. Broadcasts are pinned to tag_broadcast_v3 — earlier versions
+// (v1/v2) carried fixed wording and are no longer used.
 //
-// Why this is dynamic rather than a constant: WhatsApp permanently rejects a
-// template send whose placeholder count differs from the APPROVED body — the
-// API accepts the request and the message dies later with EC_INVALID_TEMPLATE
-// (7009), which is exactly how broadcasts were failing silently. The approved
-// body is whatever the retailer got approved, so we read it and refuse to send
-// unless it can actually carry a heading and a body.
+// Why this is read live rather than hard-coded: WhatsApp permanently rejects a
+// template send whose placeholder count or button shape differs from the
+// APPROVED definition — the API accepts the request and the message dies later
+// with EC_INVALID_TEMPLATE (7009).
 
 import type { TemplateContract } from "@/lib/whatsapp-templates.server";
 import { listInfobipTemplates } from "@/lib/whatsapp-infobip.server";
 
-/** Templates considered for broadcasts, newest naming convention first. */
-const BROADCAST_NAME_PREFIX = "tag_broadcast";
+/** The only template broadcasts may use. */
+export const BROADCAST_TEMPLATE_NAME = "tag_broadcast_v3";
 
 export type BroadcastTemplateResolution =
   | {
       ok: true;
       contract: TemplateContract;
       requiresImage: boolean;
-      /** 2 = custom heading + body; 0 = approved fixed body text. */
+      /** Number of body variables the approved body declares (expected: 1). */
       variableCount: number;
-      /** The approved fixed body text, when the template has no variables. */
-      fixedBody: string | null;
+      /** The approved body text, used for the composer preview. */
+      bodyText: string;
+      /** True when the approved URL button takes a per-send value. */
+      dynamicUrlButton: boolean;
+      /** True when the template declares a URL button at all. */
+      hasUrlButton: boolean;
     }
   | { ok: false; error: string };
 
+const NOT_APPROVED_MESSAGE =
+  `No APPROVED "${BROADCAST_TEMPLATE_NAME}" template is registered on this WhatsApp sender yet. ` +
+  "Broadcasts stay blocked until it clears review — older broadcast templates are no longer used.";
+
 export async function resolveBroadcastTemplate(): Promise<BroadcastTemplateResolution> {
-  const override = process.env.INFOBIP_TEMPLATE_TAG_BROADCAST_V1;
+  const name = process.env.INFOBIP_TEMPLATE_TAG_BROADCAST_V3 ?? BROADCAST_TEMPLATE_NAME;
 
   const listed = await listInfobipTemplates();
   if (!listed.ok) {
@@ -37,53 +44,39 @@ export async function resolveBroadcastTemplate(): Promise<BroadcastTemplateResol
     };
   }
 
-  const approved = listed.templates.filter(
-    (t) =>
-      t.status.toUpperCase() === "APPROVED" &&
-      t.buttonCount === 0 &&
-      (override ? t.name === override : t.name.startsWith(BROADCAST_NAME_PREFIX)),
+  const chosen = listed.templates.find(
+    (t) => t.name === name && t.status.toUpperCase() === "APPROVED",
+  );
+  if (!chosen) return { ok: false, error: NOT_APPROVED_MESSAGE };
+
+  const urlButton = chosen.buttons.find((b) => b.type.toUpperCase() === "URL");
+  const dynamicUrlButton = !!urlButton?.url && /\{\{\s*\d+\s*\}\}/.test(urlButton.url);
+  const header = chosen.header.toUpperCase() === "IMAGE" ? "IMAGE" : "NONE";
+
+  // The approved body declares one variable — the offer expiry date.
+  const placeholders = Array.from({ length: chosen.placeholderCount }, (_, i) =>
+    i === 0 ? "expiry_date" : `var${i + 1}`,
   );
 
-  if (approved.length === 0) {
-    return {
-      ok: false,
-      error:
-        "No approved WhatsApp broadcast template is registered on this sender. Submit a MARKETING template named tag_broadcast_v3 with an IMAGE header and body \"*{{1}}*\\n\\n{{2}}\".",
-    };
-  }
-
-  // Prefer a template that can actually carry a custom heading + body. Fall
-  // back to an approved fixed-text template so a broadcast can still go out
-  // (image + the approved wording) until a variable template is approved.
-  const byName = (a: { name: string }, b: { name: string }) => b.name.localeCompare(a.name);
-  const chosen =
-    approved.filter((t) => t.placeholderCount === 2).sort(byName)[0] ??
-    approved.filter((t) => t.placeholderCount === 0).sort(byName)[0];
-
-  if (!chosen) {
-    const names = approved
-      .map((t) => `${t.name} (${t.placeholderCount} variable${t.placeholderCount === 1 ? "" : "s"})`)
-      .join(", ");
-    return {
-      ok: false,
-      error:
-        `The approved broadcast template's variable count can't be satisfied — ${names}. ` +
-        "Submit a MARKETING template named tag_broadcast_v3, IMAGE header, body \"*{{1}}*\\n\\n{{2}}\" and no buttons.",
-    };
-  }
-
-  const variableCount = chosen.placeholderCount === 2 ? 2 : 0;
   return {
     ok: true,
-    requiresImage: chosen.header.toUpperCase() === "IMAGE",
-    variableCount,
-    fixedBody: variableCount === 0 ? (chosen.bodyText ?? null) : null,
+    requiresImage: header === "IMAGE",
+    variableCount: chosen.placeholderCount,
+    bodyText: chosen.bodyText,
+    dynamicUrlButton,
+    hasUrlButton: !!urlButton,
     contract: {
       name: chosen.name,
       language: chosen.language,
-      header: chosen.header.toUpperCase() === "IMAGE" ? "IMAGE" : "NONE",
-      placeholders: variableCount === 2 ? ["heading", "body"] : [],
+      header,
+      placeholders,
+      ...(urlButton
+        ? {
+            urlButton: dynamicUrlButton
+              ? { dynamicSuffix: true }
+              : { staticUrl: urlButton.url ?? "" },
+          }
+        : {}),
     } as TemplateContract,
   };
 }
-

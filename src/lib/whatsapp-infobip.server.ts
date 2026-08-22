@@ -409,6 +409,8 @@ export type InfobipTemplateSummary = {
   header: "IMAGE" | "NONE" | string;
   placeholderCount: number;
   buttonCount: number;
+  /** Approved buttons, in order (type + the approved URL for URL buttons). */
+  buttons: Array<{ type: string; url: string | null; text: string | null }>;
   /** The approved body text, useful when the template has no variables. */
   bodyText: string;
 };
@@ -455,6 +457,13 @@ export async function listInfobipTemplates(): Promise<{
         header: String(t?.structure?.header?.format ?? "NONE"),
         placeholderCount: new Set(matches).size,
         buttonCount: Array.isArray(t?.structure?.buttons) ? t.structure.buttons.length : 0,
+        buttons: (Array.isArray(t?.structure?.buttons) ? t.structure.buttons : []).map(
+          (b: any) => ({
+            type: String(b?.type ?? ""),
+            url: b?.url ? String(b.url) : null,
+            text: b?.text ? String(b.text) : null,
+          }),
+        ),
         bodyText: String(bodyText),
       };
     }),

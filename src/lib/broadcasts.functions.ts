@@ -94,11 +94,12 @@ export const listBroadcasts = createServerFn({ method: "GET" })
 // ---------- send ----------
 
 const sendSchema = z.object({
-  heading: z.string().trim().min(1).max(120),
-  body: z.string().trim().min(1).max(1000),
-  productId: z.string().uuid().nullable().optional(),
+  /** Internal label only — never sent to WhatsApp. */
+  internalName: z.string().trim().min(1).max(120),
+  /** Feeds the approved template's {{expiry_date}} variable. */
+  expiryDate: z.string().trim().min(1).max(40),
   imageUrl: z.string().url(),
-  ctaUrl: z.string().url().nullable().optional(),
+  catalogueUrl: z.string().url(),
 });
 
 export const sendMarketingBroadcast = createServerFn({ method: "POST" })
@@ -150,18 +151,23 @@ export const sendMarketingBroadcast = createServerFn({ method: "POST" })
       );
     }
 
-    // Create the broadcast row
+    // Create the broadcast row. The internal name is stored in `heading`
+    // (it is never sent), and the rendered offer wording in `body`.
+    const renderedBody = resolved.bodyText.replace(
+      /\{\{[^}]+\}\}/,
+      data.expiryDate,
+    );
     const now = new Date().toISOString();
     const { data: broadcast, error: bErr } = await supabase
       .from("broadcast_campaigns")
       .insert({
         retailer_id: retailerId,
         created_by: userId,
-        heading: data.heading,
-        body: data.body,
-        image_url: data.imageUrl ?? null,
-        product_id: data.productId ?? null,
-        cta_url: data.ctaUrl ?? null,
+        heading: data.internalName,
+        body: renderedBody,
+        image_url: data.imageUrl,
+        product_id: null,
+        cta_url: data.catalogueUrl,
         recipient_count: audience.length,
         sent_count: 0,
         failed_count: 0,
@@ -172,10 +178,13 @@ export const sendMarketingBroadcast = createServerFn({ method: "POST" })
       .single();
     if (bErr || !broadcast) throw new Error(bErr?.message ?? "Failed to create broadcast");
 
-    // The CTA link (if any) rides inside the "body" template variable —
-    // WhatsApp URL buttons only support a variable *suffix* on a fixed base
-    // domain, not an arbitrary per-broadcast URL, so a button can't carry it.
-    const bodyWithCta = data.ctaUrl ? `${data.body}\n\n${data.ctaUrl}` : data.body;
+    // The approved template's variables: {{expiry_date}} in the body, and the
+    // Shop Online button's URL when that button takes a per-send value.
+    const variables: Record<string, string> = {};
+    for (const key of resolved.contract.placeholders) {
+      variables[key] = key === "expiry_date" ? data.expiryDate : data.expiryDate;
+    }
+    if (resolved.dynamicUrlButton) variables.urlButton = data.catalogueUrl;
 
     let sent = 0;
     let failed = 0;
@@ -189,10 +198,7 @@ export const sendMarketingBroadcast = createServerFn({ method: "POST" })
             contract: resolved.contract,
             to: cust.whatsapp_e164,
             headerImageUrl: headerImage,
-            variables:
-              resolved.variableCount === 2
-                ? { heading: data.heading, body: bodyWithCta }
-                : {},
+            variables,
           });
           await supabase.from("notification_history").insert({
             retailer_id: retailerId,
@@ -201,11 +207,11 @@ export const sendMarketingBroadcast = createServerFn({ method: "POST" })
             channel: "whatsapp",
             status: res.ok ? "sent" : "failed",
             payload: {
-              heading: data.heading,
-              body: data.body,
-              image_url: data.imageUrl ?? null,
-              product_id: data.productId ?? null,
-              cta_url: data.ctaUrl ?? null,
+              internal_name: data.internalName,
+              expiry_date: data.expiryDate,
+              body: renderedBody,
+              image_url: data.imageUrl,
+              catalogue_url: data.catalogueUrl,
             },
             sent_at: res.ok ? new Date().toISOString() : null,
             provider_message_sid: res.sid ?? null,
@@ -361,8 +367,8 @@ export const createBroadcastImageUploadUrl = createServerFn({ method: "POST" })
 
 /**
  * Tells the composer what the approved broadcast template can actually carry.
- * A zero-variable template still sends (image + approved fixed wording), so
- * the UI must say so rather than imply the typed text goes out.
+ * Broadcasts are pinned to tag_broadcast_v3; when it isn't approved on the
+ * sender the composer blocks sending and shows the reason.
  */
 export const getBroadcastTemplateInfo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -375,7 +381,9 @@ export const getBroadcastTemplateInfo = createServerFn({ method: "POST" })
       name: resolved.contract.name,
       language: resolved.contract.language,
       variableCount: resolved.variableCount,
-      fixedBody: resolved.fixedBody,
+      bodyText: resolved.bodyText,
+      hasUrlButton: resolved.hasUrlButton,
+      dynamicUrlButton: resolved.dynamicUrlButton,
       requiresImage: resolved.requiresImage,
     };
   });
