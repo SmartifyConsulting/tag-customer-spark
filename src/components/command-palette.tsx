@@ -12,7 +12,7 @@ const items = [
   { label: "Briefing", to: "/briefing", icon: LayoutDashboard, group: "Go to" },
   { label: "Dashboard", to: "/dashboard", icon: BarChart3, group: "Go to" },
   { label: "Inventory", to: "/admin/inventory", icon: Package, group: "Go to" },
-  { label: "Customers", to: "/admin?tab=customers", icon: Users, group: "Go to" },
+  { label: "Customers", to: "/customers", icon: Users, group: "Go to" },
   { label: "Watchlists", to: "/watchlists", icon: Eye, group: "Go to" },
   { label: "Intent Engine", to: "/intent", icon: Gauge, group: "Go to" },
   { label: "Messages", to: "/inbox", icon: Inbox, group: "Go to" },
