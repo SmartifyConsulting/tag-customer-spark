@@ -189,7 +189,10 @@ export const sendMarketingBroadcast = createServerFn({ method: "POST" })
             contract: resolved.contract,
             to: cust.whatsapp_e164,
             headerImageUrl: headerImage,
-            variables: { heading: data.heading, body: bodyWithCta },
+            variables:
+              resolved.variableCount === 2
+                ? { heading: data.heading, body: bodyWithCta }
+                : {},
           });
           await supabase.from("notification_history").insert({
             retailer_id: retailerId,
