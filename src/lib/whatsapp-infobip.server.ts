@@ -423,27 +423,56 @@ export async function listInfobipTemplates(): Promise<{
   const config = await readRuntimeConfig();
   if (!config) return { ok: false, error: missingBindingMessage(), templates: [] };
 
-  const resp = await infobipCall(
+  const senderResp = await infobipCall(
     config,
     `/whatsapp/2/senders/${encodeURIComponent(config.sender)}/templates`,
     null,
   );
-  if (!resp.ok) {
+  if (!senderResp.ok) {
     return {
       ok: false,
-      error: `Infobip returned ${resp.status} when listing templates`,
+      error: `Infobip returned ${senderResp.status} when listing templates`,
       templates: [],
     };
   }
 
-  let json: any = null;
+  let senderJson: any = null;
   try {
-    json = resp.text ? JSON.parse(resp.text) : null;
+    senderJson = senderResp.text ? JSON.parse(senderResp.text) : null;
   } catch {
     return { ok: false, error: "Could not parse the template list response", templates: [] };
   }
 
-  const rows: any[] = Array.isArray(json?.templates) ? json.templates : [];
+  const senderRows: any[] = Array.isArray(senderJson?.templates) ? senderJson.templates : [];
+
+  // Infobip's sender endpoint can return only the sender's first page in some
+  // accounts. The account endpoint supports filtering and a larger page, so
+  // merge it in to ensure newly-created templates are discoverable.
+  let accountRows: any[] = [];
+  const accountResp = await infobipCall(
+    config,
+    `/whatsapp/1/templates?sender=${encodeURIComponent(config.sender)}&page=0&pageSize=100`,
+    null,
+  );
+  if (accountResp.ok) {
+    try {
+      const accountJson: any = accountResp.text ? JSON.parse(accountResp.text) : null;
+      const candidate = accountJson?.templates ?? accountJson?.results ?? accountJson?.items;
+      accountRows = Array.isArray(candidate) ? candidate : [];
+    } catch {
+      // Keep the valid sender-specific response when the optional account
+      // response has an unfamiliar shape.
+    }
+  }
+
+  const byTemplate = new Map<string, any>();
+  for (const row of [...senderRows, ...accountRows]) {
+    const key = `${String(row?.name ?? "").trim().toLocaleLowerCase("en")}:${String(
+      row?.language ?? "en",
+    ).trim().toLocaleLowerCase("en")}`;
+    if (key !== ":en") byTemplate.set(key, row);
+  }
+  const rows = [...byTemplate.values()];
   return {
     ok: true,
     error: null,
