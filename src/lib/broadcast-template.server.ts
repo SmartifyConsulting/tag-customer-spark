@@ -35,14 +35,28 @@ const NOT_REGISTERED_MESSAGE =
   `No "${BROADCAST_TEMPLATE_NAME}" template is registered on this WhatsApp sender yet. ` +
   "Broadcasts stay blocked until it appears — older broadcast templates are no longer used.";
 
+function normalizeTemplateName(name: string): string {
+  return name.trim().toLocaleLowerCase("en");
+}
+
+function normalizeTemplateStatus(status: string): string {
+  return status
+    .trim()
+    .toUpperCase()
+    .replace(/[‐‑‒–—―]/g, "-")
+    .replace(/\s+/g, " ");
+}
+
 /** Statuses WhatsApp considers sendable ("Active – Quality pending" included). */
 function isSendableStatus(status: string): boolean {
-  const s = status.toUpperCase();
+  const s = normalizeTemplateStatus(status);
   return s === "APPROVED" || s.startsWith("ACTIVE");
 }
 
 export async function resolveBroadcastTemplate(): Promise<BroadcastTemplateResolution> {
-  const name = process.env.INFOBIP_TEMPLATE_TAG_BROADCAST_V3 ?? BROADCAST_TEMPLATE_NAME;
+  // Broadcasts are deliberately pinned to v3. A stale runtime override must
+  // never silently redirect this path to an older template.
+  const name = BROADCAST_TEMPLATE_NAME;
 
   const listed = await listInfobipTemplates();
   if (!listed.ok) {
@@ -52,14 +66,25 @@ export async function resolveBroadcastTemplate(): Promise<BroadcastTemplateResol
     };
   }
 
-  const named = listed.templates.filter((t) => t.name === name);
-  if (named.length === 0) return { ok: false, error: NOT_REGISTERED_MESSAGE };
+  const expectedName = normalizeTemplateName(name);
+  const named = listed.templates.filter((t) => normalizeTemplateName(t.name) === expectedName);
+  if (named.length === 0) {
+    const available = listed.templates
+      .map((template) => `${template.name.trim() || "(unnamed)"} [${template.status.trim()}]`)
+      .join(", ");
+    return {
+      ok: false,
+      error: available
+        ? `${NOT_REGISTERED_MESSAGE} Templates returned for this sender: ${available}.`
+        : NOT_REGISTERED_MESSAGE,
+    };
+  }
 
   const chosen = named.find((t) => isSendableStatus(t.status));
   if (!chosen) {
     return {
       ok: false,
-      error: `Template "${name}" is on the sender but not sendable yet (status: ${named[0]!.status}). Broadcasts unblock once it is approved.`,
+      error: `Template "${name}" is on the sender but not sendable yet (status: ${named[0]?.status ?? "unknown"}). Broadcasts unblock once it is active.`,
     };
   }
 

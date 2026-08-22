@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -49,13 +49,19 @@ export function BroadcastComposerDialog({
   const [confirm, setConfirm] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const { data: templateInfo } = useQuery({
+  const { data: templateInfo, refetch: refetchTemplateInfo } = useQuery({
     queryKey: ["broadcast-template-info"],
     queryFn: () => templateInfoFn({ data: {} } as any),
     enabled: open,
     staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
   const templateReady = templateInfo?.ok === true;
+
+  useEffect(() => {
+    if (open) void refetchTemplateInfo();
+  }, [open, refetchTemplateInfo]);
 
   const { data: audience, isLoading: audienceLoading } = useQuery({
     queryKey: ["broadcast-audience"],
