@@ -249,7 +249,19 @@ export function BroadcastComposerDialog({
               <p className="mt-1 whitespace-pre-line">{preview}</p>
             </div>
           ) : null}
+
+          {blockers.length > 0 ? (
+            <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs">
+              <p className="font-medium text-foreground">Before you can send</p>
+              <ul className="mt-1 list-disc space-y-1 pl-4 text-muted-foreground">
+                {blockers.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
+
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button
