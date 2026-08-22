@@ -31,10 +31,6 @@ export type BroadcastTemplateResolution =
     }
   | { ok: false; error: string };
 
-const NOT_REGISTERED_MESSAGE =
-  `No "${BROADCAST_TEMPLATE_NAME}" template is registered on this WhatsApp sender yet. ` +
-  "Broadcasts stay blocked until it appears — older broadcast templates are no longer used.";
-
 const V3_BODY = "Offer valid till {{expiry_date}}. Be sure not to miss out!";
 
 function v3ContractFallback(): BroadcastTemplateResolution {
