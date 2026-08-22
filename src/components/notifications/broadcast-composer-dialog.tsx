@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   createBroadcastImageUploadUrl,
+  getBroadcastTemplateInfo,
   previewBroadcastAudience,
   sendMarketingBroadcast,
 } from "@/lib/broadcasts.functions";
@@ -33,6 +34,7 @@ export function BroadcastComposerDialog({
   const previewFn = useServerFn(previewBroadcastAudience);
   const sendFn = useServerFn(sendMarketingBroadcast);
   const uploadUrlFn = useServerFn(createBroadcastImageUploadUrl);
+  const templateInfoFn = useServerFn(getBroadcastTemplateInfo);
 
   const [heading, setHeading] = useState("");
   const [body, setBody] = useState("");
@@ -40,6 +42,14 @@ export function BroadcastComposerDialog({
   const [ctaUrl, setCtaUrl] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  const { data: templateInfo } = useQuery({
+    queryKey: ["broadcast-template-info"],
+    queryFn: () => templateInfoFn({ data: {} } as any),
+    enabled: open,
+    staleTime: 0,
+  });
+  const fixedText = templateInfo?.ok === true && templateInfo.variableCount === 0;
 
   const { data: audience, isLoading: audienceLoading } = useQuery({
     queryKey: ["broadcast-audience"],
@@ -138,8 +148,29 @@ export function BroadcastComposerDialog({
             )}
           </div>
 
+          {templateInfo?.ok === false ? (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+              {templateInfo.error}
+            </div>
+          ) : null}
+          {fixedText ? (
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">
+                Your approved template sends fixed text — only the image changes.
+              </p>
+              {templateInfo?.ok === true && templateInfo.fixedBody ? (
+                <p className="mt-1 whitespace-pre-line">“{templateInfo.fixedBody}”</p>
+              ) : null}
+              <p className="mt-1">
+                Submit tag_broadcast_v3 (IMAGE header, body <span className="font-mono">*{"{{1}}"}*</span> then{" "}
+                <span className="font-mono">{"{{2}}"}</span>, no buttons) to send custom wording — broadcasts switch
+                to it automatically once approved.
+              </p>
+            </div>
+          ) : null}
+
           <div className="grid gap-2">
-            <Label htmlFor="bc-heading">Heading</Label>
+            <Label htmlFor="bc-heading">{fixedText ? "Heading (internal note)" : "Heading"}</Label>
             <Input
               id="bc-heading"
               value={heading}
@@ -150,7 +181,7 @@ export function BroadcastComposerDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="bc-body">Message</Label>
+            <Label htmlFor="bc-body">{fixedText ? "Message (internal note)" : "Message"}</Label>
             <Textarea
               id="bc-body"
               value={body}
