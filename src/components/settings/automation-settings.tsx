@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, Loader2, PlugZap, Send, Zap } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, PlugZap, RefreshCw, Send, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { AUTOMATIONS, ALL_WHATSAPP_TEMPLATES, type AutomationSetting } from "@/l
 import {
   checkInfobipConnection,
   listAutomationSettings,
+  listWhatsAppTemplates,
   saveAutomationSetting,
   testInfobipDelivery,
 } from "@/lib/automation.functions";
@@ -30,6 +31,24 @@ export function AutomationSettings() {
   const [draft, setDraft] = useState<Record<string, AutomationSetting>>({});
   const [testRecipient, setTestRecipient] = useState("");
   const [testTemplate, setTestTemplate] = useState<string>("tag_scan_confirm_and_install_v2");
+
+  // Always read the live template list from the sender so newly approved
+  // templates appear here without a code change.
+  const templates = useQuery({
+    queryKey: ["whatsapp-templates"],
+    queryFn: () => listWhatsAppTemplates(),
+    enabled: isSuperAdmin,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
+
+  const liveTemplates = templates.data?.templates ?? [];
+  const templateOptions: Array<{ name: string; status: string }> =
+    liveTemplates.length > 0
+      ? liveTemplates.map((t) => ({ name: t.name, status: t.status }))
+      : ALL_WHATSAPP_TEMPLATES.map((name) => ({ name, status: "" }));
 
   useEffect(() => {
     if (!data?.settings) return;
