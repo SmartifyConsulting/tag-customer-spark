@@ -148,14 +148,21 @@ export function AppSidebar() {
       <SidebarFooter>
         {!collapsed && (
           <div className="space-y-2 px-3 py-3">
-            {/* Left edge lines up with the QR code below it (Button's own
-                px-2 offsets the QR by 0.5rem from this container's edge). */}
+            {/* Tag Barcode Reader QR, then search, then the profile row —
+                all left-aligned (the ml-2 matches the Button's own px-2). */}
+            <Link
+              to="/tools/barcode-reader"
+              target="_blank"
+              title="Open Tag Barcode Reader"
+              className="ml-2 block w-fit"
+            >
+              <TagReaderQrBadge size={96} />
+            </Link>
             <input
               type="text"
               placeholder="Search anything..."
               className="ml-2 w-[calc(100%-0.5rem)] rounded-lg border border-sidebar-border bg-sidebar px-3 py-2 text-sm placeholder:text-sidebar-foreground/40 text-sidebar-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
             />
-            {/* UserMenu's own "avatar" is now the Tag Barcode Reader QR. */}
             <div className="pt-1">
               <UserMenu />
             </div>
