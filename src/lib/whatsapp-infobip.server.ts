@@ -409,6 +409,8 @@ export type InfobipTemplateSummary = {
   header: "IMAGE" | "NONE" | string;
   placeholderCount: number;
   buttonCount: number;
+  /** Approved buttons, in order (type + the approved URL for URL buttons). */
+  buttons: Array<{ type: string; url: string | null; text: string | null }>;
   /** The approved body text, useful when the template has no variables. */
   bodyText: string;
 };
