@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -22,6 +21,13 @@ import {
   previewBroadcastAudience,
   sendMarketingBroadcast,
 } from "@/lib/broadcasts.functions";
+
+function formatDate(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
+}
 
 export function BroadcastComposerDialog({
   open,
@@ -36,10 +42,10 @@ export function BroadcastComposerDialog({
   const uploadUrlFn = useServerFn(createBroadcastImageUploadUrl);
   const templateInfoFn = useServerFn(getBroadcastTemplateInfo);
 
-  const [heading, setHeading] = useState("");
-  const [body, setBody] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-  const [ctaUrl, setCtaUrl] = useState("");
+  const [internalName, setInternalName] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [catalogueUrl, setCatalogueUrl] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -49,7 +55,7 @@ export function BroadcastComposerDialog({
     enabled: open,
     staleTime: 0,
   });
-  const fixedText = templateInfo?.ok === true && templateInfo.variableCount === 0;
+  const templateReady = templateInfo?.ok === true;
 
   const { data: audience, isLoading: audienceLoading } = useQuery({
     queryKey: ["broadcast-audience"],
@@ -58,14 +64,24 @@ export function BroadcastComposerDialog({
     staleTime: 60_000,
   });
 
-  // The approved WhatsApp broadcast template carries an IMAGE header, so a
-  // broadcast without an image is rejected by WhatsApp — block it here rather
-  // than let it fail after the send.
   const imageOk = /^https:\/\/\S+$/i.test(imageUrl.trim());
+  const urlOk = /^https:\/\/\S+$/i.test(catalogueUrl.trim());
   const disabled = useMemo(
-    () => heading.trim().length === 0 || body.trim().length === 0 || !imageOk || uploading,
-    [heading, body, imageOk, uploading],
+    () =>
+      !templateReady ||
+      !imageOk ||
+      !urlOk ||
+      expiry.trim().length === 0 ||
+      internalName.trim().length === 0 ||
+      uploading,
+    [templateReady, imageOk, urlOk, expiry, internalName, uploading],
   );
+
+  const preview = useMemo(() => {
+    const body = templateInfo?.ok === true ? templateInfo.bodyText : "";
+    if (!body) return "";
+    return body.replace(/\{\{[^}]+\}\}/, formatDate(expiry) || "…");
+  }, [templateInfo, expiry]);
 
   async function handleFile(file: File) {
     setUploading(true);
@@ -80,11 +96,11 @@ export function BroadcastComposerDialog({
       });
       if (!res.ok) throw new Error("Upload failed");
       setImageUrl(signed.publicUrl);
-      toast.success("Image ready");
+      toast.success("Header image ready");
     } catch (e: any) {
       toast.error(e?.message ?? "Could not upload that image");
     } finally {
-        setUploading(false);
+      setUploading(false);
     }
   }
 
@@ -92,10 +108,10 @@ export function BroadcastComposerDialog({
     mutationFn: () =>
       sendFn({
         data: {
-          heading: heading.trim(),
-          body: body.trim(),
+          internalName: internalName.trim(),
+          expiryDate: formatDate(expiry),
           imageUrl: imageUrl.trim(),
-          ctaUrl: ctaUrl.trim() ? ctaUrl.trim() : null,
+          catalogueUrl: catalogueUrl.trim(),
         },
       }),
     onSuccess: (res) => {
@@ -106,10 +122,10 @@ export function BroadcastComposerDialog({
       );
       qc.invalidateQueries({ queryKey: ["broadcasts"] });
       qc.invalidateQueries({ queryKey: ["conversations"] });
-      setHeading("");
-      setBody("");
       setImageUrl("");
-      setCtaUrl("");
+      setInternalName("");
+      setExpiry("");
+      setCatalogueUrl("");
       setConfirm(false);
       onOpenChange(false);
     },
@@ -153,66 +169,20 @@ export function BroadcastComposerDialog({
               {templateInfo.error}
             </div>
           ) : null}
-          {fixedText ? (
-            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">
-                Your approved template sends fixed text — only the image changes.
-              </p>
-              {templateInfo?.ok === true && templateInfo.fixedBody ? (
-                <p className="mt-1 whitespace-pre-line">“{templateInfo.fixedBody}”</p>
-              ) : null}
-              <p className="mt-1">
-                Submit tag_broadcast_v3 (IMAGE header, body <span className="font-mono">*{"{{1}}"}*</span> then{" "}
-                <span className="font-mono">{"{{2}}"}</span>, no buttons) to send custom wording — broadcasts switch
-                to it automatically once approved.
-              </p>
-            </div>
-          ) : null}
 
+          {/* Header image — the approved template's IMAGE header. */}
           <div className="grid gap-2">
-            <Label htmlFor="bc-heading">{fixedText ? "Heading (internal note)" : "Heading"}</Label>
-            <Input
-              id="bc-heading"
-              value={heading}
-              onChange={(e) => setHeading(e.target.value)}
-              maxLength={120}
-              placeholder="Flash weekend sale"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="bc-body">{fixedText ? "Message (internal note)" : "Message"}</Label>
-            <Textarea
-              id="bc-body"
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              maxLength={1000}
-              rows={5}
-              placeholder="Hi {{name}}, this Saturday only — 30% off everything in-store."
-            />
-            <p className="text-[11px] text-muted-foreground">
-              {body.length}/1000 characters
-            </p>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="bc-image">Image (required)</Label>
-              <Input
-                id="bc-image"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://…"
-                type="url"
-              />
-              <label className="inline-flex cursor-pointer items-center gap-2 text-[11px] text-muted-foreground hover:text-foreground">
+            <Label htmlFor="bc-header">Header (image, required)</Label>
+            <div className="flex items-center gap-3">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">
                 {uploading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <ImagePlus className="h-3.5 w-3.5" />
                 )}
-                {uploading ? "Uploading…" : "Upload an image"}
+                {uploading ? "Uploading…" : imageOk ? "Replace image" : "Upload image"}
                 <input
+                  id="bc-header"
                   type="file"
                   accept="image/*"
                   className="hidden"
@@ -224,23 +194,61 @@ export function BroadcastComposerDialog({
                   }}
                 />
               </label>
-              {!imageOk && imageUrl.trim().length > 0 ? (
-                <p className="text-[11px] text-destructive">
-                  Use a public https image link.
-                </p>
+              {imageOk ? (
+                <img
+                  src={imageUrl}
+                  alt="Broadcast header preview"
+                  className="h-12 w-12 rounded-md object-cover"
+                />
               ) : null}
             </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="bc-name">Internal name</Label>
+            <Input
+              id="bc-name"
+              value={internalName}
+              onChange={(e) => setInternalName(e.target.value)}
+              maxLength={120}
+              placeholder="Spring catalogue — week 1"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              For your broadcast list only — never sent to customers.
+            </p>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="bc-cta">Link (optional)</Label>
+              <Label htmlFor="bc-expiry">Offer valid till</Label>
               <Input
-                id="bc-cta"
-                value={ctaUrl}
-                onChange={(e) => setCtaUrl(e.target.value)}
+                id="bc-expiry"
+                type="date"
+                value={expiry}
+                onChange={(e) => setExpiry(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="bc-catalogue">Online shopping catalogue URL</Label>
+              <Input
+                id="bc-catalogue"
+                value={catalogueUrl}
+                onChange={(e) => setCatalogueUrl(e.target.value)}
                 placeholder="https://…"
                 type="url"
               />
+              {!urlOk && catalogueUrl.trim().length > 0 ? (
+                <p className="text-[11px] text-destructive">Use a public https link.</p>
+              ) : null}
             </div>
           </div>
+
+          {preview ? (
+            <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">Message preview</p>
+              <p className="mt-1 whitespace-pre-line">{preview}</p>
+            </div>
+          ) : null}
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
@@ -262,7 +270,7 @@ export function BroadcastComposerDialog({
               ) : (
                 <Send className="h-4 w-4" />
               )}
-              Confirm & send to {count}
+              Confirm &amp; send to {count}
             </Button>
           ) : (
             <Button
