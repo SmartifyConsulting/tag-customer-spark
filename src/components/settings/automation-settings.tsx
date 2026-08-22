@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { AUTOMATIONS, ALL_WHATSAPP_TEMPLATES, type AutomationSetting } from "@/lib/automation";
 import {
   checkInfobipConnection,
+  listApprovedTemplates,
   listAutomationSettings,
   saveAutomationSetting,
   testInfobipDelivery,
@@ -30,6 +31,21 @@ export function AutomationSettings() {
   const [draft, setDraft] = useState<Record<string, AutomationSetting>>({});
   const [testRecipient, setTestRecipient] = useState("");
   const [testTemplate, setTestTemplate] = useState<string>("tag_scan_confirm_and_install_v2");
+
+  // Live from Infobip — only templates it currently reports as APPROVED, so
+  // a pending/rejected template (which would only ever fail) never shows up
+  // as an option, and anything newly approved appears without a code change.
+  // Falls back to the static list if the live fetch fails for any reason
+  // (e.g. Infobip unreachable), so the picker never goes empty.
+  const approvedTemplates = useQuery({
+    queryKey: ["infobip-approved-templates"],
+    queryFn: () => listApprovedTemplates(),
+    staleTime: 60_000,
+  });
+  const templateOptions =
+    approvedTemplates.data?.ok && approvedTemplates.data.names.length > 0
+      ? approvedTemplates.data.names
+      : ALL_WHATSAPP_TEMPLATES;
 
   useEffect(() => {
     if (!data?.settings) return;
@@ -120,14 +136,14 @@ export function AutomationSettings() {
               barcode scans, so you can prove a template delivers before making it the default.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-2">
             <div className="flex flex-col gap-2 sm:flex-row">
               <Select value={testTemplate} onValueChange={setTestTemplate}>
                 <SelectTrigger aria-label="Template to test" className="font-mono text-xs sm:max-w-[220px]">
                   <SelectValue placeholder="Choose a template" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ALL_WHATSAPP_TEMPLATES.map((name) => (
+                  {templateOptions.map((name) => (
                     <SelectItem key={name} value={name} className="font-mono text-xs">
                       {name}
                     </SelectItem>
@@ -157,6 +173,21 @@ export function AutomationSettings() {
                 Send test
               </Button>
             </div>
+
+            {approvedTemplates.isLoading ? (
+              <p className="flex items-center text-xs text-muted-foreground">
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Loading approved templates from
+                Infobip…
+              </p>
+            ) : !approvedTemplates.data?.ok ? (
+              <p className="text-xs text-destructive">
+                Couldn't load live templates from Infobip — showing the built-in list instead.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Showing only templates Infobip currently reports as approved.
+              </p>
+            )}
 
             <div className="flex flex-wrap items-center gap-3">
               <Button

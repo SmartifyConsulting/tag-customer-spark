@@ -117,6 +117,29 @@ export const checkInfobipConnection = createServerFn({ method: "POST" })
     return checkInfobipAuth();
   });
 
+/**
+ * Live-fetches this sender's approved WhatsApp templates from Infobip, so
+ * the "Template to test" picker always reflects what's actually approved —
+ * including anything created after this code was last touched — instead of
+ * a hand-maintained list that can offer a pending/rejected template.
+ */
+export const listApprovedTemplates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: role } = await supabase
+      .from("user_roles")
+      .select("retailer_id")
+      .eq("user_id", userId)
+      .eq("role", "super_admin")
+      .limit(1)
+      .maybeSingle();
+    if (!role) throw new Error("Super administrator access required");
+
+    const { listApprovedInfobipTemplates } = await import("@/lib/whatsapp-infobip.server");
+    return listApprovedInfobipTemplates();
+  });
+
 
 export const testInfobipDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

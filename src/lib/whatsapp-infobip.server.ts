@@ -213,6 +213,39 @@ export async function sendInfobipWhatsApp(
 }
 
 /**
+ * Lists this WhatsApp sender's templates directly from Infobip's Template
+ * Manager API and returns only the ones actually approved to send — so the
+ * "Template to test" picker in Settings/Admin > Automations always reflects
+ * what's real in Infobip, including anything created after this code was
+ * last touched, instead of a hand-maintained list that silently goes stale
+ * (and can offer a still-pending/rejected template that will only fail).
+ */
+export async function listApprovedInfobipTemplates(): Promise<{
+  ok: boolean;
+  names: string[];
+  error: string | null;
+}> {
+  const config = await readRuntimeConfig();
+  if (!config) return { ok: false, names: [], error: missingBindingMessage() };
+
+  try {
+    const resp = await infobipCall(config, `/whatsapp/2/senders/${config.sender}/templates`, null);
+    if (!resp.ok) {
+      return { ok: false, names: [], error: resp.text.slice(0, 300) || `Infobip returned ${resp.status}` };
+    }
+    const json = JSON.parse(resp.text);
+    const templates: any[] = Array.isArray(json?.templates) ? json.templates : [];
+    const names = templates
+      .filter((t) => String(t?.status ?? "").toUpperCase() === "APPROVED")
+      .map((t) => t?.name as string)
+      .filter((name): name is string => !!name);
+    return { ok: true, names, error: null };
+  } catch (e) {
+    return { ok: false, names: [], error: (e as Error).message };
+  }
+}
+
+/**
  * Read-only authentication check against Infobip from this exact runtime.
  * Sends no WhatsApp message, so it can be run safely at any time to tell an
  * authentication failure apart from a template or recipient failure.
