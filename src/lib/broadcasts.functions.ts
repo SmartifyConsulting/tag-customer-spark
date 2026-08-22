@@ -385,5 +385,6 @@ export const getBroadcastTemplateInfo = createServerFn({ method: "POST" })
       hasUrlButton: resolved.hasUrlButton,
       dynamicUrlButton: resolved.dynamicUrlButton,
       requiresImage: resolved.requiresImage,
+      status: resolved.status,
     };
   });

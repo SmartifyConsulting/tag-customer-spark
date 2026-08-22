@@ -137,6 +137,16 @@ export function BroadcastComposerDialog({
 
   const count = audience?.count ?? 0;
 
+  const blockers: string[] = [];
+  if (templateInfo?.ok === false) blockers.push(templateInfo.error);
+  if (!imageOk) blockers.push("Upload a header image.");
+  if (internalName.trim().length === 0) blockers.push("Give the broadcast an internal name.");
+  if (expiry.trim().length === 0) blockers.push("Choose the “Offer valid till” date.");
+  if (!urlOk) blockers.push("Add a valid https:// online shopping catalogue URL.");
+  if (!audienceLoading && count === 0)
+    blockers.push("No customers have opted in to marketing yet, so there is nobody to send to.");
+  if (uploading) blockers.push("Waiting for the image upload to finish.");
+
   return (
     <Dialog open={open} onOpenChange={(v) => (!send.isPending ? onOpenChange(v) : null)}>
       <DialogContent className="sm:max-w-lg">
@@ -249,7 +259,19 @@ export function BroadcastComposerDialog({
               <p className="mt-1 whitespace-pre-line">{preview}</p>
             </div>
           ) : null}
+
+          {blockers.length > 0 ? (
+            <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs">
+              <p className="font-medium text-foreground">Before you can send</p>
+              <ul className="mt-1 list-disc space-y-1 pl-4 text-muted-foreground">
+                {blockers.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
+
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button
