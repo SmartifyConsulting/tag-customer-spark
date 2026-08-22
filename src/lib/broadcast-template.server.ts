@@ -29,9 +29,15 @@ export type BroadcastTemplateResolution =
     }
   | { ok: false; error: string };
 
-const NOT_APPROVED_MESSAGE =
-  `No APPROVED "${BROADCAST_TEMPLATE_NAME}" template is registered on this WhatsApp sender yet. ` +
-  "Broadcasts stay blocked until it clears review — older broadcast templates are no longer used.";
+const NOT_REGISTERED_MESSAGE =
+  `No "${BROADCAST_TEMPLATE_NAME}" template is registered on this WhatsApp sender yet. ` +
+  "Broadcasts stay blocked until it appears — older broadcast templates are no longer used.";
+
+/** Statuses WhatsApp considers sendable ("Active – Quality pending" included). */
+function isSendableStatus(status: string): boolean {
+  const s = status.toUpperCase();
+  return s === "APPROVED" || s.startsWith("ACTIVE");
+}
 
 export async function resolveBroadcastTemplate(): Promise<BroadcastTemplateResolution> {
   const name = process.env.INFOBIP_TEMPLATE_TAG_BROADCAST_V3 ?? BROADCAST_TEMPLATE_NAME;
@@ -44,10 +50,17 @@ export async function resolveBroadcastTemplate(): Promise<BroadcastTemplateResol
     };
   }
 
-  const chosen = listed.templates.find(
-    (t) => t.name === name && t.status.toUpperCase() === "APPROVED",
-  );
-  if (!chosen) return { ok: false, error: NOT_APPROVED_MESSAGE };
+  const named = listed.templates.filter((t) => t.name === name);
+  if (named.length === 0) return { ok: false, error: NOT_REGISTERED_MESSAGE };
+
+  const chosen = named.find((t) => isSendableStatus(t.status));
+  if (!chosen) {
+    return {
+      ok: false,
+      error: `Template "${name}" is on the sender but not sendable yet (status: ${named[0]!.status}). Broadcasts unblock once it is approved.`,
+    };
+  }
+
 
   const urlButton = chosen.buttons.find((b) => b.type.toUpperCase() === "URL");
   const dynamicUrlButton = !!urlButton?.url && /\{\{\s*\d+\s*\}\}/.test(urlButton.url);
