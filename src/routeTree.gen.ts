@@ -47,6 +47,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedBriefingRouteImport } from './routes/_authenticated/briefing'
 import { Route as AuthenticatedBarcodeTaggerRouteImport } from './routes/_authenticated/barcode-tagger'
+import { Route as AuthenticatedAutomationsRouteImport } from './routes/_authenticated/automations'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
 import { Route as AuthenticatedIntelligenceIndexRouteImport } from './routes/_authenticated/intelligence.index'
@@ -273,6 +274,12 @@ const AuthenticatedBarcodeTaggerRoute =
   AuthenticatedBarcodeTaggerRouteImport.update({
     id: '/barcode-tagger',
     path: '/barcode-tagger',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAutomationsRoute =
+  AuthenticatedAutomationsRouteImport.update({
+    id: '/automations',
+    path: '/automations',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
@@ -503,6 +510,7 @@ export interface FileRoutesByFullPath {
   '/setup': typeof SetupRoute
   '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
+  '/automations': typeof AuthenticatedAutomationsRoute
   '/barcode-tagger': typeof AuthenticatedBarcodeTaggerRoute
   '/briefing': typeof AuthenticatedBriefingRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
@@ -578,6 +586,7 @@ export interface FileRoutesByTo {
   '/setup': typeof SetupRoute
   '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
+  '/automations': typeof AuthenticatedAutomationsRoute
   '/barcode-tagger': typeof AuthenticatedBarcodeTaggerRoute
   '/briefing': typeof AuthenticatedBriefingRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
@@ -652,6 +661,7 @@ export interface FileRoutesById {
   '/setup': typeof SetupRoute
   '/terms': typeof TermsRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
+  '/_authenticated/automations': typeof AuthenticatedAutomationsRoute
   '/_authenticated/barcode-tagger': typeof AuthenticatedBarcodeTaggerRoute
   '/_authenticated/briefing': typeof AuthenticatedBriefingRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
@@ -729,6 +739,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/terms'
     | '/analytics'
+    | '/automations'
     | '/barcode-tagger'
     | '/briefing'
     | '/customers'
@@ -804,6 +815,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/terms'
     | '/analytics'
+    | '/automations'
     | '/barcode-tagger'
     | '/briefing'
     | '/customers'
@@ -877,6 +889,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/terms'
     | '/_authenticated/analytics'
+    | '/_authenticated/automations'
     | '/_authenticated/barcode-tagger'
     | '/_authenticated/briefing'
     | '/_authenticated/customers'
@@ -1240,6 +1253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBarcodeTaggerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/automations': {
+      id: '/_authenticated/automations'
+      path: '/automations'
+      fullPath: '/automations'
+      preLoaderRoute: typeof AuthenticatedAutomationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/analytics': {
       id: '/_authenticated/analytics'
       path: '/analytics'
@@ -1589,6 +1609,7 @@ const AuthenticatedAdminInventoryRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRouteWithChildren
+  AuthenticatedAutomationsRoute: typeof AuthenticatedAutomationsRoute
   AuthenticatedBarcodeTaggerRoute: typeof AuthenticatedBarcodeTaggerRoute
   AuthenticatedBriefingRoute: typeof AuthenticatedBriefingRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
@@ -1618,6 +1639,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRouteWithChildren,
+  AuthenticatedAutomationsRoute: AuthenticatedAutomationsRoute,
   AuthenticatedBarcodeTaggerRoute: AuthenticatedBarcodeTaggerRoute,
   AuthenticatedBriefingRoute: AuthenticatedBriefingRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,

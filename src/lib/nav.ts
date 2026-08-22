@@ -123,14 +123,18 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     label: "Business",
     staffOnly: true,
     items: [
+      { title: "Customers", url: "/customers", icon: Users, match: ["/customers"] },
       {
         title: "Admin",
         url: "/admin",
         icon: ShieldCheck,
         // Exact-only — see NavItem.exact above.
-        match: ["/admin", "/stores", "/customers"],
+        match: ["/admin", "/stores"],
         exact: true,
         adminOnly: true,
+        items: [
+          { title: "Automations", url: "/automations", match: ["/automations"] },
+        ],
       },
       {
         title: "Pricing",
@@ -154,7 +158,7 @@ export const STAFF_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
   { title: "Dashboard", url: "/briefing", icon: LayoutDashboard, match: ["/briefing"] },
   { title: "Products", url: "/admin/inventory", icon: Boxes, match: ["/admin/inventory", "/products"] },
   { title: "Scanner", url: "/tagged", icon: Tag, match: ["/tagged"] },
-  { title: "Customers", url: "/admin?tab=customers", icon: Users, match: ["/customers"] },
+  { title: "Customers", url: "/customers", icon: Users, match: ["/customers"] },
 ] as const;
 
 export const SHOPPER_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
