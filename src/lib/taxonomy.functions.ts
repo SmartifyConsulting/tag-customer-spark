@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { hasFeature } from "@/lib/tier";
 
 async function resolveRetailerId(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
@@ -11,6 +12,29 @@ async function resolveRetailerId(supabase: any, userId: string): Promise<string 
     .limit(1)
     .maybeSingle();
   return data?.retailer_id ?? null;
+}
+
+// Custom taxonomy profiles (multi-team catalogue hierarchies — the admin
+// UI's own copy describes "Retail, Buying, Warehouse and Marketing" each
+// browsing their own way) are a Pro+ feature, but nothing enforced that
+// until now. Only the CONFIGURATION functions are gated here — creating,
+// editing, publishing, or deleting a profile, and the attribute-value
+// admin that goes with it. Reading the currently-active profile
+// (getActiveProfile/browseTaxonomy) stays open on every tier: the
+// Inventory page (products.index.tsx) uses those to render its product
+// browser for every retailer, including ones who never touch this admin
+// screen at all — gating reads would break basic inventory browsing.
+async function requireTaxonomyAdmin(supabase: any, userId: string): Promise<void> {
+  const retailerId = await resolveRetailerId(supabase, userId);
+  if (!retailerId) throw new Error("No retailer assigned to your account");
+  const { data: retailer } = await supabase
+    .from("retailers")
+    .select("tier")
+    .eq("id", retailerId)
+    .maybeSingle();
+  if (!hasFeature(retailer?.tier, "taxonomy")) {
+    throw new Error("Custom taxonomy profiles are a Pro-plan feature. Upgrade to configure them.");
+  }
 }
 
 type LevelRow = {
@@ -163,6 +187,7 @@ export const upsertProfile = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    await requireTaxonomyAdmin(supabase, userId);
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer");
 
@@ -212,6 +237,7 @@ export const deleteProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    await requireTaxonomyAdmin(context.supabase, context.userId);
     const { error } = await context.supabase.from("taxonomy_profiles").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -222,6 +248,7 @@ export const setDefaultProfile = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    await requireTaxonomyAdmin(supabase, userId);
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer");
     // Belt-and-braces: clear siblings first (a trigger also enforces this).
@@ -245,6 +272,7 @@ export const publishProfile = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    await requireTaxonomyAdmin(supabase, userId);
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer");
     if (data.publish) {
@@ -496,6 +524,7 @@ export const seedSectorTemplates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
+    await requireTaxonomyAdmin(supabase, userId);
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer");
 
@@ -582,6 +611,7 @@ export const createAttributeValue = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    await requireTaxonomyAdmin(supabase, userId);
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer");
     const { error } = await (supabase as any).from("taxonomy_attribute_values").insert({
@@ -598,6 +628,7 @@ export const deleteAttributeValue = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    await requireTaxonomyAdmin(context.supabase, context.userId);
     const { error } = await (context.supabase as any)
       .from("taxonomy_attribute_values")
       .delete()
@@ -805,6 +836,7 @@ export const moveProductAttribute = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    await requireTaxonomyAdmin(supabase, context.userId);
     const { productId, attribute_key, value } = data;
     const newValue = value === "__none__" ? null : value;
 

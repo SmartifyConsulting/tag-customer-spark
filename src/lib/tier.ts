@@ -12,7 +12,8 @@ export type TierFeatureKey =
   | "advancedExports"
   | "apiAccess"
   | "multiStore"
-  | "opportunityFeed";
+  | "opportunityFeed"
+  | "taxonomy";
 
 export const TIER_LABEL: Record<TagTier, string> = {
   go: "Tag Go",
@@ -32,6 +33,7 @@ export const FEATURE_MIN_TIER: Record<TierFeatureKey, TagTier> = {
   roi: "pro",
   weeklyBriefings: "pro",
   opportunityFeed: "pro",
+  taxonomy: "pro",
   intelligence: "enterprise",
   apiAccess: "enterprise",
 };
@@ -96,5 +98,10 @@ export const FEATURE_META: Record<
     title: "AI Opportunity Feed",
     description:
       "Daily AI-surfaced actions ranked by projected revenue — available on Tag Pro and above.",
+  },
+  taxonomy: {
+    title: "Custom taxonomy profiles",
+    description:
+      "Build custom catalogue hierarchies for multi-team browsing (Retail, Buying, Warehouse, Marketing) — available on Tag Pro and above.",
   },
 };
