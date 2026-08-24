@@ -63,7 +63,16 @@ export const listCustomers = createServerFn({ method: "POST" })
 
     const [scans, recoveries, interests] = await Promise.all([
       supabase.from("qr_scans").select("customer_id, scanned_at").in("customer_id", ids),
-      supabase.from("sales_recoveries").select("customer_id, amount_cents").in("customer_id", ids),
+      // Only staff-confirmed sales count as revenue — a customer tapping
+      // "Collection"/"Delivery" on a WhatsApp alert creates a 'pending' row
+      // immediately (see webhooks/infobip.ts), before anyone has verified
+      // the sale happened. Without this filter, unconfirmed and even
+      // explicitly staff-rejected commitments inflated this number.
+      supabase
+        .from("sales_recoveries")
+        .select("customer_id, amount_cents")
+        .eq("status", "attributed")
+        .in("customer_id", ids),
       supabase.from("customer_interests").select("customer_id").in("customer_id", ids),
     ]);
 
