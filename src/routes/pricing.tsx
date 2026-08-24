@@ -102,7 +102,6 @@ function PricingPage() {
           Not the right fit? Every stage of retail, covered.
         </h2>
         <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <PlanTile planId="go" cycle={cycle} />
           {SELF_SERVE_PLANS.map((p) => (
             <PlanTile key={p} planId={p} cycle={cycle} featured={p === FEATURED} />
           ))}
