@@ -283,6 +283,18 @@ export function AutomationSettings() {
         const update = (patch: Partial<AutomationSetting>) =>
           setDraft((d) => ({ ...d, [def.key]: { ...d[def.key], ...patch } }));
 
+        // A free-typed template name meant a single typo silently downgraded
+        // every notification for this automation to plain text — swapped
+        // for a dropdown so only a name Tag already knows about can be
+        // selected. Sourced from the same list the live delivery test above
+        // uses (Infobip-verified when a super admin has it loaded, the
+        // built-in catalogue otherwise) with the currently-saved value
+        // always included, so switching to a dropdown can never silently
+        // drop a value someone already configured.
+        const automationTemplateOptions = templateOptions.includes(current.template_name)
+          ? templateOptions
+          : [current.template_name, ...templateOptions];
+
         return (
           <Card key={def.key}>
             <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
@@ -322,16 +334,26 @@ export function AutomationSettings() {
               )}
 
               <div className="space-y-1.5">
-                <Label>WhatsApp template name</Label>
-                <Input
+                <Label>WhatsApp template</Label>
+                <Select
                   value={current.template_name}
-                  onChange={(e) => update({ template_name: e.target.value })}
-                  className="font-mono text-xs"
-                />
+                  onValueChange={(v) => update({ template_name: v })}
+                >
+                  <SelectTrigger aria-label="WhatsApp template" className="font-mono text-xs">
+                    <SelectValue placeholder="Choose a template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {automationTemplateOptions.map((name) => (
+                      <SelectItem key={name} value={name} className="font-mono text-xs">
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
-                  Must exactly match a template already approved in your approved WhatsApp Templates
-                  Business account. A mismatch falls back to plain text — which only reaches
-                  the customer if they messaged you in the last 24 hours.
+                  Only templates already approved in your WhatsApp Business account are listed. If
+                  a template later loses approval, sends fall back to plain text — which only
+                  reaches the customer if they messaged you in the last 24 hours.
                 </p>
               </div>
 
