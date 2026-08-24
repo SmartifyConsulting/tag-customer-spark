@@ -24,7 +24,7 @@ const STEPS = [
   {
     n: "02",
     t: "Customers Discover",
-    d: "Shoppers scan the QR code to explore richer product information, compare options, ask questions, or register their interest before making a purchase.",
+    d: "Shoppers scan the QR code to explore richer product information, compare options, ask questions, or opt in via WhatsApp to register their interest before making a purchase.",
   },
   {
     n: "03",
@@ -39,12 +39,12 @@ const STEPS = [
   {
     n: "05",
     t: "Reconnect at the Right Moment",
-    d: "Automatically notify interested customers when products go on sale, return to stock, become limited in quantity, or match personalised promotions.",
+    d: "Automatically notify interested customers over WhatsApp when products go on sale, return to stock, become limited in quantity, or match personalised promotions.",
   },
   {
     n: "06",
     t: "Measure the Results",
-    d: "Track the complete journey — from product discovery to customer engagement and final purchase — proving exactly how Tag helps recover revenue and strengthen customer relationships.",
+    d: "Track the journey — from product discovery to WhatsApp engagement and confirmed purchase — showing how Tag helps recover revenue and strengthen customer relationships.",
   },
 ];
 

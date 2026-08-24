@@ -42,16 +42,16 @@ function Landing() {
         <div className="mx-auto max-w-4xl px-6 py-14 text-center lg:py-20">
           <TagLogo variant="wordmark" heightClass="h-[27rem]" className="mb-8" />
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            Your customers are interested—you just don't know it yet.
+            Your customers may be interested—you just don't know it yet.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
             You know exactly what sold. You don't know what almost did. Tag brings{" "}
             <span className="font-bold text-foreground">Retail Intelligence</span> to physical
             stores, transforming ordinary products into intelligent digital touchpoints that
-            capture buying intent, reveal abandoned decisions, and reconnect with shoppers after
-            they leave.
+            capture buying interest, reveal abandoned decisions, and reconnect with shoppers over
+            WhatsApp after they leave.
           </p>
-          <p className="mt-4 text-lg font-semibold text-primary">No more blind spots.</p>
+          <p className="mt-4 text-lg font-semibold text-primary">Fewer blind spots.</p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button size="lg" onClick={() => navigate({ to: primaryHref })} className="gap-2">
               Book a Demo <ArrowRight className="h-4 w-4" />

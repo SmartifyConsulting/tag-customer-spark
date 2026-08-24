@@ -54,7 +54,7 @@ export function AuthShell({
                 Scan. Follow. Engage.
               </span>
               <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-primary xl:text-4xl">
-                Your customers are interested—you just don't know it yet.
+                Your customers may be interested—you just don't know it yet.
               </h1>
             </div>
           </div>
@@ -62,9 +62,10 @@ export function AuthShell({
           <p className="mt-6 w-full text-justify text-base text-muted-foreground">
             You know exactly what sold. You don't know what almost did. Tag brings{" "}
             <span className="font-bold text-foreground">Retail Intelligence</span> to physical
-            stores — capturing buying intent and reconnecting with shoppers after they leave.
+            stores — capturing buying interest and reconnecting with shoppers over WhatsApp after
+            they leave.
           </p>
-          <p className="mt-3 text-base font-bold text-[#F2A93B]">No more blind spots.</p>
+          <p className="mt-3 text-base font-bold text-[#F2A93B]">Fewer blind spots.</p>
         </div>
 
         {/* Form column */}

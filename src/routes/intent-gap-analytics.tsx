@@ -66,7 +66,8 @@ function IntentGapAnalyticsPage() {
               The world's hidden retail opportunity.
             </p>
             <p className="mt-3 text-sm text-muted-foreground">
-              The gap between what customers wanted and what retailers captured.
+              The gap between what customers wanted and what retailers captured. Tag closes it by
+              reconnecting with interested shoppers over WhatsApp.
             </p>
             <ul className="mt-4 space-y-1.5 text-sm text-muted-foreground">
               {[
