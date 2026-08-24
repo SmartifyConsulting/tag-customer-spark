@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { getRemainingProductCapacity } from "./product-cap.server";
 
 const rowSchema = z.object({
   name: z.string().min(1),
@@ -423,7 +424,12 @@ export const commitProductImport = createServerFn({ method: "POST" })
     let created = 0;
     let updated = 0;
     let failed = 0;
+    let capSkipped = 0;
     const errors: string[] = [];
+    // Fetched once, then counted down locally per new product this batch
+    // creates — cheaper than a fresh count() query per row across up to
+    // 500 rows. Existing products (updates) never touch this counter.
+    let remainingCapacity = await getRemainingProductCapacity(supabase, retailerId);
 
     const { suggestCategoryForProduct } = await import("./categories.functions");
     const { data: catRows } = await supabase
@@ -586,6 +592,12 @@ export const commitProductImport = createServerFn({ method: "POST" })
             productId = existing.id;
             updated++;
           } else {
+            if (remainingCapacity <= 0) {
+              capSkipped++;
+              throw new Error(
+                `${row.sku}: plan's product limit reached — skipped. Upgrade to add more products.`,
+              );
+            }
             const { data: inserted, error } = await supabase
               .from("products")
               .insert({ ...payload, price_cents: payload.price_cents ?? 0, stock_qty: payload.stock_qty ?? 0 })
@@ -594,6 +606,7 @@ export const commitProductImport = createServerFn({ method: "POST" })
             if (error) throw new Error(error.message);
             productId = inserted.id;
             created++;
+            remainingCapacity--;
           }
         } catch (e: any) {
           if (e?.message?.includes("products_retailer_gtin_description_store_key")) {
@@ -653,6 +666,7 @@ export const commitProductImport = createServerFn({ method: "POST" })
       created,
       updated,
       failed,
+      capSkipped,
       errors,
       taxonomyProfileApplied: taxonomy.applied,
       taxonomyProfileName: taxonomy.templateName ?? null,

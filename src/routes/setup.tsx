@@ -188,6 +188,7 @@ function SetupWizard() {
       try {
         let created = 0;
         let updated = 0;
+        let capSkipped = 0;
         // Tracked locally (not just via setTaxonomyResult) so the
         // navigation decision below doesn't read a stale closure over
         // React's async state batching.
@@ -202,6 +203,7 @@ function SetupWizard() {
           const res = await commitFn({ data: { rows: chunk } });
           created += res.created;
           updated += res.updated;
+          capSkipped += (res as any).capSkipped ?? 0;
           // Auto-detection only fires once, on whichever chunk creates the
           // very first taxonomy profile — later chunks see one already
           // exists and report applied:false, so only overwrite on a hit.
@@ -271,6 +273,12 @@ function SetupWizard() {
 
         setImportLabel("All done — your products are ready.");
         setResult({ created, updated });
+        if (capSkipped > 0) {
+          toast.warning(
+            `${capSkipped} product${capSkipped === 1 ? "" : "s"} skipped — you've reached your plan's product limit.`,
+            { action: { label: "Upgrade", onClick: () => navigate({ to: "/upgrade" }) } },
+          );
+        }
         await sleep(500);
         if (!cancelled) goTo(detectedTaxonomy ? "taxonomy" : "done");
       } catch {
