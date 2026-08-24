@@ -66,7 +66,7 @@ function PricingPage() {
       <section className="mx-auto max-w-3xl px-6 pb-16">
         <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-sm sm:p-12">
           <span className="inline-block rounded-full bg-[color:var(--mint)]/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-[color:var(--mint)]">
-            Most popular
+            Recommended
           </span>
           <h2 className="mt-4 text-2xl font-bold">{featured.name}</h2>
           <p className="mt-1 text-muted-foreground">{featured.tagline}</p>

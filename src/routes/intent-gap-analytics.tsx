@@ -61,7 +61,7 @@ function IntentGapAnalyticsPage() {
 
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
           <div className="rounded-2xl border border-border/60 bg-card p-6">
-            <div className="text-lg font-bold">The Interest Gap™</div>
+            <div className="text-lg font-bold">The Interest Gap</div>
             <p className="mt-1 text-sm font-medium text-primary">
               The world's hidden retail opportunity.
             </p>
@@ -85,7 +85,7 @@ function IntentGapAnalyticsPage() {
             </ul>
           </div>
           <div className="rounded-2xl border border-border/60 bg-card p-6">
-            <div className="text-lg font-bold">The Interest Graph™</div>
+            <div className="text-lg font-bold">The Interest Graph</div>
             <p className="mt-1 text-sm font-medium text-primary">
               A richer picture of customer interest.
             </p>
@@ -106,7 +106,7 @@ function IntentGapAnalyticsPage() {
         </div>
 
         <div className="mx-auto mt-10 max-w-2xl space-y-1 text-center text-muted-foreground">
-          <p>Retailers lose billions because they cannot see the Interest Gap.</p>
+          <p>Retailers lose real revenue because they cannot see the Interest Gap.</p>
           <p>
             Tag creates the <span className="font-semibold text-foreground">Interest Graph</span>{" "}
             that reveals it.

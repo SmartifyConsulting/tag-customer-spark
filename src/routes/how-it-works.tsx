@@ -8,7 +8,7 @@ export const Route = createFileRoute("/how-it-works")({
       { title: "How it Works — Tag" },
       {
         name: "description",
-        content: "From barcode to business intelligence — in six simple steps.",
+        content: "From barcode to WhatsApp follow-up — in six simple steps.",
       },
     ],
   }),
@@ -58,7 +58,7 @@ function HowItWorksPage() {
             How it works
           </span>
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            From barcode to business intelligence — in six simple steps.
+            From barcode to WhatsApp follow-up — in six simple steps.
           </h1>
         </div>
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

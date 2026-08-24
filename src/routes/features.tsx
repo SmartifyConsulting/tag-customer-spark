@@ -59,9 +59,8 @@ function FeaturesPage() {
             Everything you need to understand customer interest and help recover lost sales.
           </h1>
           <p className="mt-4 text-muted-foreground">
-            Tag combines Product Intelligence, Customer Intelligence, AI-powered Insights, and
-            Automated Engagement into one platform — helping retailers transform every product
-            interaction into measurable business value.
+            Tag tracks what shoppers scan and ask about, builds a picture of who your customers
+            are, and follows up with interested shoppers over WhatsApp — all from one platform.
           </p>
         </div>
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
