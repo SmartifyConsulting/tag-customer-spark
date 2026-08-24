@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, Loader2, PlugZap, RefreshCw, Send, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -277,97 +278,111 @@ export function AutomationSettings() {
         </Card>
       ) : null}
 
-      {AUTOMATIONS.map((def) => {
-        const current = draft[def.key];
-        if (!current) return null;
-        const update = (patch: Partial<AutomationSetting>) =>
-          setDraft((d) => ({ ...d, [def.key]: { ...d[def.key], ...patch } }));
+      <Card className="py-0">
+        <Accordion type="multiple" className="w-full">
+          {AUTOMATIONS.map((def) => {
+            const current = draft[def.key];
+            if (!current) return null;
+            const update = (patch: Partial<AutomationSetting>) =>
+              setDraft((d) => ({ ...d, [def.key]: { ...d[def.key], ...patch } }));
 
-        // A free-typed template name meant a single typo silently downgraded
-        // every notification for this automation to plain text — swapped
-        // for a dropdown so only a name Tag already knows about can be
-        // selected. Sourced from the same list the live delivery test above
-        // uses (Infobip-verified when a super admin has it loaded, the
-        // built-in catalogue otherwise) with the currently-saved value
-        // always included, so switching to a dropdown can never silently
-        // drop a value someone already configured.
-        const automationTemplateOptions = templateOptions.includes(current.template_name)
-          ? templateOptions
-          : [current.template_name, ...templateOptions];
+            // A free-typed template name meant a single typo silently downgraded
+            // every notification for this automation to plain text — swapped
+            // for a dropdown so only a name Tag already knows about can be
+            // selected. Sourced from the same list the live delivery test above
+            // uses (Infobip-verified when a super admin has it loaded, the
+            // built-in catalogue otherwise) with the currently-saved value
+            // always included, so switching to a dropdown can never silently
+            // drop a value someone already configured.
+            const automationTemplateOptions = templateOptions.includes(current.template_name)
+              ? templateOptions
+              : [current.template_name, ...templateOptions];
 
-        return (
-          <Card key={def.key}>
-            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  {def.label}
-                  {!current.enabled && <Badge variant="secondary">Off</Badge>}
-                </CardTitle>
-                <CardDescription>{def.description}</CardDescription>
-              </div>
-              <Switch
-                checked={current.enabled}
-                onCheckedChange={(v) => update({ enabled: v })}
-                aria-label={`Enable ${def.label}`}
-              />
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-              {def.threshold !== null ? (
-                <div className="space-y-1.5">
-                  <Label>{def.thresholdLabel ?? "Threshold"}</Label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    value={current.threshold ?? ""}
-                    onChange={(e) => {
-                      const raw = e.target.value.replace(/[^0-9.]/g, "");
-                      update({ threshold: raw === "" ? null : Number(raw) });
-                    }}
-                    placeholder={String(def.threshold)}
+            return (
+              <AccordionItem key={def.key} value={def.key} className="px-4 last:border-b-0">
+                {/* The enable Switch sits outside AccordionTrigger (a sibling,
+                    not a child) — nesting an interactive control inside the
+                    trigger's own <button> would both be invalid HTML and
+                    make every enable/disable click also toggle the row
+                    open/closed. stopPropagation is belt-and-braces since the
+                    two are siblings, not nested. */}
+                <div className="flex items-center gap-3">
+                  <AccordionTrigger className="py-3 hover:no-underline">
+                    <div className="flex flex-1 items-center gap-2 text-left text-sm font-medium">
+                      {def.label}
+                      {!current.enabled && <Badge variant="secondary">Off</Badge>}
+                    </div>
+                  </AccordionTrigger>
+                  <Switch
+                    checked={current.enabled}
+                    onCheckedChange={(v) => update({ enabled: v })}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Enable ${def.label}`}
                   />
-                  {def.thresholdSuffix && (
-                    <p className="text-xs text-muted-foreground">{def.thresholdSuffix}</p>
-                  )}
                 </div>
-              ) : (
-                <div className="hidden sm:block" />
-              )}
+                <AccordionContent>
+                  <p className="mb-3 text-xs text-muted-foreground">{def.description}</p>
+                  <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                    {def.threshold !== null ? (
+                      <div className="space-y-1.5">
+                        <Label>{def.thresholdLabel ?? "Threshold"}</Label>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={current.threshold ?? ""}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/[^0-9.]/g, "");
+                            update({ threshold: raw === "" ? null : Number(raw) });
+                          }}
+                          placeholder={String(def.threshold)}
+                        />
+                        {def.thresholdSuffix && (
+                          <p className="text-xs text-muted-foreground">{def.thresholdSuffix}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="hidden sm:block" />
+                    )}
 
-              <div className="space-y-1.5">
-                <Label>WhatsApp template</Label>
-                <Select
-                  value={current.template_name}
-                  onValueChange={(v) => update({ template_name: v })}
-                >
-                  <SelectTrigger aria-label="WhatsApp template" className="font-mono text-xs">
-                    <SelectValue placeholder="Choose a template" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {automationTemplateOptions.map((name) => (
-                      <SelectItem key={name} value={name} className="font-mono text-xs">
-                        {name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Only templates already approved in your WhatsApp Business account are listed. If
-                  a template later loses approval, sends fall back to plain text — which only
-                  reaches the customer if they messaged you in the last 24 hours.
-                </p>
-              </div>
+                    <div className="space-y-1.5">
+                      <Label>WhatsApp template</Label>
+                      <Select
+                        value={current.template_name}
+                        onValueChange={(v) => update({ template_name: v })}
+                      >
+                        <SelectTrigger aria-label="WhatsApp template" className="font-mono text-xs">
+                          <SelectValue placeholder="Choose a template" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {automationTemplateOptions.map((name) => (
+                            <SelectItem key={name} value={name} className="font-mono text-xs">
+                              {name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Only templates already approved in your WhatsApp Business account are
+                        listed. If a template later loses approval, sends fall back to plain text
+                        — which only reaches the customer if they messaged you in the last 24
+                        hours.
+                      </p>
+                    </div>
 
-              <Button
-                onClick={() => save.mutate(current)}
-                disabled={save.isPending}
-                className="sm:w-auto"
-              >
-                {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
-              </Button>
-            </CardContent>
-          </Card>
-        );
-      })}
+                    <Button
+                      onClick={() => save.mutate(current)}
+                      disabled={save.isPending}
+                      className="sm:w-auto"
+                    >
+                      {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
+      </Card>
     </div>
   );
 }
