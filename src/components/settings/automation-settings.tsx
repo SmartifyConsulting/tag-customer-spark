@@ -133,7 +133,7 @@ export function AutomationSettings() {
         </p>
       </div>
 
-      {isSuperAdmin && data?.provider === "whatsapp" ? (
+      {isSuperAdmin && Boolean(data?.provider) ? (
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between gap-3">

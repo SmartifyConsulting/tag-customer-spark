@@ -36,7 +36,10 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
   component: UpgradePage,
 });
 
-const TIERS: TagTier[] = [...SELF_SERVE_PLANS, "enterprise"];
+const TIERS: TagTier[] = [
+  ...SELF_SERVE_PLANS.filter((p): p is TagTier => p !== "trial"),
+  "enterprise",
+];
 
 type Row = { label: string; values: Partial<Record<TagTier, string | boolean>> };
 
