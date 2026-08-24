@@ -96,13 +96,17 @@ function ConsentToggles({ customer }: { customer: any }) {
     </label>
   );
 
+  // POPIA Compliance: These toggles reflect what the SHOPPER agreed to (captured at opt-in).
+  // They can ONLY be changed if the shopper explicitly grants new consent.
+  // The "Marketing" toggle is only enabled if shopper opted into marketing messages (separate from transactional notifications).
+  // See: https://www.justice.gov.za/inforegulation/
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       {item("Sub", subscribed, (v) => {
         setSubscribed(v);
         void save({ status: v ? "subscribed" : "unsubscribed" }, () => setSubscribed(!v), "subscription");
       })}
-      {item("Mkt", marketing, (v) => {
+      {item("Marketing", marketing, (v) => {
         setMarketing(v);
         void save({ marketing_consent: v, status: subscribed ? "subscribed" : "unsubscribed" }, () => setMarketing(!v), "marketing consent");
       })}
