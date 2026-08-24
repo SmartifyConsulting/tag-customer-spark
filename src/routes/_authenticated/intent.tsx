@@ -155,7 +155,10 @@ function IntentPage() {
                 <div className="flex items-end justify-between rounded-md border p-3">
                   <div>
                     <Label className="text-sm">Forecasting enabled</Label>
-                    <p className="text-xs text-muted-foreground">Predict 7- and 14-day interest.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Estimates 7- and 14-day interest trends — accuracy improves as more scan
+                      data comes in, so a new store's forecasts should be treated as rough.
+                    </p>
                   </div>
                   <Switch
                     checked={!!form.forecasting_enabled}

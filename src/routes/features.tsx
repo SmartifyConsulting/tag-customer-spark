@@ -34,7 +34,7 @@ const FEATURES = [
   {
     emoji: "🤖",
     title: "AI Retail Intelligence",
-    body: "Go beyond dashboards. Tag analyses customer behaviour and product performance to uncover hidden demand, identify sales opportunities, recommend actions, and predict where revenue can be recovered.",
+    body: "Go beyond dashboards. Tag analyses customer behaviour and product performance to uncover hidden demand, identify sales opportunities, recommend actions, and highlight where revenue could be recovered.",
   },
   {
     emoji: "💬",

@@ -62,7 +62,7 @@ const MATRIX: Row[] = [
   { label: "Pricing sensitivity + scan heatmap", values: { starter: false, growth: false, pro: true, enterprise: true } },
   { label: "Forecasting", values: { starter: false, growth: false, pro: "7 + 14 day", enterprise: "Custom" } },
   { label: "Cross-store intelligence", values: { starter: false, growth: false, pro: false, enterprise: true } },
-  { label: "Executive briefings + CFO ROI", values: { starter: false, growth: false, pro: false, enterprise: true } },
+  { label: "Daily summaries + ROI reporting", values: { starter: false, growth: false, pro: false, enterprise: true } },
   { label: "API access + SSO + custom exports", values: { starter: false, growth: false, pro: false, enterprise: true } },
   { label: "Dedicated account manager + SLA", values: { starter: false, growth: false, pro: false, enterprise: true } },
 ];

@@ -121,7 +121,7 @@ export function OpportunityFeedCard() {
               </span>
             </CardTitle>
             <CardDescription>
-              Daily revenue-generating actions, surfaced automatically. Upgrade to Tag Pro to unlock.
+              Daily suggested actions to help recover revenue, surfaced automatically. Upgrade to Tag Pro to unlock.
             </CardDescription>
           </div>
           <Button asChild size="sm">
@@ -175,7 +175,7 @@ export function OpportunityFeedCard() {
             <Sparkles className="h-4 w-4 text-primary" />
             AI Opportunity Feed
           </CardTitle>
-          <CardDescription>Today's revenue-generating actions, surfaced automatically.</CardDescription>
+          <CardDescription>Today's suggested actions to help recover revenue, surfaced automatically.</CardDescription>
         </div>
         <Button size="sm" variant="outline" onClick={() => generate.mutate()} disabled={generate.isPending}>
           <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", generate.isPending && "animate-spin")} />
@@ -185,7 +185,7 @@ export function OpportunityFeedCard() {
       <CardContent className="space-y-4">
         {exec.data && !loading && (
           <div className="rounded-xl border bg-primary/[0.04] p-4">
-            <div className="text-xs uppercase tracking-wide text-primary font-semibold mb-1">Executive briefing</div>
+            <div className="text-xs uppercase tracking-wide text-primary font-semibold mb-1">Daily summary</div>
             <div className="text-sm font-semibold">{exec.data.title}</div>
             <p className="text-sm text-muted-foreground mt-1">{exec.data.body}</p>
           </div>

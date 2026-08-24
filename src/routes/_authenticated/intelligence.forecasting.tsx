@@ -18,7 +18,7 @@ function ForecastingPage() {
     <div className="space-y-8">
       <PageHeader
         title="Demand Forecasting"
-        description="7, 14 and 30-day predictions, powered by the Interest Score data layer."
+        description="7, 14 and 30-day estimates, powered by the Interest Score data layer — accuracy depends on how much scan history a store has built up."
         actions={
           <Button variant="outline" asChild>
             <Link to="/settings">
@@ -37,7 +37,9 @@ function ForecastingPage() {
             Forecast horizons
           </CardTitle>
           <CardDescription>
-            Per-product demand outlook over the next 7, 14 and 30 days based on intent momentum.
+            Per-product demand outlook over the next 7, 14 and 30 days based on interest
+            momentum. Treat as a rough guide, not a guarantee — especially for a store still
+            building up scan history.
           </CardDescription>
         </CardHeader>
         <CardContent>

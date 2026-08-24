@@ -47,16 +47,16 @@ const REVEALS = [
     body: "Measure the difference between customer curiosity and completed purchases. Discover exactly where sales opportunities are being lost and which products deserve immediate attention.",
   },
   {
-    title: "Predict Customer Behaviour",
-    body: "AI identifies buying patterns, highlights high-interest shoppers, predicts demand, and recommends the best time to engage customers for maximum conversion.",
+    title: "Estimate Customer Behaviour",
+    body: "AI identifies buying patterns, highlights high-interest shoppers, estimates demand, and suggests the best time to engage customers for maximum conversion.",
   },
   {
     title: "Optimise Your Business",
     body: "Use real customer intelligence to improve pricing strategies, promotions, inventory planning, merchandising decisions, and marketing campaigns — all based on actual shopper behaviour rather than assumptions.",
   },
   {
-    title: "Prove Your Return on Investment",
-    body: "Know exactly how many customers returned, which WhatsApp campaigns generated revenue, which products performed best, and how much additional revenue Tag helped recover.",
+    title: "Track Your Return on Investment",
+    body: "See how many customers returned, which WhatsApp campaigns led to a confirmed sale, which products performed best, and how much revenue Tag helped recover — based on sales your staff have confirmed.",
   },
 ];
 

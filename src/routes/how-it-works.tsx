@@ -34,7 +34,7 @@ const STEPS = [
   {
     n: "04",
     t: "AI Reveals Hidden Opportunities",
-    d: "Tag analyses thousands of product interactions to identify trends, predict demand, highlight missed sales opportunities, and recommend actions to improve performance.",
+    d: "Tag analyses your product interactions to identify trends, estimate demand, highlight missed sales opportunities, and suggest actions to improve performance. Estimates get more reliable as more data comes in.",
   },
   {
     n: "05",

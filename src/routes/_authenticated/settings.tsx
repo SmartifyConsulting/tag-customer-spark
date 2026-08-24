@@ -453,7 +453,7 @@ function EmailsTab({ defaultTo }: { defaultTo: string }) {
           {[
             ["Customer campaign emails", "Sent alongside WhatsApp when a campaign goes out and the customer has an email on file."],
             ["Staff invitations", "Sent when you invite a Store Manager or Sales Assistant from the Staff page."],
-            ["Daily AI briefing", "Morning executive summary with scans, recovered revenue and waiting customers."],
+            ["Daily AI briefing", "Morning summary with scans, recovered revenue and waiting customers."],
             ["Weekly ROI report", "Sunday digest with revenue recovered, campaigns sent and conversion."],
           ].map(([t, d]) => (
             <div key={t} className="rounded-xl border p-4">

@@ -35,7 +35,7 @@ function IntelligencePage() {
     <div className="space-y-8">
       <PageHeader
         title="Analytics"
-        description="Daily opportunities, executive briefings and weekly performance reports — generated automatically."
+        description="Daily suggestions, daily summaries and weekly performance reports — generated automatically."
       />
 
       <IntelligenceTabs />
@@ -47,7 +47,7 @@ function IntelligencePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
-              Today's executive briefing
+              Today's daily summary
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

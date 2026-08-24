@@ -248,8 +248,8 @@ function generateProductInsight(p: any, sig: any, fc: any): string {
   if (sig.repeat_scans > 5) return "Strong repeat scans suggest comparison shopping behaviour.";
   if (score >= 70 && lowStock) return "High interest with low stock — urgent replenishment risk.";
   if (fc?.predicted_trend === "increase" && lowStock) return "Forecast shows rising demand — consider stock increase.";
-  if (fc?.predicted_trend === "decrease") return "Declining intent — possible product fatigue. Test a refresh or promotion.";
-  if (score < 30) return "Very low intent. Slow mover — consider a discount, bundle or rotation.";
+  if (fc?.predicted_trend === "decrease") return "Declining interest — possible product fatigue. Test a refresh or promotion.";
+  if (score < 30) return "Very low interest. Slow mover — consider a discount, bundle or rotation.";
   return "Performance is steady. Monitor the forecast and conversion rate.";
 }
 
@@ -268,6 +268,6 @@ function generateOverviewInsight(data: {
   }
   if (forecast?.predicted_trend === "decrease") return "Overall demand is forecast to soften — review your slow movers.";
   if (risingCount > fallingCount && risingCount > 0) return `${risingCount} product${risingCount === 1 ? "" : "s"} trending up — worth featuring in WhatsApp or in-store promotion.`;
-  if (fallingCount > risingCount && fallingCount > 0) return `${fallingCount} product${fallingCount === 1 ? "" : "s"} losing intent — consider a refresh or discount.`;
+  if (fallingCount > risingCount && fallingCount > 0) return `${fallingCount} product${fallingCount === 1 ? "" : "s"} losing interest — consider a refresh or discount.`;
   return "Demand is steady across the catalogue. Monitor the forecast and conversion rate.";
 }
