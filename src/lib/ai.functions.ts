@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { hasFeature } from "@/lib/tier";
 
 async function resolveRetailerId(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
@@ -8,6 +9,26 @@ async function resolveRetailerId(supabase: any, userId: string): Promise<string 
     .eq("user_id", userId).not("retailer_id", "is", null)
     .limit(1).maybeSingle();
   return data?.retailer_id ?? null;
+}
+
+// The pricing table sells campaign drafting/rewriting/prediction and
+// conversation summarising as one "AI campaign assistant" feature
+// (Growth+) — none of the five functions below checked that server-side
+// until now, so every tier had free access to what's marketed as a paid
+// feature. Client-side gating alone isn't enough (a direct call bypasses
+// it), so this is the real guard; useTier()/hasFeature() in the UI is
+// what shows the locked state before someone even tries.
+async function requireAiAssistant(supabase: any, userId: string): Promise<void> {
+  const retailerId = await resolveRetailerId(supabase, userId);
+  if (!retailerId) throw new Error("No retailer assigned to your account");
+  const { data: retailer } = await supabase
+    .from("retailers")
+    .select("tier")
+    .eq("id", retailerId)
+    .maybeSingle();
+  if (!hasFeature(retailer?.tier, "aiAssistant")) {
+    throw new Error("The AI campaign assistant is a Growth-plan feature. Upgrade to use it.");
+  }
 }
 
 async function callAI<T>(opts: {
@@ -54,6 +75,7 @@ export const writeCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => writeInput.parse(d))
   .handler(async ({ data, context }) => {
+    await requireAiAssistant(context.supabase, context.userId);
     let product: any = null;
     let retailer: any = null;
     if (data.product_id) {
@@ -88,16 +110,17 @@ export const rewriteCampaign = createServerFn({ method: "POST" })
       direction: z.enum(["tighten", "urgent", "friendly", "premium", "playful"]).default("tighten"),
     }).parse(d),
   )
-  .handler(async ({ data }) =>
-    callAI({
+  .handler(async ({ data, context }) => {
+    await requireAiAssistant(context.supabase, context.userId);
+    return callAI({
       system: "You rewrite WhatsApp retail messages to a target style without changing facts.",
       prompt: `Rewrite this campaign. Target: ${data.direction}.
 Headline: ${data.headline}
 Body: ${data.body}
 CTA: ${data.cta_label}`,
       schema: messageSchema,
-    }),
-  );
+    });
+  });
 
 // --- Predict response --------------------------------------------------------
 export const predictCampaignResponse = createServerFn({ method: "POST" })
@@ -111,6 +134,7 @@ export const predictCampaignResponse = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    await requireAiAssistant(context.supabase, context.userId);
     // pull retailer baseline funnel from notification_history
     const { data: hist } = await context.supabase
       .from("notification_history")
@@ -143,6 +167,7 @@ Adjust the baseline up or down based on type (e.g. sales beat baseline by 15-30%
 export const recommendSendTime = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context, data: _data }) => {
+    await requireAiAssistant(context.supabase, context.userId);
     const { data: scans } = await context.supabase
       .from("qr_scans").select("scanned_at").limit(500);
     const buckets: Record<string, number> = {};
@@ -170,6 +195,7 @@ export const summariseConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ conversation_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    await requireAiAssistant(context.supabase, context.userId);
     const { data: msgs } = await context.supabase
       .from("conversation_messages")
       .select("direction, body, is_internal, sent_at")
