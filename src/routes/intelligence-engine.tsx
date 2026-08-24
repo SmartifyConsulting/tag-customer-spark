@@ -23,7 +23,7 @@ const PILLARS = [
   },
   {
     title: "Customer Intelligence",
-    body: "Build a complete picture of shopper behaviour, preferences, and intent across every visit and interaction.",
+    body: "Build a better understanding of shopper behaviour, preferences, and intent across every visit and interaction.",
   },
   {
     title: "Retail Intelligence",
@@ -35,7 +35,7 @@ const PILLARS = [
   },
 ];
 
-const CYCLE = ["Product", "Customer", "Retail", "Revenue", "AI", "Engagement", "Revenue"];
+const CYCLE = ["Product", "Customer", "Retail", "Revenue", "AI", "WhatsApp", "Revenue"];
 
 const REVEALS = [
   {
@@ -56,7 +56,7 @@ const REVEALS = [
   },
   {
     title: "Prove Your Return on Investment",
-    body: "Know exactly how many customers returned, which campaigns generated revenue, which products performed best, and how much additional revenue Tag helped recover.",
+    body: "Know exactly how many customers returned, which WhatsApp campaigns generated revenue, which products performed best, and how much additional revenue Tag helped recover.",
   },
 ];
 

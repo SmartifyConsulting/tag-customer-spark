@@ -8,7 +8,7 @@ export const Route = createFileRoute("/features")({
       { title: "Features — Tag" },
       {
         name: "description",
-        content: "Everything you need to understand customer intent and recover lost sales.",
+        content: "Everything you need to understand customer intent and help recover lost sales.",
       },
     ],
   }),
@@ -56,7 +56,7 @@ function FeaturesPage() {
         <div className="mx-auto max-w-2xl text-center">
           <span className="text-base font-bold uppercase tracking-wide text-[color:var(--mint)]">Features</span>
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            Everything you need to understand customer intent and recover lost sales.
+            Everything you need to understand customer intent and help recover lost sales.
           </h1>
           <p className="mt-4 text-muted-foreground">
             Tag combines Product Intelligence, Customer Intelligence, AI-powered Insights, and
