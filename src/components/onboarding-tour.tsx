@@ -38,10 +38,17 @@ function computePosition(targetId: string | undefined): Position {
   }
   if (left < MARGIN) left = MARGIN;
 
-  // Not enough room below — place it above the target instead.
+  // Not enough room below the target's bottom edge — this used to jump the
+  // card to sit above the target instead (rect.top - estimatedCardHeight),
+  // which works for a short target but not a tall one: a target whose
+  // bottom edge is off-screen (e.g. a full customer-list table) has its top
+  // edge sitting right below the page header, so "above the target" landed
+  // the card on the header/title/buttons it was meant to leave alone.
+  // Clamping within the viewport instead keeps the card near the target
+  // without ever overlapping whatever sits above it.
   const estimatedCardHeight = 180;
   if (top + estimatedCardHeight + MARGIN > viewportH) {
-    top = rect.top - estimatedCardHeight - 12;
+    top = viewportH - estimatedCardHeight - MARGIN;
   }
   if (top < MARGIN) top = MARGIN;
 
