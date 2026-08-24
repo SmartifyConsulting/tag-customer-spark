@@ -19,14 +19,19 @@ type LogStatus = "all" | "queued" | "sent" | "delivered" | "read" | "clicked" | 
 
 const STATUS_META: Record<
   string,
-  { label: string; variant: "default" | "secondary" | "outline" | "destructive"; icon: typeof Send }
+  { label: string; variant: "default" | "secondary" | "outline" | "destructive" | "success"; icon: typeof Send }
 > = {
   queued: { label: "Queued", variant: "outline", icon: Clock },
   sent: { label: "Sent", variant: "secondary", icon: Send },
-  delivered: { label: "Delivered", variant: "secondary", icon: MailCheck },
-  read: { label: "Read", variant: "default", icon: CheckCircle2 },
-  clicked: { label: "Clicked", variant: "default", icon: MousePointerClick },
-  redeemed: { label: "Redeemed", variant: "default", icon: Ticket },
+  // delivered/read/clicked/redeemed are all "the message actually landed"
+  // outcomes, each stronger than the last — green throughout so they read
+  // as one family, rather than delivered being green while a stronger
+  // signal like read/clicked sits in the primary brand colour (which
+  // reads as neutral-to-alarming next to a green badge, not "better").
+  delivered: { label: "Delivered", variant: "success", icon: MailCheck },
+  read: { label: "Read", variant: "success", icon: CheckCircle2 },
+  clicked: { label: "Clicked", variant: "success", icon: MousePointerClick },
+  redeemed: { label: "Redeemed", variant: "success", icon: Ticket },
   failed: { label: "Failed", variant: "destructive", icon: AlertTriangle },
 };
 
@@ -34,6 +39,20 @@ function ruleLabel(rule: string | null): string {
   if (!rule) return "—";
   const known = AUTOMATION_BY_KEY[rule as AutomationKey];
   return known?.label ?? rule;
+}
+
+// "Queued" only means Infobip's API accepted the send — it's promoted to
+// sent/delivered/read by a later delivery-report webhook call, which can
+// take a few minutes to arrive. Past that, a row that's still queued
+// either went to a number that was never real (seed/demo data — Infobip
+// can never produce a delivery report for those) or the webhook call
+// genuinely never reached this app. Nothing in server logs surfaces that
+// distinction to a non-technical reader, so flag it here instead.
+const STUCK_QUEUED_MINUTES = 10;
+function isStuckQueued(status: string, createdAt: string): boolean {
+  if (status !== "queued") return false;
+  const ageMs = Date.now() - new Date(createdAt).getTime();
+  return ageMs > STUCK_QUEUED_MINUTES * 60_000;
 }
 
 export function AutomationLogsTab() {
@@ -127,7 +146,17 @@ export function AutomationLogsTab() {
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-xs text-xs text-destructive">
-                        {r.error ?? ""}
+                        {r.error ??
+                          (isStuckQueued(r.status, r.created_at) ? (
+                            <span
+                              className="flex items-center gap-1 text-muted-foreground"
+                              title="No delivery confirmation received from WhatsApp after 10+ minutes — either this number never received it, or the delivery-report webhook didn't reach Tag. Check the recipient number if this keeps happening."
+                            >
+                              <AlertTriangle className="h-3 w-3" /> No confirmation yet
+                            </span>
+                          ) : (
+                            ""
+                          ))}
                       </TableCell>
                     </TableRow>
                   );
