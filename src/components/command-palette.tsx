@@ -18,7 +18,7 @@ const items = [
   { label: "Messages", to: "/inbox", icon: Inbox, group: "Go to" },
   { label: "Insights", to: "/analytics", icon: BarChart3, group: "Go to" },
   { label: "Analytics", to: "/intelligence", icon: Sparkles, group: "Go to" },
-  { label: "ROI Engine", to: "/commerce/roi", icon: DollarSign, group: "Go to" },
+  { label: "ROI Tracking", to: "/commerce/roi", icon: DollarSign, group: "Go to" },
   { label: "Admin", to: "/admin", icon: ShieldCheck, group: "Go to" },
   { label: "Stores", to: "/admin?tab=stores", icon: Store, group: "Go to" },
   { label: "Staff", to: "/staff", icon: UserCog, group: "Go to" },

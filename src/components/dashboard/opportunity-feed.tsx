@@ -199,7 +199,9 @@ export function OpportunityFeedCard() {
           </div>
         ) : !feed.data?.length ? (
           <div className="text-sm text-muted-foreground rounded-lg border border-dashed p-6 text-center">
-            No opportunities yet. Click <span className="font-medium">Refresh brief</span> to generate today's recommendations.
+            No opportunities yet — a new brief generates automatically each day. Click{" "}
+            <span className="font-medium">Refresh brief</span> if you'd like today's brief right
+            now instead of waiting.
           </div>
         ) : (
           <div className="rounded-lg border overflow-x-auto">
