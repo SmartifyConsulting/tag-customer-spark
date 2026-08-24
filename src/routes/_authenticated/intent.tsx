@@ -19,7 +19,7 @@ import { Gauge } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/intent")({
   head: () => ({ meta: [{ title: "Interest Engine — Tag" }] }),
-  beforeLoad: ({ context }) => requireFeature(context.queryClient, "intentEngine"),
+  beforeLoad: ({ context }) => requireFeature(context.queryClient, "interestEngine"),
   component: IntentPage,
 });
 

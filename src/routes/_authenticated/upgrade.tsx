@@ -20,7 +20,7 @@ const searchSchema = z.object({
       "roi",
       "aiAssistant",
       "weeklyBriefings",
-      "intentEngine",
+      "interestEngine",
       "bulkQr",
       "advancedExports",
       "apiAccess",

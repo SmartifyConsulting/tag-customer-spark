@@ -93,10 +93,10 @@ function InventoryAdminPage() {
     queryFn: () => listFn({ data: params }),
   });
 
-  // Drives the Tag Intelligence chip: once nothing is left incomplete, show
+  // Drives the Digital Identity chip: once nothing is left incomplete, show
   // a success badge instead of an action button re-inviting a click.
   const tagStatusQ = useQuery({
-    queryKey: ["tag-intelligence-status"],
+    queryKey: ["digital-identity-status"],
     queryFn: () => listIncompleteFn(),
   });
   const tagIntelligenceComplete =
@@ -122,9 +122,9 @@ function InventoryAdminPage() {
 
   // Silently finish any product's digital identity (normalise, QR, image,
   // passport, enrichment) left stalled by an interrupted import — no
-  // button, no loading state; the list and Tag Intelligence badge just
+  // button, no loading state; the list and Digital Identity badge just
   // update as processing catches up. Barcode-less products are skipped
-  // (still the explicit "Tag Intelligence" action below) since assigning a
+  // (still the explicit "Digital Identity" action below) since assigning a
   // barcode is a more consequential change than completing an identity a
   // barcode already unlocks. Bounded per page load; any remaining backlog
   // catches up on the next visit.
@@ -141,7 +141,7 @@ function InventoryAdminPage() {
         const chunk = ids.slice(i, i + CHUNK);
         await bulkCompleteFn({ data: { productIds: chunk } }).catch(() => null);
         qc.invalidateQueries({ queryKey: ["admin-inventory"] });
-        qc.invalidateQueries({ queryKey: ["tag-intelligence-status"] });
+        qc.invalidateQueries({ queryKey: ["digital-identity-status"] });
       }
     })();
   }, [listIncompleteFn, bulkCompleteFn, qc]);
@@ -352,7 +352,7 @@ function InventoryAdminPage() {
               </span>
               <span className="min-w-0">
                 <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Tag Intelligence
+                  Digital Identity
                 </span>
                 <span
                   className={`block text-sm font-medium ${
@@ -371,7 +371,7 @@ function InventoryAdminPage() {
                       ? "Failed"
                       : tagIntelligenceComplete
                         ? "Successful"
-                        : "Incomplete"}
+                        : `${tagStatusQ.data?.ids?.length ?? 0} incomplete`}
                 </span>
               </span>
             </button>

@@ -6,7 +6,7 @@ export const Route = createFileRoute("/intent-gap-analytics")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Intent Gap Analytics — Tag" },
+      { title: "Interest Gap Analytics — Tag" },
       {
         name: "description",
         content:
