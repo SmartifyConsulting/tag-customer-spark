@@ -1,6 +1,6 @@
 // Tag subscription plans — 5-tier base + overage model.
 // ZAR = PayFast, USD = PayPal (self-serve). Enterprise = contact sales.
-export type PlanId = "go" | "starter" | "growth" | "pro" | "enterprise";
+export type PlanId = "trial" | "go" | "starter" | "growth" | "pro" | "enterprise";
 export type Cycle = "monthly" | "annual";
 export type AlertType = "sale" | "back_in_stock" | "new_arrival" | "low_stock" | "promotion" | "custom";
 
@@ -178,7 +178,7 @@ export const PLANS: Record<PlanId, Plan> = {
   },
 };
 
-export const SELF_SERVE_PLANS: PlanId[] = ["starter", "growth", "pro"];
+export const SELF_SERVE_PLANS: PlanId[] = ["trial", "go", "starter", "growth", "pro"];
 
 export function priceCents(plan: PlanId, cycle: Cycle, currency: "ZAR" | "USD"): number {
   const p = PLANS[plan];
