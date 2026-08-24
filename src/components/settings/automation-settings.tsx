@@ -73,8 +73,8 @@ export function AutomationSettings() {
         data: { recipient: testRecipient, templateName: testTemplate.trim() },
       }),
     onSuccess: (result) => {
-      if (result.ok) toast.success("WhatsApp accepted the test message");
-      else toast.error(result.error ?? "WhatsApp rejected the test message");
+      if (result.ok) toast.success("WhatsApp Template accepted the test message");
+      else toast.error(result.error ?? "WhatsApp Template rejected the test message");
     },
     onError: (e: Error) => toast.error(e.message || "Could not run delivery test"),
   });
@@ -84,8 +84,8 @@ export function AutomationSettings() {
   const connectionCheck = useMutation({
     mutationFn: () => checkWhatsAppConnection(),
     onSuccess: (result) => {
-      if (result.ok) toast.success("WhatsApp authenticated this runtime");
-      else toast.error(result.error ?? "WhatsApp rejected this runtime's credentials");
+      if (result.ok) toast.success("WhatsApp Template service authenticated this runtime");
+      else toast.error(result.error ?? "WhatsApp Template service rejected this runtime's credentials");
     },
     onError: (e: Error) => toast.error(e.message || "Could not check the connection"),
   });
@@ -206,11 +206,11 @@ export function AutomationSettings() {
               </p>
             ) : !templates.data?.ok ? (
               <p className="text-xs text-destructive">
-                Couldn't load live WhatsApp templates — showing the built-in list instead.
+                Couldn't load WhatsApp Templates — showing the built-in list instead.
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Showing only WhatsApp templates currently approved by WhatsApp.
+                Showing only WhatsApp Templates currently approved by WhatsApp.
               </p>
             )}
 
@@ -329,7 +329,7 @@ export function AutomationSettings() {
                   className="font-mono text-xs"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Must exactly match a template already approved in your approved WhatsApp
+                  Must exactly match a template already approved in your approved WhatsApp Templates
                   Business account. A mismatch falls back to plain text — which only reaches
                   the customer if they messaged you in the last 24 hours.
                 </p>
