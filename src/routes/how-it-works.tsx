@@ -29,7 +29,7 @@ const STEPS = [
   {
     n: "03",
     t: "Interest Is Captured",
-    d: "Every interaction creates valuable signals. Tag records customer intent, product engagement, and behavioural insights that would otherwise be lost when a shopper leaves the store.",
+    d: "Every interaction creates valuable signals. Tag records customer interest, product engagement, and behavioural insights that would otherwise be lost when a shopper leaves the store.",
   },
   {
     n: "04",

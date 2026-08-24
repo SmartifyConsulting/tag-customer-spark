@@ -68,7 +68,7 @@ export const FEATURE_META: Record<
       "Every Monday, a written executive summary of wins, watch-outs and next-week actions.",
   },
   interestEngine: {
-    title: "Intent score engine",
+    title: "Interest score",
     description: "Per-product 0–100 interest scores with retailer-tunable weights.",
   },
   aiAssistant: {

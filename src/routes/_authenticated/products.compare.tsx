@@ -29,7 +29,7 @@ function ComparePage() {
     <div className="space-y-8">
       <PageHeader
         title="Performance Compare"
-        description="Side-by-side intent, stock and price comparison across your catalogue."
+        description="Side-by-side interest, stock and price comparison across your catalogue."
       />
 
       <Card className="rounded-xl shadow-[var(--shadow-card)]">

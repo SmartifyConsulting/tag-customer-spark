@@ -121,7 +121,7 @@ function BriefingPage() {
           icon={Flame}
           items={intent?.high}
           loading={intentQuery.isLoading}
-          emptyLabel="No high-intent products yet."
+          emptyLabel="No high-interest products yet."
         />
         <IntentColumn
           className="col-span-12 lg:col-span-6"

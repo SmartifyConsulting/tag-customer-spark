@@ -27,7 +27,7 @@ function IntentGapAnalyticsPage() {
             The Future of Retail Intelligence
           </span>
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            Beyond Transactions: Understanding Customer Intent.
+            Beyond Transactions: Understanding Customer Interest.
           </h1>
         </div>
 
@@ -43,16 +43,18 @@ function IntentGapAnalyticsPage() {
               Tag sees
             </p>
             <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm font-semibold sm:text-base">
-              {["Interest", "Consideration", "Intent", "Decision", "Purchase", "Relationship"].map(
-                (step, i, arr) => (
-                  <span key={step} className="flex items-center gap-2">
-                    {step}
-                    {i < arr.length - 1 && (
-                      <ArrowDown className="h-3.5 w-3.5 rotate-[-90deg] opacity-60 sm:rotate-0" />
-                    )}
-                  </span>
-                ),
-              )}
+              {["Scan", "Opt-in", "Purchase*"].map((step, i, arr) => (
+                <span key={step} className="flex items-center gap-2">
+                  {step}
+                  {i < arr.length - 1 && (
+                    <ArrowDown className="h-3.5 w-3.5 rotate-[-90deg] opacity-60 sm:rotate-0" />
+                  )}
+                </span>
+              ))}
+            </p>
+            <p className="mt-3 text-xs text-muted-foreground">
+              *Only when the sale happens through a channel Tag can see — most in-store
+              purchases still happen at the till, out of view.
             </p>
           </div>
         </div>
@@ -84,7 +86,7 @@ function IntentGapAnalyticsPage() {
           <div className="rounded-2xl border border-border/60 bg-card p-6">
             <div className="text-lg font-bold">The Interest Graph™</div>
             <p className="mt-1 text-sm font-medium text-primary">
-              The complete picture of customer intent.
+              A richer picture of customer interest.
             </p>
             <p className="mt-3 text-sm text-muted-foreground">
               Every interaction builds a richer understanding of demand. A customer doesn't just

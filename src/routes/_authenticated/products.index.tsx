@@ -233,7 +233,7 @@ function ProductsListPage() {
               description={
                 hasFilters
                   ? "Try clearing filters or refining your search — your full catalogue is one click away."
-                  : "Add your first product to start generating QR tags, tracking intent and recovering lost sales."
+                  : "Add your first product to start generating QR tags, tracking interest and helping recover lost sales."
               }
               action={
                 canManage ? (

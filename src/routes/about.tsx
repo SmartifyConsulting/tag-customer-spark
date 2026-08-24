@@ -15,7 +15,7 @@ export const Route = createFileRoute("/about")({
       {
         name: "description",
         content:
-          "Tag brings Retail Intelligence to physical stores, transforming ordinary products into intelligent digital touchpoints that capture buying intent and reconnect with shoppers after they leave.",
+          "Tag brings Retail Intelligence to physical stores, transforming ordinary products into intelligent digital touchpoints that capture buying interest and reconnect with shoppers after they leave.",
       },
     ],
   }),

@@ -55,7 +55,7 @@ const MATRIX: Row[] = [
   { label: "Products", values: { starter: "20", growth: "50", pro: "Unlimited", enterprise: "Unlimited" } },
   { label: "User logins", values: { starter: "2", growth: "3", pro: "10", enterprise: "Unlimited" } },
   { label: "Campaign analytics", values: { starter: "Basic", growth: "Full", pro: "Full", enterprise: "Full" } },
-  { label: "Intent score engine", values: { starter: false, growth: true, pro: true, enterprise: true } },
+  { label: "Interest score", values: { starter: false, growth: true, pro: true, enterprise: true } },
   { label: "ROI engine", values: { starter: false, growth: false, pro: true, enterprise: true } },
   { label: "AI daily briefing", values: { starter: false, growth: false, pro: true, enterprise: true } },
   { label: "Weekly ROI email", values: { starter: false, growth: false, pro: true, enterprise: true } },

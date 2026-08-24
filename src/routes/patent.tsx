@@ -61,7 +61,7 @@ function PatentPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-foreground">3. Intent-Capture and Scoring Method ("Follow Me")</h2>
+            <h2 className="text-lg font-semibold text-foreground">3. Interest-Capture and Scoring Method ("Follow Me")</h2>
             <p>
               A method by which a shopper scans a product's barcode in-store to register interest
               without completing a purchase, which triggers an automated, consent-based WhatsApp

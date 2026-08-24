@@ -74,7 +74,7 @@ function IntentPage() {
       update_frequency_minutes: Number(form.update_frequency_minutes),
     } as any }),
     onSuccess: () => {
-      toast.success("Intent settings saved");
+      toast.success("Interest settings saved");
       qc.invalidateQueries({ queryKey: ["intent"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Save failed"),
@@ -84,7 +84,7 @@ function IntentPage() {
     <div className="space-y-8">
       <PageHeader
         title="Interest Score Engine"
-        description="Real-time demand intent per product, with forecasting and merchandising insights."
+        description="Real-time demand interest per product, with forecasting and merchandising insights."
       />
 
       <IntentSectionsCard />
@@ -155,7 +155,7 @@ function IntentPage() {
                 <div className="flex items-end justify-between rounded-md border p-3">
                   <div>
                     <Label className="text-sm">Forecasting enabled</Label>
-                    <p className="text-xs text-muted-foreground">Predict 7- and 14-day intent.</p>
+                    <p className="text-xs text-muted-foreground">Predict 7- and 14-day interest.</p>
                   </div>
                   <Switch
                     checked={!!form.forecasting_enabled}

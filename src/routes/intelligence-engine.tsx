@@ -23,7 +23,7 @@ const PILLARS = [
   },
   {
     title: "Customer Intelligence",
-    body: "Build a better understanding of shopper behaviour, preferences, and intent across every visit and interaction.",
+    body: "Build a better understanding of shopper behaviour, preferences, and interest across every visit and interaction.",
   },
   {
     title: "Retail Intelligence",
@@ -48,7 +48,7 @@ const REVEALS = [
   },
   {
     title: "Predict Customer Behaviour",
-    body: "AI identifies buying patterns, highlights high-intent shoppers, predicts demand, and recommends the best time to engage customers for maximum conversion.",
+    body: "AI identifies buying patterns, highlights high-interest shoppers, predicts demand, and recommends the best time to engage customers for maximum conversion.",
   },
   {
     title: "Optimise Your Business",
