@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCountUp } from "@/hooks/use-count-up";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
@@ -29,7 +29,11 @@ export function KpiCard({
 }) {
   const animated = useCountUp(value);
   const display = formatted ?? Math.round(animated).toLocaleString();
-  const positive = (delta ?? 0) >= 0;
+  // A zero delta is flat, not "rising" — treating it as positive (0 >= 0)
+  // showed an up-arrow next to "no change," which reads as a fake gain.
+  const flat = delta === 0;
+  const positive = (delta ?? 0) > 0;
+  const hasRealActivity = !!sparkline?.some((p) => p.v !== 0);
   const toneRing =
     tone === "success"
       ? "bg-[color:var(--mint)]/15 text-[color:var(--mint)]"
@@ -64,12 +68,16 @@ export function KpiCard({
           {typeof delta === "number" && (
             <span
               className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-medium ${
-                positive
-                  ? "bg-[color:var(--mint)]/15 text-[color:var(--mint)]"
-                  : "bg-destructive/10 text-destructive"
+                flat
+                  ? "bg-muted text-muted-foreground"
+                  : positive
+                    ? "bg-[color:var(--mint)]/15 text-[color:var(--mint)]"
+                    : "bg-destructive/10 text-destructive"
               }`}
             >
-              {positive ? (
+              {flat ? (
+                <Minus className="h-3 w-3" />
+              ) : positive ? (
                 <ArrowUpRight className="h-3 w-3" />
               ) : (
                 <ArrowDownRight className="h-3 w-3" />
@@ -80,7 +88,7 @@ export function KpiCard({
           )}
         </div>
         <div className="h-10">
-          {sparkline && sparkline.length > 1 ? (
+          {sparkline && sparkline.length > 1 && hasRealActivity ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={sparkline} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
                 <defs>

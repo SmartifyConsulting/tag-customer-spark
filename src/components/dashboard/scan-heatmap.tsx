@@ -2,7 +2,15 @@ import { useMemo } from "react";
 
 export function ScanHeatmap({ data }: { data: number[][] }) {
   const max = useMemo(() => Math.max(1, ...data.flat()), [data]);
+  const hasActivity = useMemo(() => data.flat().some((v) => v > 0), [data]);
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  if (!hasActivity) {
+    return (
+      <div className="flex h-40 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+        No scan activity yet — the heatmap fills in as customers start scanning.
+      </div>
+    );
+  }
   return (
     <div className="overflow-x-auto">
       <div className="inline-block">

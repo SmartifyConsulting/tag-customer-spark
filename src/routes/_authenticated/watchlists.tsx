@@ -40,6 +40,18 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
   cancelled: "outline",
 };
 
+// "Fired" is the internal status value (kept as-is in state/URLs/filter
+// logic below) but reads as developer jargon in the UI — a shopkeeper
+// doesn't think of an alert as having "fired." Everywhere the raw status
+// string would otherwise render as-is, it goes through this label map.
+const STATUS_LABEL: Record<string, string> = {
+  active: "Active",
+  fired: "Sent",
+  paused: "Paused",
+  expired: "Expired",
+  cancelled: "Cancelled",
+};
+
 function money(c?: number | null) {
   if (c == null) return "—";
   return formatMoney(c, "ZAR", { maximumFractionDigits: 0 });
@@ -78,7 +90,7 @@ function WatchlistsPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         {[
           { label: "Active watchers", value: overview.data?.conversion.active ?? 0, hint: "currently waiting", icon: Eye },
-          { label: "Fired this period", value: overview.data?.conversion.fired ?? 0, hint: "notifications triggered", icon: Bell },
+          { label: "Sent this period", value: overview.data?.conversion.fired ?? 0, hint: "notifications sent", icon: Bell },
           { label: "Sales recovered", value: overview.data?.conversion.recovered ?? 0, hint: "attributed to watchlists", icon: ArrowUpRight },
         ].map((k) => (
           <Card key={k.label} className="rounded-2xl">
@@ -127,7 +139,7 @@ function WatchlistsPage() {
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="active">Active</TabsTrigger>
                 <TabsTrigger value="paused">Paused</TabsTrigger>
-                <TabsTrigger value="fired">Fired</TabsTrigger>
+                <TabsTrigger value="fired">Sent</TabsTrigger>
               </TabsList>
             </Tabs>
             <div className="divide-y">
@@ -159,7 +171,7 @@ function WatchlistsPage() {
                     >
                       {TRIGGER_LABEL[w.trigger] ?? w.trigger}
                     </Badge>
-                    <Badge variant={STATUS_VARIANT[w.status] ?? "outline"}>{w.status}</Badge>
+                    <Badge variant={STATUS_VARIANT[w.status] ?? "outline"}>{STATUS_LABEL[w.status] ?? w.status}</Badge>
                     {w.target_price_cents && <span className="text-xs text-muted-foreground">Target {money(w.target_price_cents)}</span>}
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-2">
@@ -201,7 +213,7 @@ function WatchlistsPage() {
             </CardContent>
           </Card>
           <Card className="rounded-2xl">
-            <CardHeader><CardTitle>Recent fires</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Recently sent</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               {(overview.data?.recentEvents ?? []).length === 0 ? (
                 <EmptyState icon={Bell} title="No events yet" />

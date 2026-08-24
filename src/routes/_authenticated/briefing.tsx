@@ -103,7 +103,7 @@ function BriefingPage() {
             <ScanHeatmapLegend />
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
-            Shopper scans by day of week × hour of day.
+            Shopper scans by day and hour.
           </p>
           {analytics ? (
             <ScanHeatmap data={analytics.heatmap} />
@@ -129,7 +129,7 @@ function BriefingPage() {
           icon={TrendingUp}
           items={intent?.rising}
           loading={intentQuery.isLoading}
-          emptyLabel="No rising-trend products yet."
+          emptyLabel="No rising-interest products yet."
         />
       </div>
 
