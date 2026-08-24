@@ -168,7 +168,7 @@ export function isContactable(watch: WatchRow): boolean {
 /**
  * How many OTHER customers currently have an active interest in this
  * product — the literal "someone else is looking at this too" signal for
- * the high_interest rule, as opposed to the derived Intent Score.
+ * the high_interest rule, as opposed to the derived Interest Score.
  */
 export async function countOtherActiveInterest(
   supabase: any,

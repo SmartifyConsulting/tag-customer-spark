@@ -38,7 +38,7 @@ function ComparePage() {
             <GitCompareArrows className="h-4 w-4 text-[color:var(--mint)]" />
             Top performers by Intent
           </CardTitle>
-          <CardDescription>Sorted by current intent score.</CardDescription>
+          <CardDescription>Sorted by current interest score.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (

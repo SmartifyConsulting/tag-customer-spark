@@ -93,7 +93,7 @@ export const AUTOMATIONS: AutomationDefinition[] = [
     key: "daily_summary",
     label: "Daily manager summary",
     description:
-      "One evening WhatsApp digest per retailer: scans, top intent product, price changes, stock movement and notifications sent.",
+      "One evening WhatsApp digest per retailer: scans, top interest product, price changes, stock movement and notifications sent.",
     threshold: null,
     templateName: "daily_summary",
   },

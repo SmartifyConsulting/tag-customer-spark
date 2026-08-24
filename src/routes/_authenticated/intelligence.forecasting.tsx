@@ -18,7 +18,7 @@ function ForecastingPage() {
     <div className="space-y-8">
       <PageHeader
         title="Demand Forecasting"
-        description="7, 14 and 30-day predictions, powered by the Intent Score data layer."
+        description="7, 14 and 30-day predictions, powered by the Interest Score data layer."
         actions={
           <Button variant="outline" asChild>
             <Link to="/settings">

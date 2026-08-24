@@ -29,7 +29,7 @@ export function SignalContributionsCard() {
         <CardHeader>
           <CardTitle className="text-base font-semibold">Signal contributions</CardTitle>
           <p className="text-xs text-muted-foreground">
-            How each intent signal contributes to your workspace's overall intent score. Click a signal to see the top products driving it.
+            How each intent signal contributes to your workspace's overall interest score. Click a signal to see the top products driving it.
           </p>
         </CardHeader>
         <CardContent>

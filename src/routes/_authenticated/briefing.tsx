@@ -113,11 +113,11 @@ function BriefingPage() {
         </Card>
       </div>
 
-      {/* Row 3 — High intent (6) + Rising intent (6) */}
+      {/* Row 3 — High interest (6) + Rising interest (6) */}
       <div className="grid grid-cols-12 gap-4">
         <IntentColumn
           className="col-span-12 lg:col-span-6"
-          title="High intent products"
+          title="High interest products"
           icon={Flame}
           items={intent?.high}
           loading={intentQuery.isLoading}
@@ -125,7 +125,7 @@ function BriefingPage() {
         />
         <IntentColumn
           className="col-span-12 lg:col-span-6"
-          title="Rising intent"
+          title="Rising interest"
           icon={TrendingUp}
           items={intent?.rising}
           loading={intentQuery.isLoading}

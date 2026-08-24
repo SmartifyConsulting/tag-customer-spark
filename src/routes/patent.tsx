@@ -66,7 +66,7 @@ function PatentPage() {
               A method by which a shopper scans a product's barcode in-store to register interest
               without completing a purchase, which triggers an automated, consent-based WhatsApp
               re-engagement flow. Scan recency, frequency, and message engagement are combined
-              into a retailer-tunable 0–100 intent score used to prioritise which not-yet-converted
+              into a retailer-tunable 0–100 interest score used to prioritise which not-yet-converted
               shoppers a retailer follows up with.
             </p>
           </section>

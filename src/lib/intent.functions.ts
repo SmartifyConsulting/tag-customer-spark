@@ -41,7 +41,7 @@ function majorityTrend(values: string[], options: readonly string[], fallback: s
 }
 
 // Retailer-wide rollup of the same shape getProductIntent returns, so the
-// UI can render one aggregated "Intent Score" card at the top of Insights.
+// UI can render one aggregated "Interest Score" card at the top of Insights.
 export const getRetailerIntentOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

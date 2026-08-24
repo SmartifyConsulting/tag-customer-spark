@@ -18,7 +18,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Gauge } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/intent")({
-  head: () => ({ meta: [{ title: "Intent Engine — Tag" }] }),
+  head: () => ({ meta: [{ title: "Interest Engine — Tag" }] }),
   beforeLoad: ({ context }) => requireFeature(context.queryClient, "intentEngine"),
   component: IntentPage,
 });
@@ -83,7 +83,7 @@ function IntentPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Intent Score Engine"
+        title="Interest Score Engine"
         description="Real-time demand intent per product, with forecasting and merchandising insights."
       />
 

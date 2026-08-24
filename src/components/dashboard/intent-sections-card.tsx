@@ -7,8 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Flame, TrendingUp, AlertCircle } from "lucide-react";
 
 const SECTION = {
-  high:    { title: "High intent products",   icon: Flame,        desc: "Score above 75 — your demand leaders." },
-  rising:  { title: "Rising intent",          icon: TrendingUp,   desc: "Fastest growing intent score this week." },
+  high:    { title: "High interest products",   icon: Flame,        desc: "Score above 75 — your demand leaders." },
+  rising:  { title: "Rising interest",          icon: TrendingUp,   desc: "Fastest growing interest score this week." },
   gap:     { title: "Conversion gap products",icon: AlertCircle,  desc: "Plenty of intent but low conversion." },
 } as const;
 

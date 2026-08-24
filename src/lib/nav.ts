@@ -96,13 +96,13 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     label: "Retail Intelligence",
     staffOnly: true,
     items: [
-      { title: "Intent Engine", url: "/intelligence/intent", icon: Radar, match: ["/intelligence/intent", "/intent"] },
+      { title: "Interest Engine", url: "/intelligence/intent", icon: Radar, match: ["/intelligence/intent", "/intent"] },
       {
         // Overview screen — Insights / Analytics / ROI already live there as
         // tabs, so this is a single destination with no sub-menu. Listed
         // explicitly (not a bare "/intelligence" prefix) so this doesn't
         // also light up for "/intelligence/intent", which is its own nav
-        // item (Intent Engine) under a sibling subtree.
+        // item (Interest Engine) under a sibling subtree.
         title: "Analytics",
         url: "/intelligence",
         icon: TrendingUp,

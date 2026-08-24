@@ -7,7 +7,7 @@ export type TierFeatureKey =
   | "roi"
   | "aiAssistant"
   | "weeklyBriefings"
-  | "intentEngine"
+  | "interestEngine"
   | "bulkQr"
   | "advancedExports"
   | "apiAccess"
@@ -27,7 +27,7 @@ export const FEATURE_MIN_TIER: Record<TierFeatureKey, TagTier> = {
   bulkQr: "starter",
   advancedExports: "starter",
   aiAssistant: "growth",
-  intentEngine: "growth",
+  interestEngine: "growth",
   multiStore: "pro",
   roi: "pro",
   weeklyBriefings: "pro",
@@ -71,9 +71,9 @@ export const FEATURE_META: Record<
     description:
       "Every Monday, a written executive summary of wins, watch-outs and next-week actions.",
   },
-  intentEngine: {
+  interestEngine: {
     title: "Intent score engine",
-    description: "Per-product 0–100 intent scores with retailer-tunable weights.",
+    description: "Per-product 0–100 interest scores with retailer-tunable weights.",
   },
   aiAssistant: {
     title: "AI campaign assistant",

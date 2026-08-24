@@ -196,7 +196,7 @@ export function ProductIntentPanel({ productId }: { productId: string }) {
 
   return (
     <IntentScoreCard
-      title="Intent Score"
+      title="Interest Score"
       description="Aggregated demand signal · updates in real time."
       score={Number(p.intent_score)}
       confidence={Number(p.intent_score_confidence)}
@@ -226,7 +226,7 @@ export function OverallIntentCard() {
 
   return (
     <IntentScoreCard
-      title="Intent Score"
+      title="Interest Score"
       description={`Overall demand signal across ${data.productCount} product${data.productCount === 1 ? "" : "s"}.`}
       score={Number(o.intent_score)}
       confidence={Number(o.intent_score_confidence)}
@@ -246,7 +246,7 @@ function generateProductInsight(p: any, sig: any, fc: any): string {
   const lowStock = stock <= Number(p.low_stock_threshold ?? 0);
   if (score >= 70 && conv < 0.02) return "High engagement but low conversion — review pricing or product page.";
   if (sig.repeat_scans > 5) return "Strong repeat scans suggest comparison shopping behaviour.";
-  if (score >= 70 && lowStock) return "High intent with low stock — urgent replenishment risk.";
+  if (score >= 70 && lowStock) return "High interest with low stock — urgent replenishment risk.";
   if (fc?.predicted_trend === "increase" && lowStock) return "Forecast shows rising demand — consider stock increase.";
   if (fc?.predicted_trend === "decrease") return "Declining intent — possible product fatigue. Test a refresh or promotion.";
   if (score < 30) return "Very low intent. Slow mover — consider a discount, bundle or rotation.";
