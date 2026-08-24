@@ -42,9 +42,8 @@ const RANK: Record<TagTier, number> = { go: 0, starter: 1, growth: 2, pro: 3, en
 // tier — FEATURE_MIN_TIER stays intact below so real gating is one line to
 // restore (swap the body back to the commented-out check) once tier-based
 // permissions are ready to enforce.
-export function hasFeature(_tier: TagTier | undefined, _feature: TierFeatureKey): boolean {
-  return true;
-  // return !!_tier && RANK[_tier] >= RANK[FEATURE_MIN_TIER[_feature]];
+export function hasFeature(tier: TagTier | undefined, feature: TierFeatureKey): boolean {
+  return !!tier && RANK[tier] >= RANK[FEATURE_MIN_TIER[feature]];
 }
 
 export function meetsTier(tier: TagTier | undefined, min: TagTier): boolean {
