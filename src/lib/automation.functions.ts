@@ -94,13 +94,13 @@ export const saveAutomationSetting = createServerFn({ method: "POST" })
   });
 
 /**
- * Verifies that the live runtime can authenticate against Infobip, without
+ * Verifies that the live runtime can authenticate against WhatsApp, without
  * sending anyone a message. This isolates a credential/authentication problem
  * from a template or recipient problem when a reply reports "Invalid login
- * details": it calls a read-only Infobip endpoint with the exact same binding
+ * details": it calls a read-only WhatsApp endpoint with the exact same binding
  * the send path uses, from the same worker runtime.
  */
-export const checkInfobipConnection = createServerFn({ method: "POST" })
+export const checkWhatsAppConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
@@ -117,7 +117,7 @@ export const checkInfobipConnection = createServerFn({ method: "POST" })
     return checkInfobipAuth();
   });
 
-export const testInfobipDelivery = createServerFn({ method: "POST" })
+export const testWhatsAppDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z

@@ -11,11 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AUTOMATIONS, ALL_WHATSAPP_TEMPLATES, type AutomationSetting } from "@/lib/automation";
 import {
-  checkInfobipConnection,
+  checkWhatsAppConnection,
   listAutomationSettings,
   listWhatsAppTemplates,
   saveAutomationSetting,
-  testInfobipDelivery,
+  testWhatsAppDelivery,
 } from "@/lib/automation.functions";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -69,12 +69,12 @@ export function AutomationSettings() {
 
   const testDelivery = useMutation({
     mutationFn: () =>
-      testInfobipDelivery({
+      testWhatsAppDelivery({
         data: { recipient: testRecipient, templateName: testTemplate.trim() },
       }),
     onSuccess: (result) => {
-      if (result.ok) toast.success("Infobip accepted the test message");
-      else toast.error(result.error ?? "Infobip rejected the test message");
+      if (result.ok) toast.success("WhatsApp accepted the test message");
+      else toast.error(result.error ?? "WhatsApp rejected the test message");
     },
     onError: (e: Error) => toast.error(e.message || "Could not run delivery test"),
   });
@@ -82,10 +82,10 @@ export function AutomationSettings() {
   // Authentication-only probe: no message is sent, so a failure here points at
   // the credential binding rather than the template or the recipient.
   const connectionCheck = useMutation({
-    mutationFn: () => checkInfobipConnection(),
+    mutationFn: () => checkWhatsAppConnection(),
     onSuccess: (result) => {
-      if (result.ok) toast.success("Infobip authenticated this runtime");
-      else toast.error(result.error ?? "Infobip rejected this runtime's credentials");
+      if (result.ok) toast.success("WhatsApp authenticated this runtime");
+      else toast.error(result.error ?? "WhatsApp rejected this runtime's credentials");
     },
     onError: (e: Error) => toast.error(e.message || "Could not check the connection"),
   });
@@ -133,12 +133,12 @@ export function AutomationSettings() {
         </p>
       </div>
 
-      {isSuperAdmin && data?.provider === "infobip" ? (
+      {isSuperAdmin && data?.provider === "whatsapp" ? (
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <CardTitle className="text-base">Live Infobip delivery test</CardTitle>
+                <CardTitle className="text-base">Live WhatsApp Template Test</CardTitle>
                 <CardDescription>
                   Sends the chosen template through the same runtime adapter used by Follow Me and
                   barcode scans, so you can prove a template delivers before making it the default.
@@ -206,11 +206,11 @@ export function AutomationSettings() {
               </p>
             ) : !templates.data?.ok ? (
               <p className="text-xs text-destructive">
-                Couldn't load live templates from Infobip — showing the built-in list instead.
+                Couldn't load live WhatsApp templates — showing the built-in list instead.
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Showing only templates Infobip currently reports as approved.
+                Showing only WhatsApp templates currently approved by WhatsApp.
               </p>
             )}
 
@@ -244,7 +244,7 @@ export function AutomationSettings() {
                 </span>
               ) : (
                 <span className="text-xs text-muted-foreground">
-                  Authenticates against Infobip without sending a message.
+                  Authenticates against WhatsApp without sending a message.
                 </span>
               )}
             </div>
@@ -259,7 +259,7 @@ export function AutomationSettings() {
                   ) : (
                     <AlertTriangle className="h-4 w-4 text-destructive" />
                   )}
-                  {testDelivery.data.ok ? "Accepted by Infobip" : "Rejected by Infobip"}
+                  {testDelivery.data.ok ? "Accepted by WhatsApp" : "Rejected by WhatsApp"}
                 </div>
                 <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
                   <div><dt className="text-muted-foreground">HTTP status</dt><dd>{testDelivery.data.status}</dd></div>
@@ -329,7 +329,7 @@ export function AutomationSettings() {
                   className="font-mono text-xs"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Must exactly match a template already approved in your Infobip WhatsApp
+                  Must exactly match a template already approved in your approved WhatsApp
                   Business account. A mismatch falls back to plain text — which only reaches
                   the customer if they messaged you in the last 24 hours.
                 </p>
