@@ -130,7 +130,7 @@ export function AppSidebar() {
                         className={activeClass}
                       >
                         <Link
-                          to={locked ? "/upgrade" : item.url}
+                          to={locked ? "/plan" : item.url}
                           className="flex items-center gap-2.5"
                         >
                           <item.icon className="h-4 w-4 shrink-0" />

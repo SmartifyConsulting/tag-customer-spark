@@ -125,7 +125,7 @@ export function OpportunityFeedCard() {
             </CardDescription>
           </div>
           <Button asChild size="sm">
-            <Link to="/upgrade" search={{ feature: "opportunityFeed" }}>
+            <Link to="/plan" search={{ feature: "opportunityFeed" }}>
               Upgrade
             </Link>
           </Button>

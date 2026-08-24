@@ -18,6 +18,6 @@ export async function requireFeature(
     staleTime: 60_000,
   });
   if (!hasFeature(tier, feature)) {
-    throw redirect({ to: "/upgrade", search: { feature } });
+    throw redirect({ to: "/plan", search: { feature } });
   }
 }

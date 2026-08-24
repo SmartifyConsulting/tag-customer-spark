@@ -276,7 +276,7 @@ function SetupWizard() {
         if (capSkipped > 0) {
           toast.warning(
             `${capSkipped} product${capSkipped === 1 ? "" : "s"} skipped — you've reached your plan's product limit.`,
-            { action: { label: "Upgrade", onClick: () => navigate({ to: "/upgrade" }) } },
+            { action: { label: "Upgrade", onClick: () => navigate({ to: "/plan" }) } },
           );
         }
         await sleep(500);

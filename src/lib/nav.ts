@@ -96,13 +96,13 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     label: "Retail Intelligence",
     staffOnly: true,
     items: [
-      { title: "Interest Engine", url: "/intelligence/intent", icon: Radar, match: ["/intelligence/intent", "/intent"] },
+      { title: "Interest Score", url: "/interest-score", icon: Radar, match: ["/interest-score", "/intelligence/intent", "/intent"] },
       {
         // Overview screen — Insights / Analytics / ROI already live there as
         // tabs, so this is a single destination with no sub-menu. Listed
         // explicitly (not a bare "/intelligence" prefix) so this doesn't
-        // also light up for "/intelligence/intent", which is its own nav
-        // item (Interest Engine) under a sibling subtree.
+        // also light up for "/interest-score", which is its own nav
+        // item (Interest Score) under a sibling subtree.
         title: "Analytics",
         url: "/intelligence",
         icon: TrendingUp,
@@ -142,12 +142,14 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         adminOnly: true,
       },
       {
-        title: "Pricing",
-        url: "/upgrade",
+        title: "Plan",
+        url: "/plan",
         icon: DollarSign,
         // Every retailer's own subscribe/compare-plans page — not the
-        // super_admin console at /admin/pricing.
-        match: ["/upgrade"],
+        // super_admin console at /admin/pricing, and not the public
+        // marketing /pricing page (browsing prices before signup vs.
+        // managing your own subscription).
+        match: ["/plan", "/upgrade"],
       },
     ],
   },

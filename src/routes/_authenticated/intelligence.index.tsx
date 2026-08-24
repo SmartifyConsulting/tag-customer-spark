@@ -12,7 +12,7 @@ import { CalendarRange, FileText, RefreshCw } from "lucide-react";
 import { requireFeature } from "@/lib/tier-guard";
 
 export const Route = createFileRoute("/_authenticated/intelligence/")({
-  head: () => ({ meta: [{ title: "AI Intelligence — Tag" }] }),
+  head: () => ({ meta: [{ title: "Analytics — Tag" }] }),
   beforeLoad: ({ context }) => requireFeature(context.queryClient, "intelligence"),
   component: IntelligencePage,
 });

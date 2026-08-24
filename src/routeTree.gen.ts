@@ -40,6 +40,8 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRoiRouteImport } from './routes/_authenticated/roi'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
+import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
+import { Route as AuthenticatedInterestScoreRouteImport } from './routes/_authenticated/interest-score'
 import { Route as AuthenticatedIntentRouteImport } from './routes/_authenticated/intent'
 import { Route as AuthenticatedIntelligenceRouteImport } from './routes/_authenticated/intelligence'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
@@ -239,6 +241,17 @@ const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
   path: '/products',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPlanRoute = AuthenticatedPlanRouteImport.update({
+  id: '/plan',
+  path: '/plan',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedInterestScoreRoute =
+  AuthenticatedInterestScoreRouteImport.update({
+    id: '/interest-score',
+    path: '/interest-score',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedIntentRoute = AuthenticatedIntentRouteImport.update({
   id: '/intent',
   path: '/intent',
@@ -518,6 +531,8 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof AuthenticatedInboxRoute
   '/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/intent': typeof AuthenticatedIntentRoute
+  '/interest-score': typeof AuthenticatedInterestScoreRoute
+  '/plan': typeof AuthenticatedPlanRoute
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
   '/roi': typeof AuthenticatedRoiRoute
@@ -593,6 +608,8 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/intent': typeof AuthenticatedIntentRoute
+  '/interest-score': typeof AuthenticatedInterestScoreRoute
+  '/plan': typeof AuthenticatedPlanRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/roi': typeof AuthenticatedRoiRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -669,6 +686,8 @@ export interface FileRoutesById {
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/_authenticated/intent': typeof AuthenticatedIntentRoute
+  '/_authenticated/interest-score': typeof AuthenticatedInterestScoreRoute
+  '/_authenticated/plan': typeof AuthenticatedPlanRoute
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/roi': typeof AuthenticatedRoiRoute
@@ -747,6 +766,8 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/intelligence'
     | '/intent'
+    | '/interest-score'
+    | '/plan'
     | '/products'
     | '/profile'
     | '/roi'
@@ -822,6 +843,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/inbox'
     | '/intent'
+    | '/interest-score'
+    | '/plan'
     | '/profile'
     | '/roi'
     | '/settings'
@@ -897,6 +920,8 @@ export interface FileRouteTypes {
     | '/_authenticated/inbox'
     | '/_authenticated/intelligence'
     | '/_authenticated/intent'
+    | '/_authenticated/interest-score'
+    | '/_authenticated/plan'
     | '/_authenticated/products'
     | '/_authenticated/profile'
     | '/_authenticated/roi'
@@ -1202,6 +1227,20 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/products'
       preLoaderRoute: typeof AuthenticatedProductsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/plan': {
+      id: '/_authenticated/plan'
+      path: '/plan'
+      fullPath: '/plan'
+      preLoaderRoute: typeof AuthenticatedPlanRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/interest-score': {
+      id: '/_authenticated/interest-score'
+      path: '/interest-score'
+      fullPath: '/interest-score'
+      preLoaderRoute: typeof AuthenticatedInterestScoreRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/intent': {
@@ -1617,6 +1656,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedIntelligenceRoute: typeof AuthenticatedIntelligenceRouteWithChildren
   AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
+  AuthenticatedInterestScoreRoute: typeof AuthenticatedInterestScoreRoute
+  AuthenticatedPlanRoute: typeof AuthenticatedPlanRoute
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRoiRoute: typeof AuthenticatedRoiRoute
@@ -1647,6 +1688,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedIntelligenceRoute: AuthenticatedIntelligenceRouteWithChildren,
   AuthenticatedIntentRoute: AuthenticatedIntentRoute,
+  AuthenticatedInterestScoreRoute: AuthenticatedInterestScoreRoute,
+  AuthenticatedPlanRoute: AuthenticatedPlanRoute,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRoiRoute: AuthenticatedRoiRoute,
