@@ -29,6 +29,33 @@ const ALL_ALERTS: AlertType[] = ["sale", "back_in_stock", "new_arrival", "low_st
 
 // Annual ≈ 10× monthly (17% off). USD ≈ ZAR ÷ 18 rounded.
 export const PLANS: Record<PlanId, Plan> = {
+  trial: {
+    id: "trial",
+    name: "Tag Trial",
+    tagline: "Free trial — test Tag risk-free",
+    ideal_candidate: "First-time users, students, weekend sellers evaluating Tag",
+    monthly_zar_cents: 0,
+    annual_zar_cents: 0,
+    monthly_usd_cents: 0,
+    annual_usd_cents: 0,
+    included_notifications: 20,
+    overage_cents_per_msg: 0,
+    max_products: 5,
+    max_stores: 1,
+    staff_seats: 1,
+    alert_types: ["sale", "back_in_stock", "new_arrival"],
+    inbox: "basic",
+    features: [
+      "20 notifications / month",
+      "Sale, back-in-stock, new arrival alerts",
+      "Basic inbox — read & reply only",
+      "1 store · up to 5 products",
+      "Store-level opt-in · QR tag generation",
+      "Scan counts & active subscriber total",
+      "1 user login",
+    ],
+    locked: ["Low-stock, promotion & custom alerts", "Coupon redemption", "Scheduled campaigns", "AI message assist", "Intent scoring", "ROI engine", "Advanced analytics", "Multi-store", "Staff roles"],
+  },
   go: {
     id: "go",
     name: "Tag Go",
@@ -194,10 +221,10 @@ export function periodEnd(cycle: Cycle, from = new Date()): Date {
 }
 
 export function formatZar(cents: number): string {
-  if (cents === 0) return "Custom";
+  if (cents === 0) return "Free";
   return `R${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 export function formatUsd(cents: number): string {
-  if (cents === 0) return "Custom";
+  if (cents === 0) return "Free";
   return `$${(cents / 100).toFixed(0)}`;
 }
