@@ -179,7 +179,7 @@ export function ProductIntentPanel({ productId }: { productId: string }) {
   const recompute = useMutation({
     mutationFn: () => recomputeProductIntentFn({ data: { product_id: productId } }),
     onSuccess: () => {
-      toast.success("Intent score recomputed");
+      toast.success("Interest score recomputed");
       qc.invalidateQueries({ queryKey: ["intent", "product", productId] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
