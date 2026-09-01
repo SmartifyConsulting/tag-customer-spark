@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, Loader2, PlugZap, RefreshCw, Send, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,11 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AUTOMATIONS, ALL_WHATSAPP_TEMPLATES, type AutomationSetting } from "@/lib/automation";
 import {
-  checkInfobipConnection,
+  checkWhatsAppConnection,
   listAutomationSettings,
   listWhatsAppTemplates,
   saveAutomationSetting,
-  testInfobipDelivery,
+  testWhatsAppDelivery,
 } from "@/lib/automation.functions";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -69,12 +70,12 @@ export function AutomationSettings() {
 
   const testDelivery = useMutation({
     mutationFn: () =>
-      testInfobipDelivery({
+      testWhatsAppDelivery({
         data: { recipient: testRecipient, templateName: testTemplate.trim() },
       }),
     onSuccess: (result) => {
-      if (result.ok) toast.success("Infobip accepted the test message");
-      else toast.error(result.error ?? "Infobip rejected the test message");
+      if (result.ok) toast.success("WhatsApp Template accepted the test message");
+      else toast.error(result.error ?? "WhatsApp Template rejected the test message");
     },
     onError: (e: Error) => toast.error(e.message || "Could not run delivery test"),
   });
@@ -82,10 +83,10 @@ export function AutomationSettings() {
   // Authentication-only probe: no message is sent, so a failure here points at
   // the credential binding rather than the template or the recipient.
   const connectionCheck = useMutation({
-    mutationFn: () => checkInfobipConnection(),
+    mutationFn: () => checkWhatsAppConnection(),
     onSuccess: (result) => {
-      if (result.ok) toast.success("Infobip authenticated this runtime");
-      else toast.error(result.error ?? "Infobip rejected this runtime's credentials");
+      if (result.ok) toast.success("WhatsApp Template service authenticated this runtime");
+      else toast.error(result.error ?? "WhatsApp Template service rejected this runtime's credentials");
     },
     onError: (e: Error) => toast.error(e.message || "Could not check the connection"),
   });
@@ -133,12 +134,12 @@ export function AutomationSettings() {
         </p>
       </div>
 
-      {isSuperAdmin && data?.provider === "infobip" ? (
+      {isSuperAdmin && Boolean(data?.provider) ? (
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <CardTitle className="text-base">Live Infobip delivery test</CardTitle>
+                <CardTitle className="text-base">Live WhatsApp Template Test</CardTitle>
                 <CardDescription>
                   Sends the chosen template through the same runtime adapter used by Follow Me and
                   barcode scans, so you can prove a template delivers before making it the default.
@@ -206,11 +207,11 @@ export function AutomationSettings() {
               </p>
             ) : !templates.data?.ok ? (
               <p className="text-xs text-destructive">
-                Couldn't load live templates from Infobip — showing the built-in list instead.
+                Couldn't load WhatsApp Templates — showing the built-in list instead.
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Showing only templates Infobip currently reports as approved.
+                Showing only WhatsApp Templates currently approved by WhatsApp.
               </p>
             )}
 
@@ -244,7 +245,7 @@ export function AutomationSettings() {
                 </span>
               ) : (
                 <span className="text-xs text-muted-foreground">
-                  Authenticates against Infobip without sending a message.
+                  Authenticates against WhatsApp without sending a message.
                 </span>
               )}
             </div>
@@ -259,7 +260,7 @@ export function AutomationSettings() {
                   ) : (
                     <AlertTriangle className="h-4 w-4 text-destructive" />
                   )}
-                  {testDelivery.data.ok ? "Accepted by Infobip" : "Rejected by Infobip"}
+                  {testDelivery.data.ok ? "Accepted by WhatsApp" : "Rejected by WhatsApp"}
                 </div>
                 <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
                   <div><dt className="text-muted-foreground">HTTP status</dt><dd>{testDelivery.data.status}</dd></div>
@@ -277,75 +278,111 @@ export function AutomationSettings() {
         </Card>
       ) : null}
 
-      {AUTOMATIONS.map((def) => {
-        const current = draft[def.key];
-        if (!current) return null;
-        const update = (patch: Partial<AutomationSetting>) =>
-          setDraft((d) => ({ ...d, [def.key]: { ...d[def.key], ...patch } }));
+      <Card className="py-0">
+        <Accordion type="multiple" className="w-full">
+          {AUTOMATIONS.map((def) => {
+            const current = draft[def.key];
+            if (!current) return null;
+            const update = (patch: Partial<AutomationSetting>) =>
+              setDraft((d) => ({ ...d, [def.key]: { ...d[def.key], ...patch } }));
 
-        return (
-          <Card key={def.key}>
-            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  {def.label}
-                  {!current.enabled && <Badge variant="secondary">Off</Badge>}
-                </CardTitle>
-                <CardDescription>{def.description}</CardDescription>
-              </div>
-              <Switch
-                checked={current.enabled}
-                onCheckedChange={(v) => update({ enabled: v })}
-                aria-label={`Enable ${def.label}`}
-              />
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-              {def.threshold !== null ? (
-                <div className="space-y-1.5">
-                  <Label>{def.thresholdLabel ?? "Threshold"}</Label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    value={current.threshold ?? ""}
-                    onChange={(e) => {
-                      const raw = e.target.value.replace(/[^0-9.]/g, "");
-                      update({ threshold: raw === "" ? null : Number(raw) });
-                    }}
-                    placeholder={String(def.threshold)}
+            // A free-typed template name meant a single typo silently downgraded
+            // every notification for this automation to plain text — swapped
+            // for a dropdown so only a name Tag already knows about can be
+            // selected. Sourced from the same list the live delivery test above
+            // uses (Infobip-verified when a super admin has it loaded, the
+            // built-in catalogue otherwise) with the currently-saved value
+            // always included, so switching to a dropdown can never silently
+            // drop a value someone already configured.
+            const automationTemplateOptions = templateOptions.includes(current.template_name)
+              ? templateOptions
+              : [current.template_name, ...templateOptions];
+
+            return (
+              <AccordionItem key={def.key} value={def.key} className="px-4 last:border-b-0">
+                {/* The enable Switch sits outside AccordionTrigger (a sibling,
+                    not a child) — nesting an interactive control inside the
+                    trigger's own <button> would both be invalid HTML and
+                    make every enable/disable click also toggle the row
+                    open/closed. stopPropagation is belt-and-braces since the
+                    two are siblings, not nested. */}
+                <div className="flex items-center gap-3">
+                  <AccordionTrigger className="py-3 hover:no-underline">
+                    <div className="flex flex-1 items-center gap-2 text-left text-sm font-medium">
+                      {def.label}
+                      {!current.enabled && <Badge variant="secondary">Off</Badge>}
+                    </div>
+                  </AccordionTrigger>
+                  <Switch
+                    checked={current.enabled}
+                    onCheckedChange={(v) => update({ enabled: v })}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Enable ${def.label}`}
                   />
-                  {def.thresholdSuffix && (
-                    <p className="text-xs text-muted-foreground">{def.thresholdSuffix}</p>
-                  )}
                 </div>
-              ) : (
-                <div className="hidden sm:block" />
-              )}
+                <AccordionContent>
+                  <p className="mb-3 text-xs text-muted-foreground">{def.description}</p>
+                  <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                    {def.threshold !== null ? (
+                      <div className="space-y-1.5">
+                        <Label>{def.thresholdLabel ?? "Threshold"}</Label>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={current.threshold ?? ""}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/[^0-9.]/g, "");
+                            update({ threshold: raw === "" ? null : Number(raw) });
+                          }}
+                          placeholder={String(def.threshold)}
+                        />
+                        {def.thresholdSuffix && (
+                          <p className="text-xs text-muted-foreground">{def.thresholdSuffix}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="hidden sm:block" />
+                    )}
 
-              <div className="space-y-1.5">
-                <Label>WhatsApp template name</Label>
-                <Input
-                  value={current.template_name}
-                  onChange={(e) => update({ template_name: e.target.value })}
-                  className="font-mono text-xs"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Must exactly match a template already approved in your Infobip WhatsApp
-                  Business account. A mismatch falls back to plain text — which only reaches
-                  the customer if they messaged you in the last 24 hours.
-                </p>
-              </div>
+                    <div className="space-y-1.5">
+                      <Label>WhatsApp template</Label>
+                      <Select
+                        value={current.template_name}
+                        onValueChange={(v) => update({ template_name: v })}
+                      >
+                        <SelectTrigger aria-label="WhatsApp template" className="font-mono text-xs">
+                          <SelectValue placeholder="Choose a template" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {automationTemplateOptions.map((name) => (
+                            <SelectItem key={name} value={name} className="font-mono text-xs">
+                              {name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Only templates already approved in your WhatsApp Business account are
+                        listed. If a template later loses approval, sends fall back to plain text
+                        — which only reaches the customer if they messaged you in the last 24
+                        hours.
+                      </p>
+                    </div>
 
-              <Button
-                onClick={() => save.mutate(current)}
-                disabled={save.isPending}
-                className="sm:w-auto"
-              >
-                {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
-              </Button>
-            </CardContent>
-          </Card>
-        );
-      })}
+                    <Button
+                      onClick={() => save.mutate(current)}
+                      disabled={save.isPending}
+                      className="sm:w-auto"
+                    >
+                      {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
+      </Card>
     </div>
   );
 }

@@ -91,7 +91,7 @@ function BriefingPage() {
           />
         </div>
         <div className="col-span-12 sm:col-span-6 xl:col-span-4">
-          <KpiCard index={2} label="Tagged today" value={data.taggedTodayCount} icon={Tag} />
+          <KpiCard index={2} label="Products tagged today" value={data.taggedTodayCount} icon={Tag} />
         </div>
       </div>
 
@@ -103,7 +103,7 @@ function BriefingPage() {
             <ScanHeatmapLegend />
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
-            Shopper scans by day of week × hour of day.
+            Shopper scans by day and hour.
           </p>
           {analytics ? (
             <ScanHeatmap data={analytics.heatmap} />
@@ -113,27 +113,27 @@ function BriefingPage() {
         </Card>
       </div>
 
-      {/* Row 3 — High intent (6) + Rising intent (6) */}
+      {/* Row 3 — High interest (6) + Rising interest (6) */}
       <div className="grid grid-cols-12 gap-4">
         <IntentColumn
           className="col-span-12 lg:col-span-6"
-          title="High intent products"
+          title="High interest products"
           icon={Flame}
           items={intent?.high}
           loading={intentQuery.isLoading}
-          emptyLabel="No high-intent products yet."
+          emptyLabel="No high-interest products yet."
         />
         <IntentColumn
           className="col-span-12 lg:col-span-6"
-          title="Rising intent"
+          title="Rising interest"
           icon={TrendingUp}
           items={intent?.rising}
           loading={intentQuery.isLoading}
-          emptyLabel="No rising-trend products yet."
+          emptyLabel="No rising-interest products yet."
         />
       </div>
 
-      {/* Row 3 — Unread WhatsApps (6) + Tagged products (6) */}
+      {/* Row 3 — Unread WhatsApps (6) + Product Tags (6) */}
       <div className="grid grid-cols-12 gap-4">
         <Card className="col-span-12 lg:col-span-6 p-4">
           <div className="mb-3 flex items-center justify-between">
@@ -181,7 +181,7 @@ function BriefingPage() {
         <Card className="col-span-12 lg:col-span-6 p-4">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-base font-semibold">
-              <PackageOpen className="h-4 w-4" /> Tagged products
+              <PackageOpen className="h-4 w-4" /> Product Tags
             </h2>
             <span className="text-xs text-muted-foreground">
               {data.totalTagged} tag{data.totalTagged === 1 ? "" : "s"} this month

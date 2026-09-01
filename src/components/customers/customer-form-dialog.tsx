@@ -131,9 +131,18 @@ export function CustomerFormDialog({
           <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
             <div>
               <p className="text-sm font-medium">Marketing consent</p>
-              <p className="text-xs text-muted-foreground">Allow promotional messages</p>
+              <p className="text-xs text-muted-foreground">
+                {marketing
+                  ? "Allow promotional messages — granted by the customer"
+                  : "Only the customer can grant this, via WhatsApp opt-in or QR scan"}
+              </p>
             </div>
-            <Switch checked={marketing} onCheckedChange={setMarketing} />
+            <Switch
+              checked={marketing}
+              onCheckedChange={setMarketing}
+              disabled={!marketing}
+              title={marketing ? "Revoke marketing consent" : "Only the customer can grant marketing consent"}
+            />
           </div>
         </div>
         <DialogFooter>

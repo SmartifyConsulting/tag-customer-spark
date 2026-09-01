@@ -94,13 +94,13 @@ export const saveAutomationSetting = createServerFn({ method: "POST" })
   });
 
 /**
- * Verifies that the live runtime can authenticate against Infobip, without
+ * Verifies that the live runtime can authenticate against WhatsApp, without
  * sending anyone a message. This isolates a credential/authentication problem
  * from a template or recipient problem when a reply reports "Invalid login
- * details": it calls a read-only Infobip endpoint with the exact same binding
+ * details": it calls a read-only WhatsApp endpoint with the exact same binding
  * the send path uses, from the same worker runtime.
  */
-export const checkInfobipConnection = createServerFn({ method: "POST" })
+export const checkWhatsAppConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
@@ -117,7 +117,7 @@ export const checkInfobipConnection = createServerFn({ method: "POST" })
     return checkInfobipAuth();
   });
 
-export const testInfobipDelivery = createServerFn({ method: "POST" })
+export const testWhatsAppDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
@@ -218,5 +218,63 @@ export const listWhatsAppTemplates = createServerFn({ method: "POST" })
       templates: listed.templates
         .map((t) => ({ name: t.name, status: t.status.toUpperCase(), language: t.language }))
         .sort((a, b) => rank(a.status) - rank(b.status) || a.name.localeCompare(b.name)),
+    };
+  });
+
+/**
+ * Delivery log — every WhatsApp send attempt for this retailer, most
+ * recent first, with the reason for any failure. Backs the Logs tab on
+ * Automations; the Templates tab only ever showed the single latest
+ * failure (lastFailure above), not the full history.
+ */
+export const listNotificationLogs = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        status: z
+          .enum(["all", "queued", "sent", "delivered", "read", "clicked", "redeemed", "failed"])
+          .default("all"),
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(10).max(100).default(50),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { resolveAutomationRetailerId } = await import("@/lib/automation.server");
+    const retailerId = await resolveAutomationRetailerId(supabase, userId);
+    if (!retailerId) return { rows: [], total: 0 };
+
+    let q = supabase
+      .from("notification_history")
+      .select(
+        "id, created_at, sent_at, status, error, payload, provider_message_sid, customer:customers(full_name, whatsapp_e164)",
+        { count: "exact" },
+      )
+      .eq("retailer_id", retailerId)
+      .order("created_at", { ascending: false });
+
+    if (data.status !== "all") q = q.eq("status", data.status);
+
+    const from = (data.page - 1) * data.pageSize;
+    const to = from + data.pageSize - 1;
+    const { data: rows, count, error } = await q.range(from, to);
+    if (error) throw new Error(error.message);
+
+    return {
+      rows: ((rows ?? []) as any[]).map((r) => ({
+        id: r.id as string,
+        created_at: r.created_at as string,
+        sent_at: r.sent_at as string | null,
+        status: r.status as string,
+        error: r.error as string | null,
+        template: (r.payload as any)?.template ?? null,
+        rule: (r.payload as any)?.rule ?? null,
+        message_sid: r.provider_message_sid as string | null,
+        customer_name: r.customer?.full_name ?? null,
+        customer_phone: r.customer?.whatsapp_e164 ?? null,
+      })),
+      total: count ?? 0,
     };
   });

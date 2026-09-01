@@ -70,7 +70,7 @@ export function summaryText(retailerName: string, s: DailySummary): string {
   return (
     `📊 ${retailerName} — today's Tag summary\n` +
     `• Products scanned: ${s.scannedToday}\n` +
-    `• Highest intent: ${s.topIntentProduct}\n` +
+    `• Highest interest: ${s.topIntentProduct}\n` +
     `• Price changes: ${s.priceChanges}\n` +
     `• Running low: ${s.lowStock}\n` +
     `• Back in stock: ${s.backInStock}\n` +

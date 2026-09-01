@@ -154,7 +154,7 @@ export function ProductQrPanel({
 
   const generatedDate = new Date(qr.generated_at).toLocaleString();
   const dppHref = dppId ? `/p/${dppId}` : qr.resolver_url;
-  const storeCode = qr.store_id ? `TAG-${qr.store_id.slice(0, 8).toUpperCase()}` : null;
+  const storeCode = qr.store_id ? `STORE-${qr.store_id.slice(0, 8).toUpperCase()}` : null;
 
   return (
     <section className="grid gap-3 rounded-xl border border-border bg-card p-4">

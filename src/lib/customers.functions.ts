@@ -63,7 +63,16 @@ export const listCustomers = createServerFn({ method: "POST" })
 
     const [scans, recoveries, interests] = await Promise.all([
       supabase.from("qr_scans").select("customer_id, scanned_at").in("customer_id", ids),
-      supabase.from("sales_recoveries").select("customer_id, amount_cents").in("customer_id", ids),
+      // Only staff-confirmed sales count as revenue — a customer tapping
+      // "Collection"/"Delivery" on a WhatsApp alert creates a 'pending' row
+      // immediately (see webhooks/infobip.ts), before anyone has verified
+      // the sale happened. Without this filter, unconfirmed and even
+      // explicitly staff-rejected commitments inflated this number.
+      supabase
+        .from("sales_recoveries")
+        .select("customer_id, amount_cents")
+        .eq("status", "attributed")
+        .in("customer_id", ids),
       supabase.from("customer_interests").select("customer_id").in("customer_id", ids),
     ]);
 
@@ -170,16 +179,22 @@ export const createCustomer = createServerFn({ method: "POST" })
     const retailerId = await resolveRetailerId(supabase, userId);
     if (!retailerId) throw new Error("No retailer assigned");
     const now = new Date().toISOString();
-    // Only mark customers as "subscribed" when they opted in to marketing.
-    // Everyone else is "registered" (signed up but not opted in).
-    const resolvedStatus = data.status ?? (data.marketing_consent ? "subscribed" : "registered");
+    // POPIA: marketing consent can only be granted by the shopper's own
+    // action — a WhatsApp opt-in reply or ticking consent themselves during
+    // a QR scan (see webhooks/infobip.ts and api/public/scan.interest.ts).
+    // Staff adding a customer here has no such record to point to, so
+    // marketing_consent_at is never set from this path regardless of what
+    // was submitted — silently ignoring the flag rather than rejecting the
+    // whole customer creation over it. Everyone starts "registered"; they
+    // only become "subscribed" once the shopper opts in themselves.
+    const resolvedStatus = data.status ?? "registered";
     const row: any = {
       retailer_id: retailerId,
       full_name: data.full_name || null,
       whatsapp_e164: data.whatsapp_e164,
       status: resolvedStatus,
       opted_in_at: now,
-      marketing_consent_at: data.marketing_consent ? now : null,
+      marketing_consent_at: null,
       notify_consent_at: data.notify_consent ? now : null,
     };
     const { data: ins, error } = await supabase
@@ -203,10 +218,22 @@ export const updateCustomer = createServerFn({ method: "POST" })
     if (p.whatsapp_e164 !== undefined) patch.whatsapp_e164 = p.whatsapp_e164;
     if (p.status !== undefined) patch.status = p.status;
     if (p.marketing_consent !== undefined) {
-      patch.marketing_consent_at = p.marketing_consent ? new Date().toISOString() : null;
-      // If status wasn't explicitly set, flip it based on marketing opt-in.
+      // POPIA: staff can revoke marketing consent (honouring an opt-out is
+      // always safe) but can never grant it — that manufactures consent
+      // the shopper never gave. The only legitimate grant is the shopper's
+      // own WhatsApp reply or QR-scan opt-in (webhooks/infobip.ts,
+      // api/public/scan.interest.ts), which write marketing_consent_at
+      // directly and don't go through this function.
+      if (p.marketing_consent === true) {
+        throw new Error(
+          "Marketing consent can only be granted by the customer themselves, via WhatsApp opt-in or QR scan consent. Staff can revoke it here, but not grant it.",
+        );
+      }
+      patch.marketing_consent_at = null;
+      // If status wasn't explicitly set, revoking marketing consent drops
+      // them back to "registered".
       if (p.status === undefined) {
-        patch.status = p.marketing_consent ? "subscribed" : "registered";
+        patch.status = "registered";
       }
     }
     if (p.notify_consent !== undefined)

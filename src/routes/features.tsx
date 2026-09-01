@@ -8,7 +8,7 @@ export const Route = createFileRoute("/features")({
       { title: "Features — Tag" },
       {
         name: "description",
-        content: "Everything you need to understand customer intent and recover lost sales.",
+        content: "Everything you need to understand customer interest and help recover lost sales.",
       },
     ],
   }),
@@ -24,7 +24,7 @@ const FEATURES = [
   {
     emoji: "💡",
     title: "Interest Gap Detection",
-    body: "Discover which products shoppers genuinely want — even when they leave the store without purchasing. Tag captures signals of buying intent that traditional retail systems never see.",
+    body: "Discover which products shoppers genuinely want — even when they leave the store without purchasing. Tag captures signals of buying interest that traditional retail systems never see.",
   },
   {
     emoji: "👥",
@@ -34,7 +34,7 @@ const FEATURES = [
   {
     emoji: "🤖",
     title: "AI Retail Intelligence",
-    body: "Go beyond dashboards. Tag analyses customer behaviour and product performance to uncover hidden demand, identify sales opportunities, recommend actions, and predict where revenue can be recovered.",
+    body: "Go beyond dashboards. Tag analyses customer behaviour and product performance to uncover hidden demand, identify sales opportunities, recommend actions, and highlight where revenue could be recovered.",
   },
   {
     emoji: "💬",
@@ -56,12 +56,11 @@ function FeaturesPage() {
         <div className="mx-auto max-w-2xl text-center">
           <span className="text-base font-bold uppercase tracking-wide text-[color:var(--mint)]">Features</span>
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            Everything you need to understand customer intent and recover lost sales.
+            Everything you need to understand customer interest and help recover lost sales.
           </h1>
           <p className="mt-4 text-muted-foreground">
-            Tag combines Product Intelligence, Customer Intelligence, AI-powered Insights, and
-            Automated Engagement into one platform — helping retailers transform every product
-            interaction into measurable business value.
+            Tag tracks what shoppers scan and ask about, builds a picture of who your customers
+            are, and follows up with interested shoppers over WhatsApp — all from one platform.
           </p>
         </div>
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

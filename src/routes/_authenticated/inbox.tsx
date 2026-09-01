@@ -14,6 +14,7 @@ import {
   UserPlus,
   Sparkles,
   Megaphone,
+  Lock,
 } from "lucide-react";
 import { BroadcastComposerDialog } from "@/components/notifications/broadcast-composer-dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,7 @@ import {
   listAssignableStaff,
 } from "@/lib/inbox.functions";
 import { summariseConversation } from "@/lib/ai.functions";
+import { useTier } from "@/hooks/use-tier";
 import { resolvePendingRecovery } from "@/lib/roi.functions";
 import { formatMoney } from "@/lib/format";
 import { toast } from "sonner";
@@ -615,6 +617,8 @@ function MessageBubble({
 
 
 function SummariseButton({ conversationId, onSuggestion }: { conversationId: string; onSuggestion: (s: string) => void }) {
+  const { hasFeature } = useTier();
+  const locked = !hasFeature("aiAssistant");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ summary: string; suggested_reply: string; sentiment: string } | null>(null);
   async function run() {
@@ -625,6 +629,13 @@ function SummariseButton({ conversationId, onSuggestion }: { conversationId: str
     } catch (e: any) {
       toast.error(e?.message ?? "AI failed");
     } finally { setLoading(false); }
+  }
+  if (locked) {
+    return (
+      <Button variant="outline" size="sm" disabled title="Summarise is a Growth-plan feature — upgrade to use it">
+        <Lock className="h-4 w-4 mr-1" /> Summarise
+      </Button>
+    );
   }
   return (
     <DropdownMenu onOpenChange={(o) => o && !result && !loading && run()}>

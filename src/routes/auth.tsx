@@ -121,7 +121,7 @@ function AuthPage() {
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Reconnect with in-store shoppers and recover lost sales."
+      subtitle="Reconnect with in-store shoppers and help recover lost sales."
     >
       <form onSubmit={handleSignIn} className="space-y-4">
         <div className="space-y-1.5">

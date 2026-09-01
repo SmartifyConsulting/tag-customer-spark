@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
 import { MarketingHeader, MarketingCta, MarketingFooter } from "@/components/marketing-page";
 
 export const Route = createFileRoute("/intelligence-engine")({
@@ -9,7 +8,7 @@ export const Route = createFileRoute("/intelligence-engine")({
       { title: "The Tag Intelligence Engine — Tag" },
       {
         name: "description",
-        content: "The intelligence layer powering every product interaction.",
+        content: "Every scan and WhatsApp reply becomes something you can act on.",
       },
     ],
   }),
@@ -18,24 +17,22 @@ export const Route = createFileRoute("/intelligence-engine")({
 
 const PILLARS = [
   {
-    title: "Product Intelligence",
+    title: "Product Performance",
     body: "Understand how every product performs — from first scan to final sale — and which items generate real customer interest.",
   },
   {
-    title: "Customer Intelligence",
-    body: "Build a complete picture of shopper behaviour, preferences, and intent across every visit and interaction.",
+    title: "Customer Understanding",
+    body: "Build a better understanding of shopper behaviour, preferences, and interest across every visit and interaction.",
   },
   {
-    title: "Retail Intelligence",
+    title: "Store Activity",
     body: "See what's happening across your stores in real time — engagement, demand patterns, and opportunity as they emerge.",
   },
   {
-    title: "Revenue Intelligence",
+    title: "Revenue Impact",
     body: "Connect every interaction back to recovered revenue, so you know exactly what Tag is worth to your business.",
   },
 ];
-
-const CYCLE = ["Product", "Customer", "Retail", "Revenue", "AI", "Engagement", "Revenue"];
 
 const REVEALS = [
   {
@@ -47,16 +44,16 @@ const REVEALS = [
     body: "Measure the difference between customer curiosity and completed purchases. Discover exactly where sales opportunities are being lost and which products deserve immediate attention.",
   },
   {
-    title: "Predict Customer Behaviour",
-    body: "AI identifies buying patterns, highlights high-intent shoppers, predicts demand, and recommends the best time to engage customers for maximum conversion.",
+    title: "Estimate Customer Behaviour",
+    body: "AI identifies buying patterns, highlights high-interest shoppers, estimates demand, and suggests the best time to engage customers for maximum conversion.",
   },
   {
     title: "Optimise Your Business",
     body: "Use real customer intelligence to improve pricing strategies, promotions, inventory planning, merchandising decisions, and marketing campaigns — all based on actual shopper behaviour rather than assumptions.",
   },
   {
-    title: "Prove Your Return on Investment",
-    body: "Know exactly how many customers returned, which campaigns generated revenue, which products performed best, and how much additional revenue Tag helped recover.",
+    title: "Track Your Return on Investment",
+    body: "See how many customers returned, which WhatsApp campaigns led to a confirmed sale, which products performed best, and how much revenue Tag helped recover — based on sales your staff have confirmed.",
   },
 ];
 
@@ -67,10 +64,10 @@ function IntelligenceEnginePage() {
       <section className="mx-auto max-w-7xl px-6 py-10">
         <div className="mx-auto max-w-2xl text-center">
           <span className="text-base font-bold uppercase tracking-wide text-[color:var(--mint)]">
-            The Tag Intelligence Engine™
+            The Tag Intelligence Engine
           </span>
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            The intelligence layer powering every product interaction.
+            Every scan and WhatsApp reply becomes something you can act on.
           </h1>
         </div>
 
@@ -81,29 +78,6 @@ function IntelligenceEnginePage() {
               <p className="mt-1.5 text-sm text-muted-foreground">{p.body}</p>
             </div>
           ))}
-        </div>
-
-        {/* Intelligence Cycle — the flywheel */}
-        <div className="mt-10">
-          <p className="text-center text-base font-bold uppercase tracking-wide text-[color:var(--mint)]">
-            The Intelligence Cycle
-          </p>
-          <div className="mx-auto mt-6 flex max-w-4xl flex-wrap items-center justify-center gap-3">
-            {CYCLE.map((node, i) => (
-              <div key={`${node}-${i}`} className="flex items-center gap-3">
-                <span className="rounded-full bg-[color:var(--mint)] px-4 py-2 text-sm font-semibold text-white">
-                  {node}
-                </span>
-                {i < CYCLE.length - 1 && (
-                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="mx-auto mt-4 max-w-md text-center text-xs text-muted-foreground">
-            Each cycle feeds the next — revenue insight sharpens engagement, engagement sharpens
-            intelligence, and intelligence uncovers more revenue.
-          </p>
         </div>
 
         {/* What the engine reveals */}

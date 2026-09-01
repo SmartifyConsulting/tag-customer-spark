@@ -29,7 +29,7 @@ function ComparePage() {
     <div className="space-y-8">
       <PageHeader
         title="Performance Compare"
-        description="Side-by-side intent, stock and price comparison across your catalogue."
+        description="Side-by-side interest, stock and price comparison across your catalogue."
       />
 
       <Card className="rounded-xl shadow-[var(--shadow-card)]">
@@ -38,7 +38,7 @@ function ComparePage() {
             <GitCompareArrows className="h-4 w-4 text-[color:var(--mint)]" />
             Top performers by Intent
           </CardTitle>
-          <CardDescription>Sorted by current intent score.</CardDescription>
+          <CardDescription>Sorted by current interest score.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (

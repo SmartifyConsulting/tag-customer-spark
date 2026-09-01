@@ -61,7 +61,7 @@ function PrivacyPage() {
             <p>We use the information we collect to:</p>
             <ul className="list-disc space-y-1 pl-5">
               <li>Provide, operate, and maintain the Service, including your dashboard and analytics;</li>
-              <li>Generate intent scores, forecasts, and recommendations from interest signals;</li>
+              <li>Generate interest scores, forecasts, and recommendations from interest signals;</li>
               <li>Process payments and manage subscriptions;</li>
               <li>Send transactional communications (e.g. confirmation emails, billing receipts, product updates);</li>
               <li>Detect, investigate, and prevent fraud, abuse, and security incidents; and</li>

@@ -7,13 +7,14 @@ export type TierFeatureKey =
   | "roi"
   | "aiAssistant"
   | "weeklyBriefings"
-  | "intentEngine"
+  | "interestScore"
   | "bulkQr"
   | "advancedExports"
   | "apiAccess"
   | "multiStore"
   | "opportunityFeed"
-  | "inventoryImport";
+  | "inventoryImport"
+  | "taxonomy";
 
 export const TIER_LABEL: Record<TagTier, string> = {
   go: "Tag Go",
@@ -28,25 +29,21 @@ export const FEATURE_MIN_TIER: Record<TierFeatureKey, TagTier> = {
   bulkQr: "starter",
   advancedExports: "starter",
   aiAssistant: "growth",
-  intentEngine: "growth",
+  interestScore: "growth",
   inventoryImport: "growth",
   multiStore: "pro",
   roi: "pro",
   weeklyBriefings: "pro",
   opportunityFeed: "pro",
+  taxonomy: "pro",
   intelligence: "enterprise",
   apiAccess: "enterprise",
 };
 
 const RANK: Record<TagTier, number> = { go: 0, starter: 1, growth: 2, pro: 3, enterprise: 4 };
 
-// TEMP: full access for everyone during testing, regardless of workspace
-// tier — FEATURE_MIN_TIER stays intact below so real gating is one line to
-// restore (swap the body back to the commented-out check) once tier-based
-// permissions are ready to enforce.
-export function hasFeature(_tier: TagTier | undefined, _feature: TierFeatureKey): boolean {
-  return true;
-  // return !!_tier && RANK[_tier] >= RANK[FEATURE_MIN_TIER[_feature]];
+export function hasFeature(tier: TagTier | undefined, feature: TierFeatureKey): boolean {
+  return !!tier && RANK[tier] >= RANK[FEATURE_MIN_TIER[feature]];
 }
 
 export function meetsTier(tier: TagTier | undefined, min: TagTier): boolean {
@@ -74,9 +71,9 @@ export const FEATURE_META: Record<
     description:
       "Every Monday, a written executive summary of wins, watch-outs and next-week actions.",
   },
-  intentEngine: {
-    title: "Intent score engine",
-    description: "Per-product 0–100 intent scores with retailer-tunable weights.",
+  interestScore: {
+    title: "Interest score",
+    description: "Per-product 0–100 interest scores with retailer-tunable weights.",
   },
   inventoryImport: {
     title: "Bulk inventory import",
@@ -108,5 +105,10 @@ export const FEATURE_META: Record<
     title: "AI Opportunity Feed",
     description:
       "Daily AI-surfaced actions ranked by projected revenue — available on Tag Pro and above.",
+  },
+  taxonomy: {
+    title: "Custom taxonomy profiles",
+    description:
+      "Build custom catalogue hierarchies for multi-team browsing (Retail, Buying, Warehouse, Marketing) — available on Tag Pro and above.",
   },
 };

@@ -257,7 +257,7 @@ export function TaxonomyEngineTab() {
     <Card className="rounded-2xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Layers className="h-5 w-5" /> Product Taxonomy Engine
+          <Layers className="h-5 w-5" /> Custom Taxonomy Profiles
         </CardTitle>
         <CardDescription>
           Configure how the product browser is organised. Drag levels to reorder — the Live Preview refreshes as you edit.

@@ -41,7 +41,7 @@ function TrendsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Trend Detection"
-        description="Automatic classification of every product as rising, stable or falling — based on Intent Score momentum."
+        description="Automatic classification of every product as rising, stable or falling — based on Interest Score momentum."
       />
 
       <IntelligenceTabs />

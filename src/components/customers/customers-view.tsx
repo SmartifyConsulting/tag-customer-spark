@@ -84,11 +84,16 @@ function ConsentToggles({ customer }: { customer: any }) {
     label: string,
     checked: boolean,
     onChange: (v: boolean) => void,
+    opts?: { disabled?: boolean; title?: string },
   ) => (
-    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+    <label
+      className={`flex items-center gap-1.5 text-[11px] text-muted-foreground ${opts?.disabled ? "opacity-60" : ""}`}
+      title={opts?.title}
+    >
       <Switch
         checked={checked}
         onCheckedChange={onChange}
+        disabled={opts?.disabled}
         className="scale-75"
         aria-label={label}
       />
@@ -96,16 +101,34 @@ function ConsentToggles({ customer }: { customer: any }) {
     </label>
   );
 
+  // POPIA Compliance: these toggles reflect what the SHOPPER agreed to
+  // (captured at opt-in via WhatsApp reply or QR-scan consent). Marketing
+  // consent specifically can only ever be GRANTED by that shopper action —
+  // staff can revoke it here (an opt-out is always safe to honour) but the
+  // switch is disabled, not just discouraged, while it's off, so a click
+  // can't manufacture consent that was never given. updateCustomer()
+  // enforces the same rule server-side even if this were bypassed.
+  // See: https://www.justice.gov.za/inforegulation/
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       {item("Sub", subscribed, (v) => {
         setSubscribed(v);
         void save({ status: v ? "subscribed" : "unsubscribed" }, () => setSubscribed(!v), "subscription");
       })}
-      {item("Mkt", marketing, (v) => {
-        setMarketing(v);
-        void save({ marketing_consent: v, status: subscribed ? "subscribed" : "unsubscribed" }, () => setMarketing(!v), "marketing consent");
-      })}
+      {item(
+        "Marketing",
+        marketing,
+        (v) => {
+          setMarketing(v);
+          void save({ marketing_consent: v, status: subscribed ? "subscribed" : "unsubscribed" }, () => setMarketing(!v), "marketing consent");
+        },
+        {
+          disabled: !marketing,
+          title: marketing
+            ? "Revoke marketing consent"
+            : "Only the customer can grant marketing consent, via WhatsApp opt-in or QR scan",
+        },
+      )}
       {item("Notify", notify, (v) => {
         setNotify(v);
         void save({ notify_consent: v }, () => setNotify(!v), "notifications");

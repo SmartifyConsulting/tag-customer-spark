@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaffSeatAvailable } from "@/lib/product-cap.server";
 
 async function resolveRetailerId(supabase: any, userId: string) {
   const { data } = await supabase
@@ -55,6 +56,8 @@ export const inviteStaff = createServerFn({ method: "POST" })
       _retailer_id: retailerId,
     });
     if (!canManage) throw new Error("Forbidden");
+
+    await assertStaffSeatAvailable(supabase, retailerId);
 
     const { error } = await supabase.from("staff").insert({
       retailer_id: retailerId,

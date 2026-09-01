@@ -8,7 +8,7 @@ export const Route = createFileRoute("/how-it-works")({
       { title: "How it Works — Tag" },
       {
         name: "description",
-        content: "From barcode to business intelligence — in six simple steps.",
+        content: "From barcode to WhatsApp follow-up — in six simple steps.",
       },
     ],
   }),
@@ -24,27 +24,27 @@ const STEPS = [
   {
     n: "02",
     t: "Customers Discover",
-    d: "Shoppers scan the QR code to explore richer product information, compare options, ask questions, or register their interest before making a purchase.",
+    d: "Shoppers scan the QR code to explore richer product information, compare options, ask questions, or opt in via WhatsApp to register their interest before making a purchase.",
   },
   {
     n: "03",
     t: "Interest Is Captured",
-    d: "Every interaction creates valuable signals. Tag records customer intent, product engagement, and behavioural insights that would otherwise be lost when a shopper leaves the store.",
+    d: "Every interaction creates valuable signals. Tag records customer interest, product engagement, and behavioural insights that would otherwise be lost when a shopper leaves the store.",
   },
   {
     n: "04",
     t: "AI Reveals Hidden Opportunities",
-    d: "Tag analyses thousands of product interactions to identify trends, predict demand, highlight missed sales opportunities, and recommend actions to improve performance.",
+    d: "Tag analyses your product interactions to identify trends, estimate demand, highlight missed sales opportunities, and suggest actions to improve performance. Estimates get more reliable as more data comes in.",
   },
   {
     n: "05",
     t: "Reconnect at the Right Moment",
-    d: "Automatically notify interested customers when products go on sale, return to stock, become limited in quantity, or match personalised promotions.",
+    d: "Automatically notify interested customers over WhatsApp when products go on sale, return to stock, become limited in quantity, or match personalised promotions.",
   },
   {
     n: "06",
     t: "Measure the Results",
-    d: "Track the complete journey — from product discovery to customer engagement and final purchase — proving exactly how Tag helps recover revenue and strengthen customer relationships.",
+    d: "Track the journey — from product discovery to WhatsApp engagement and confirmed purchase — showing how Tag helps recover revenue and strengthen customer relationships.",
   },
 ];
 
@@ -58,7 +58,7 @@ function HowItWorksPage() {
             How it works
           </span>
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            From barcode to business intelligence — in six simple steps.
+            From barcode to WhatsApp follow-up — in six simple steps.
           </h1>
         </div>
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

@@ -25,7 +25,7 @@ import { formatMoney } from "@/lib/format";
 import { IntelligenceTabs } from "@/components/intelligence-tabs";
 
 export const Route = createFileRoute("/_authenticated/roi")({
-  head: () => ({ meta: [{ title: "ROI Engine — Tag" }] }),
+  head: () => ({ meta: [{ title: "ROI Tracking — Tag" }] }),
   beforeLoad: ({ context }) => requireFeature(context.queryClient, "roi"),
   component: RoiPage,
 });
@@ -53,8 +53,8 @@ function RoiPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="ROI Engine"
-        description="Attribute revenue to scans, watchlists, and notifications — and prove the platform's value to your CFO."
+        title="ROI Tracking"
+        description="See revenue attributed to scans, watchlists, and notifications, and how much Tag is worth to your business."
         actions={
           <div className="flex items-center gap-2">
             <Tabs value={String(days)} onValueChange={(v) => setDays(parseInt(v))}>

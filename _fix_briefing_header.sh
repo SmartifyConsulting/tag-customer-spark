@@ -1,3 +1,10 @@
+# A4: Only show briefing header on /briefing page, not on sub-pages
+
+# First, add useLocation import
+sed -i '1,5s/import { createFileRoute, Outlet, redirect } from "@tanstack\/react-router";/import { createFileRoute, Outlet, redirect, useLocation } from "@tanstack\/react-router";/' src/routes/_authenticated/route.tsx
+
+# Now find and replace the header rendering section
+cat > /tmp/route_new.tsx << 'ENDROUTE'
 import { createFileRoute, Outlet, redirect, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -122,3 +129,6 @@ function AuthenticatedLayout() {
     </div>
   );
 }
+ENDROUTE
+
+cp /tmp/route_new.tsx src/routes/_authenticated/route.tsx

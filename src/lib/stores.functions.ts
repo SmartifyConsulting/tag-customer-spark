@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStoreCapAvailable } from "@/lib/product-cap.server";
 
 async function resolveRetailerId(supabase: any, userId: string) {
   const { data } = await supabase
@@ -90,6 +91,7 @@ export const upsertStore = createServerFn({ method: "POST" })
       const { error } = await supabase.from("stores").update(payload as any).eq("id", id);
       if (error) throw new Error(error.message);
     } else {
+      await assertStoreCapAvailable(supabase, retailerId);
       const { error } = await supabase
         .from("stores")
         .insert({ ...payload, retailer_id: retailerId, created_by: userId } as any);

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { productInputSchema, listProductsSchema } from "./products.schemas";
+import { assertProductCapAvailable } from "./product-cap.server";
 
 async function resolveRetailerId(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
@@ -341,6 +342,7 @@ export const createProduct = createServerFn({ method: "POST" })
     if (!retailerId) throw new Error("No retailer assigned to your account");
     if (!(await canManage(supabase, userId, retailerId)))
       throw new Error("You don't have permission to add products");
+    await assertProductCapAvailable(supabase, retailerId, 1);
     const manualGtin = String((data as any).gtin ?? "").replace(/\D/g, "").trim();
     const insertPayload: any = {
       ...data,
