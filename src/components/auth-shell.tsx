@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
 import { MarketingNav } from "@/components/marketing-nav";
-import { TagLogo } from "@/components/tag-logo";
 import heroImage from "@/assets/auth-hero-surf-scan.png.asset.json";
 
 export function AuthShell({
@@ -16,28 +14,18 @@ export function AuthShell({
   footer?: ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-background px-4 py-6 lg:px-10">
+    <div className="min-h-screen bg-background px-4 py-5 lg:px-10">
       {/* Header row: nav's left edge matches the hero image's left edge
-          (same grid column, no extra centering); the logo sits in a
-          same-width/centering wrapper as the form card below it, so its
-          right edge lines up with the card's right edge even though
-          they're in different rows. Pushed down an extra ~1cm (37.8px)
-          from where it used to sit. items-center vertically centers the
-          nav text against the logo's own vertical center, which is where
-          the tag mark's punch hole sits, so the hole lines up with the
-          nav items rather than the top of the logo image. */}
-      <div className="mx-auto grid max-w-6xl items-center gap-10 pt-14 lg:grid-cols-[1.05fr_1fr] lg:pt-24">
+          (same grid column, no extra centering). The top-right logo that
+          used to balance this row has been removed, so this is now just
+          the nav pinned to a much smaller top offset. */}
+      <div className="mx-auto max-w-6xl pt-4 lg:pt-6">
         <div className="hidden lg:block">
           <MarketingNav />
         </div>
-        <div className="mx-auto flex w-full max-w-md justify-end [&_img]:origin-right">
-          <Link to="/about">
-            <TagLogo variant="wordmark" size="lg" heightClass="h-[9.33rem]" />
-          </Link>
-        </div>
       </div>
 
-      <div className="mx-auto grid max-w-6xl items-start gap-10 pt-[3.9rem] lg:grid-cols-[1.05fr_1fr]">
+      <div className="mx-auto grid max-w-6xl items-start gap-10 pt-6 lg:grid-cols-[1.05fr_1fr]">
         {/* Hero column — beach/scan energy. Top-aligned with the "Welcome
             back" card via the shared items-start on this grid. */}
         <div className="hidden lg:block">
@@ -45,7 +33,7 @@ export function AuthShell({
             <img
               src={heroImage.url}
               alt="Shopper scanning a Tag barcode sticker on a surfboard in a beach surf shop"
-              className="h-[26rem] w-full object-cover"
+              className="h-[20.8rem] w-full object-cover"
               loading="eager"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/55 via-foreground/12 to-transparent" />
@@ -59,13 +47,13 @@ export function AuthShell({
             </div>
           </div>
 
-          <p className="mt-6 w-full text-justify text-base text-muted-foreground">
+          <p className="mt-5 w-full text-justify text-base text-muted-foreground">
             You know exactly what sold. You don't know what almost did. Tag brings{" "}
             <span className="font-bold text-foreground">Retail Intelligence</span> to physical
             stores — capturing buying interest and reconnecting with shoppers over WhatsApp after
             they leave.
           </p>
-          <p className="mt-3 text-base font-bold text-[#F2A93B]">Fewer blind spots.</p>
+          <p className="mt-2 text-base font-bold text-[#F2A93B]">Fewer blind spots.</p>
         </div>
 
         {/* Form column */}
