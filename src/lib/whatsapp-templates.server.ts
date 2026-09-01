@@ -205,14 +205,18 @@ export function buildTemplatePayload(
         return { ok: false, error: `Template "${templateName}" is missing value for its URL button` };
       }
       buttons.push({ type: "URL", parameter: suffix });
-    } else {
-      // Static URL button. Infobip's API rejects the send with a generic
-      // "Bad request" if `parameter` is omitted (confirmed) or empty
-      // (also confirmed, on tag_scan_confirm_and_install_v2) — it needs
-      // the button's actual destination URL sent as the parameter every
-      // time, even though it never changes.
-      buttons.push({ type: "URL", parameter: contract.urlButton.staticUrl ?? "" });
     }
+    // A fully static URL button (no {{1}} in the approved URL) gets no
+    // button entry at all — sending the URL back as a "parameter" satisfies
+    // Infobip's own request schema (confirmed: it 400s if that field is
+    // missing/blank on a button entry) but WhatsApp itself then rejects the
+    // send with error 7008 "Failed to match template parameters", because
+    // a static button has nothing to fill in and shouldn't receive one.
+    // Confirmed via Infobip's message log: every send with a parameter set
+    // here (tag_scan_confirm_and_install_v2) came back
+    // UNDELIVERABLE_REJECTED_OPERATOR / code 7008, even though Infobip's
+    // API itself accepted and queued the request. Omitting the buttons
+    // entry entirely lets WhatsApp render the button exactly as approved.
   }
 
   return {
