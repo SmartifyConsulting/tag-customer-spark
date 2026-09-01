@@ -127,9 +127,9 @@ function ProfilePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
+              <Avatar className="h-16 w-16 ring-2 ring-[#F94300] ring-offset-2 ring-offset-background">
                 {avatarUrl && <AvatarImage src={avatarUrl} alt={fullName || "Profile picture"} />}
-                <AvatarFallback className="bg-primary/10 text-base font-semibold text-primary">
+                <AvatarFallback className="bg-[#F94300] text-base font-semibold text-white">
                   {fullName ? initialsFor(fullName) : <UserIcon className="h-6 w-6" />}
                 </AvatarFallback>
               </Avatar>
