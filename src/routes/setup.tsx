@@ -26,6 +26,8 @@ import { assignMissingBarcodes } from "@/lib/barcode-assign.functions";
 import { ensureRetailerHasStore } from "@/lib/stores.functions";
 import { saveRetailerPosSystem, markOnboardingComplete } from "@/lib/settings.functions";
 import { TagLogo } from "@/components/tag-logo";
+import { useTier } from "@/hooks/use-tier";
+import { TIER_LABEL, FEATURE_MIN_TIER } from "@/lib/tier";
 
 export const Route = createFileRoute("/setup")({
   ssr: false,
@@ -93,6 +95,8 @@ const BACK_BUTTON_STEPS: Step[] = ["system", "file"];
 
 function SetupWizard() {
   const navigate = useNavigate();
+  const { hasFeature, isLoading: tierLoading } = useTier();
+  const canImportInventory = hasFeature("inventoryImport");
   const [step, setStep] = useState<Step>("welcome");
   const [history, setHistory] = useState<Step[]>([]);
 
@@ -335,6 +339,9 @@ function SetupWizard() {
                 loading={preview.isPending}
                 posSystem={posSystem}
                 onFile={handleFile}
+                tierLoading={tierLoading}
+                canImport={canImportInventory}
+                onSkip={finishSetup}
               />
             )}
             {step === "importing" && (
@@ -438,13 +445,57 @@ function FileStep({
   loading,
   posSystem,
   onFile,
+  tierLoading,
+  canImport,
+  onSkip,
 }: {
   inputRef: React.RefObject<HTMLInputElement | null>;
   file: File | null;
   loading: boolean;
   posSystem: string | null;
   onFile: (f: File) => void;
+  tierLoading: boolean;
+  canImport: boolean;
+  onSkip: () => void;
 }) {
+  if (tierLoading) {
+    return (
+      <div className="space-y-5 py-6 text-center">
+        <p className="text-sm text-muted-foreground">Checking your plan…</p>
+      </div>
+    );
+  }
+
+  if (!canImport) {
+    const minTier = TIER_LABEL[FEATURE_MIN_TIER.inventoryImport];
+    return (
+      <div className="space-y-5 text-center">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Bulk inventory import</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Uploading your full product catalogue at setup is available on {minTier} and above.
+            You can add products manually for now, or upgrade to import your whole catalogue in
+            one go.
+          </p>
+        </div>
+        <div className="rounded-2xl border-2 border-dashed border-border bg-muted/30 p-10">
+          <FileUp className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" />
+          <span className="font-medium text-muted-foreground">
+            Bulk import locked on your current plan
+          </span>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <Button asChild>
+            <Link to="/plan">Upgrade to {minTier}</Link>
+          </Button>
+          <Button variant="outline" onClick={onSkip}>
+            Skip for now
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 text-center">
       <div>
@@ -470,6 +521,13 @@ function FileStep({
         />
       </label>
       {loading && <p className="text-sm text-muted-foreground">Reading {file?.name}…</p>}
+      <button
+        type="button"
+        onClick={onSkip}
+        className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+      >
+        Skip for now
+      </button>
     </div>
   );
 }

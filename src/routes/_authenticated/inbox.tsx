@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  CheckCircle2,
   Inbox as InboxIcon,
   Loader2,
   MessageSquare,
@@ -11,10 +10,7 @@ import {
   Send,
   StickyNote,
   Tag as TagIcon,
-  UserPlus,
-  Sparkles,
   Megaphone,
-  Lock,
 } from "lucide-react";
 import { BroadcastComposerDialog } from "@/components/notifications/broadcast-composer-dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,12 +19,8 @@ import {
   getConversation,
   sendReply,
   retryReply,
-
   updateConversation,
-  listAssignableStaff,
 } from "@/lib/inbox.functions";
-import { summariseConversation } from "@/lib/ai.functions";
-import { useTier } from "@/hooks/use-tier";
 import { resolvePendingRecovery } from "@/lib/roi.functions";
 import { formatMoney } from "@/lib/format";
 import { toast } from "sonner";
@@ -40,19 +32,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/empty-state";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
-  head: () => ({ meta: [{ title: "Messages — Tag" }] }),
+  head: () => ({ meta: [{ title: "Whatsapps — Tag" }] }),
   component: InboxPage,
 });
 
@@ -105,7 +89,7 @@ function InboxPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Messages"
+        title="Whatsapps"
         description="Every customer WhatsApp reply, in one place."
         actions={
           <Button size="sm" className="gap-2 hidden" onClick={() => setBroadcastOpen(true)}>
@@ -157,7 +141,7 @@ function InboxPage() {
                   key={c.id}
                   onClick={() => setActiveId(c.id)}
                   className={cn(
-                    "w-full text-left p-3 border-b border-border/60 hover:bg-accent/50 transition-colors",
+                    "w-full text-left p-3 border-b border-border/60 hover:bg-muted transition-colors",
                     isActive && "bg-accent text-white hover:bg-accent",
                   )}
                 >
@@ -232,14 +216,12 @@ function ConversationPane({ id }: { id: string }) {
   const retryFn = useServerFn(retryReply);
 
   const updateFn = useServerFn(updateConversation);
-  const staffFn = useServerFn(listAssignableStaff);
   const resolveRecoveryFn = useServerFn(resolvePendingRecovery);
 
   const { data, isLoading } = useQuery({
     queryKey: ["conversation", id],
     queryFn: () => getFn({ data: { id } }),
   });
-  const { data: staff } = useQuery({ queryKey: ["staff-assignable"], queryFn: () => staffFn() });
 
   const [text, setText] = useState("");
   const [isInternal, setIsInternal] = useState(false);
@@ -293,16 +275,6 @@ function ConversationPane({ id }: { id: string }) {
   }
 
 
-  async function assign(userId: string | null) {
-    await updateFn({ data: { id, assigned_to: userId } });
-    qc.invalidateQueries({ queryKey: ["conversation", id] });
-    qc.invalidateQueries({ queryKey: ["conversations"] });
-  }
-  async function toggleResolved() {
-    await updateFn({ data: { id, is_resolved: !data?.conversation?.is_resolved } });
-    qc.invalidateQueries({ queryKey: ["conversation", id] });
-    qc.invalidateQueries({ queryKey: ["conversations"] });
-  }
   async function addTag() {
     if (!newTag.trim()) return;
     const next = Array.from(new Set([...(data?.conversation?.tags ?? []), newTag.trim()]));
@@ -339,7 +311,6 @@ function ConversationPane({ id }: { id: string }) {
 
   const c = data.conversation;
   const customer = c.customer;
-  const assignedStaff = staff?.find((s: any) => s.user_id === c.assigned_to);
   // Most recent product the customer scanned/asked about — shown in the thread
   // header so staff instantly know what the conversation is about.
   const latestInterest = (data.interests ?? [])[0] as any | undefined;
@@ -374,36 +345,6 @@ function ConversationPane({ id }: { id: string }) {
                 </span>
               </div>
             )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <UserPlus className="h-4 w-4 mr-1" />
-                  {assignedStaff?.full_name ?? "Assign"}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Assign to</DropdownMenuLabel>
-                <DropdownMenuItem onSelect={() => assign(null)}>Unassigned</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {staff?.map((s: any) => (
-                  <DropdownMenuItem key={s.user_id} onSelect={() => assign(s.user_id)}>
-                    {s.full_name ?? s.role}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <SummariseButton conversationId={c.id} onSuggestion={(s) => setText((t) => t || s)} />
-            <Button
-              variant={c.is_resolved ? "secondary" : "default"}
-              size="sm"
-              onClick={toggleResolved}
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              {c.is_resolved ? "Reopen" : "Resolve"}
-            </Button>
           </div>
         </div>
 
@@ -616,53 +557,3 @@ function MessageBubble({
 }
 
 
-function SummariseButton({ conversationId, onSuggestion }: { conversationId: string; onSuggestion: (s: string) => void }) {
-  const { hasFeature } = useTier();
-  const locked = !hasFeature("aiAssistant");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ summary: string; suggested_reply: string; sentiment: string } | null>(null);
-  async function run() {
-    setLoading(true);
-    try {
-      const r: any = await summariseConversation({ data: { conversation_id: conversationId } });
-      setResult(r);
-    } catch (e: any) {
-      toast.error(e?.message ?? "AI failed");
-    } finally { setLoading(false); }
-  }
-  if (locked) {
-    return (
-      <Button variant="outline" size="sm" disabled title="Summarise is a Growth-plan feature — upgrade to use it">
-        <Lock className="h-4 w-4 mr-1" /> Summarise
-      </Button>
-    );
-  }
-  return (
-    <DropdownMenu onOpenChange={(o) => o && !result && !loading && run()}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Sparkles className="h-4 w-4 mr-1" /> Summarise
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-3 space-y-2">
-        {loading || !result ? (
-          <div className="text-sm text-muted-foreground">Generating…</div>
-        ) : (
-          <>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">Summary · {result.sentiment}</div>
-            <p className="text-sm">{result.summary}</p>
-            {result.suggested_reply && (
-              <>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground mt-2">Suggested reply</div>
-                <p className="text-sm rounded-md border bg-muted/40 p-2">{result.suggested_reply}</p>
-                <Button size="sm" className="w-full" onClick={() => onSuggestion(result.suggested_reply)}>
-                  Use as reply
-                </Button>
-              </>
-            )}
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}

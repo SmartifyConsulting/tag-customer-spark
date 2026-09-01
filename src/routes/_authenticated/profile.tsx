@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Copy, ScanLine } from "lucide-react";
+import { Copy, ScanLine, Upload, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,12 +11,22 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { QrPreview, useQrPngDownload } from "@/components/qr/qr-preview";
 import { Barcode } from "@/components/tag-barcode";
 import { getMyShopperTag } from "@/lib/tag-identity.functions";
-import { getMyProfile, updateMyProfile } from "@/lib/profile.functions";
+import { getMyProfile, updateMyProfile, uploadMyAvatar } from "@/lib/profile.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsStaff } from "@/hooks/use-persona";
+
+const AVATAR_MIME = new Set(["image/png", "image/webp", "image/jpeg"]);
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+
+function initialsFor(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return (parts[0]![0]! + (parts.length > 1 ? parts[parts.length - 1]![0]! : "")).toUpperCase();
+}
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -31,6 +41,7 @@ function ProfilePage() {
   const qc = useQueryClient();
   const getProfileFn = useServerFn(getMyProfile);
   const updateProfileFn = useServerFn(updateMyProfile);
+  const uploadAvatarFn = useServerFn(uploadMyAvatar);
   const getTagFn = useServerFn(getMyShopperTag);
 
   const { data, isLoading } = useQuery({ queryKey: ["profile", "me"], queryFn: () => getProfileFn() });
@@ -57,6 +68,48 @@ function ProfilePage() {
     onError: (e: any) => toast.error(e?.message ?? "Could not save"),
   });
 
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarUrl = (data as any)?.profile?.avatar_url ?? null;
+
+  const uploadAvatar = useMutation({
+    mutationFn: async (file: File) => {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = () => reject(new Error("Couldn't read that file — please try again."));
+        r.readAsDataURL(file);
+      });
+      return uploadAvatarFn({
+        data: { filename: file.name, contentType: file.type, base64 },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Profile picture updated");
+      qc.invalidateQueries({ queryKey: ["profile", "me"] });
+    },
+    onError: (e: any) => {
+      toast.error(e?.message ?? "Couldn't upload that photo — please try again.");
+    },
+    onSettled: () => setAvatarUploading(false),
+  });
+
+  const onPickAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!AVATAR_MIME.has(file.type)) {
+      toast.error("Please choose a PNG, JPG or WEBP image.");
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      toast.error("That photo is too large — please choose one under 2 MB.");
+      return;
+    }
+    setAvatarUploading(true);
+    uploadAvatar.mutate(file);
+  };
+
   const tagValue = (tag.data as any)?.tagId ?? "";
   const download = useQrPngDownload(tagValue, `${tagValue || "tag-id"}.png`);
 
@@ -73,6 +126,36 @@ function ProfilePage() {
             <CardDescription>Used to identify you and link items you've tagged in-store.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16">
+                {avatarUrl && <AvatarImage src={avatarUrl} alt={fullName || "Profile picture"} />}
+                <AvatarFallback className="bg-primary/10 text-base font-semibold text-primary">
+                  {fullName ? initialsFor(fullName) : <UserIcon className="h-6 w-6" />}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={onPickAvatar}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={avatarUploading}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {avatarUploading ? "Uploading…" : avatarUrl ? "Change photo" : "Add photo"}
+                </Button>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  PNG, JPG or WEBP · max 2 MB
+                </p>
+              </div>
+            </div>
             <div className="space-y-1.5">
               <Label>Full name</Label>
               <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" />

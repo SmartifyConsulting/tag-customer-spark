@@ -406,7 +406,23 @@ export const updateProduct = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const patch: any = { ...data.patch };
-    if (data.patch.images && data.patch.images.length) patch.image_url = data.patch.images[0].url;
+    if ("images" in patch) {
+      if (data.patch.images && data.patch.images.length) {
+        patch.image_url = data.patch.images[0].url;
+      } else {
+        // All images removed (e.g. the user deleted the last one) — clear
+        // every derived image field and reset image_status to "pending" so
+        // the Digital Identity check treats this product as needing image
+        // resolution again, and the backfill/auto-complete jobs pick it up
+        // and try to find a replacement image instead of leaving the old
+        // (deleted) image_url/hero_image stuck on the product forever.
+        patch.image_url = null;
+        patch.hero_image = null;
+        patch.thumbnail_url = null;
+        patch.image_gallery = [];
+        patch.image_status = "pending";
+      }
+    }
 
     // A manually entered barcode is authoritative. When it changes we retire
     // the existing QR asset and regenerate so the printed code, the GS1

@@ -32,6 +32,7 @@ import { useAuth, useIsAdmin } from "@/hooks/use-auth";
 import { TagReaderCardDialog } from "@/components/settings/tag-reader-card-dialog";
 import { QrPreview } from "@/components/qr/qr-preview";
 import { ScanLine } from "lucide-react";
+import { OnboardingTour } from "@/components/onboarding-tour";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — Tag" }] }),
@@ -42,7 +43,7 @@ function SettingsPage() {
   const qc = useQueryClient();
   const settings = useQuery({ queryKey: ["settings"], queryFn: () => getWorkspaceSettings() });
   const audit = useQuery({ queryKey: ["audit"], queryFn: () => listAuditLog() });
-  const { roles } = useAuth();
+  const { roles, user } = useAuth();
   const isSuperAdmin = (roles ?? []).includes("super_admin");
   const canReseed = isSuperAdmin || (roles ?? []).includes("retail_admin");
   // Storage RLS (retailer_logos_write) only allows retail_admin,
@@ -65,7 +66,7 @@ function SettingsPage() {
       <PageHeader title="Settings" description="Workspace, billing, security and integrations." />
 
       <Tabs defaultValue="workspace" className="space-y-6">
-        <TabsList>
+        <TabsList id="tour-settings-tabs">
           <TabsTrigger value="workspace"><Building2 className="mr-1 h-4 w-4" /> Workspace</TabsTrigger>
           <TabsTrigger value="emails"><Mail className="mr-1 h-4 w-4" /> Emails</TabsTrigger>
           <TabsTrigger value="billing"><CreditCard className="mr-1 h-4 w-4" /> Billing</TabsTrigger>
@@ -81,7 +82,7 @@ function SettingsPage() {
 
 
         <TabsContent value="workspace" className="space-y-8">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div id="tour-settings-workspace" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
             <Card className="rounded-2xl">
               <CardHeader><CardTitle>Brand</CardTitle><CardDescription>Shown on QR cards, opt-in pages and WhatsApp messages.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
@@ -175,6 +176,27 @@ function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <OnboardingTour
+        userId={user?.id}
+        tourKey="settings"
+        steps={[
+          {
+            title: "Welcome to Settings",
+            body: "Manage your workspace, billing, security and integrations from here.",
+          },
+          {
+            title: "Switch between tabs",
+            body: "Workspace, Emails, Billing, Automations, Security and Audit log each have their own tab.",
+            targetId: "tour-settings-tabs",
+          },
+          {
+            title: "Your brand",
+            body: "Update your workspace name, contact email and logo — used on QR cards, opt-in pages and WhatsApp messages.",
+            targetId: "tour-settings-workspace",
+          },
+        ]}
+      />
     </div>
   );
 }

@@ -48,9 +48,7 @@ export async function sendEmail(payload: EmailPayload) {
 const baseStyles = `
   body { margin:0; background:#f4f5f7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color:#0f172a; }
   .wrap { max-width:560px; margin:0 auto; padding:32px 20px; }
-  .logo-header { background: linear-gradient(135deg, #FF5722 0%, #031C4D 100%); padding:32px; border-radius:18px 18px 0 0; text-align:center; }
-  .logo-header img { height:60px; width:auto; margin-bottom:12px; }
-  .card { background:#fff; border-radius:0 0 18px 18px; padding:32px; box-shadow:0 1px 2px rgba(15,23,42,0.06); }
+  .card { background:#fff; border-radius:18px; padding:32px; box-shadow:0 1px 2px rgba(15,23,42,0.06); }
   h1 { font-size:22px; margin:0 0 12px; color:#031C4D; }
   p { font-size:15px; line-height:1.55; color:#334155; margin:0 0 14px; }
   .btn { display:inline-block; background:#FF5722; color:#fff !important; text-decoration:none; padding:12px 22px; border-radius:10px; font-weight:600; }
@@ -60,9 +58,9 @@ const baseStyles = `
   .stat span { font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.05em; }
 `;
 
-export function shell(title: string, inner: string, includeLogoHeader: boolean = false) {
+export function shell(title: string, inner: string) {
   return `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>${baseStyles}</style></head>
-  <body><div class="wrap">${includeLogoHeader ? '<div class="logo-header"><img src="https://tag-tech.co.za/logo.svg" alt="Tag" /></div>' : ''}<div class="card">${inner}</div>
+  <body><div class="wrap"><div class="card">${inner}</div>
   <p class="meta">© 2026 Tag · Retail engagement<br/>tag-tech.co.za</p>
   </div></body></html>`;
 }
@@ -119,16 +117,6 @@ export function testTemplate(workspace: string) {
     <p>This is a test email sent from <b>${escapeHtml(workspace)}</b> via Resend.</p>
     <p>Your customer notifications, staff invites, daily briefings and weekly ROI reports will use this same channel.</p>
   `);
-}
-
-export function signupVerificationTemplate(opts: { name?: string | null; workspace: string; verifyUrl: string }) {
-  return shell("Verify your email & activate", `
-    <h1>Welcome to ${escapeHtml(opts.workspace)}</h1>
-    <p>${opts.name ? `Hi ${escapeHtml(opts.name)}, y` : "Y"}ou're almost there!</p>
-    <p>Click the button below to verify your email & activate your account on <b>Tag</b>.</p>
-    <p><a class="btn" href="${opts.verifyUrl}">Verify Email & Sign In</a></p>
-    <p style="color:#64748b;font-size:12px;margin-top:24px">This link expires in 24 hours. If you didn't request this, you can safely ignore this email.</p>
-  `, true);
 }
 
 function escapeHtml(s: string) {

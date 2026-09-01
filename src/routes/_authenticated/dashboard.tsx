@@ -43,6 +43,7 @@ import { TopProductsCard } from "@/components/dashboard/top-products-card";
 import { RecentActivityCard } from "@/components/dashboard/recent-activity-card";
 import { IntentSectionsCard } from "@/components/dashboard/intent-sections-card";
 import { StoreAttendantDashboard } from "@/components/dashboard/store-attendant-dashboard";
+import { OnboardingTour } from "@/components/onboarding-tour";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -276,7 +277,7 @@ function DashboardContent() {
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div id="tour-dashboard-kpis" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           index={0}
           label="Today's scans"
@@ -343,7 +344,9 @@ function DashboardContent() {
         )}
       </div>
 
-      <IntentSectionsCard />
+      <div id="tour-dashboard-intent">
+        <IntentSectionsCard />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {analytics ? (
@@ -377,6 +380,27 @@ function DashboardContent() {
       </div>
 
       <RecentActivityCard items={data.recentActivity} />
+
+      <OnboardingTour
+        userId={user?.id}
+        tourKey="dashboard"
+        steps={[
+          {
+            title: "Welcome to your dashboard",
+            body: "This is your executive overview — scans, revenue recovered, and customer engagement across every store, at a glance.",
+          },
+          {
+            title: "Today's key metrics",
+            body: "Track scans, waiting customers, recovered revenue, and WhatsApp conversion in real time.",
+            targetId: "tour-dashboard-kpis",
+          },
+          {
+            title: "Interest scores",
+            body: "See which products are generating the most buying interest right now, ranked automatically.",
+            targetId: "tour-dashboard-intent",
+          },
+        ]}
+      />
     </div>
   );
 }

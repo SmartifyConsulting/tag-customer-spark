@@ -39,6 +39,8 @@ import {
 } from "@/components/ui/select";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { ImportProductsDialog } from "@/components/products/import-products-dialog";
+import { TagReaderQrBadge } from "@/components/qr/tag-reader-tile";
+import { OnboardingTour } from "@/components/onboarding-tour";
 import {
   bulkCompleteDigitalIdentity,
   bulkDeleteProducts,
@@ -61,7 +63,7 @@ type StatusFilter = "all" | "active" | "draft" | "archived";
 
 
 function InventoryAdminPage() {
-  const { hasRole } = useAuth();
+  const { hasRole, user } = useAuth();
   const canManage = hasRole("super_admin") || hasRole("retail_admin") || hasRole("store_manager");
 
   const listFn = useServerFn(listProducts);
@@ -327,74 +329,86 @@ function InventoryAdminPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Inventory"
-        description="Every uploaded product. A product becomes tagged once a customer scans its QR code in-store — untagged items are shown first."
+        className="sm:items-start"
+        title="Products"
+        description="Every uploaded product, tagged and untagged."
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={handleTagIntelligence}
-              disabled={runningTagIntelligence}
-              title="Click to (re-)run: assigns missing barcodes, then generates QR codes and digital identities."
-              className="flex min-w-[168px] items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-left hover:bg-muted/50 disabled:cursor-wait"
-            >
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-background">
-                {runningTagIntelligence ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                ) : tagRunStatus === "failed" ? (
-                  <X className="h-4 w-4 text-destructive" />
-                ) : tagIntelligenceComplete ? (
-                  <Check className="h-4 w-4 text-emerald-600" />
-                ) : (
-                  <Barcode className="h-4 w-4 text-muted-foreground" />
-                )}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Digital Identity
-                </span>
-                <span
-                  className={`block text-sm font-medium ${
-                    runningTagIntelligence
-                      ? "text-muted-foreground"
-                      : tagRunStatus === "failed"
-                        ? "text-destructive"
-                        : tagIntelligenceComplete
-                          ? "text-emerald-600"
-                          : "text-muted-foreground"
-                  }`}
-                >
-                  {runningTagIntelligence
-                    ? "Running…"
-                    : tagRunStatus === "failed"
-                      ? "Failed"
-                      : tagIntelligenceComplete
-                        ? "Successful"
-                        : `${tagStatusQ.data?.ids?.length ?? 0} incomplete`}
-                </span>
-              </span>
-            </button>
-            <Button variant="outline" onClick={handleReenrichAll} disabled={reenriching}>
-              {reenriching ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              Re-enrich all
-            </Button>
-            <Button variant="outline" onClick={() => setImportOpen(true)}>
-              <Upload className="mr-2 h-4 w-4" /> Import
-            </Button>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" /> Add Product
-            </Button>
-          </div>
+          <Link
+            id="tour-admin-products-qr"
+            to="/tools/barcode-reader"
+            target="_blank"
+            title="Open Tag Barcode Reader"
+            className="flex flex-col items-center gap-1 w-fit"
+          >
+            <TagReaderQrBadge size={96} />
+            <span className="text-[11px] font-medium text-muted-foreground">TAG Barcode Reader</span>
+          </Link>
         }
       />
 
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={handleTagIntelligence}
+          disabled={runningTagIntelligence}
+          title="Click to (re-)run: assigns missing barcodes, then generates QR codes and digital identities."
+          className="flex min-w-[168px] items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-left hover:bg-muted/50 disabled:cursor-wait"
+        >
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-background">
+            {runningTagIntelligence ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : tagRunStatus === "failed" ? (
+              <X className="h-4 w-4 text-destructive" />
+            ) : tagIntelligenceComplete ? (
+              <Check className="h-4 w-4 text-emerald-600" />
+            ) : (
+              <Barcode className="h-4 w-4 text-muted-foreground" />
+            )}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+              Digital Identity
+            </span>
+            <span
+              className={`block text-sm font-medium ${
+                runningTagIntelligence
+                  ? "text-muted-foreground"
+                  : tagRunStatus === "failed"
+                    ? "text-destructive"
+                    : tagIntelligenceComplete
+                      ? "text-emerald-600"
+                      : "text-muted-foreground"
+              }`}
+            >
+              {runningTagIntelligence
+                ? "Running…"
+                : tagRunStatus === "failed"
+                  ? "Failed"
+                  : tagIntelligenceComplete
+                    ? "Successful"
+                    : `${tagStatusQ.data?.ids?.length ?? 0} incomplete`}
+            </span>
+          </span>
+        </button>
+        <Button variant="outline" onClick={handleReenrichAll} disabled={reenriching}>
+          {reenriching ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Sparkles className="mr-2 h-4 w-4" />
+          )}
+          Re-enrich all
+        </Button>
+        <Button variant="outline" onClick={() => setImportOpen(true)}>
+          <Upload className="mr-2 h-4 w-4" /> Import
+        </Button>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Add Product
+        </Button>
+      </div>
+
       <Card className="rounded-2xl">
         <CardContent className="space-y-4 pt-6">
-          <div className="flex flex-wrap items-center gap-3">
+          <div id="tour-admin-products-filters" className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-[220px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -550,6 +564,27 @@ function InventoryAdminPage() {
 
       <ProductFormDialog open={createOpen} onOpenChange={setCreateOpen} />
       <ImportProductsDialog open={importOpen} onOpenChange={setImportOpen} />
+
+      <OnboardingTour
+        userId={user?.id}
+        tourKey="admin-products"
+        steps={[
+          {
+            title: "Every uploaded product",
+            body: "This list shows every product you've uploaded — tagged and untagged. A product becomes tagged once a customer scans its QR code in-store.",
+          },
+          {
+            title: "Filter and search",
+            body: "Search by name, or filter by tagged status and stock status to focus on exactly what you need.",
+            targetId: "tour-admin-products-filters",
+          },
+          {
+            title: "Tag Barcode Reader",
+            body: "Scan this QR code with your phone to open the Tag Barcode Reader — a quick way to look up or tag products on the shop floor.",
+            targetId: "tour-admin-products-qr",
+          },
+        ]}
+      />
     </div>
   );
 }

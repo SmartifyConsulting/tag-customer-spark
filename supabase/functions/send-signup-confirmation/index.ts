@@ -15,8 +15,11 @@ import { z } from "npm:zod@3.23.8";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 const FROM = "Tag <noreply@tag-tech.co.za>";
-const INK = "#0d0d0d";
+const NAVY = "#031C4D";
+const ORANGE = "#FF5722";
 const CREAM = "#F5F1EA";
+const LOGO_URL =
+  "https://tag-tech.co.za/__l5e/assets-v1/48379f85-ed46-4f9d-b8fd-72cd3cd3fee4/tag-logo-2026e.png";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,27 +43,27 @@ function brandedHtml(ctaUrl: string, mode: "signup" | "magiclink" = "signup") {
   const button = mode === "magiclink" ? "Continue to Tag" : "Confirm email";
 
   return `<!doctype html>
-<html><body style="margin:0;padding:0;background:${CREAM};font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:${INK}">
+<html><body style="margin:0;padding:0;background:${CREAM};font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:${NAVY}">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${CREAM}">
     <tr><td align="center" style="padding:40px 16px">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 24px -12px rgba(13,13,13,0.15)">
-        <tr><td style="background:${INK};padding:24px 28px">
-          <h1 style="margin:0;color:${CREAM};font-family:'Sora','Manrope',sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.02em">Tag</h1>
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 24px -12px rgba(3,28,77,0.15)">
+        <tr><td style="background:linear-gradient(135deg, ${ORANGE} 0%, ${NAVY} 100%);padding:28px;text-align:center">
+          <img src="${LOGO_URL}" alt="Tag" height="40" style="height:40px;width:auto;display:inline-block" />
         </td></tr>
         <tr><td style="padding:32px 28px">
-          <h2 style="margin:0 0 14px;font-family:'Sora','Manrope',sans-serif;font-size:24px;font-weight:700;color:${INK};letter-spacing:-0.02em">${heading}</h2>
+          <h2 style="margin:0 0 14px;font-family:'Sora','Manrope',sans-serif;font-size:24px;font-weight:700;color:${NAVY};letter-spacing:-0.02em">${heading}</h2>
           <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:#374151">
             ${body}
           </p>
           <p style="margin:0 0 28px">
-            <a href="${ctaUrl}" style="display:inline-block;background:${INK};color:${CREAM};text-decoration:none;padding:14px 26px;border-radius:12px;font-weight:600;font-size:15px;font-family:'Sora','Manrope',sans-serif">${button}</a>
+            <a href="${ctaUrl}" style="display:inline-block;background:${ORANGE};color:#ffffff;text-decoration:none;padding:14px 26px;border-radius:12px;font-weight:600;font-size:15px;font-family:'Sora','Manrope',sans-serif">${button}</a>
           </p>
           <p style="margin:24px 0 0;font-size:12px;color:#6b7280;line-height:1.55">
             If you didn't create a Tag account, you can safely ignore this email.
           </p>
         </td></tr>
         <tr><td style="background:${CREAM};padding:18px 28px;text-align:center;font-size:12px;color:#6b7280">
-          © Tag · <a href="${SITE_URL}" style="color:${INK};text-decoration:none;font-weight:600">tag-tech.co.za</a>
+          © Tag · <a href="${SITE_URL}" style="color:${NAVY};text-decoration:none;font-weight:600">tag-tech.co.za</a>
         </td></tr>
       </table>
     </td></tr>

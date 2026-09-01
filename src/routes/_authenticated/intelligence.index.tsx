@@ -10,6 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { CalendarRange, FileText, RefreshCw } from "lucide-react";
 import { requireFeature } from "@/lib/tier-guard";
+import { OnboardingTour } from "@/components/onboarding-tour";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/intelligence/")({
   head: () => ({ meta: [{ title: "Analytics — Tag" }] }),
@@ -18,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/intelligence/")({
 });
 
 function IntelligencePage() {
+  const { user } = useAuth();
   const qc = useQueryClient();
   const reports = useQuery({ queryKey: ["ai", "weekly-reports"], queryFn: () => listWeeklyReports() });
   const exec = useQuery({ queryKey: ["ai", "executive-summary"], queryFn: () => getExecutiveSummary() });
@@ -38,9 +41,13 @@ function IntelligencePage() {
         description="Daily suggestions, daily summaries and weekly performance reports — generated automatically."
       />
 
-      <IntelligenceTabs />
+      <div id="tour-intelligence-tabs">
+        <IntelligenceTabs />
+      </div>
 
-      <OpportunityFeedCard />
+      <div id="tour-intelligence-feed">
+        <OpportunityFeedCard />
+      </div>
 
       {exec.data?.payload && (
         <Card>
@@ -129,6 +136,27 @@ function IntelligencePage() {
           )}
         </CardContent>
       </Card>
+
+      <OnboardingTour
+        userId={user?.id}
+        tourKey="intelligence"
+        steps={[
+          {
+            title: "Welcome to Analytics",
+            body: "Daily suggestions, daily summaries and weekly performance reports — all generated automatically from your store data.",
+          },
+          {
+            title: "Explore by tab",
+            body: "Switch between Overview, Insights, Trends, Forecasting and Interest Score to dig into different angles of your data.",
+            targetId: "tour-intelligence-tabs",
+          },
+          {
+            title: "AI Opportunity Feed",
+            body: "Daily AI-surfaced actions ranked by projected revenue — a ready-made to-do list for growing sales.",
+            targetId: "tour-intelligence-feed",
+          },
+        ]}
+      />
     </div>
   );
 }

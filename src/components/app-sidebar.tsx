@@ -21,7 +21,6 @@ import { useTier } from "@/hooks/use-tier";
 import { useAuth, useIsAdmin, useIsSuperAdmin } from "@/hooks/use-auth";
 import { UserMenu } from "@/components/user-menu";
 import { TagLogo } from "@/components/tag-logo";
-import { TagReaderQrBadge } from "@/components/qr/tag-reader-tile";
 import { sectionsForUser, isNavActive, type NavItem } from "@/lib/nav";
 import { useIsStaff } from "@/hooks/use-persona";
 
@@ -149,16 +148,9 @@ export function AppSidebar() {
       <SidebarFooter>
         {!collapsed && (
           <div className="space-y-2 px-3 py-3">
-            {/* Tag Barcode Reader QR, then search, then the profile row —
-                all left-aligned (the ml-2 matches the Button's own px-2). */}
-            <Link
-              to="/tools/barcode-reader"
-              target="_blank"
-              title="Open Tag Barcode Reader"
-              className="ml-2 block w-fit"
-            >
-              <TagReaderQrBadge size={96} />
-            </Link>
+            {/* Search, then the profile row — the Tag Barcode Reader QR now
+                lives on the Products page heading instead (all left-aligned,
+                the ml-2 matches the Button's own px-2). */}
             <input
               type="text"
               placeholder="Search anything..."
