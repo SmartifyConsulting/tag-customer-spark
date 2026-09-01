@@ -20,11 +20,10 @@ export const productInputSchema = z.object({
   gtin: z
     .string()
     .trim()
-    .max(14)
-    .optional()
-    .nullable()
+    .min(1, "Barcode is required")
+    .max(14, "Barcode must be 14 digits or less")
     .refine(
-      (v) => !v || isValidGtin(v),
+      (v) => isValidGtin(v),
       "Enter a valid 8, 12, 13 or 14 digit barcode (check digit must match)",
     ),
 

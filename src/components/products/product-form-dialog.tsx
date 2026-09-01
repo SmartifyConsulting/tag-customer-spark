@@ -306,7 +306,7 @@ export function ProductFormDialog({
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field
-                label="Barcode (GTIN)"
+                label="Barcode (GTIN) *"
                 error={form.formState.errors.gtin?.message as string | undefined}
               >
                 <div className="flex gap-2">
@@ -327,7 +327,7 @@ export function ProductFormDialog({
                   </Button>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  The real product barcode. Leave blank and one is generated for you.
+                  The real product barcode (8, 12, 13 or 14 digits).
                 </p>
               </Field>
             </div>
