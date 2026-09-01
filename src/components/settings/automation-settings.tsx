@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { AUTOMATIONS, ALL_WHATSAPP_TEMPLATES, type AutomationSetting } from "@/lib/automation";
 import {
   checkWhatsAppConnection,
+  checkWhatsAppMessageStatus,
   listAutomationSettings,
   listWhatsAppTemplates,
   saveAutomationSetting,
@@ -78,6 +79,21 @@ export function AutomationSettings() {
       else toast.error(result.error ?? "WhatsApp Template rejected the test message");
     },
     onError: (e: Error) => toast.error(e.message || "Could not run delivery test"),
+  });
+
+  // "Accepted by WhatsApp" only means Infobip queued the send — it does not
+  // mean the message actually reached the recipient's phone. This looks up
+  // the real delivery outcome (DELIVERED, REJECTED, PENDING, etc.) for a
+  // message id, either from a just-run test above or one pasted in from
+  // notification_history.
+  const [statusMessageId, setStatusMessageId] = useState("");
+  const deliveryStatus = useMutation({
+    mutationFn: (messageId: string) => checkWhatsAppMessageStatus({ data: { messageId } }),
+    onSuccess: (result) => {
+      if (result.ok) toast.success("Fetched delivery status");
+      else toast.error(result.error ?? "Could not fetch delivery status");
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not fetch delivery status"),
   });
 
   // Authentication-only probe: no message is sent, so a failure here points at
@@ -264,7 +280,23 @@ export function AutomationSettings() {
                 </div>
                 <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
                   <div><dt className="text-muted-foreground">HTTP status</dt><dd>{testDelivery.data.status}</dd></div>
-                  <div><dt className="text-muted-foreground">Message ID</dt><dd className="break-all font-mono text-xs">{testDelivery.data.messageId ?? "—"}</dd></div>
+                  <div>
+                    <dt className="text-muted-foreground">Message ID</dt>
+                    <dd className="flex items-center gap-2">
+                      <span className="break-all font-mono text-xs">{testDelivery.data.messageId ?? "—"}</span>
+                      {testDelivery.data.messageId && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => deliveryStatus.mutate(testDelivery.data.messageId!)}
+                          disabled={deliveryStatus.isPending}
+                        >
+                          {deliveryStatus.isPending ? "Checking…" : "Check delivery"}
+                        </Button>
+                      )}
+                    </dd>
+                  </div>
                   <div><dt className="text-muted-foreground">Key fingerprint</dt><dd className="font-mono text-xs">{testDelivery.data.diagnostic?.keyFingerprint ?? "—"}</dd></div>
                   <div><dt className="text-muted-foreground">API host</dt><dd className="break-all font-mono text-xs">{testDelivery.data.diagnostic?.apiHost ?? "—"}</dd></div>
                   <div><dt className="text-muted-foreground">Key length</dt><dd>{testDelivery.data.diagnostic?.keyLength ?? "—"}</dd></div>
@@ -274,6 +306,44 @@ export function AutomationSettings() {
                 {testDelivery.data.error ? <p className="mt-3 text-destructive">{testDelivery.data.error}</p> : null}
               </div>
             ) : null}
+
+            {deliveryStatus.data ? (
+              <div className="rounded-lg border bg-muted/30 p-4 text-sm">
+                <div className="flex items-center gap-2 font-medium">
+                  {deliveryStatus.data.ok ? (
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                  )}
+                  Real delivery status
+                </div>
+                <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-background p-3 text-xs">
+                  {JSON.stringify(deliveryStatus.data.result ?? { error: deliveryStatus.data.error }, null, 2)}
+                </pre>
+              </div>
+            ) : null}
+
+            <div className="space-y-2 border-t pt-4">
+              <Label htmlFor="lookup-message-id" className="text-xs">
+                Or check a message ID from notification_history
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="lookup-message-id"
+                  value={statusMessageId}
+                  onChange={(e) => setStatusMessageId(e.target.value)}
+                  placeholder="provider_message_sid value"
+                  className="font-mono text-xs"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => deliveryStatus.mutate(statusMessageId.trim())}
+                  disabled={!statusMessageId.trim() || deliveryStatus.isPending}
+                >
+                  {deliveryStatus.isPending ? "Checking…" : "Check delivery"}
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       ) : null}

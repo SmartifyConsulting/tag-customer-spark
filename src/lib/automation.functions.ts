@@ -191,6 +191,34 @@ export const testWhatsAppDelivery = createServerFn({ method: "POST" })
   });
 
 /**
+ * Looks up the real delivery status of a previously-sent WhatsApp message
+ * from Infobip's own logs — "queued" in our notification_history only means
+ * Infobip accepted the send request, not that WhatsApp actually delivered
+ * it, so this is the only way to see the true outcome (DELIVERED, REJECTED,
+ * PENDING, etc.) of a specific send.
+ */
+export const checkWhatsAppMessageStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ messageId: z.string().trim().min(1).max(120) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: role } = await supabase
+      .from("user_roles")
+      .select("retailer_id")
+      .eq("user_id", userId)
+      .eq("role", "super_admin")
+      .not("retailer_id", "is", null)
+      .limit(1)
+      .maybeSingle();
+    if (!role?.retailer_id) throw new Error("Super administrator access required");
+
+    const { lookupInfobipMessageStatus } = await import("@/lib/whatsapp-infobip.server");
+    return lookupInfobipMessageStatus(data.messageId);
+  });
+
+/**
  * Live list of the WhatsApp templates registered on this sender, so the
  * delivery test always reflects newly approved templates instead of a
  * hardcoded list that goes stale.
