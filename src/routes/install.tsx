@@ -63,6 +63,7 @@ function useInstallPrompt() {
 function InstallPage() {
   const [platform, setPlatform] = useState<Platform>("desktop");
   const { canPrompt, installed, promptInstall } = useInstallPrompt();
+  const [showAndroidSteps, setShowAndroidSteps] = useState(false);
 
   useEffect(() => {
     setPlatform(detectPlatform());
@@ -93,12 +94,15 @@ function InstallPage() {
           <div className="mt-8 w-full max-w-sm">
             {platform === "android" && (
               <div className="rounded-2xl border border-border/60 bg-card p-6">
-                {canPrompt ? (
-                  <Button size="lg" className="w-full gap-2" onClick={promptInstall}>
-                    <Download className="h-4 w-4" /> Install Tag
-                  </Button>
-                ) : (
-                  <ol className="space-y-3 text-left text-sm">
+                <Button
+                  size="lg"
+                  className="w-full gap-2"
+                  onClick={canPrompt ? promptInstall : () => setShowAndroidSteps(true)}
+                >
+                  <Download className="h-4 w-4" /> Install Tag
+                </Button>
+                {!canPrompt && showAndroidSteps && (
+                  <ol className="mt-5 space-y-3 text-left text-sm">
                     <li className="flex gap-3">
                       <span className="font-bold text-primary">1.</span>
                       Tap <MoreVertical className="mx-1 inline h-4 w-4" /> in your browser's menu

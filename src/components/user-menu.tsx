@@ -47,11 +47,11 @@ export function UserMenu() {
         <Button variant="ghost" className="group h-auto gap-2 px-2 py-1 hover:bg-transparent">
           <Avatar className="h-9 w-9">
             {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={name} />}
-            <AvatarFallback className="bg-[#F94300] text-xs font-semibold text-primary-foreground transition-colors group-hover:bg-primary-foreground group-hover:text-[#F94300]">
+            <AvatarFallback className="bg-[#F94300] text-xs font-semibold text-white">
               {initialsFor(name)}
             </AvatarFallback>
           </Avatar>
-          <span className="hidden truncate rounded-md px-2 py-1 text-sm font-medium max-w-[140px] transition-colors group-hover:bg-[#F94300] group-hover:text-primary-foreground sm:inline">
+          <span className="hidden truncate rounded-md bg-[#F94300] px-2 py-1 text-sm font-medium text-white max-w-[140px] sm:inline">
             {name}
           </span>
         </Button>
