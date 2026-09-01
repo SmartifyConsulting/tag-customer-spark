@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/plan")({
 });
 
 const TIERS: TagTier[] = [
-  ...SELF_SERVE_PLANS.filter((p): p is TagTier => p !== "trial"),
+  ...SELF_SERVE_PLANS.filter((p): p is TagTier => p !== "trial" && p !== "go"),
   "enterprise",
 ];
 

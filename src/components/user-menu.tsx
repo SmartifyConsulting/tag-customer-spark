@@ -69,12 +69,12 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className="focus:bg-[#F94300] focus:text-white">
           <Link to="/profile" className="flex items-center gap-2">
             <UserIcon className="h-4 w-4" /> Profile
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className="focus:bg-[#F94300] focus:text-white">
           <Link to="/settings" className="flex items-center gap-2">
             <SettingsIcon className="h-4 w-4" /> Settings
           </Link>
@@ -86,7 +86,11 @@ export function UserMenu() {
               Switch profile
             </DropdownMenuLabel>
             {otherSessions.map((s) => (
-              <DropdownMenuItem key={s.email} onClick={() => void switchTo(s)} className="flex items-center gap-2">
+              <DropdownMenuItem
+                key={s.email}
+                onClick={() => void switchTo(s)}
+                className="flex items-center gap-2 focus:bg-[#F94300] focus:text-white"
+              >
                 <Repeat className="h-4 w-4" /> {s.email}
               </DropdownMenuItem>
             ))}
