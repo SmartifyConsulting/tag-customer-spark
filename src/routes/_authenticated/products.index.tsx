@@ -24,6 +24,8 @@ import { ProductsPagination } from "@/components/products/products-pagination";
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { BulkQrDialog } from "@/components/qr/bulk-qr-dialog";
 import { OnboardingTour } from "@/components/onboarding-tour";
+import { useOnboardingTips } from "@/hooks/use-onboarding-tips";
+import { OnboardingTipOverlay } from "@/components/onboarding-tip-overlay";
 
 import {
   archiveProduct,
@@ -45,7 +47,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_authenticated/products/")({
-  head: () => ({ meta: [{ title: "Inventory — Tag" }] }),
+  head: () => ({ meta: [{ title: "Products — Tag" }] }),
   validateSearch: zodValidator(searchSchema),
   component: ProductsListPage,
 });
@@ -56,6 +58,8 @@ function ProductsListPage() {
   const { hasRole, user } = useAuth();
   const canManage = hasRole("super_admin") || hasRole("retail_admin") || hasRole("store_manager");
   const isSuperAdmin = hasRole("super_admin");
+
+  const { shouldShowTips, currentTip, currentTipIndex, unseenTips, markTipAsSeen, nextTip, previousTip, dismissAllTips } = useOnboardingTips("/products");
 
   const optsFn = useServerFn(getProductFormOptions);
   const listFn = useServerFn(listProducts);
@@ -150,8 +154,18 @@ function ProductsListPage() {
 
   return (
     <div className="grid gap-6">
+      {shouldShowTips && currentTip && (
+        <OnboardingTipOverlay
+          tip={currentTip}
+          totalTips={unseenTips.length}
+          currentIndex={currentTipIndex}
+          onNext={nextTip}
+          onPrevious={previousTip}
+          onDismiss={dismissAllTips}
+        />
+      )}
       <PageHeader
-        title="Inventory"
+        title="Products"
         description="Manage products, stock levels, and QR tags in one place."
         actions={
           <div className="flex flex-wrap items-center gap-2">

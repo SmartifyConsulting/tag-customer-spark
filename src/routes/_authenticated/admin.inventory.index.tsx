@@ -52,7 +52,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/inventory/")({
-  head: () => ({ meta: [{ title: "Inventory — Tag" }] }),
+  head: () => ({ meta: [{ title: "Products — Tag" }] }),
   component: InventoryAdminPage,
 });
 
@@ -73,9 +73,8 @@ function InventoryAdminPage() {
   const qc = useQueryClient();
   const [reenriching, setReenriching] = useState(false);
   const [search, setSearch] = useState("");
-  // Untagged by default — most products haven't been scanned by a customer
-  // yet, so that's the state that actually needs attention on first load.
-  const [tagged, setTagged] = useState<Tagged>("untagged");
+  // All products by default — gives users a complete view of their inventory.
+  const [tagged, setTagged] = useState<Tagged>("all");
   // Inventory shows live stock by default; drafts/archived are opt-in.
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const [createOpen, setCreateOpen] = useState(false);

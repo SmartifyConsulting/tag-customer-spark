@@ -106,7 +106,7 @@ function InboxPage() {
         title="Messages"
         description="Every customer WhatsApp reply, in one place."
         actions={
-          <Button size="sm" className="gap-2" onClick={() => setBroadcastOpen(true)}>
+          <Button size="sm" className="gap-2 hidden" onClick={() => setBroadcastOpen(true)}>
             <Megaphone className="h-4 w-4" /> New broadcast
           </Button>
         }

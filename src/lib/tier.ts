@@ -12,7 +12,8 @@ export type TierFeatureKey =
   | "advancedExports"
   | "apiAccess"
   | "multiStore"
-  | "opportunityFeed";
+  | "opportunityFeed"
+  | "inventoryImport";
 
 export const TIER_LABEL: Record<TagTier, string> = {
   go: "Tag Go",
@@ -28,6 +29,7 @@ export const FEATURE_MIN_TIER: Record<TierFeatureKey, TagTier> = {
   advancedExports: "starter",
   aiAssistant: "growth",
   intentEngine: "growth",
+  inventoryImport: "growth",
   multiStore: "pro",
   roi: "pro",
   weeklyBriefings: "pro",
@@ -75,6 +77,11 @@ export const FEATURE_META: Record<
   intentEngine: {
     title: "Intent score engine",
     description: "Per-product 0–100 intent scores with retailer-tunable weights.",
+  },
+  inventoryImport: {
+    title: "Bulk inventory import",
+    description:
+      "Upload your complete product catalog at once to get started immediately.",
   },
   aiAssistant: {
     title: "AI campaign assistant",
