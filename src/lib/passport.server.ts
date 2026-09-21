@@ -1,5 +1,6 @@
 // Server-only helpers for Digital Product Passport enrichment.
 import { z } from "zod";
+import { describeAiFailure, type AiFailureKind } from "@/lib/ai-errors";
 
 // NOTE: every field here is `.nullable()` rather than `.optional()`, and no
 // field or nested object uses `.default()`. OpenAI's strict structured-output
@@ -187,11 +188,10 @@ Rules:
         "You produce factual Digital Product Passport data. Prefer null over guessing. Never invent GTINs, URLs, or certifications.",
     });
     return object as EnrichedPassport;
-  } catch (e: any) {
-    const msg = e?.message ?? "AI enrichment failed";
-    if (msg.includes("429")) throw new Error("AI rate limit hit — retry shortly.");
-    if (msg.includes("402")) throw new Error("AI credits exhausted.");
-    throw new Error(msg);
+  } catch (e) {
+    // Rethrown untouched: enrichProductPassport knows the product and turns
+    // the failure into a specific message (see ai-errors.ts).
+    throw e;
   }
 }
 
@@ -199,7 +199,7 @@ export async function enrichProductPassport(
   supabaseAdmin: any,
   productId: string,
   opts: { overwrite?: boolean } = {},
-): Promise<{ ok: true; status: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; status: string } | { ok: false; error: string; aiKind?: AiFailureKind }> {
   const { data: product, error: pErr } = await supabaseAdmin
     .from("products")
     .select(
@@ -328,7 +328,12 @@ export async function enrichProductPassport(
         last_error: (e?.message ?? "unknown").slice(0, 500),
         attempts: 0, // increment via SQL if desired; keep simple for now
       });
-    return { ok: false, error: e?.message ?? "enrichment failed" };
+    const failure = describeAiFailure({
+      action: `enrich ${product.name ?? "this product"}`,
+      purpose: "passport enrichment",
+      error: e,
+    });
+    return { ok: false, error: failure.message, aiKind: failure.kind };
   }
 }
 

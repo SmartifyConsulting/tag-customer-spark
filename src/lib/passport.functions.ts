@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { AiFailureKind } from "@/lib/ai-errors";
 
 export const getProductPassport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -56,11 +57,27 @@ export const bulkReenrichPassports = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { enrichProductPassport } = await import("./passport.server");
     let succeeded = 0;
-    const errors: Array<{ productId: string; message: string }> = [];
+    const errors: Array<{
+      productId: string;
+      productName: string | null;
+      message: string;
+      aiKind?: AiFailureKind;
+    }> = [];
+    const { data: named } = await supabaseAdmin
+      .from("products")
+      .select("id, name")
+      .in("id", data.productIds);
+    const names = new Map<string, string | null>((named ?? []).map((p: any) => [p.id, p.name ?? null]));
     for (const productId of data.productIds) {
       const r = await enrichProductPassport(supabaseAdmin, productId, { overwrite: true });
       if (r.ok) succeeded++;
-      else errors.push({ productId, message: r.error });
+      else
+        errors.push({
+          productId,
+          productName: names.get(productId) ?? null,
+          message: r.error,
+          ...(r.aiKind ? { aiKind: r.aiKind } : {}),
+        });
     }
     return { succeeded, errors };
   });

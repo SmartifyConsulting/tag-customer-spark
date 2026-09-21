@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { productInputSchema, listProductsSchema } from "./products.schemas";
 import { assertProductCapAvailable } from "./product-cap.server";
+import { describeAiFailure, type AiFailureKind } from "./ai-errors";
 
 async function resolveRetailerId(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
@@ -784,8 +785,34 @@ export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
       succeeded: 0,
       skipped: 0,
       failed: 0,
-      errors: [] as Array<{ productId: string; step: string; message: string }>,
+      errors: [] as Array<{
+        productId: string;
+        productName: string | null;
+        step: string;
+        message: string;
+        aiKind?: AiFailureKind;
+      }>,
     };
+
+    // Names for the error messages — "which product" is the point of them.
+    const { data: named } = await supabaseAdmin
+      .from("products")
+      .select("id, name")
+      .in("id", data.productIds);
+    const names = new Map<string, string | null>((named ?? []).map((p: any) => [p.id, p.name ?? null]));
+    const pushError = (
+      pid: string,
+      step: string,
+      message: string,
+      aiKind?: AiFailureKind,
+    ) =>
+      results.errors.push({
+        productId: pid,
+        productName: names.get(pid) ?? null,
+        step,
+        message,
+        ...(aiKind ? { aiKind } : {}),
+      });
 
     const runOne = async (pid: string) => {
       try {
@@ -801,7 +828,7 @@ export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
         const gtin = String(p.gtin ?? "").trim();
         if (!gtin || !isValidGtin(gtin)) {
           results.skipped++;
-          results.errors.push({ productId: pid, step: "gtin", message: "Missing or invalid GTIN" });
+          pushError(pid, "gtin", "Missing or invalid GTIN");
           return;
         }
 
@@ -812,11 +839,7 @@ export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
           try {
             await normaliseAndPersist({ supabase, productId: pid });
           } catch (e: any) {
-            results.errors.push({
-              productId: pid,
-              step: "normalise",
-              message: e?.message ?? "Normalisation failed",
-            });
+            pushError(pid, "normalise", e?.message ?? "Normalisation failed");
           }
         }
 
@@ -824,38 +847,33 @@ export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
         try {
           await generateForProduct(supabase, userId, pid, data.force);
         } catch (e: any) {
-          results.errors.push({ productId: pid, step: "qr", message: e?.message ?? "QR failed" });
+          pushError(pid, "qr", e?.message ?? "QR failed");
         }
 
         // 2. Image resolver (in case QR path skipped it)
         try {
           await resolveAndSyncProductImage({ supabase, productId: pid });
         } catch (e: any) {
-          results.errors.push({
-            productId: pid,
-            step: "image",
-            message: e?.message ?? "Image failed",
-          });
+          pushError(pid, "image", e?.message ?? "Image failed");
         }
 
         // 3. Passport enrichment
         try {
           const r = await enrichProductPassport(supabaseAdmin, pid, { overwrite: false });
-          if (!r.ok) {
-            results.errors.push({ productId: pid, step: "enrichment", message: r.error });
-          }
+          if (!r.ok) pushError(pid, "enrichment", r.error, r.aiKind);
         } catch (e: any) {
-          results.errors.push({
-            productId: pid,
-            step: "enrichment",
-            message: e?.message ?? "Enrichment failed",
+          const failure = describeAiFailure({
+            action: `enrich ${names.get(pid) ?? "this product"}`,
+            purpose: "passport enrichment",
+            error: e,
           });
+          pushError(pid, "enrichment", failure.message, failure.kind);
         }
 
         results.succeeded++;
       } catch (e: any) {
         results.failed++;
-        results.errors.push({ productId: pid, step: "unknown", message: e?.message ?? "Failed" });
+        pushError(pid, "unknown", e?.message ?? "Failed");
       }
     };
 

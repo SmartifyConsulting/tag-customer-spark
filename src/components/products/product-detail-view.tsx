@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Archive, ArrowLeft, Edit, Loader2, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { splitAiMessage } from "@/lib/ai-errors";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -81,8 +82,14 @@ export function ProductDetailView({
       .then((res) => {
         qc.invalidateQueries({ queryKey: ["product", productId] });
         if (res.errors.length === 0) return;
-        const first = res.errors[0];
-        toast.error(`Digital identity build didn't finish — ${first.step}: ${first.message}`);
+        const first = res.errors[0]!;
+        const { title, description } = splitAiMessage(first.message);
+        const stepName = first.step.charAt(0).toUpperCase() + first.step.slice(1);
+        toast.error(`Digital identity for ${first.productName ?? "this product"} isn't finished`, {
+          // AI failures already say which service and what to do; others get the step name.
+          description: first.aiKind ? `${stepName}: ${description ?? title}` : `${stepName}: ${title}`,
+          duration: 10000,
+        });
       })
       .catch((e: any) => {
         toast.error(`Digital identity build failed to run — ${e?.message ?? "unknown error"}`);

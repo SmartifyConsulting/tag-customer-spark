@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { splitAiMessage } from "@/lib/ai-errors";
 import { ExternalLink, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +29,11 @@ export function PassportTab({ productId, dppId }: { productId: string; dppId?: s
       toast.success("Enrichment complete");
       qc.invalidateQueries({ queryKey: ["passport", productId] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Enrichment failed"),
+    onError: (e: any) => {
+      // Server messages name the product, the AI service and what to do next.
+      const { title, description } = splitAiMessage(e?.message ?? "Enrichment failed");
+      toast.error(title, description ? { description, duration: 10000 } : undefined);
+    },
   });
 
   const publicUrl = dppId ? `/p/${dppId}` : null;

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { describeAiFailure } from "@/lib/ai-errors";
 import { hasFeature } from "@/lib/tier";
 
 async function resolveRetailerId(supabase: any, userId: string): Promise<string | null> {
@@ -32,6 +33,8 @@ async function requireAiAssistant(supabase: any, userId: string): Promise<void> 
 }
 
 async function callAI<T>(opts: {
+  /** What the user was trying to do, worded for an error like "Couldn't <action>". */
+  action?: string;
   model?: string;
   system?: string;
   prompt: string;
@@ -50,10 +53,13 @@ async function callAI<T>(opts: {
     });
     return object as T;
   } catch (e: any) {
-    const msg = e?.message ?? "AI call failed";
-    if (msg.includes("429")) throw new Error("Rate limit hit. Try again in a moment.");
-    if (msg.includes("402")) throw new Error("AI credits exhausted. Add credits to keep going.");
-    throw new Error(msg);
+    throw new Error(
+      describeAiFailure({
+        action: opts.action ?? "complete this AI request",
+        purpose: "the AI campaign assistant",
+        error: e,
+      }).message,
+    );
   }
 }
 
@@ -93,6 +99,7 @@ ${retailer ? `Retailer: ${retailer.name}.` : ""}
 ${data.hint ? `Extra direction: ${data.hint}` : ""}
 Rules: headline under 60 chars. Body under 280 chars, conversational, no spammy emoji storms. CTA 2-4 words.`;
     return callAI({
+      action: "write the campaign message",
       system: "You write short, high-converting WhatsApp retail messages.",
       prompt,
       schema: messageSchema,
@@ -113,6 +120,7 @@ export const rewriteCampaign = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireAiAssistant(context.supabase, context.userId);
     return callAI({
+      action: "rewrite the campaign message",
       system: "You rewrite WhatsApp retail messages to a target style without changing facts.",
       prompt: `Rewrite this campaign. Target: ${data.direction}.
 Headline: ${data.headline}
@@ -147,6 +155,7 @@ export const predictCampaignResponse = createServerFn({ method: "POST" })
     const baseRedeem = total ? (hist!.filter((h: any) => h.status === "redeemed").length / total) : 0.03;
 
     return callAI({
+      action: "predict the campaign response",
       system: "You are a retail marketing analyst. Estimate WhatsApp campaign response rates and produce a single short rationale.",
       prompt: `Campaign type: ${data.type}. Audience: ${data.audience_size}.
 Retailer baseline: deliver ${(baseDelivered*100).toFixed(0)}%, read ${(baseRead*100).toFixed(0)}%, click ${(baseClick*100).toFixed(0)}%, redeem ${(baseRedeem*100).toFixed(0)}%.
@@ -178,6 +187,7 @@ export const recommendSendTime = createServerFn({ method: "POST" })
     });
     const top = Object.entries(buckets).sort((a, b) => b[1] - a[1]).slice(0, 5);
     return callAI({
+      action: "recommend a send time",
       system: "You recommend the best time to send a WhatsApp campaign based on customer activity.",
       prompt: `Customer activity heatmap (weekday-hour : scans): ${top.map(([k,v]) => `${k}=${v}`).join(", ") || "no data"}.
 Recommend one specific send time within the next 7 days and a 1-sentence reason.`,
@@ -208,6 +218,7 @@ export const summariseConversation = createServerFn({ method: "POST" })
       .join("\n");
     if (!transcript) return { summary: "No messages to summarise yet.", suggested_reply: "", sentiment: "neutral" as const };
     const result = await callAI({
+      action: "summarise the conversation",
       system: "You summarise retail WhatsApp conversations in two short lines and propose a friendly reply.",
       prompt: `Transcript:\n${transcript}\n\nReturn: a 2-line summary, a suggested staff reply (<=240 chars), sentiment (positive/neutral/negative).`,
       schema: z.object({

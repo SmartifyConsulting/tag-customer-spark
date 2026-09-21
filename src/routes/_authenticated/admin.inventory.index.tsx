@@ -3,6 +3,7 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { summarizeBulkErrors, type BulkAiError } from "@/lib/ai-errors";
 import {
   Barcode,
   Check,
@@ -256,7 +257,7 @@ function InventoryAdminPage() {
       let done = 0;
       let succeeded = 0;
       let skipped = 0;
-      const allErrors: Array<{ productId: string; step: string; message: string }> = [];
+      const allErrors: BulkAiError[] = [];
       for (let i = 0; i < ids.length; i += CHUNK) {
         const chunk = ids.slice(i, i + CHUNK);
         toast.loading(`Generating QR codes… ${done} / ${ids.length}`, { id: toastId });
@@ -267,17 +268,19 @@ function InventoryAdminPage() {
         done += chunk.length;
       }
       await qc.invalidateQueries();
-      const errText = allErrors.length ? ` (${allErrors.length} issues)` : "";
       setTagRunStatus(allErrors.length > 0 ? "failed" : "success");
       toast.success(
         [
           barcodeText,
-          `${succeeded} QR code${succeeded === 1 ? "" : "s"} generated${skipped ? `, ${skipped} skipped` : ""}${errText}`,
+          `${succeeded} QR code${succeeded === 1 ? "" : "s"} generated${skipped ? `, ${skipped} skipped` : ""}`,
         ]
           .filter(Boolean)
           .join(" — "),
         { id: toastId },
       );
+      // One specific message for anything that went wrong, instead of "(N issues)".
+      const problem = summarizeBulkErrors(allErrors, "completed");
+      if (problem) toast.error(problem.title, { description: problem.description, duration: 15000 });
     } catch (e: any) {
       setTagRunStatus("failed");
       toast.error(e?.message ?? "Tag intelligence run failed", { id: toastId });
@@ -306,7 +309,7 @@ function InventoryAdminPage() {
       const CHUNK = 10;
       let done = 0;
       let succeeded = 0;
-      const allErrors: Array<{ productId: string; message: string }> = [];
+      const allErrors: BulkAiError[] = [];
       for (let i = 0; i < ids.length; i += CHUNK) {
         const chunk = ids.slice(i, i + CHUNK);
         toast.loading(`Re-enriching… ${done} / ${ids.length}`, { id: toastId });
@@ -317,10 +320,12 @@ function InventoryAdminPage() {
       }
       qc.invalidateQueries();
       toast.success(
-        `Re-enriched ${succeeded} product${succeeded === 1 ? "" : "s"}${allErrors.length ? ` (${allErrors.length} issues)` : ""}`,
+        `Re-enriched ${succeeded} product${succeeded === 1 ? "" : "s"}`,
         { id: toastId },
       );
       if (allErrors.length) console.warn("Re-enrich errors:", allErrors);
+      const problem = summarizeBulkErrors(allErrors, "re-enriched");
+      if (problem) toast.error(problem.title, { description: problem.description, duration: 15000 });
     } catch (e: any) {
       toast.error(e?.message ?? "Re-enrich run failed", { id: toastId });
     } finally {
