@@ -444,3 +444,75 @@ export const listProductScans = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { rows: rows ?? [], total: count ?? 0, page: data.page, pageSize: data.pageSize };
   });
+
+// ---------- Move QRs to the current site address ----------
+//
+// QR codes printed before the domain change encode a retired hostname, so
+// scanning them opens nothing. `generateForProduct` deliberately keeps an
+// existing active QR unless forced, so neither "Digital Identity" nor the
+// bulk dialog ever refreshes them. These two functions find the active QRs
+// whose resolver URL isn't on the current site base and regenerate just those.
+
+const STALE_QR_BATCH = 25;
+
+async function resolveManagerRetailerId(supabase: any, userId: string): Promise<string> {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("retailer_id")
+    .eq("user_id", userId)
+    .in("role", ["super_admin", "retail_admin", "store_manager"])
+    .not("retailer_id", "is", null)
+    .limit(1)
+    .maybeSingle();
+  if (!data?.retailer_id) throw new Error("Only store managers and admins can update QR links.");
+  return data.retailer_id as string;
+}
+
+async function findStaleQrProductIds(supabase: any, retailerId: string): Promise<string[]> {
+  const { getPublicSiteBase } = await import("./passport.server");
+  const prefix = `${getPublicSiteBase()}/`;
+  const { data, error } = await supabase
+    .from("product_qr_assets")
+    .select("product_id, resolver_url")
+    .eq("retailer_id", retailerId)
+    .eq("status", "active")
+    .limit(5000);
+  if (error) throw new Error(error.message);
+  const ids = (data ?? [])
+    .filter((r: any) => !String(r.resolver_url ?? "").startsWith(prefix))
+    .map((r: any) => r.product_id as string);
+  return Array.from(new Set(ids));
+}
+
+export const countStaleQrs = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const retailerId = await resolveManagerRetailerId(context.supabase, context.userId);
+    const ids = await findStaleQrProductIds(context.supabase, retailerId);
+    return { count: ids.length };
+  });
+
+// `exclude` carries product ids that already failed this run, so a few
+// permanently failing products (e.g. an invalid barcode) can't starve the rest.
+export const migrateStaleQrs = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ exclude: z.array(z.string().uuid()).max(5000).optional().default([]) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const retailerId = await resolveManagerRetailerId(context.supabase, context.userId);
+    const skip = new Set(data.exclude);
+    const ids = (await findStaleQrProductIds(context.supabase, retailerId)).filter((id) => !skip.has(id));
+    const batch = ids.slice(0, STALE_QR_BATCH);
+    let updated = 0;
+    const failed: Array<{ productId: string; message: string }> = [];
+    for (const pid of batch) {
+      try {
+        await generateForProduct(context.supabase, context.userId, pid, true);
+        updated++;
+      } catch (e: any) {
+        failed.push({ productId: pid, message: e?.message ?? "failed" });
+      }
+    }
+    return { updated, remaining: ids.length - batch.length, failed };
+  });

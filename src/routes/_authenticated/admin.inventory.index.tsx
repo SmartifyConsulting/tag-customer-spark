@@ -40,6 +40,7 @@ import {
 import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { ImportProductsDialog } from "@/components/products/import-products-dialog";
 import { TagReaderQrBadge } from "@/components/qr/tag-reader-tile";
+import { UpdateQrLinksButton } from "@/components/qr/update-qr-links-button";
 import { OnboardingTour } from "@/components/onboarding-tour";
 import {
   bulkCompleteDigitalIdentity,
@@ -398,6 +399,7 @@ function InventoryAdminPage() {
           )}
           Re-enrich all
         </Button>
+        <UpdateQrLinksButton />
         <Button variant="outline" onClick={() => setImportOpen(true)}>
           <Upload className="mr-2 h-4 w-4" /> Import
         </Button>
