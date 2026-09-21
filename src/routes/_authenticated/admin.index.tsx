@@ -6,17 +6,22 @@ import { TaxonomyAdminSection } from "@/components/admin/taxonomy-admin-section"
 import { StoresView } from "@/components/stores/stores-view";
 import { UserAdminTab } from "@/components/settings/user-admin-tab";
 import { SignupsTab } from "@/components/settings/signups-tab";
-import { useIsAdmin } from "@/hooks/use-auth";
+import { PlanAdminTab } from "@/components/settings/plan-admin-tab";
+import { IntegrationsTab } from "@/components/admin/integrations-tab";
+import { useAuth, useIsAdmin } from "@/hooks/use-auth";
 
 // Consolidated admin surface — Taxonomy, Stores and Users are tabs on one
 // screen. Customers (/customers) and Automations (/automations) are their
 // own screens now; the old ?tab= values below redirect there so existing
-// links keep working.
+// links keep working. "Subscription plan admin" (super_admin only) lives
+// here as a tab too — it used to be a Settings tab.
 const searchSchema = z.object({
-  tab: z.enum(["taxonomy", "stores", "customers", "users", "automations"]).optional(),
+  tab: z
+    .enum(["taxonomy", "stores", "customers", "users", "automations", "plan-admin", "integrations"])
+    .optional(),
 });
 
-type AdminTab = "taxonomy" | "stores" | "users";
+type AdminTab = "taxonomy" | "stores" | "users" | "plan-admin" | "integrations";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Admin — Tag" }] }),
@@ -26,13 +31,20 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 
 function AdminPage() {
   const isAdmin = useIsAdmin();
+  const { roles } = useAuth();
+  const isSuperAdmin = roles.includes("super_admin");
   const { tab } = Route.useSearch();
   const navigate = useNavigate();
   if (!isAdmin) return <Navigate to="/briefing" />;
   if (tab === "customers") return <Navigate to="/customers" replace />;
   if (tab === "automations") return <Navigate to="/automations" replace />;
 
-  const active: AdminTab = tab === "stores" || tab === "users" ? tab : "taxonomy";
+  const active: AdminTab =
+    tab === "stores" ||
+    tab === "users" ||
+    ((tab === "plan-admin" || tab === "integrations") && isSuperAdmin)
+      ? tab
+      : "taxonomy";
   return (
     <div className="space-y-6">
       <PageHeader
@@ -47,6 +59,8 @@ function AdminPage() {
           <TabsTrigger value="taxonomy">Taxonomy</TabsTrigger>
           <TabsTrigger value="stores">Stores</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
+          {isSuperAdmin && <TabsTrigger value="plan-admin">Subscription plan admin</TabsTrigger>}
+          {isSuperAdmin && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
         </TabsList>
         <TabsContent value="taxonomy" className="pt-4">
           <TaxonomyAdminSection />
@@ -58,6 +72,16 @@ function AdminPage() {
           <SignupsTab />
           <UserAdminTab />
         </TabsContent>
+        {isSuperAdmin && (
+          <TabsContent value="plan-admin" className="pt-4">
+            <PlanAdminTab />
+          </TabsContent>
+        )}
+        {isSuperAdmin && (
+          <TabsContent value="integrations" className="pt-4">
+            <IntegrationsTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
