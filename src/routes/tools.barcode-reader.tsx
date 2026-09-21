@@ -126,7 +126,7 @@ function BarcodeReaderPage() {
   useEffect(() => {
     if (!detected || !looksLikeGtin) return;
     const t = setTimeout(() => {
-      window.location.href = `/passport/${detected}`;
+      window.location.href = `/passport/${detected}?src=reader`;
     }, 400);
     return () => clearTimeout(t);
   }, [detected, looksLikeGtin]);

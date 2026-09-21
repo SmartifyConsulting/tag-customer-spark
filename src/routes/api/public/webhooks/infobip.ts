@@ -291,6 +291,22 @@ export const Route = createFileRoute("/api/public/webhooks/infobip")({
             continue;
           }
 
+          // Shopper scanned a QR and sent the pre-filled "Ref …" message: this
+          // is their opt-in (works for brand-new numbers, so it runs before
+          // the existing-customer lookup below).
+          try {
+            const { handleScanOptIn } = await import("@/lib/whatsapp-scan-optin.server");
+            const handled = await handleScanOptIn(supabaseAdmin, {
+              from,
+              text: String(rawBody),
+              profileName: result?.contact?.name ?? null,
+            });
+            if (handled) continue;
+          } catch (e: any) {
+            console.error("[infobip-webhook] scan opt-in failed", e?.message ?? String(e));
+            continue;
+          }
+
           const { data: customer } = await supabaseAdmin
             .from("customers")
             .select("id, retailer_id")

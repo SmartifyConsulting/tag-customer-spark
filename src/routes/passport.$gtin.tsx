@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { useState } from "react";
@@ -142,20 +142,38 @@ const getPublicProductByGtin = createServerFn({ method: "GET" })
     }
 
 
+    let mobile = false;
+    try {
+      const { getRequestHeader } = await import("@tanstack/react-start/server");
+      mobile = /Mobi|Android|iPhone/i.test(getRequestHeader("user-agent") ?? "");
+    } catch {
+      /* not in request context */
+    }
+
     return {
       found: true as const,
       gtin: gtin14,
       product,
       passport,
+      mobile,
     };
   });
 
 // ------- Route --------------------------------------------------------------
 
+// `src` marks visits that should see the product page itself: the in-app
+// barcode reader (`reader`) and "View product instead" (`web`). Any other
+// phone visit is a camera scan of a printed QR, which opens the first TAG
+// WhatsApp chat instead.
 export const Route = createFileRoute("/passport/$gtin")({
-  loader: async ({ params }) => {
+  validateSearch: z.object({ src: z.enum(["reader", "web"]).optional() }),
+  loaderDeps: ({ search }) => ({ src: search.src }),
+  loader: async ({ params, deps }) => {
     const data = await getPublicProductByGtin({ data: { gtin: params.gtin } });
     if (!data.found) throw notFound();
+    if (data.mobile && !deps.src) {
+      throw redirect({ to: "/start-chat", search: { g: data.gtin } });
+    }
     return data;
   },
   head: ({ loaderData }) => {

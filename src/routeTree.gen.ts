@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as StartChatRouteImport } from './routes/start-chat'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -90,6 +91,11 @@ import { Route as AuthenticatedAdminInventoryProductIdRouteImport } from './rout
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StartChatRoute = StartChatRouteImport.update({
+  id: '/start-chat',
+  path: '/start-chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SetupRoute = SetupRouteImport.update({
@@ -521,6 +527,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/start-chat': typeof StartChatRoute
   '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/automations': typeof AuthenticatedAutomationsRoute
@@ -599,6 +606,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/start-chat': typeof StartChatRoute
   '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/automations': typeof AuthenticatedAutomationsRoute
@@ -676,6 +684,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/start-chat': typeof StartChatRoute
   '/terms': typeof TermsRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/_authenticated/automations': typeof AuthenticatedAutomationsRoute
@@ -756,6 +765,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/setup'
+    | '/start-chat'
     | '/terms'
     | '/analytics'
     | '/automations'
@@ -834,6 +844,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/setup'
+    | '/start-chat'
     | '/terms'
     | '/analytics'
     | '/automations'
@@ -910,6 +921,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/setup'
+    | '/start-chat'
     | '/terms'
     | '/_authenticated/analytics'
     | '/_authenticated/automations'
@@ -990,6 +1002,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SetupRoute: typeof SetupRoute
+  StartChatRoute: typeof StartChatRoute
   TermsRoute: typeof TermsRoute
   NMessageIdRoute: typeof NMessageIdRoute
   PDppIdRoute: typeof PDppIdRoute
@@ -1017,6 +1030,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/start-chat': {
+      id: '/start-chat'
+      path: '/start-chat'
+      fullPath: '/start-chat'
+      preLoaderRoute: typeof StartChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/setup': {
@@ -1731,6 +1751,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SetupRoute: SetupRoute,
+  StartChatRoute: StartChatRoute,
   TermsRoute: TermsRoute,
   NMessageIdRoute: NMessageIdRoute,
   PDppIdRoute: PDppIdRoute,

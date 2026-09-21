@@ -90,6 +90,18 @@ export const Route = createFileRoute("/api/public/s/$shortCode")({
           sanitiseSiteBase(new URL(request.url).origin) ||
           "https://tag-tech.co.za";
 
+        // Phone-camera scans open the first TAG WhatsApp chat; desktop keeps
+        // the product page.
+        if (device === "mobile") {
+          return new Response(null, {
+            status: 302,
+            headers: {
+              Location: `${publicBase}/start-chat?t=${encodeURIComponent(shortCode)}`,
+              "Cache-Control": "no-store",
+            },
+          });
+        }
+
         const forward = scannedStoreParam ? `?s=${encodeURIComponent(scannedStoreParam)}` : "";
         return new Response(null, {
           status: 302,
