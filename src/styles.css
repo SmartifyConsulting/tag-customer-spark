@@ -152,4 +152,15 @@
     font-family: var(--font-display);
     letter-spacing: -0.02em;
   }
+
+  /* Number fields are plain typeable boxes: no up/down arrows. */
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
 }
