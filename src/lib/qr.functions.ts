@@ -435,7 +435,7 @@ export const listProductScans = createServerFn({ method: "POST" })
     const { data: rows, count, error } = await context.supabase
       .from("qr_scans")
       .select(
-        "id, scanned_at, device_type, user_agent, referrer, qr_version, store:stores(id,name)",
+        "id, scanned_at, device_type, user_agent, referrer, qr_version, customer_id, store:stores(id,name)",
         { count: "exact" },
       )
       .eq("product_id", data.productId)

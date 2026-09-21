@@ -982,3 +982,53 @@ export const listIncompleteDigitalIdentityIds = createServerFn({ method: "GET" }
     }
     return { ids };
   });
+
+// Customers currently following a product (active interest), newest first —
+// the list behind the "N following" badge on Admin > Products.
+export const listProductFollowers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ productId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const retailerId = await resolveRetailerId(supabase, userId);
+    if (!retailerId) return { rows: [] as FollowerRow[] };
+
+    const { data: interests, error } = await supabase
+      .from("customer_interests")
+      .select("id, customer_id, created_at, source")
+      .eq("retailer_id", retailerId)
+      .eq("product_id", data.productId)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (error) throw new Error(error.message);
+
+    const ids = Array.from(new Set((interests ?? []).map((i: any) => i.customer_id))) as string[];
+    const byId = new Map<string, { full_name: string | null; whatsapp_e164: string }>();
+    if (ids.length) {
+      const { data: customers } = await supabase
+        .from("customers")
+        .select("id, full_name, whatsapp_e164")
+        .in("id", ids);
+      (customers ?? []).forEach((c: any) => byId.set(c.id, c));
+    }
+
+    const rows: FollowerRow[] = (interests ?? []).map((i: any) => ({
+      id: i.id,
+      customer_id: i.customer_id,
+      name: byId.get(i.customer_id)?.full_name ?? null,
+      whatsapp: byId.get(i.customer_id)?.whatsapp_e164 ?? null,
+      followed_at: i.created_at,
+      source: i.source as string,
+    }));
+    return { rows };
+  });
+
+export type FollowerRow = {
+  id: string;
+  customer_id: string;
+  name: string | null;
+  whatsapp: string | null;
+  followed_at: string;
+  source: string;
+};

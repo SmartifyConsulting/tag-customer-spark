@@ -41,6 +41,7 @@ import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { ImportProductsDialog } from "@/components/products/import-products-dialog";
 import { TagReaderQrBadge } from "@/components/qr/tag-reader-tile";
 import { UpdateQrLinksButton } from "@/components/qr/update-qr-links-button";
+import { FollowingDialog, TaggedDialog } from "@/components/products/product-activity-dialogs";
 import { OnboardingTour } from "@/components/onboarding-tour";
 import {
   bulkCompleteDigitalIdentity,
@@ -75,6 +76,8 @@ function InventoryAdminPage() {
   const reenrichFn = useServerFn(bulkReenrichPassports);
   const qc = useQueryClient();
   const [reenriching, setReenriching] = useState(false);
+  // Which product's "Tagged" / "Following" list is open (badges on each row).
+  const [activity, setActivity] = useState<{ kind: "tagged" | "following"; id: string; name: string } | null>(null);
   const [search, setSearch] = useState("");
   // All products by default — gives users a complete view of their inventory.
   const [tagged, setTagged] = useState<Tagged>("all");
@@ -542,14 +545,39 @@ function InventoryAdminPage() {
                               </Badge>
                             )}
                             {p.is_tagged && (
-                              <Badge className="gap-1 bg-primary text-primary-foreground">
-                                <TagIcon className="h-3 w-3" /> Tagged · {p.scan_count}
-                              </Badge>
+                              <button
+                                type="button"
+                                title="See when this product was tagged"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setActivity({ kind: "tagged", id: p.id, name: p.name });
+                                }}
+                                className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              >
+                                <Badge className="cursor-pointer gap-1 bg-primary text-primary-foreground hover:bg-primary/80">
+                                  <TagIcon className="h-3 w-3" /> Tagged · {p.scan_count}
+                                </Badge>
+                              </button>
                             )}
                             {p.following_count > 0 && (
-                              <Badge variant="outline" className="gap-1 border-[color:var(--mint)]/50 text-[color:var(--mint)]">
-                                <Users className="h-3 w-3" /> {p.following_count} following
-                              </Badge>
+                              <button
+                                type="button"
+                                title="See who is following this product"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setActivity({ kind: "following", id: p.id, name: p.name });
+                                }}
+                                className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              >
+                                <Badge
+                                  variant="outline"
+                                  className="cursor-pointer gap-1 border-[color:var(--mint)]/50 text-[color:var(--mint)] hover:bg-muted"
+                                >
+                                  <Users className="h-3 w-3" /> {p.following_count} following
+                                </Badge>
+                              </button>
                             )}
                             <Badge variant="outline">{p.stock_qty ?? 0} qty</Badge>
                           </Link>
@@ -563,6 +591,23 @@ function InventoryAdminPage() {
           )}
         </CardContent>
       </Card>
+
+      {activity && (
+        <>
+          <TaggedDialog
+            open={activity.kind === "tagged"}
+            onOpenChange={(v) => !v && setActivity(null)}
+            productId={activity.id}
+            productName={activity.name}
+          />
+          <FollowingDialog
+            open={activity.kind === "following"}
+            onOpenChange={(v) => !v && setActivity(null)}
+            productId={activity.id}
+            productName={activity.name}
+          />
+        </>
+      )}
 
       <ProductFormDialog open={createOpen} onOpenChange={setCreateOpen} />
       <ImportProductsDialog open={importOpen} onOpenChange={setImportOpen} />
