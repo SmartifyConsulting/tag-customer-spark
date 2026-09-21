@@ -1,8 +1,10 @@
 // Server-only image resolver for TAG products.
 // Priority: retailer_upload > retailer_import_url > official (OpenFoodFacts)
-//   > ai_suggested (Lovable AI) > brand_logo > placeholder (SVG).
+//   > ai_suggested (OpenAI) > brand_logo > placeholder (SVG).
 // The pipeline downloads and re-uploads to the `product-images` public bucket
 // so consumers are never served flaky third-party URLs.
+
+import { OPENAI_BASE, openAiConfigured, openAiHeaders, openAiModels } from "./openai.server";
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -261,7 +263,7 @@ export async function resolveProductImage(input: ResolveInput): Promise<ResolveO
   // products we'd rather show the honest placeholder than a wrong photo.
   const canAI =
     !input.gtin &&
-    !!process.env.LOVABLE_API_KEY &&
+    openAiConfigured() &&
     ["growth", "pro", "enterprise"].includes((input.planTier ?? "").toLowerCase());
   if (canAI) {
     const ai = await generateAiImage(input);
@@ -346,14 +348,11 @@ async function generateAiImage(input: ResolveInput): Promise<Uint8Array | null> 
       .filter(Boolean)
       .join(" ");
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+    const res = await fetch(`${OPENAI_BASE}/images/generations`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: openAiHeaders(),
       body: JSON.stringify({
-        model: "openai/gpt-image-2",
+        model: openAiModels().image,
         prompt,
         size: "1024x1024",
         quality: "low",
@@ -534,10 +533,9 @@ async function pickBestCandidateWithVision(
 ): Promise<string | null> {
   if (candidates.length === 0) return null;
   if (candidates.length === 1) return candidates[0];
-  const apiKey = process.env.LOVABLE_API_KEY;
   // No AI available — degrade gracefully to the largest candidate (already
   // first in the ranked list).
-  if (!apiKey) return candidates[0];
+  if (!openAiConfigured()) return candidates[0];
 
   const descriptor = [target.brand, target.name].filter(Boolean).join(" ");
   const prompt =
@@ -560,14 +558,11 @@ async function pickBestCandidateWithVision(
   });
 
   try {
-    const res = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetchWithTimeout(`${OPENAI_BASE}/chat/completions`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: openAiHeaders(),
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: openAiModels().vision,
         messages: [{ role: "user", content }],
         response_format: { type: "json_object" },
       }),

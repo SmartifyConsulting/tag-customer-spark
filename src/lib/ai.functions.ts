@@ -41,9 +41,8 @@ async function callAI<T>(opts: {
   schema: z.ZodType<T>;
 }): Promise<T> {
   const { generateObject } = await import("ai");
-  const { getGatewayFromEnv } = await import("./ai-gateway.server");
-  const gateway = getGatewayFromEnv();
-  const model = gateway(opts.model ?? "google/gemini-3-flash-preview");
+  const { getOpenAiProvider, openAiModels } = await import("./openai.server");
+  const model = getOpenAiProvider()(opts.model ?? openAiModels().fast);
   try {
     const { object } = await generateObject({
       model,

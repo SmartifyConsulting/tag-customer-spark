@@ -176,8 +176,8 @@ export async function callAiJson(
   systemPrompt: string,
   filePart?: { mime: string; base64: string; filename: string },
 ) {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("LOVABLE_API_KEY not configured");
+  const { OPENAI_BASE, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
+  if (!openAiConfigured()) throw new Error("OPENAI_API_KEY is not configured");
   const content: any[] = [{ type: "text", text: prompt }];
   if (filePart) {
     content.push({
@@ -188,11 +188,11 @@ export async function callAiJson(
       },
     });
   }
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const res = await fetch(`${OPENAI_BASE}/chat/completions`, {
     method: "POST",
-    headers: { "content-type": "application/json", "Lovable-API-Key": key },
+    headers: openAiHeaders(),
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model: openAiModels().fast,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },

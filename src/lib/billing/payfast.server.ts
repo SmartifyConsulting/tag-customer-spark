@@ -1,15 +1,18 @@
 // Server-only PayFast helpers
 import crypto from "crypto";
 
-export const PAYFAST_ENV = (process.env.PAYFAST_ENV || "sandbox").toLowerCase();
-export const PAYFAST_PROCESS_URL =
-  PAYFAST_ENV === "live"
-    ? "https://www.payfast.co.za/eng/process"
-    : "https://sandbox.payfast.co.za/eng/process";
-export const PAYFAST_VALIDATE_URL =
-  PAYFAST_ENV === "live"
+// Read on every call (not once at load) so a value saved in Admin > Integrations applies.
+function payfastLive(): boolean {
+  return (process.env.PAYFAST_ENV || "sandbox").toLowerCase() === "live";
+}
+export function payfastProcessUrl(): string {
+  return payfastLive() ? "https://www.payfast.co.za/eng/process" : "https://sandbox.payfast.co.za/eng/process";
+}
+export function payfastValidateUrl(): string {
+  return payfastLive()
     ? "https://www.payfast.co.za/eng/query/validate"
     : "https://sandbox.payfast.co.za/eng/query/validate";
+}
 
 // Mirror PHP urlencode
 export function pfEncode(v: string): string {

@@ -402,7 +402,7 @@ export function detectTaxonomyTemplateId(rows: DetectableRow[]): string | null {
 // (it can read a genuinely mixed or ambiguously-worded catalogue), which is
 // kept only as a fallback for when the AI gateway is unavailable or errors.
 async function detectTaxonomyTemplateIdViaAI(rows: DetectableRow[]): Promise<string | null> {
-  if (!process.env.LOVABLE_API_KEY) return null;
+  if (!process.env.OPENAI_API_KEY) return null;
   try {
     const { TAXONOMY_TEMPLATES } = await import("./taxonomy-templates");
     const { callAiJson } = await import("./import.functions");

@@ -104,14 +104,14 @@ export const deleteBrand = createServerFn({ method: "POST" })
 // ---------- Logo resolution ----------
 
 async function aiGenerateLogo(brandName: string): Promise<Uint8Array | null> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) return null;
+  const { OPENAI_BASE, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
+  if (!openAiConfigured()) return null;
   try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+    const res = await fetch(`${OPENAI_BASE}/images/generations`, {
       method: "POST",
-      headers: { "content-type": "application/json", Authorization: `Bearer ${key}` },
+      headers: openAiHeaders(),
       body: JSON.stringify({
-        model: "openai/gpt-image-1-mini",
+        model: openAiModels().image,
         prompt: `Clean, official-style brand wordmark logo for "${brandName}" on a solid white background. Centred, high contrast, no photo, no packaging, no extra graphics.`,
         size: "1024x1024",
         quality: "low",

@@ -1,7 +1,7 @@
 // Server-only AI jobs (daily brief, weekly report). Imported dynamically.
 import { z } from "zod";
 import { generateObject } from "ai";
-import { getGatewayFromEnv } from "./ai-gateway.server";
+import { getOpenAiProvider, openAiModels } from "./openai.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const opportunityListSchema = z.object({
@@ -65,8 +65,7 @@ async function gatherRetailerSnapshot(retailerId: string) {
 
 export async function runDailyBriefForRetailer(retailerId: string) {
   const snap = await gatherRetailerSnapshot(retailerId);
-  const gateway = getGatewayFromEnv();
-  const model = gateway("google/gemini-3-flash-preview");
+  const model = getOpenAiProvider()(openAiModels().fast);
 
   const prompt = `You are the AI retail intelligence layer for a furniture/apparel retailer.
 Today's snapshot:
@@ -148,8 +147,7 @@ Each opportunity has body of 1 sentence + score (0-100, higher = more valuable) 
 
 export async function runWeeklyReportForRetailer(retailerId: string) {
   const snap = await gatherRetailerSnapshot(retailerId);
-  const gateway = getGatewayFromEnv();
-  const model = gateway("google/gemini-2.5-pro");
+  const model = getOpenAiProvider()(openAiModels().smart);
 
   const prompt = `Compose this week's retailer performance report.
 Snapshot:

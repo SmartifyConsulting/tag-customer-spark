@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/public/webhooks/paypal")({
       POST: async ({ request }) => {
         try {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { PAYPAL_BASE, getPayPalToken } = await import("@/lib/billing/paypal.server");
+          const { paypalBase, getPayPalToken } = await import("@/lib/billing/paypal.server");
           const { grantTier, logBillingEvent } = await import("@/lib/billing/grant.server");
 
           const raw = await request.text();
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/api/public/webhooks/paypal")({
           let signatureOk = false;
           if (webhookId) {
             const token = await getPayPalToken();
-            const verifyRes = await fetch(`${PAYPAL_BASE}/v1/notifications/verify-webhook-signature`, {
+            const verifyRes = await fetch(`${paypalBase()}/v1/notifications/verify-webhook-signature`, {
               method: "POST",
               headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
               body: JSON.stringify({

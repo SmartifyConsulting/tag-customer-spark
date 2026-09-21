@@ -53,7 +53,7 @@ export const createPayfastCheckout = createServerFn({ method: "POST" })
       throw new Error("PayFast is not yet configured. Add PAYFAST_MERCHANT_ID and PAYFAST_MERCHANT_KEY.");
     }
 
-    const { PAYFAST_PROCESS_URL, buildPfSignature } = await import("./billing/payfast.server");
+    const { payfastProcessUrl, buildPfSignature } = await import("./billing/payfast.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const mPaymentId = crypto.randomUUID();
@@ -97,7 +97,7 @@ export const createPayfastCheckout = createServerFn({ method: "POST" })
       .filter(([, v]) => v !== "")
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
       .join("&");
-    return { redirect_url: `${PAYFAST_PROCESS_URL}?${qs}`, m_payment_id: mPaymentId };
+    return { redirect_url: `${payfastProcessUrl()}?${qs}`, m_payment_id: mPaymentId };
   });
 
 // ---------- PayPal: create order ----------
@@ -115,7 +115,7 @@ export const createPaypalOrder = createServerFn({ method: "POST" })
     const { userId, supabase } = context;
     const { retailerId } = await requireBillingContext(supabase as never, userId);
 
-    const { PAYPAL_BASE, getPayPalToken } = await import("./billing/paypal.server");
+    const { paypalBase, getPayPalToken } = await import("./billing/paypal.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const amountCents = priceCents(data.plan as PlanId, data.cycle as Cycle, "USD");
@@ -123,7 +123,7 @@ export const createPaypalOrder = createServerFn({ method: "POST" })
     const valueDecimal = (amountCents / 100).toFixed(2);
 
     const token = await getPayPalToken();
-    const res = await fetch(`${PAYPAL_BASE}/v2/checkout/orders`, {
+    const res = await fetch(`${paypalBase()}/v2/checkout/orders`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -167,7 +167,7 @@ export const capturePaypalOrder = createServerFn({ method: "POST" })
   .inputValidator((v) => z.object({ order_id: z.string().min(1) }).parse(v))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const { PAYPAL_BASE, getPayPalToken } = await import("./billing/paypal.server");
+    const { paypalBase, getPayPalToken } = await import("./billing/paypal.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { grantTier, logBillingEvent } = await import("./billing/grant.server");
 
@@ -181,7 +181,7 @@ export const capturePaypalOrder = createServerFn({ method: "POST" })
     if (purchase.status === "completed") return { ok: true, already: true };
 
     const token = await getPayPalToken();
-    const capRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders/${data.order_id}/capture`, {
+    const capRes = await fetch(`${paypalBase()}/v2/checkout/orders/${data.order_id}/capture`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     });

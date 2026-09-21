@@ -154,8 +154,8 @@ async function callAiCategoryPick(args: {
   gtin?: string | null;
   categories: CatRow[];
 }): Promise<{ existing_category_id?: string; new_category?: string; confidence: number } | null> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) return null;
+  const { OPENAI_BASE, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
+  if (!openAiConfigured()) return null;
   const tree = args.categories.map((c) => ({
     id: c.id,
     name: c.name,
@@ -172,16 +172,16 @@ ${JSON.stringify(tree)}
 
 Pick the single best existing_category_id from the list. If NONE reasonably fit, propose a short new_category name (2-3 words, Title Case). Return JSON only.`;
   try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch(`${OPENAI_BASE}/chat/completions`, {
       method: "POST",
-      headers: { "content-type": "application/json", "Lovable-API-Key": key },
+      headers: openAiHeaders(),
       body: JSON.stringify({
         // Category classification is a judgment call made from thin input
-        // (often just a bare product name) — the flash tier guessed wrong
+        // (often just a bare product name) — a small model guessed wrong
         // on sparse data (e.g. "Sunlight Dishwashing Liquid" -> "Coffee").
-        // gpt-5.5 is already trusted for the harder passport-enrichment
-        // task; trading some latency/cost here for fewer bad guesses.
-        model: "openai/gpt-5.5",
+        // Use the smart model, the same one trusted for passport enrichment,
+        // trading some latency/cost here for fewer bad guesses.
+        model: openAiModels().smart,
         response_format: { type: "json_object" },
         messages: [
           {
@@ -390,16 +390,19 @@ export const bulkAutoCategorise = createServerFn({ method: "POST" })
 // ---------- Category imagery ----------
 
 async function aiGenerateCategoryImage(name: string): Promise<Uint8Array | null> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) return null;
+  const { OPENAI_BASE, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
+  if (!openAiConfigured()) return null;
   try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+    const res = await fetch(`${OPENAI_BASE}/images/generations`, {
       method: "POST",
-      headers: { "content-type": "application/json", "Lovable-API-Key": key },
+      headers: openAiHeaders(),
       body: JSON.stringify({
-        model: "google/gemini-3.1-flash-image",
+        model: openAiModels().image,
         prompt: `Editorial stock photograph representing the retail category "${name}". Bright natural light, clean neutral background, tightly cropped, no text, no logos, no people. Product-first composition.`,
-        size: "768x512",
+        // OpenAI image sizes are fixed; 1536x1024 is the closest to a landscape hero.
+        size: "1536x1024",
+        quality: "low",
+        n: 1,
       }),
     });
     if (!res.ok) return null;

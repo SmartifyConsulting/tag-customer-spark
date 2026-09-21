@@ -1,14 +1,18 @@
 // Server-only PayPal helpers
-export const PAYPAL_ENV = (process.env.PAYPAL_ENV || "sandbox").toLowerCase();
-export const PAYPAL_BASE =
-  PAYPAL_ENV === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+// Read on every call (not once at load) so a value saved in Admin > Integrations applies.
+export function paypalEnv(): string {
+  return (process.env.PAYPAL_ENV || "sandbox").toLowerCase();
+}
+export function paypalBase(): string {
+  return paypalEnv() === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+}
 
 export async function getPayPalToken(): Promise<string> {
   const id = process.env.PAYPAL_CLIENT_ID;
   const secret = process.env.PAYPAL_CLIENT_SECRET;
   if (!id || !secret) throw new Error("PayPal credentials not configured");
   const auth = Buffer.from(`${id}:${secret}`).toString("base64");
-  const r = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
+  const r = await fetch(`${paypalBase()}/v1/oauth2/token`, {
     method: "POST",
     headers: {
       Authorization: `Basic ${auth}`,

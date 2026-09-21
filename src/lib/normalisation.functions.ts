@@ -28,8 +28,8 @@ async function callAiNormalise(input: {
   description?: string | null;
   gtin?: string | null;
 }): Promise<NormalisedProduct | null> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) return null;
+  const { OPENAI_BASE, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
+  if (!openAiConfigured()) return null;
   const prompt = `Raw product:
 name: ${input.raw_name}
 brand: ${input.brand ?? ""}
@@ -50,11 +50,11 @@ Return a normalised JSON object with these exact fields:
 }
 Rules: Title Case display_name. Do NOT include brand or size in display_name. Fix ALL CAPS. Extract '200g' → size_value 200 size_unit 'g'.`;
   try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch(`${OPENAI_BASE}/chat/completions`, {
       method: "POST",
-      headers: { "content-type": "application/json", "Lovable-API-Key": key },
+      headers: openAiHeaders(),
       body: JSON.stringify({
-        model: "openai/gpt-5.4-mini",
+        model: openAiModels().fast,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: "You normalise messy retail product data into clean structured JSON." },

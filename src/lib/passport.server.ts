@@ -150,9 +150,8 @@ async function callEnrichmentAI(input: {
   webResults: Array<{ title: string; snippet: string; link: string }>;
 }): Promise<EnrichedPassport> {
   const { generateObject } = await import("ai");
-  const { getGatewayFromEnv } = await import("./ai-gateway.server");
-  const gateway = getGatewayFromEnv(undefined, { structuredOutputs: true });
-  const model = gateway("openai/gpt-5.5");
+  const { getOpenAiProvider, openAiModels } = await import("./openai.server");
+  const model = getOpenAiProvider({ structuredOutputs: true })(openAiModels().smart);
 
   const prompt = `Enrich the following product into a Digital Product Passport.
 Use the lookup data and web search results as ground truth when present. For any field you cannot ground in the lookup, the web search snippets, or common, verifiable public knowledge about this exact GTIN/brand/product, return null and DO NOT invent.
@@ -259,7 +258,7 @@ export async function enrichProductPassport(
       ...(webResults.length
         ? [{ provider: "serper-web", query: webQuery, fetched_at: new Date().toISOString() }]
         : []),
-      { provider: "lovable-ai", model: "openai/gpt-5.5", generated_at: new Date().toISOString() },
+      { provider: "openai", model: (await import("./openai.server")).openAiModels().smart, generated_at: new Date().toISOString() },
     ];
 
     // Merge: never blank a field that already has a value unless overwrite
@@ -296,7 +295,7 @@ export async function enrichProductPassport(
       sources,
       field_confidence: existing?.field_confidence ?? {},
       enrichment_status: "enriched",
-      enrichment_model: "openai/gpt-5.5",
+      enrichment_model: (await import("./openai.server")).openAiModels().smart,
       enriched_at: new Date().toISOString(),
       version: (existing?.version ?? 0) + 1,
     };

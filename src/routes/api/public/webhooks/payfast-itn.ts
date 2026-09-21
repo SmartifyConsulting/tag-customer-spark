@@ -6,7 +6,7 @@ export const Route = createFileRoute("/api/public/webhooks/payfast-itn")({
       POST: async ({ request }) => {
         try {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { buildPfSignature, PAYFAST_VALIDATE_URL } = await import("@/lib/billing/payfast.server");
+          const { buildPfSignature, payfastValidateUrl } = await import("@/lib/billing/payfast.server");
           const { grantTier, logBillingEvent } = await import("@/lib/billing/grant.server");
 
           const raw = await request.text();
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/api/public/webhooks/payfast-itn")({
             return new Response("Invalid merchant", { status: 400 });
           }
 
-          const v = await fetch(PAYFAST_VALIDATE_URL, {
+          const v = await fetch(payfastValidateUrl(), {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: raw,
