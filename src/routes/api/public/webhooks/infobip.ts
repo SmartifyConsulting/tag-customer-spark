@@ -10,6 +10,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { timingSafeEqual } from "crypto";
+import { mapDeliveryStatus } from "@/lib/delivery-status.server";
 
 const UNSUBSCRIBE_KEYWORDS = new Set([
   "STOP",
@@ -103,17 +104,8 @@ function toE164(num: string | undefined | null): string | null {
   return digits ? `+${digits}` : null;
 }
 
-/** Infobip delivery-report group/status → notification_history.status */
-function mapStatus(groupName?: string, name?: string): string {
-  const g = (groupName ?? "").toUpperCase();
-  const n = (name ?? "").toUpperCase();
-  if (n.includes("READ") || g === "READ" || g === "SEEN") return "read";
-  if (g === "DELIVERED" || n.includes("DELIVERED")) return "delivered";
-  if (g === "PENDING" || n.startsWith("PENDING")) return "queued";
-  if (g === "REJECTED" || g === "UNDELIVERABLE" || g === "EXPIRED") return "failed";
-  if (g === "SENT") return "sent";
-  return "sent";
-}
+// Shared with the on-demand status refresh (see delivery-status.server.ts).
+const mapStatus = mapDeliveryStatus;
 
 /** True when a webhook result is a delivery report rather than an inbound message. */
 function isDeliveryReport(result: any): boolean {

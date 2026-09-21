@@ -306,3 +306,22 @@ export const listNotificationLogs = createServerFn({ method: "POST" })
       total: count ?? 0,
     };
   });
+
+/**
+ * Asks Infobip directly about sends still marked "queued", for when delivery
+ * reports don't reach this app. Only moves a row when Infobip reports a real
+ * outcome; sends Infobip has no record of are left as they are.
+ */
+export const refreshDeliveryStatuses = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { resolveAutomationRetailerId } = await import("@/lib/automation.server");
+    const retailerId = await resolveAutomationRetailerId(supabase, userId);
+    if (!retailerId) {
+      return { checked: 0, updated: 0, delivered: 0, failed: 0, notFound: 0, stillPending: 0 };
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { syncQueuedDeliveryStatuses } = await import("@/lib/delivery-status.server");
+    return syncQueuedDeliveryStatuses(supabaseAdmin, retailerId);
+  });
