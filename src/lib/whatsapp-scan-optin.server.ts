@@ -5,15 +5,16 @@
 // confirmation template. The shopper's number comes from WhatsApp itself.
 //
 // Ref format (see scanChatMessage in whatsapp-chat-link.ts):
-//   "Ref G:<gtin14>"      — product QR (GS1 digital link)
-//   "Ref T:<short_code>"  — retailer tag QR
+//   "TAG ref: G-<gtin14>"      — product QR (GS1 digital link)
+//   "TAG ref: T-<short_code>"  — retailer tag QR
+// The first release sent "Ref G:<gtin14>" / "Ref T:<short_code>"; still accepted.
 
 import { validGtin14, findActiveProductByGtin } from "@/lib/gtin-lookup.server";
 
 export type ScanRef = { kind: "G" | "T"; value: string };
 
 export function parseScanRef(text: string): ScanRef | null {
-  const m = /\bRef\s+([GT]):([A-Za-z0-9-]{1,64})/i.exec(text);
+  const m = /\b(?:TAG\s+ref:?|Ref)\s*([GT])[:-]([A-Za-z0-9-]{1,64})/i.exec(text);
   if (!m) return null;
   return { kind: m[1].toUpperCase() as "G" | "T", value: m[2] };
 }

@@ -56,7 +56,10 @@ function StartChat() {
   const chatUrl = useMemo(
     () =>
       info
-        ? whatsappChatUrl(info.numberDigits, scanChatMessage(info.productName, info.target))
+        ? whatsappChatUrl(
+            info.numberDigits,
+            scanChatMessage(info.productName, info.target, info.retailerName),
+          )
         : null,
     [info],
   );
