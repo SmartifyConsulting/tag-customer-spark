@@ -74,16 +74,18 @@ async function logConversationNote(
   }
   if (!convo?.id) return;
 
-  await supabaseAdmin.from("conversation_messages").insert({
+  // conversation_messages has no "channel" column — passing one silently
+  // fails the insert (see whatsapp-scan-optin.server.ts for the full story).
+  const { error } = await supabaseAdmin.from("conversation_messages").insert({
     conversation_id: convo.id,
     retailer_id: customer.retailer_id,
     direction: "inbound",
-    channel: "whatsapp",
     body,
     is_internal: false,
     status: "delivered",
     sent_at: new Date().toISOString(),
   });
+  if (error) console.error("[infobip-webhook] conversation note insert failed", error.message);
 }
 
 
@@ -409,19 +411,25 @@ export const Route = createFileRoute("/api/public/webhooks/infobip")({
                 retailer_id: customer.retailer_id,
                 status: "open",
                 subject: "WhatsApp reply",
-              } as any)
+              })
               .select("id")
               .single();
-            convo = ins as any;
+            convo = ins;
           }
           if (convo?.id) {
-            await supabaseAdmin.from("conversation_messages").insert({
+            // conversation_messages has no "channel" column, and retailer_id is
+            // NOT NULL — both were missing here, so this insert was silently
+            // failing on every free-form reply (see whatsapp-scan-optin.server.ts).
+            const { error } = await supabaseAdmin.from("conversation_messages").insert({
               conversation_id: convo.id,
+              retailer_id: customer.retailer_id,
               direction: "inbound",
-              channel: "whatsapp",
               body: String(rawBody),
               is_internal: false,
-            } as any);
+              status: "delivered",
+              sent_at: new Date().toISOString(),
+            });
+            if (error) console.error("[infobip-webhook] free-form reply insert failed", error.message);
           }
         }
 

@@ -218,16 +218,20 @@ export async function handleScanOptIn(
     await supabaseAdmin.from("conversations").update({ subject, tags, status: "open" }).eq("id", conversationId);
   }
   if (conversationId) {
-    await supabaseAdmin.from("conversation_messages").insert({
+    // conversation_messages has no "channel" column — every WhatsApp reply is
+    // inbound by definition here, so passing one silently fails the insert
+    // (PostgREST rejects the unknown column; the client doesn't throw unless
+    // the error is checked) and drops the message with no visible error.
+    const { error: msgErr } = await supabaseAdmin.from("conversation_messages").insert({
       conversation_id: conversationId,
       retailer_id: target.retailerId,
       direction: "inbound",
-      channel: "whatsapp",
       body: scanLine,
       is_internal: false,
       status: "delivered",
       sent_at: now,
     });
+    if (msgErr) console.error("[scan-optin] conversation message insert failed", msgErr.message);
   }
 
   // Confirmation: same automation setting and template as the web opt-in.
