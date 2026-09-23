@@ -23,6 +23,8 @@ export type NavSubItem = {
   // Hide this sub-item for these roles (e.g. exec Dashboard is meaningless
   // for a store-floor attendant).
   hiddenForRoles?: readonly AppRole[];
+  // Shows the unread-WhatsApp count as a pill next to this item.
+  unreadBadge?: true;
 };
 
 export type NavItem = {
@@ -39,6 +41,8 @@ export type NavItem = {
   items?: readonly NavSubItem[];
   adminOnly?: boolean;
   superAdminOnly?: boolean;
+  // Shows the unread-WhatsApp count as a pill next to this item.
+  unreadBadge?: true;
 };
 
 // ─── Information architecture ───────────────────────────────────────────
@@ -87,7 +91,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         icon: Boxes,
         match: ["/admin/inventory", "/products"],
       },
-      { title: "Whatsapps", url: "/inbox", icon: MessageSquare, match: ["/inbox"] },
+      { title: "Whatsapps", url: "/inbox", icon: MessageSquare, match: ["/inbox"], unreadBadge: true },
       { title: "Watchlists", url: "/watchlists", icon: Eye, match: ["/watchlists"] },
     ],
   },
@@ -171,7 +175,7 @@ export const STAFF_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
 export const SHOPPER_MOBILE_NAV: readonly Omit<NavItem, "items">[] = [
   { title: "My Tag", url: "/barcode-tagger", icon: Barcode, match: ["/barcode-tagger"] },
   { title: "Scanner", url: "/tagged", icon: Tag, match: ["/tagged"] },
-  { title: "Whatsapps", url: "/inbox", icon: MessageSquare, match: ["/inbox"] },
+  { title: "Whatsapps", url: "/inbox", icon: MessageSquare, match: ["/inbox"], unreadBadge: true },
 ] as const;
 
 export function mobileNavForUser(isStaff: boolean): readonly Omit<NavItem, "items">[] {

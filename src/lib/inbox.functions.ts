@@ -56,6 +56,20 @@ export const listConversations = createServerFn({ method: "POST" })
     return result;
   });
 
+// Count of conversations with at least one unread message — the number shown
+// on the "Whatsapps" nav pill. Same definition as the Inbox's "Unread" filter.
+export const getUnreadWhatsAppCount = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context;
+    const { count, error } = await supabase
+      .from("conversations")
+      .select("id", { count: "exact", head: true })
+      .gt("unread_count", 0);
+    if (error) throw new Error(error.message);
+    return { count: count ?? 0 };
+  });
+
 export const getConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))

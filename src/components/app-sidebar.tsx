@@ -23,6 +23,16 @@ import { UserMenu } from "@/components/user-menu";
 import { TagLogo } from "@/components/tag-logo";
 import { sectionsForUser, isNavActive, type NavItem } from "@/lib/nav";
 import { useIsStaff } from "@/hooks/use-persona";
+import { useUnreadWhatsAppCount } from "@/hooks/use-unread-whatsapp-count";
+
+function UnreadPill({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-destructive px-1.5 text-[11px] font-semibold leading-none text-destructive-foreground">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -33,6 +43,7 @@ export function AppSidebar() {
   const isAdmin = useIsAdmin();
   const isSuperAdmin = useIsSuperAdmin();
   const isStaff = useIsStaff();
+  const unreadCount = useUnreadWhatsAppCount();
 
   // A nav item whose destination gates on a role the user doesn't have
   // used to still render (and highlight active) here, then bounce the user
@@ -108,7 +119,10 @@ export function AppSidebar() {
                                   return (
                                     <SidebarMenuSubItem key={sub.url}>
                                       <SidebarMenuSubButton asChild isActive={subActive}>
-                                        <Link to={sub.url}>{sub.title}</Link>
+                                        <Link to={sub.url} className="flex items-center gap-2">
+                                          <span className="truncate">{sub.title}</span>
+                                          {sub.unreadBadge && <UnreadPill count={unreadCount} />}
+                                        </Link>
                                       </SidebarMenuSubButton>
                                     </SidebarMenuSubItem>
                                   );
@@ -132,8 +146,14 @@ export function AppSidebar() {
                           to={locked ? "/plan" : item.url}
                           className="flex items-center gap-2.5"
                         >
-                          <item.icon className="h-4 w-4 shrink-0" />
+                          <span className="relative shrink-0">
+                            <item.icon className="h-4 w-4" />
+                            {item.unreadBadge && unreadCount > 0 && collapsed && (
+                              <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-destructive" />
+                            )}
+                          </span>
                           <span className="truncate flex-1">{item.title}</span>
+                          {item.unreadBadge && !collapsed && <UnreadPill count={unreadCount} />}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

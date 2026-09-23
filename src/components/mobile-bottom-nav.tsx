@@ -1,11 +1,13 @@
 import { useRouterState } from "@tanstack/react-router";
 import { mobileNavForUser, isNavActive } from "@/lib/nav";
 import { useIsStaff } from "@/hooks/use-persona";
+import { useUnreadWhatsAppCount } from "@/hooks/use-unread-whatsapp-count";
 
 export function MobileBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isStaff = useIsStaff();
   const items = mobileNavForUser(isStaff);
+  const unreadCount = useUnreadWhatsAppCount();
 
   // Staff still get the full left sidebar on desktop/tablet, so this stays
   // mobile-only for them. Shoppers have no left nav at any size, so this is
@@ -37,6 +39,11 @@ export function MobileBottomNav() {
                   ].join(" ")}
                 >
                   <item.icon className="h-4 w-4" />
+                  {item.unreadBadge && unreadCount > 0 && (
+                    <span className="absolute right-1.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold leading-none text-destructive-foreground">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
                 </span>
                 <span className="truncate leading-tight">{item.title}</span>
               </a>
