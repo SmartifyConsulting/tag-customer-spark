@@ -215,7 +215,8 @@ export const checkWhatsAppMessageStatus = createServerFn({ method: "POST" })
     if (!role?.retailer_id) throw new Error("Super administrator access required");
 
     const { lookupInfobipMessageStatus } = await import("@/lib/whatsapp-infobip.server");
-    return lookupInfobipMessageStatus(data.messageId);
+    const r = await lookupInfobipMessageStatus(data.messageId);
+    return { ...r, result: r.result as Record<string, any> | null };
   });
 
 /**
