@@ -4,6 +4,7 @@
 
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { OPENAI_MODEL_DEFAULTS } from "@/lib/integrations.catalog";
+import { normalizeOpenAiModel } from "@/lib/openai-models";
 
 export const OPENAI_BASE = "https://api.openai.com/v1";
 
@@ -17,11 +18,7 @@ export function openAiConfigured(): boolean {
 
 /** Model names, overridable per slot in Admin > Integrations. */
 export function openAiModels() {
-  // Model IDs never contain spaces; a display name like "GPT-6 Astra" falls back to the default.
-  const pick = (env: string, fallback: string) => {
-    const v = (process.env[env] ?? "").trim();
-    return v && /^[A-Za-z0-9][A-Za-z0-9._:/-]*$/.test(v) ? v : fallback;
-  };
+  const pick = (env: string, fallback: string) => normalizeOpenAiModel(process.env[env], fallback);
   return {
     /** Hardest tasks: passport enrichment, category picks, weekly reports. */
     smart: pick("OPENAI_MODEL_SMART", OPENAI_MODEL_DEFAULTS.smart),

@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep model-setting normalization in the browser-safe `openai-models` helper, with unit tests, so display labels are translated before provider requests.
