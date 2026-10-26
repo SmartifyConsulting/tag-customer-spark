@@ -17,7 +17,11 @@ export function openAiConfigured(): boolean {
 
 /** Model names, overridable per slot in Admin > Integrations. */
 export function openAiModels() {
-  const pick = (env: string, fallback: string) => (process.env[env] ?? "").trim() || fallback;
+  // Model IDs never contain spaces; a display name like "GPT-6 Astra" falls back to the default.
+  const pick = (env: string, fallback: string) => {
+    const v = (process.env[env] ?? "").trim();
+    return v && /^[A-Za-z0-9][A-Za-z0-9._:/-]*$/.test(v) ? v : fallback;
+  };
   return {
     /** Hardest tasks: passport enrichment, category picks, weekly reports. */
     smart: pick("OPENAI_MODEL_SMART", OPENAI_MODEL_DEFAULTS.smart),
