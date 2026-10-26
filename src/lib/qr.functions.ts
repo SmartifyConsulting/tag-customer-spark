@@ -243,12 +243,16 @@ export async function generateForProduct(
 
   // Render PNG + SVG
   const QRCode = (await import("qrcode")).default;
-  const png = await QRCode.toBuffer(resolverUrl, {
+  const pngDataUrl = await QRCode.toDataURL(resolverUrl, {
     errorCorrectionLevel: "Q",
     margin: 4,
     width: 800,
     color: { dark: "#0A1F5C", light: "#ffffff" },
   });
+  const b64 = pngDataUrl.slice(pngDataUrl.indexOf(",") + 1);
+  const bin = atob(b64);
+  const png = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) png[i] = bin.charCodeAt(i);
   const svg = await QRCode.toString(resolverUrl, {
     type: "svg",
     errorCorrectionLevel: "Q",

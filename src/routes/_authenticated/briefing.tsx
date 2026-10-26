@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/briefing")({
   component: BriefingPage,
   errorComponent: ({ error, reset }) => (
     <div className="p-6">
-      <p className="text-destructive">Could not load your briefing: {error.message}</p>
+      <p className="text-destructive">Could not load your briefing: {error instanceof Error ? error.message : String(error)}</p>
       <button className="mt-3 underline" onClick={reset}>Retry</button>
     </div>
   ),
