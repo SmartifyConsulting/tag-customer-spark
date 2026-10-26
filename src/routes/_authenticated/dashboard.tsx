@@ -74,7 +74,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
         <div className="max-w-md text-center">
           <h2 className="text-lg font-semibold">Couldn't load your dashboard</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {error.message ?? "Please try again."}
+            {error instanceof Error ? error.message : "Please try again."}
           </p>
           <Button
             className="mt-4"
