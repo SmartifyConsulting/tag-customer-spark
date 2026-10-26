@@ -54,7 +54,7 @@ export const INTEGRATION_GROUPS = [
 
 /** Model names used by every AI feature when nothing else is set. */
 export const OPENAI_MODEL_DEFAULTS = {
-  smart: "gpt-5.5",
+  smart: "gpt-4o-mini",
   fast: "gpt-5.4-mini",
   vision: "gpt-5-mini",
   image: "gpt-image-2",
