@@ -321,6 +321,7 @@ async function probeOpenAi(spec: IntegrationProvider): Promise<TestResult> {
   // catch an empty balance as well.
   const ping = await openAiFetch(`${OPENAI_BASE}/chat/completions`, {
     method: "POST",
+      activity: "Connection test",
     headers: openAiHeaders(),
     body: JSON.stringify({
       model: models.fast,

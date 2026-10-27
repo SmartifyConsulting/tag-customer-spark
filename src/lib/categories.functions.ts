@@ -174,6 +174,7 @@ Pick the single best existing_category_id from the list. If NONE reasonably fit,
   try {
     const res = await openAiFetch(`${OPENAI_BASE}/chat/completions`, {
       method: "POST",
+      activity: "Category suggestion",
       headers: openAiHeaders(),
       body: JSON.stringify({
         // Category classification is a judgment call made from thin input
@@ -395,6 +396,7 @@ async function aiGenerateCategoryImage(name: string): Promise<Uint8Array | null>
   try {
     const res = await openAiFetch(`${OPENAI_BASE}/images/generations`, {
       method: "POST",
+      activity: "Category image generation",
       headers: openAiHeaders(),
       body: JSON.stringify({
         model: openAiModels().image,

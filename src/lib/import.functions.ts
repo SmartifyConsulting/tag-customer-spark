@@ -190,6 +190,7 @@ export async function callAiJson(
   }
   const res = await openAiFetch(`${OPENAI_BASE}/chat/completions`, {
     method: "POST",
+      activity: "Import file reading",
     headers: openAiHeaders(),
     body: JSON.stringify({
       model: openAiModels().fast,

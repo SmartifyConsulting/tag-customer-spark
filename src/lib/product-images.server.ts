@@ -350,6 +350,7 @@ async function generateAiImage(input: ResolveInput): Promise<Uint8Array | null> 
 
     const res = await openAiFetch(`${OPENAI_BASE}/images/generations`, {
       method: "POST",
+      activity: "Product image generation",
       headers: openAiHeaders(),
       body: JSON.stringify({
         model: openAiModels().image,
@@ -567,6 +568,7 @@ async function pickBestCandidateWithVision(
   try {
     const res = await openAiFetch(`${OPENAI_BASE}/chat/completions`, {
       method: "POST",
+      activity: "Product photo check",
       headers: openAiHeaders(),
       body: JSON.stringify({
         model: openAiModels().vision,
