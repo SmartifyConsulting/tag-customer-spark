@@ -38,7 +38,7 @@ export function openAiHeaders(): Record<string, string> {
 }
 
 /** Provider for the Vercel AI SDK (generateObject / generateText). */
-export function getOpenAiProvider(options?: { structuredOutputs?: boolean }) {
+export function getOpenAiProvider(options?: { structuredOutputs?: boolean; activity?: string }) {
   const apiKey = openAiKey();
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
   return createOpenAICompatible({
@@ -46,7 +46,8 @@ export function getOpenAiProvider(options?: { structuredOutputs?: boolean }) {
     baseURL: OPENAI_BASE,
     apiKey,
     supportsStructuredOutputs: options?.structuredOutputs ?? false,
-    fetch: ((input: RequestInfo | URL, init?: RequestInit) => loggedFetch(input, init)) as typeof fetch,
+    fetch: ((input: RequestInfo | URL, init?: RequestInit) =>
+      loggedFetch(input, init, options?.activity)) as typeof fetch,
   });
 }
 
