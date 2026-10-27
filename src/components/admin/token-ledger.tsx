@@ -52,7 +52,16 @@ export function TokenLedger() {
     enabled: !!from && !!to && from <= to,
   });
   const [tab, setTab] = useState<"ledger" | "reports">("ledger");
-  const rows = (data?.rows ?? []) as Row[];
+  const [activityFilter, setActivityFilter] = useState("all");
+  const allRows = (data?.rows ?? []) as Row[];
+  const activityOptions = useMemo(
+    () => Array.from(new Set(allRows.map((r) => r.operation))).sort(),
+    [allRows],
+  );
+  const rows = useMemo(
+    () => (activityFilter === "all" ? allRows : allRows.filter((r) => r.operation === activityFilter)),
+    [allRows, activityFilter],
+  );
   const t = useMemo(() => totals(rows), [rows]);
   const groups = useMemo(() => {
     const m = new Map<string, Row[]>();
@@ -123,6 +132,20 @@ export function TokenLedger() {
         <TokenReport rows={rows} loading={isLoading} />
       ) : (
       <>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Activity</span>
+        <Select value={activityFilter} onValueChange={setActivityFilter}>
+          <SelectTrigger className="h-8 w-[220px] text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All activities</SelectItem>
+            {activityOptions.map((a) => (
+              <SelectItem key={a} value={a}>{a}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[
           ["Calls", num(rows.length)],
