@@ -129,7 +129,7 @@ export function TokenLedger() {
       </div>
 
       {tab === "reports" ? (
-        <TokenReport rows={rows} loading={isLoading} />
+        <TokenReport rows={allRows} loading={isLoading} />
       ) : (
       <>
       <div className="flex items-center gap-2">
