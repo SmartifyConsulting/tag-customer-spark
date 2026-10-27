@@ -52,6 +52,7 @@ Rules: Title Case display_name. Do NOT include brand or size in display_name. Fi
   try {
     const res = await openAiFetch(`${OPENAI_BASE}/chat/completions`, {
       method: "POST",
+      activity: "Name normalisation",
       headers: openAiHeaders(),
       body: JSON.stringify({
         model: openAiModels().fast,

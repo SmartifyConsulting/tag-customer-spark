@@ -5,6 +5,7 @@
 // so consumers are never served flaky third-party URLs.
 
 import { OPENAI_BASE, openAiFetch, openAiConfigured, openAiHeaders, openAiModels } from "./openai.server";
+import { logServiceCall, SERPER_PER_SEARCH_USD } from "./ai-usage.server";
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -350,6 +351,7 @@ async function generateAiImage(input: ResolveInput): Promise<Uint8Array | null> 
 
     const res = await openAiFetch(`${OPENAI_BASE}/images/generations`, {
       method: "POST",
+      activity: "Product image generation",
       headers: openAiHeaders(),
       body: JSON.stringify({
         model: openAiModels().image,
@@ -395,6 +397,7 @@ async function serperImageSearch(apiKey: string, query: string): Promise<string 
       // num:20 gives the width/height ranking below more to choose from.
       body: JSON.stringify({ q: query, num: 20, safe: "active", imgSize: "large" }),
     });
+    void logServiceCall("serper", "Product image search", res.status, SERPER_PER_SEARCH_USD);
     if (!res.ok) {
       console.warn(`[serper] HTTP ${res.status} for query "${query}"`);
       return null;
@@ -477,6 +480,7 @@ async function serperImageCandidates(apiKey: string, query: string): Promise<str
       headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({ q: query, num: 20, safe: "active", imgSize: "large" }),
     });
+    void logServiceCall("serper", "Product image search", res.status, SERPER_PER_SEARCH_USD);
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       if (res.status === 402 || /credit/i.test(text)) {
@@ -567,6 +571,7 @@ async function pickBestCandidateWithVision(
   try {
     const res = await openAiFetch(`${OPENAI_BASE}/chat/completions`, {
       method: "POST",
+      activity: "Product photo check",
       headers: openAiHeaders(),
       body: JSON.stringify({
         model: openAiModels().vision,

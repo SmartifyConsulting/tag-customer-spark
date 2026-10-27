@@ -126,6 +126,10 @@ async function fetchSerperWebResults(query: string): Promise<Array<{ title: stri
       headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({ q: query, num: 5 }),
     });
+    {
+      const { logServiceCall, SERPER_PER_SEARCH_USD } = await import("./ai-usage.server");
+      void logServiceCall("serper", "Product info web search", res.status, SERPER_PER_SEARCH_USD);
+    }
     if (!res.ok) return [];
     const json: any = await res.json();
     const organic: any[] = Array.isArray(json?.organic) ? json.organic : [];

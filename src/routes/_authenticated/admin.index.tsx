@@ -8,6 +8,7 @@ import { UserAdminTab } from "@/components/settings/user-admin-tab";
 import { SignupsTab } from "@/components/settings/signups-tab";
 import { PlanAdminTab } from "@/components/settings/plan-admin-tab";
 import { IntegrationsTab } from "@/components/admin/integrations-tab";
+import { TokenLedger } from "@/components/admin/token-ledger";
 import { useAuth, useIsAdmin } from "@/hooks/use-auth";
 
 // Consolidated admin surface — Taxonomy, Stores and Users are tabs on one
@@ -17,11 +18,11 @@ import { useAuth, useIsAdmin } from "@/hooks/use-auth";
 // here as a tab too — it used to be a Settings tab.
 const searchSchema = z.object({
   tab: z
-    .enum(["taxonomy", "stores", "customers", "users", "automations", "plan-admin", "integrations"])
+    .enum(["taxonomy", "stores", "customers", "users", "automations", "plan-admin", "integrations", "token-ledger"])
     .optional(),
 });
 
-type AdminTab = "taxonomy" | "stores" | "users" | "plan-admin" | "integrations";
+type AdminTab = "taxonomy" | "stores" | "users" | "plan-admin" | "integrations" | "token-ledger";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Admin — Tag" }] }),
@@ -42,7 +43,7 @@ function AdminPage() {
   const active: AdminTab =
     tab === "stores" ||
     tab === "users" ||
-    ((tab === "plan-admin" || tab === "integrations") && isSuperAdmin)
+    ((tab === "plan-admin" || tab === "integrations" || tab === "token-ledger") && isSuperAdmin)
       ? tab
       : "taxonomy";
   return (
@@ -61,6 +62,7 @@ function AdminPage() {
           <TabsTrigger value="users">Users</TabsTrigger>
           {isSuperAdmin && <TabsTrigger value="plan-admin">Subscription plan admin</TabsTrigger>}
           {isSuperAdmin && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
+          {isSuperAdmin && <TabsTrigger value="token-ledger">Token ledger</TabsTrigger>}
         </TabsList>
         <TabsContent value="taxonomy" className="pt-4">
           <TaxonomyAdminSection />
@@ -80,6 +82,11 @@ function AdminPage() {
         {isSuperAdmin && (
           <TabsContent value="integrations" className="pt-4">
             <IntegrationsTab />
+          </TabsContent>
+        )}
+        {isSuperAdmin && (
+          <TabsContent value="token-ledger" className="pt-4">
+            <TokenLedger />
           </TabsContent>
         )}
       </Tabs>

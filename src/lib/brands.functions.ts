@@ -109,6 +109,7 @@ async function aiGenerateLogo(brandName: string): Promise<Uint8Array | null> {
   try {
     const res = await openAiFetch(`${OPENAI_BASE}/images/generations`, {
       method: "POST",
+      activity: "Brand logo generation",
       headers: openAiHeaders(),
       body: JSON.stringify({
         model: openAiModels().image,
