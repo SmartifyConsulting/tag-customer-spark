@@ -177,6 +177,8 @@ export function ProductFormDialog({
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["admin-inventory"] });
+      qc.invalidateQueries({ queryKey: ["digital-identity-status"] });
       qc.invalidateQueries({ queryKey: ["product", effectiveId] });
       toast.success(productId ? "Product updated" : "Product saved");
       onOpenChange(false);
@@ -217,6 +219,8 @@ export function ProductFormDialog({
         lastSavedRef.current = snapshot;
         setAutoState("saved");
         qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["admin-inventory"] });
+      qc.invalidateQueries({ queryKey: ["digital-identity-status"] });
       } catch {
         setAutoState("idle");
       } finally {
@@ -300,7 +304,7 @@ export function ProductFormDialog({
             <Field label="Product name *" error={form.formState.errors.name?.message}>
               <Input {...form.register("name")} />
             </Field>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-2 items-start gap-3">
               <Field
                 label="Barcode (GTIN) *"
                 error={form.formState.errors.gtin?.message as string | undefined}
@@ -331,14 +335,14 @@ export function ProductFormDialog({
                     <span className="sr-only sm:not-sr-only sm:ml-2">Scan</span>
                   </Button>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  The real product barcode (8, 12, 13 or 14 digits).
-                </p>
               </Field>
               <Field label="SKU *" error={form.formState.errors.sku?.message}>
                 <Input {...form.register("sku")} placeholder="Defaults to the barcode" />
               </Field>
             </div>
+            <p className="-mt-1 text-xs text-muted-foreground">
+              Barcode: the real product barcode (8, 12, 13 or 14 digits). SKU copies it unless you type your own.
+            </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Brand"><Input {...form.register("brand")} /></Field>
             </div>

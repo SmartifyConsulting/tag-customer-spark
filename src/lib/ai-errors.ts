@@ -69,9 +69,9 @@ export function describeAiFailure(input: {
       return {
         kind,
         message:
-          `Couldn't ${input.action} — the AI service is out of credit.\n` +
-          `${AI_SERVICE} (used for ${input.purpose}) says there is no credit left on the account. ` +
-          `Your product details weren't changed. Add credit at ${OPENAI_BILLING}, then try again.`,
+          `AI details are paused for now.\n` +
+          `The AI account needs a credit top-up, and your administrator has been emailed. ` +
+          `The product is saved — its details will fill in automatically once credit is added.`,
       };
     case "bad_key":
       return {
@@ -144,10 +144,10 @@ export function summarizeBulkErrors(
   if (noCredits.length > 0) {
     const names = uniqueNames(noCredits);
     return {
-      title: `${count(names.length)} couldn't be ${what} — the AI service is out of credit`,
+      title: `AI details are paused for ${count(names.length)}`,
       description:
-        `${AI_SERVICE} says there is no credit left on the account. Affected: ${nameList(names)}. ` +
-        `${names.length === 1 ? "Its" : "Their"} product details weren't changed. Add credit at ${OPENAI_BILLING}, then run it again.`,
+        `The AI account needs a credit top-up, and your administrator has been emailed. Affected: ${nameList(names)}. ` +
+        `${names.length === 1 ? "It is" : "They are"} saved and will fill in automatically once credit is added.`,
     };
   }
   const badKey = errors.filter((e) => e.aiKind === "bad_key");

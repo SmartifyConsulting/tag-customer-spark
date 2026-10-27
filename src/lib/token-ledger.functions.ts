@@ -14,6 +14,7 @@ export const listTokenLedger = createServerFn({ method: "POST" })
       .from("ai_usage_events")
       .select("id, created_at, provider, operation, model, input_tokens, output_tokens, total_tokens, cost_usd, status")
       .gte("created_at", since)
+      .neq("provider", "alert")
       .order("created_at", { ascending: false })
       .limit(2000);
     if (error) throw new Error(error.message);
