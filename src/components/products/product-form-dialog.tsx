@@ -97,6 +97,7 @@ export function ProductFormDialog({
     resolver: zodResolver(productInputSchema) as any,
     defaultValues: defaults,
   });
+  const lastGtinRef = useRef<string>(String(initial?.gtin ?? ""));
 
 
   useEffect(() => {
@@ -237,9 +238,10 @@ export function ProductFormDialog({
 
   async function handleBarcode(code: string) {
     const current = form.getValues();
-    // A scanned code IS the product's barcode — it goes to GTIN, not SKU.
     form.setValue("gtin", code, { shouldDirty: true, shouldValidate: true });
-    if (!(current.sku ?? "").trim()) form.setValue("sku", code, { shouldDirty: true });
+    const sku = (current.sku ?? "").trim();
+    if (!sku || sku === lastGtinRef.current) form.setValue("sku", code, { shouldDirty: true });
+    lastGtinRef.current = code;
     try {
       const res = await lookupFn({ data: { code } });
       if (!res.found || !res.product) {
@@ -299,19 +301,24 @@ export function ProductFormDialog({
               <Input {...form.register("name")} />
             </Field>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field label="SKU *" error={form.formState.errors.sku?.message}>
-                <Input {...form.register("sku")} />
-              </Field>
-              <Field label="Brand"><Input {...form.register("brand")} /></Field>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field
                 label="Barcode (GTIN) *"
                 error={form.formState.errors.gtin?.message as string | undefined}
               >
                 <div className="flex gap-2">
                   <Input
-                    {...form.register("gtin")}
+                    {...form.register("gtin", {
+                      onChange: (e) => {
+                        const prevGtin = form.getValues("sku");
+                        const sku = (form.getValues("sku") ?? "").trim();
+                        // Keep SKU mirroring the barcode until the user types their own SKU.
+                        if (!sku || sku === lastGtinRef.current) {
+                          form.setValue("sku", e.target.value, { shouldDirty: true });
+                        }
+                        void prevGtin;
+                        lastGtinRef.current = e.target.value;
+                      },
+                    })}
                     inputMode="numeric"
                     placeholder="e.g. 6004201004816"
                     className="flex-1 font-mono"
@@ -330,6 +337,12 @@ export function ProductFormDialog({
                   The real product barcode (8, 12, 13 or 14 digits).
                 </p>
               </Field>
+              <Field label="SKU *" error={form.formState.errors.sku?.message}>
+                <Input {...form.register("sku")} placeholder="Defaults to the barcode" />
+              </Field>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label="Brand"><Input {...form.register("brand")} /></Field>
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -374,35 +387,17 @@ export function ProductFormDialog({
           <Section title="Pricing">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Field label="Price (R) *">
-                <Input
-                  type="number"
-                  step="0.01"
+                <MoneyInput
                   placeholder="0.00"
-                  value={centsToRandInput(form.watch("price_cents"))}
-                  onChange={(e) => {
-                    const val = e.target.value.trim();
-                    form.setValue("price_cents", val === "" ? 0 : randToCents(val), {
-                      shouldDirty: true,
-                    });
-                  }}
-                  onFocus={(e) => e.currentTarget.select()}
+                  cents={form.watch("price_cents")}
+                  onCents={(c) => form.setValue("price_cents", c ?? 0, { shouldDirty: true })}
                 />
               </Field>
               <Field label="Sale price (R)">
-                <Input
-                  type="number"
-                  step="0.01"
+                <MoneyInput
                   placeholder="Leave empty for no sale"
-                  value={centsToRandInput(form.watch("sale_price_cents") ?? null)}
-                  onChange={(e) => {
-                    const val = e.target.value.trim();
-                    form.setValue(
-                      "sale_price_cents",
-                      val === "" ? null : randToCents(val),
-                      { shouldDirty: true },
-                    );
-                  }}
-                  onFocus={(e) => e.currentTarget.select()}
+                  cents={form.watch("sale_price_cents") ?? null}
+                  onCents={(c) => form.setValue("sale_price_cents", c, { shouldDirty: true })}
                 />
               </Field>
               <Field label="Currency">
