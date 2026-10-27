@@ -104,10 +104,10 @@ export const deleteBrand = createServerFn({ method: "POST" })
 // ---------- Logo resolution ----------
 
 async function aiGenerateLogo(brandName: string): Promise<Uint8Array | null> {
-  const { OPENAI_BASE, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
+  const { OPENAI_BASE, openAiFetch, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
   if (!openAiConfigured()) return null;
   try {
-    const res = await fetch(`${OPENAI_BASE}/images/generations`, {
+    const res = await openAiFetch(`${OPENAI_BASE}/images/generations`, {
       method: "POST",
       headers: openAiHeaders(),
       body: JSON.stringify({

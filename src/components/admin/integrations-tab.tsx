@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   CheckCircle2,
+  Coins,
   Copy,
   ExternalLink,
   EyeOff,
@@ -19,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/password-input";
+import { TokenLedger } from "@/components/admin/token-ledger";
 import {
   INTEGRATION_GROUPS,
   INTEGRATION_PROVIDERS,
@@ -50,7 +52,7 @@ async function copyValue(label: string, value: string) {
   }
 }
 
-type View = "apps" | "keys";
+type View = "apps" | "keys" | "ledger";
 
 export function IntegrationsTab() {
   const load = useServerFn(listIntegrations);
@@ -107,12 +109,19 @@ export function IntegrationsTab() {
         <Button size="sm" variant={view === "keys" ? "default" : "outline"} onClick={() => setView("keys")}>
           <KeyRound className="mr-1.5 h-3.5 w-3.5" /> API keys
         </Button>
+        <Button size="sm" variant={view === "ledger" ? "default" : "outline"} onClick={() => setView("ledger")}>
+          <Coins className="mr-1.5 h-3.5 w-3.5" /> Token ledger
+        </Button>
         <span className="text-xs text-muted-foreground">
           {view === "apps"
             ? "Every app TAG connects to, and whether it is set up."
-            : "Every key and secret TAG uses, in one list."}
+            : view === "keys"
+              ? "Every key and secret TAG uses, in one list."
+              : "What every ChatGPT call has used and cost."}
         </span>
       </div>
+
+      {view === "ledger" && <TokenLedger />}
 
       {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
 
