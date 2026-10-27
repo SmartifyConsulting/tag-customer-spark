@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Check, ImagePlus, Loader2, ScanLine, X } from "lucide-react";
-import { centsToRandInput, randToCents } from "@/lib/format";
+import { MoneyInput } from "@/components/ui/money-input";
 import { BarcodeScannerDialog } from "@/components/products/barcode-scanner-dialog";
 
 import {
@@ -309,13 +309,11 @@ export function ProductFormDialog({
                   <Input
                     {...form.register("gtin", {
                       onChange: (e) => {
-                        const prevGtin = form.getValues("sku");
                         const sku = (form.getValues("sku") ?? "").trim();
                         // Keep SKU mirroring the barcode until the user types their own SKU.
                         if (!sku || sku === lastGtinRef.current) {
                           form.setValue("sku", e.target.value, { shouldDirty: true });
                         }
-                        void prevGtin;
                         lastGtinRef.current = e.target.value;
                       },
                     })}
