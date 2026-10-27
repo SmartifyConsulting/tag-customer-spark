@@ -158,6 +158,51 @@ export type Database = {
           },
         ]
       }
+      ai_usage_events: {
+        Row: {
+          cost_usd: number | null
+          created_at: string
+          id: string
+          input_tokens: number | null
+          model: string | null
+          operation: string
+          output_tokens: number | null
+          product_id: string | null
+          provider: string
+          retailer_id: string | null
+          status: number | null
+          total_tokens: number | null
+        }
+        Insert: {
+          cost_usd?: number | null
+          created_at?: string
+          id?: string
+          input_tokens?: number | null
+          model?: string | null
+          operation: string
+          output_tokens?: number | null
+          product_id?: string | null
+          provider?: string
+          retailer_id?: string | null
+          status?: number | null
+          total_tokens?: number | null
+        }
+        Update: {
+          cost_usd?: number | null
+          created_at?: string
+          id?: string
+          input_tokens?: number | null
+          model?: string | null
+          operation?: string
+          output_tokens?: number | null
+          product_id?: string | null
+          provider?: string
+          retailer_id?: string | null
+          status?: number | null
+          total_tokens?: number | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string

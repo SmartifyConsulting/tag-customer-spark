@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793118196185,
+      "tag": "0000_ai_usage_events_token_ledger",
+      "breakpoints": true
+    }
+  ]
+}
