@@ -477,7 +477,14 @@ async function serperImageCandidates(apiKey: string, query: string): Promise<str
       headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({ q: query, num: 20, safe: "active", imgSize: "large" }),
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      if (res.status === 402 || /credit/i.test(text)) {
+        const { notifyAdminCreditExhausted } = await import("./admin-alerts.server");
+        await notifyAdminCreditExhausted("serper");
+      }
+      return [];
+    }
     const json: any = await res.json();
     const items: any[] = Array.isArray(json?.images) ? json.images : [];
     const isImageUrl = (u: string) =>
@@ -558,7 +565,7 @@ async function pickBestCandidateWithVision(
   });
 
   try {
-    const res = await fetchWithTimeout(`${OPENAI_BASE}/chat/completions`, {
+    const res = await openAiFetch(`${OPENAI_BASE}/chat/completions`, {
       method: "POST",
       headers: openAiHeaders(),
       body: JSON.stringify({
@@ -566,7 +573,7 @@ async function pickBestCandidateWithVision(
         messages: [{ role: "user", content }],
         response_format: { type: "json_object" },
       }),
-    });
+    }, "Product photo check");
     if (!res.ok) {
       console.warn(`[vision-verify] HTTP ${res.status} — falling back to top candidate`);
       return candidates[0];
