@@ -192,7 +192,7 @@ Pick the single best existing_category_id from the list. If NONE reasonably fit,
           { role: "user", content: prompt },
         ],
       }),
-    });
+    }, "Category classification");
     if (!res.ok) return null;
     const j = await res.json();
     const raw = j.choices?.[0]?.message?.content;
@@ -404,7 +404,7 @@ async function aiGenerateCategoryImage(name: string): Promise<Uint8Array | null>
         quality: "low",
         n: 1,
       }),
-    });
+    }, "Category image");
     if (!res.ok) return null;
     const j = await res.json();
     const b64 = j?.data?.[0]?.b64_json;

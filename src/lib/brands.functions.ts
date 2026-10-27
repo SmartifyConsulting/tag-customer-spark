@@ -117,7 +117,7 @@ async function aiGenerateLogo(brandName: string): Promise<Uint8Array | null> {
         quality: "low",
         n: 1,
       }),
-    });
+    }, "Brand logo");
     if (!res.ok) {
       console.error("aiGenerateLogo failed", res.status, await res.text().catch(() => ""));
       return null;

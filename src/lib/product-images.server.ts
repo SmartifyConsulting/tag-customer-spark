@@ -358,7 +358,7 @@ async function generateAiImage(input: ResolveInput): Promise<Uint8Array | null> 
         quality: "low",
         n: 1,
       }),
-    });
+    }, "Product image generation");
     if (!res.ok) return null;
     const json: any = await res.json();
     const b64 = json?.data?.[0]?.b64_json;

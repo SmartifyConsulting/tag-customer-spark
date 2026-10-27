@@ -199,7 +199,7 @@ export async function callAiJson(
         { role: "user", content },
       ],
     }),
-  });
+  }, "Import column mapping");
   if (!res.ok) throw new Error(`AI request failed [${res.status}]: ${await res.text()}`);
   const json = await res.json();
   const text = json?.choices?.[0]?.message?.content ?? "{}";
