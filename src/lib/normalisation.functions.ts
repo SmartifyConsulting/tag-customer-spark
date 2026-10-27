@@ -61,7 +61,7 @@ Rules: Title Case display_name. Do NOT include brand or size in display_name. Fi
           { role: "user", content: prompt },
         ],
       }),
-    });
+    }, "Product name normalisation");
     if (!res.ok) return null;
     const j = await res.json();
     const raw = j.choices?.[0]?.message?.content;

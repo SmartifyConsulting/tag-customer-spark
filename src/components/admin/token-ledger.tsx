@@ -46,6 +46,7 @@ export function TokenLedger() {
     queryKey: ["token-ledger", days],
     queryFn: () => fn({ data: { days: Number(days) } }),
   });
+  const [tab, setTab] = useState<"ledger" | "reports">("ledger");
   const rows = (data?.rows ?? []) as Row[];
   const t = useMemo(() => totals(rows), [rows]);
   const groups = useMemo(() => {
@@ -67,6 +68,22 @@ export function TokenLedger() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-full border border-border p-0.5">
+            {(["ledger", "reports"] as const).map((k) => (
+              <button
+                key={k}
+                type="button"
+                aria-pressed={tab === k}
+                onClick={() => setTab(k)}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-medium",
+                  tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {k === "ledger" ? "Ledger" : "Reports"}
+              </button>
+            ))}
+          </div>
           <Select value={days} onValueChange={setDays}>
             <SelectTrigger className="h-8 w-[140px] text-xs">
               <SelectValue />
@@ -84,6 +101,10 @@ export function TokenLedger() {
         </div>
       </div>
 
+      {tab === "reports" ? (
+        <TokenReport rows={rows} loading={isLoading} />
+      ) : (
+      <>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[
           ["Calls", num(rows.length)],
@@ -125,7 +146,7 @@ export function TokenLedger() {
                         <thead className="border-y border-border text-left text-muted-foreground">
                           <tr>
                             <th className="px-4 py-2 font-medium">When</th>
-                            <th className="px-4 py-2 font-medium">Task</th>
+                            <th className="px-4 py-2 font-medium">Activity</th>
                             <th className="px-4 py-2 font-medium">Model</th>
                             <th className="px-4 py-2 text-right font-medium">In</th>
                             <th className="px-4 py-2 text-right font-medium">Out</th>
@@ -142,7 +163,7 @@ export function TokenLedger() {
                                 <td className="whitespace-nowrap px-4 py-2">
                                   {new Date(r.created_at).toLocaleString()}
                                 </td>
-                                <td className="px-4 py-2 capitalize">{r.operation}</td>
+                                <td className="px-4 py-2">{r.operation}</td>
                                 <td className="px-4 py-2 font-mono">{r.model ?? "—"}</td>
                                 <td className="px-4 py-2 text-right font-mono tabular-nums">{num(r.input_tokens ?? 0)}</td>
                                 <td className="px-4 py-2 text-right font-mono tabular-nums">{num(r.output_tokens ?? 0)}</td>
@@ -166,6 +187,120 @@ export function TokenLedger() {
           </Accordion>
         )}
       </div>
+      </>
+      )}
     </section>
+  );
+}
+
+function TokenReport({ rows, loading }: { rows: Row[]; loading: boolean }) {
+  const [activity, setActivity] = useState("all");
+  const [model, setModel] = useState("all");
+  const [result, setResult] = useState("all");
+  const [groupBy, setGroupBy] = useState<"activity" | "model" | "day">("activity");
+
+  const activities = useMemo(() => Array.from(new Set(rows.map((r) => r.operation))).sort(), [rows]);
+  const models = useMemo(() => Array.from(new Set(rows.map((r) => r.model ?? "—"))).sort(), [rows]);
+
+  const filtered = useMemo(
+    () =>
+      rows.filter((r) => {
+        const failed = !!r.status && r.status >= 400;
+        if (activity !== "all" && r.operation !== activity) return false;
+        if (model !== "all" && (r.model ?? "—") !== model) return false;
+        if (result === "ok" && failed) return false;
+        if (result === "failed" && !failed) return false;
+        return true;
+      }),
+    [rows, activity, model, result],
+  );
+  const t = useMemo(() => totals(filtered), [filtered]);
+
+  const grouped = useMemo(() => {
+    const keyOf = (r: Row) =>
+      groupBy === "activity" ? r.operation : groupBy === "model" ? r.model ?? "—" : r.created_at.slice(0, 10);
+    const m = new Map<string, Row[]>();
+    for (const r of filtered) m.set(keyOf(r), [...(m.get(keyOf(r)) ?? []), r]);
+    return Array.from(m.entries())
+      .map(([k, list]) => ({ key: k, calls: list.length, ...totals(list) }))
+      .sort((a, b) => (groupBy === "day" ? b.key.localeCompare(a.key) : b.cost - a.cost));
+  }, [filtered, groupBy]);
+
+  const picker = (label: string, value: string, set: (v: string) => void, options: [string, string][]) => (
+    <div className="space-y-1">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <Select value={value} onValueChange={set}>
+        <SelectTrigger className="h-8 w-[180px] text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(([v, l]) => (
+            <SelectItem key={v} value={v}>
+              {l}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-end gap-3">
+        {picker("Activity", activity, setActivity, [["all", "All activities"], ...activities.map((a) => [a, a] as [string, string])])}
+        {picker("Model", model, setModel, [["all", "All models"], ...models.map((a) => [a, a] as [string, string])])}
+        {picker("Result", result, setResult, [["all", "All results"], ["ok", "Successful"], ["failed", "Failed"]])}
+        {picker("Group by", groupBy, (v) => setGroupBy(v as any), [["activity", "Activity"], ["model", "Model"], ["day", "Day"]])}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          ["Calls", num(filtered.length)],
+          ["Tokens", num(t.tokens)],
+          ["Estimated cost", usd(t.cost)],
+          ["Avg cost / call", usd(filtered.length ? t.cost / filtered.length : 0)],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-md border border-border bg-card p-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+            <p className="mt-1 font-mono text-base font-semibold tabular-nums">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="overflow-x-auto rounded-md border border-border bg-card">
+        {loading ? (
+          <p className="p-6 text-sm text-muted-foreground">Loading…</p>
+        ) : grouped.length === 0 ? (
+          <p className="p-6 text-sm text-muted-foreground">No calls match these filters.</p>
+        ) : (
+          <table className="w-full text-xs">
+            <thead className="border-b border-border text-left text-muted-foreground">
+              <tr>
+                <th className="px-4 py-2 font-medium capitalize">{groupBy}</th>
+                <th className="px-4 py-2 text-right font-medium">Calls</th>
+                <th className="px-4 py-2 text-right font-medium">Tokens</th>
+                <th className="px-4 py-2 text-right font-medium">Cost</th>
+                <th className="px-4 py-2 text-right font-medium">Share</th>
+                <th className="px-4 py-2 text-right font-medium">Failed</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {grouped.map((g) => (
+                <tr key={g.key}>
+                  <td className="px-4 py-2">{g.key}</td>
+                  <td className="px-4 py-2 text-right font-mono tabular-nums">{num(g.calls)}</td>
+                  <td className="px-4 py-2 text-right font-mono tabular-nums">{num(g.tokens)}</td>
+                  <td className="px-4 py-2 text-right font-mono tabular-nums">{usd(g.cost)}</td>
+                  <td className="px-4 py-2 text-right font-mono tabular-nums">
+                    {t.cost > 0 ? `${((g.cost / t.cost) * 100).toFixed(1)}%` : "—"}
+                  </td>
+                  <td className="px-4 py-2 text-right font-mono tabular-nums">{num(g.failed)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
   );
 }

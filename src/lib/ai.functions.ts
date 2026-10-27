@@ -42,7 +42,7 @@ async function callAI<T>(opts: {
 }): Promise<T> {
   const { generateObject } = await import("ai");
   const { getOpenAiProvider, openAiModels } = await import("./openai.server");
-  const model = getOpenAiProvider()(opts.model ?? openAiModels().fast);
+  const model = getOpenAiProvider({ activity: opts.action ? `AI: ${opts.action}`.slice(0, 80) : "AI assistant" })(opts.model ?? openAiModels().fast);
   try {
     const { object } = await generateObject({
       model,

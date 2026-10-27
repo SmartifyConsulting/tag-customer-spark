@@ -49,7 +49,6 @@ export const INTEGRATION_GROUPS = [
   "Email",
   "Search & data",
   "Payments",
-  "Platform",
 ] as const;
 
 /** Model names used by every AI feature when nothing else is set. */
@@ -209,33 +208,6 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
         defaultValue: "sandbox",
         help: "Use \"live\" for real payments; anything else is the sandbox.",
       },
-    ],
-  },
-  {
-    id: "lovable-cloud",
-    name: "Lovable Cloud (database & auth)",
-    group: "Platform",
-    summary: "TAG's database, sign-in and file storage.",
-    usedAt: "Everything: products, customers, conversations, sign-in and QR files.",
-    // The app needs these to reach its database at all, so they can't live in it.
-    editable: false,
-    fields: [
-      { key: "SUPABASE_URL", label: "Project URL", secret: false },
-      { key: "SUPABASE_PUBLISHABLE_KEY", label: "Publishable key", secret: false },
-      { key: "SUPABASE_SERVICE_ROLE_KEY", label: "Service-role key", secret: true },
-    ],
-  },
-  {
-    id: "scheduled-jobs",
-    name: "Scheduled jobs",
-    group: "Platform",
-    summary: "Protects TAG's background job endpoints.",
-    usedAt: "Notification ticks, daily summaries and passport enrichment runs.",
-    editable: true,
-    fields: [
-      { key: "CRON_SECRET", label: "Cron secret", secret: true },
-      { key: "PUBLIC_SITE_URL", label: "Public site URL", secret: false, optional: true },
-      { key: "SITE_URL", label: "Site URL (email links)", secret: false, optional: true },
     ],
   },
 ];

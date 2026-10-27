@@ -327,7 +327,7 @@ async function probeOpenAi(spec: IntegrationProvider): Promise<TestResult> {
       messages: [{ role: "user", content: "Reply with OK." }],
       max_completion_tokens: 32,
     }),
-  });
+  }, "Connection test");
   if (!ping.ok && !missing.some((m) => m.startsWith("fast:"))) {
     return fromHttp(spec.name, ping.status, await ping.text(), spec.billingUrl);
   }

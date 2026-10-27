@@ -151,7 +151,7 @@ async function callEnrichmentAI(input: {
 }): Promise<EnrichedPassport> {
   const { generateObject } = await import("ai");
   const { getOpenAiProvider, openAiModels } = await import("./openai.server");
-  const model = getOpenAiProvider({ structuredOutputs: true })(openAiModels().smart);
+  const model = getOpenAiProvider({ structuredOutputs: true, activity: "Passport enrichment" })(openAiModels().smart);
 
   const prompt = `Enrich the following product into a Digital Product Passport.
 Use the lookup data and web search results as ground truth when present. For any field you cannot ground in the lookup, the web search snippets, or common, verifiable public knowledge about this exact GTIN/brand/product, return null and DO NOT invent.

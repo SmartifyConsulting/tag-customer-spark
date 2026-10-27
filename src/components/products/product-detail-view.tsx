@@ -87,7 +87,12 @@ export function ProductDetailView({
         const stepName = first.step.charAt(0).toUpperCase() + first.step.slice(1);
         toast.error(`Digital identity for ${first.productName ?? "this product"} isn't finished`, {
           // AI failures already say which service and what to do; others get the step name.
-          description: first.aiKind ? `${stepName}: ${description ?? title}` : `${stepName}: ${title}`,
+          description:
+            first.aiKind === "no_credits"
+              ? description ?? title
+              : first.aiKind
+                ? `${stepName}: ${description ?? title}`
+                : `${stepName}: ${title}`,
           duration: 10000,
         });
       })

@@ -65,7 +65,7 @@ async function gatherRetailerSnapshot(retailerId: string) {
 
 export async function runDailyBriefForRetailer(retailerId: string) {
   const snap = await gatherRetailerSnapshot(retailerId);
-  const model = getOpenAiProvider()(openAiModels().fast);
+  const model = getOpenAiProvider({ activity: "Daily briefing" })(openAiModels().fast);
 
   const prompt = `You are the AI retail intelligence layer for a furniture/apparel retailer.
 Today's snapshot:
@@ -147,7 +147,7 @@ Each opportunity has body of 1 sentence + score (0-100, higher = more valuable) 
 
 export async function runWeeklyReportForRetailer(retailerId: string) {
   const snap = await gatherRetailerSnapshot(retailerId);
-  const model = getOpenAiProvider()(openAiModels().smart);
+  const model = getOpenAiProvider({ activity: "Weekly report" })(openAiModels().smart);
 
   const prompt = `Compose this week's retailer performance report.
 Snapshot:
