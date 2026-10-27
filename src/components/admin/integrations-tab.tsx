@@ -52,8 +52,6 @@ async function copyValue(label: string, value: string) {
   }
 }
 
-type View = "apps" | "keys" | "ledger";
-
 export function IntegrationsTab() {
   const load = useServerFn(listIntegrations);
   const qc = useQueryClient();
@@ -62,7 +60,6 @@ export function IntegrationsTab() {
     queryFn: () => load(),
     retry: false,
   });
-  const [view, setView] = useState<View>("apps");
   const refresh = () => qc.invalidateQueries({ queryKey: ["integrations-overview"] });
 
   const statusById = useMemo(
@@ -79,7 +76,8 @@ export function IntegrationsTab() {
     );
   }
 
-  const withSecrets = INTEGRATION_PROVIDERS.filter((p) => p.fields.some((f) => f.secret));
+  // Apps with keys, plus key-free data sources (e.g. Open Food Facts).
+  const apiProviders = INTEGRATION_PROVIDERS.filter((p) => p.noKey || p.fields.some((f) => f.secret));
 
   return (
     <div className="space-y-6">
