@@ -176,7 +176,7 @@ export async function callAiJson(
   systemPrompt: string,
   filePart?: { mime: string; base64: string; filename: string },
 ) {
-  const { OPENAI_BASE, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
+  const { OPENAI_BASE, openAiFetch, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
   if (!openAiConfigured()) throw new Error("OPENAI_API_KEY is not configured");
   const content: any[] = [{ type: "text", text: prompt }];
   if (filePart) {
@@ -188,7 +188,7 @@ export async function callAiJson(
       },
     });
   }
-  const res = await fetch(`${OPENAI_BASE}/chat/completions`, {
+  const res = await openAiFetch(`${OPENAI_BASE}/chat/completions`, {
     method: "POST",
     headers: openAiHeaders(),
     body: JSON.stringify({

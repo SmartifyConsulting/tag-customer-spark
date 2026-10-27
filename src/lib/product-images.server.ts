@@ -4,7 +4,7 @@
 // The pipeline downloads and re-uploads to the `product-images` public bucket
 // so consumers are never served flaky third-party URLs.
 
-import { OPENAI_BASE, openAiConfigured, openAiHeaders, openAiModels } from "./openai.server";
+import { OPENAI_BASE, openAiFetch, openAiConfigured, openAiHeaders, openAiModels } from "./openai.server";
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -348,7 +348,7 @@ async function generateAiImage(input: ResolveInput): Promise<Uint8Array | null> 
       .filter(Boolean)
       .join(" ");
 
-    const res = await fetch(`${OPENAI_BASE}/images/generations`, {
+    const res = await openAiFetch(`${OPENAI_BASE}/images/generations`, {
       method: "POST",
       headers: openAiHeaders(),
       body: JSON.stringify({

@@ -305,10 +305,10 @@ function fromHttp(name: string, status: number, body: string, billingUrl?: strin
 }
 
 async function probeOpenAi(spec: IntegrationProvider): Promise<TestResult> {
-  const { OPENAI_BASE, openAiHeaders, openAiKey, openAiModels } = await import("@/lib/openai.server");
+  const { OPENAI_BASE, openAiFetch, openAiHeaders, openAiKey, openAiModels } = await import("@/lib/openai.server");
   if (!openAiKey()) return { ok: false, reason: "not_configured", message: "No OpenAI API key is set yet." };
 
-  const list = await fetch(`${OPENAI_BASE}/models`, { headers: openAiHeaders() });
+  const list = await openAiFetch(`${OPENAI_BASE}/models`, { headers: openAiHeaders() });
   if (!list.ok) return fromHttp(spec.name, list.status, await list.text(), spec.billingUrl);
   const ids = new Set(((await list.json()) as any)?.data?.map((m: any) => String(m.id)) ?? []);
 
@@ -319,7 +319,7 @@ async function probeOpenAi(spec: IntegrationProvider): Promise<TestResult> {
 
   // Listing models is free and works with no credit, so make one tiny request to
   // catch an empty balance as well.
-  const ping = await fetch(`${OPENAI_BASE}/chat/completions`, {
+  const ping = await openAiFetch(`${OPENAI_BASE}/chat/completions`, {
     method: "POST",
     headers: openAiHeaders(),
     body: JSON.stringify({

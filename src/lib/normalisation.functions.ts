@@ -28,7 +28,7 @@ async function callAiNormalise(input: {
   description?: string | null;
   gtin?: string | null;
 }): Promise<NormalisedProduct | null> {
-  const { OPENAI_BASE, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
+  const { OPENAI_BASE, openAiFetch, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
   if (!openAiConfigured()) return null;
   const prompt = `Raw product:
 name: ${input.raw_name}
@@ -50,7 +50,7 @@ Return a normalised JSON object with these exact fields:
 }
 Rules: Title Case display_name. Do NOT include brand or size in display_name. Fix ALL CAPS. Extract '200g' → size_value 200 size_unit 'g'.`;
   try {
-    const res = await fetch(`${OPENAI_BASE}/chat/completions`, {
+    const res = await openAiFetch(`${OPENAI_BASE}/chat/completions`, {
       method: "POST",
       headers: openAiHeaders(),
       body: JSON.stringify({

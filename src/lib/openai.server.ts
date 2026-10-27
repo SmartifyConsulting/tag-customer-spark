@@ -5,6 +5,7 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { OPENAI_MODEL_DEFAULTS } from "@/lib/integrations.catalog";
 import { normalizeOpenAiModel } from "@/lib/openai-models";
+import { openAiFetch as loggedFetch } from "./ai-usage.server";
 
 export const OPENAI_BASE = "https://api.openai.com/v1";
 
@@ -45,5 +46,8 @@ export function getOpenAiProvider(options?: { structuredOutputs?: boolean }) {
     baseURL: OPENAI_BASE,
     apiKey,
     supportsStructuredOutputs: options?.structuredOutputs ?? false,
+    fetch: ((input: RequestInfo | URL, init?: RequestInit) => loggedFetch(input, init)) as typeof fetch,
   });
 }
+
+export { openAiFetch } from "./ai-usage.server";

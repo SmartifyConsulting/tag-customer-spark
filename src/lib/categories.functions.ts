@@ -154,7 +154,7 @@ async function callAiCategoryPick(args: {
   gtin?: string | null;
   categories: CatRow[];
 }): Promise<{ existing_category_id?: string; new_category?: string; confidence: number } | null> {
-  const { OPENAI_BASE, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
+  const { OPENAI_BASE, openAiFetch, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
   if (!openAiConfigured()) return null;
   const tree = args.categories.map((c) => ({
     id: c.id,
@@ -172,7 +172,7 @@ ${JSON.stringify(tree)}
 
 Pick the single best existing_category_id from the list. If NONE reasonably fit, propose a short new_category name (2-3 words, Title Case). Return JSON only.`;
   try {
-    const res = await fetch(`${OPENAI_BASE}/chat/completions`, {
+    const res = await openAiFetch(`${OPENAI_BASE}/chat/completions`, {
       method: "POST",
       headers: openAiHeaders(),
       body: JSON.stringify({
@@ -390,10 +390,10 @@ export const bulkAutoCategorise = createServerFn({ method: "POST" })
 // ---------- Category imagery ----------
 
 async function aiGenerateCategoryImage(name: string): Promise<Uint8Array | null> {
-  const { OPENAI_BASE, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
+  const { OPENAI_BASE, openAiFetch, openAiConfigured, openAiHeaders, openAiModels } = await import("./openai.server");
   if (!openAiConfigured()) return null;
   try {
-    const res = await fetch(`${OPENAI_BASE}/images/generations`, {
+    const res = await openAiFetch(`${OPENAI_BASE}/images/generations`, {
       method: "POST",
       headers: openAiHeaders(),
       body: JSON.stringify({
