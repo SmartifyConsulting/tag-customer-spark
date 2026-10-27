@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep model-setting normalization in the browser-safe `openai-models` helper, with unit tests, so display labels are translated before provider requests.
+- Every OpenAI request must go through openAiFetch / getOpenAiProvider (openai.server.ts) so it is logged to ai_usage_events for the Admin › Integrations Token Ledger.
