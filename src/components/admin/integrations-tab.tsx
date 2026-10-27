@@ -102,59 +102,15 @@ export function IntegrationsTab() {
 
       {data && <VaultCard vault={data.vault} storageReady={data.storageReady} onChanged={refresh} />}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" variant={view === "apps" ? "default" : "outline"} onClick={() => setView("apps")}>
-          <Plug className="mr-1.5 h-3.5 w-3.5" /> All apps
-        </Button>
-        <Button size="sm" variant={view === "keys" ? "default" : "outline"} onClick={() => setView("keys")}>
-          <KeyRound className="mr-1.5 h-3.5 w-3.5" /> API keys
-        </Button>
-        <Button size="sm" variant={view === "ledger" ? "default" : "outline"} onClick={() => setView("ledger")}>
-          <Coins className="mr-1.5 h-3.5 w-3.5" /> Token ledger
-        </Button>
-        <span className="text-xs text-muted-foreground">
-          {view === "apps"
-            ? "Every app TAG connects to, and whether it is set up."
-            : view === "keys"
-              ? "Every key and secret TAG uses, in one list."
-              : "What every ChatGPT call has used and cost."}
-        </span>
-      </div>
-
-      {view === "ledger" && <TokenLedger />}
+      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <KeyRound className="h-3.5 w-3.5" /> Every app and key TAG uses. Click an app to open it.
+      </p>
 
       {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
 
-      {data && view === "apps" &&
-        INTEGRATION_GROUPS.map((group) => {
-          const providers = INTEGRATION_PROVIDERS.filter((p) => p.group === group);
-          if (providers.length === 0) return null;
-          return (
-            <section key={group} className="space-y-2">
-              <h3 className="flex items-center gap-2 text-sm font-semibold">
-                {group}
-                <Badge variant="outline" className="font-normal text-muted-foreground">
-                  {providers.length}
-                </Badge>
-              </h3>
-              <div className="space-y-2">
-                {providers.map((p) => (
-                  <ProviderCard
-                    key={p.id}
-                    provider={p}
-                    status={statusById[p.id]}
-                    overview={data}
-                    onChanged={refresh}
-                  />
-                ))}
-              </div>
-            </section>
-          );
-        })}
-
-      {data && view === "keys" && (
+      {data && (
         <div className="space-y-2">
-          {withSecrets.map((p) => (
+          {apiProviders.map((p) => (
             <ProviderCard
               key={p.id}
               provider={p}

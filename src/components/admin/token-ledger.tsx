@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { listTokenLedger } from "@/lib/token-ledger.functions";
@@ -39,12 +40,16 @@ function totals(rows: Row[]) {
   );
 }
 
+const ymd = (d: Date) => d.toISOString().slice(0, 10);
+
 export function TokenLedger() {
   const fn = useServerFn(listTokenLedger);
-  const [days, setDays] = useState("90");
+  const [from, setFrom] = useState(() => ymd(new Date(Date.now() - 30 * 86_400_000)));
+  const [to, setTo] = useState(() => ymd(new Date()));
   const { data, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ["token-ledger", days],
-    queryFn: () => fn({ data: { days: Number(days) } }),
+    queryKey: ["token-ledger", from, to],
+    queryFn: () => fn({ data: { from, to } }),
+    enabled: !!from && !!to && from <= to,
   });
   const [tab, setTab] = useState<"ledger" | "reports">("ledger");
   const rows = (data?.rows ?? []) as Row[];
@@ -57,6 +62,10 @@ export function TokenLedger() {
     }
     return Array.from(m.entries());
   }, [rows]);
+  const preset = (days: number) => {
+    setFrom(ymd(new Date(Date.now() - days * 86_400_000)));
+    setTo(ymd(new Date()));
+  };
 
   return (
     <section className="space-y-3">
@@ -64,10 +73,10 @@ export function TokenLedger() {
         <div>
           <h3 className="text-sm font-semibold">Token ledger</h3>
           <p className="text-xs text-muted-foreground">
-            Every ChatGPT call TAG makes, with tokens used and estimated cost. Exact billing is on your OpenAI account.
+            Every paid AI and search call TAG makes, with tokens used and estimated cost. Exact billing is on each provider's account.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-full border border-border p-0.5">
             {(["ledger", "reports"] as const).map((k) => (
               <button
@@ -84,11 +93,20 @@ export function TokenLedger() {
               </button>
             ))}
           </div>
-          <Select value={days} onValueChange={setDays}>
-            <SelectTrigger className="h-8 w-[140px] text-xs">
-              <SelectValue />
+          <label className="flex items-center gap-1 text-xs text-muted-foreground">
+            From
+            <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="h-8 w-[140px] text-xs" />
+          </label>
+          <label className="flex items-center gap-1 text-xs text-muted-foreground">
+            To
+            <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="h-8 w-[140px] text-xs" />
+          </label>
+          <Select value="" onValueChange={(v) => preset(Number(v))}>
+            <SelectTrigger className="h-8 w-[120px] text-xs">
+              <SelectValue placeholder="Quick pick" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="0">Today</SelectItem>
               <SelectItem value="7">Last 7 days</SelectItem>
               <SelectItem value="30">Last 30 days</SelectItem>
               <SelectItem value="90">Last 90 days</SelectItem>
