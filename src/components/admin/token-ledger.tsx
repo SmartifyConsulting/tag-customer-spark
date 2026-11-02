@@ -15,6 +15,7 @@ import {
   FailureReasons,
   SavingsCard,
   SpendByRetailer,
+  SpendByUser,
   TopProducts,
   useZarRate,
 } from "./token-ledger-insights";
@@ -214,6 +215,7 @@ export function TokenLedger() {
             <SavingsCard rows={allRows} />
             <SpendByRetailer rows={allRows} />
           </div>
+          <SpendByUser rows={allRows} />
           <DailyCostChart rows={allRows} />
           <TopProducts rows={allRows} />
 

@@ -14,6 +14,7 @@ import {
   currencyName,
   dayOf,
   getDisplayRate,
+  userLabel,
   estimateSavings,
   failureReasons,
   productLabel,
@@ -327,6 +328,54 @@ export function SpendByRetailer({ rows }: { rows: Row[] }) {
                 style={{ width: `${(v.cost / max) * 100}%` }}
               />
             </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// ---------- spend by user, and which retailers it was for ----------
+
+export function SpendByUser({ rows }: { rows: Row[] }) {
+  const list = useMemo(() => {
+    const m = new Map<string, { cost: number; calls: number; retailers: Map<string, number> }>();
+    for (const r of rows) {
+      const k = userLabel(r);
+      const cur = m.get(k) ?? { cost: 0, calls: 0, retailers: new Map<string, number>() };
+      const c = Number(r.cost_usd ?? 0);
+      cur.cost += c;
+      cur.calls++;
+      const ret = retailerLabel(r);
+      cur.retailers.set(ret, (cur.retailers.get(ret) ?? 0) + c);
+      m.set(k, cur);
+    }
+    return Array.from(m.entries()).sort((a, b) => b[1].cost - a[1].cost);
+  }, [rows]);
+  const total = list.reduce((a, [, v]) => a + v.cost, 0);
+  if (!list.length) return null;
+  return (
+    <div className="rounded-md border border-border bg-card p-3">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Spend by user and retailer</p>
+      <ul className="mt-2 space-y-2">
+        {list.map(([name, v]) => (
+          <li key={name} className="text-xs">
+            <div className="flex items-center justify-between gap-3">
+              <span className="truncate font-medium">{name}</span>
+              <span className="shrink-0 font-mono tabular-nums">
+                {usd(v.cost)} · {total > 0 ? `${((v.cost / total) * 100).toFixed(0)}%` : "—"} · {num(v.calls)} call{v.calls === 1 ? "" : "s"}
+              </span>
+            </div>
+            <ul className="mt-0.5 space-y-0.5 pl-3 text-muted-foreground">
+              {Array.from(v.retailers.entries())
+                .sort((a, b) => b[1] - a[1])
+                .map(([ret, cost]) => (
+                  <li key={ret} className="flex items-center justify-between gap-3">
+                    <span className="truncate">{ret}</span>
+                    <span className="shrink-0 font-mono tabular-nums">{usd(cost)}</span>
+                  </li>
+                ))}
+            </ul>
           </li>
         ))}
       </ul>
