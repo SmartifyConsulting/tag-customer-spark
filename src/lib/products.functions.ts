@@ -16,6 +16,17 @@ async function resolveRetailerId(supabase: any, userId: string): Promise<string 
   return data?.retailer_id ?? null;
 }
 
+// The database refuses two products with the same barcode, description and
+// store. Say that in plain words instead of showing the raw constraint name.
+function productWriteError(message: string): Error {
+  if (/products_retailer_gtin_description_store_key/.test(message)) {
+    return new Error(
+      "Another product already has this barcode, description and store. Open that product instead, or use Merge products to combine the two.",
+    );
+  }
+  return new Error(message);
+}
+
 async function canManage(supabase: any, userId: string, retailerId: string) {
   const { data } = await supabase.rpc("can_manage_retailer", {
     _user_id: userId,
@@ -359,7 +370,7 @@ export const createProduct = createServerFn({ method: "POST" })
       .insert(insertPayload)
       .select("id")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) throw productWriteError(error.message);
     if (!(data as any).category_id) {
       try {
         const { suggestCategoryForProduct } = await import("./categories.functions");
@@ -444,7 +455,7 @@ export const updateProduct = createServerFn({ method: "POST" })
     }
 
     const { error } = await supabase.from("products").update(patch).eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) throw productWriteError(error.message);
 
     if (gtinChanged) {
       try {

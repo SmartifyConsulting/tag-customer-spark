@@ -157,6 +157,27 @@ export function ProductFormDialog({
   const [autoState, setAutoState] = useState<"idle" | "saving" | "saved">("idle");
   const lastSavedRef = useRef<string>("");
   const autoBusyRef = useRef(false);
+  // createProduct is slow (category, barcode, QR and image lookups all run
+  // before it returns), so the new product's id isn't known for a while. If
+  // the auto-save has a create in flight and the user presses Save, a second
+  // create used to fire and made a duplicate product. Both paths now share
+  // this single in-flight create.
+  const createRef = useRef<Promise<string> | null>(null);
+  const createOnce = (payload: ReturnType<typeof buildPayload>): Promise<string> => {
+    if (!createRef.current) {
+      createRef.current = (async () => {
+        try {
+          const { id } = await create({ data: payload });
+          setDraftId(id);
+          return id;
+        } catch (e) {
+          createRef.current = null; // let a later attempt retry
+          throw e;
+        }
+      })();
+    }
+    return createRef.current;
+  };
 
   const buildPayload = (values: ProductInput) => ({
     ...values,
@@ -171,7 +192,11 @@ export function ProductFormDialog({
         await update({ data: { id: effectiveId, patch: payload } });
         return effectiveId;
       }
-      const { id } = await create({ data: payload });
+      // An auto-save may already be creating this product: wait for it and
+      // write the latest values onto it instead of creating a second one.
+      const creatingAlready = !!createRef.current;
+      const id = await createOnce(payload);
+      if (creatingAlready) await update({ data: { id, patch: payload } });
       if (imgs.length) await setImages({ data: { id, images: imgs } });
       return id;
     },
@@ -212,8 +237,7 @@ export function ProductFormDialog({
         if (effectiveId) {
           await update({ data: { id: effectiveId, patch: payload } });
         } else {
-          const { id } = await create({ data: payload });
-          setDraftId(id);
+          const id = await createOnce(payload);
           if (imgs.length) await setImages({ data: { id, images: imgs } });
         }
         lastSavedRef.current = snapshot;
@@ -234,6 +258,7 @@ export function ProductFormDialog({
   useEffect(() => {
     if (open) {
       lastSavedRef.current = "";
+      createRef.current = null;
       setDraftId(null);
       setAutoState("idle");
     }
