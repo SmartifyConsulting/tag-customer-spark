@@ -22,7 +22,23 @@ export type Row = {
   user_name?: string | null;
 };
 
-export const usd = (n: number) => `USD ${n.toFixed(n < 1 ? 4 : 2)}`;
+// Costs are stored in US dollars (that's how providers bill). When the live
+// USD->ZAR rate is known, every amount on the ledger is shown in rand instead.
+let displayRate: number | null = null;
+export function setDisplayRate(rate: number | null) {
+  displayRate = rate && rate > 0 ? rate : null;
+}
+export const getDisplayRate = () => displayRate;
+export const currencyName = () => (displayRate ? "Rand" : "USD");
+
+/** Formats a dollar amount for display: "R 12.40" when the rand rate is known, "USD 0.6800" otherwise. */
+export const usd = (n: number) => {
+  if (displayRate) {
+    const v = n * displayRate;
+    return `R ${v.toFixed(v < 1 ? 3 : 2)}`;
+  }
+  return `USD ${n.toFixed(n < 1 ? 4 : 2)}`;
+};
 export const num = (n: number) => n.toLocaleString();
 
 export const UNATTRIBUTED = "Not attributed";
@@ -112,7 +128,7 @@ export function rowsToCsv(rows: Row[]): { header: string[]; lines: (string | num
   return {
     header: [
       "When", "Activity", "Product", "Store", "Retailer", "User", "Run", "Model",
-      "Input tokens", "Output tokens", "Total tokens", "Cost USD", "Result", "Error",
+      "Input tokens", "Output tokens", "Total tokens", "Cost USD", "Cost ZAR", "Result", "Error",
     ],
     lines: rows.map((r) => [
       new Date(r.created_at).toISOString(),
@@ -127,6 +143,7 @@ export function rowsToCsv(rows: Row[]): { header: string[]; lines: (string | num
       r.output_tokens ?? 0,
       r.total_tokens ?? 0,
       Number(r.cost_usd ?? 0),
+      displayRate ? Number((Number(r.cost_usd ?? 0) * displayRate).toFixed(4)) : "",
       isFailed(r) ? `Error ${r.status}` : "OK",
       r.error_message ?? "",
     ]),

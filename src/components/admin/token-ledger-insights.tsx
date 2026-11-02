@@ -7,11 +7,13 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { getLedgerSettings, listTokenLedger, saveLedgerSettings } from "@/lib/token-ledger.functions";
+import { getLedgerSettings, getZarRate, listTokenLedger, saveLedgerSettings } from "@/lib/token-ledger.functions";
 import { cn } from "@/lib/utils";
 import {
   UNATTRIBUTED,
+  currencyName,
   dayOf,
+  getDisplayRate,
   estimateSavings,
   failureReasons,
   productLabel,
@@ -21,6 +23,19 @@ import {
   num,
   type Row,
 } from "./token-ledger-shared";
+
+// ---------- exchange rate (dollars -> rand) ----------
+
+/** The live USD->ZAR rate, or null if it couldn't be fetched (the ledger then stays in dollars). */
+export function useZarRate() {
+  const fn = useServerFn(getZarRate);
+  return useQuery({
+    queryKey: ["zar-rate"],
+    queryFn: () => fn(),
+    staleTime: 6 * 60 * 60 * 1000,
+    retry: false,
+  });
+}
 
 // ---------- this month vs the budget ----------
 
@@ -40,15 +55,21 @@ export function BudgetStrip() {
     staleTime: 60_000,
   });
   const settings = useQuery({ queryKey: ["ledger-settings"], queryFn: () => settingsFn() });
+  // The budget is typed in rand when the rate is known; it is stored in dollars like every cost.
+  const rate = useZarRate().data?.rate ?? null;
 
   const [budgetText, setBudgetText] = useState("");
   const [alertText, setAlertText] = useState("80");
   const [saving, setSaving] = useState(false);
   useEffect(() => {
     if (!settings.data) return;
-    setBudgetText(settings.data.monthlyBudgetUsd != null ? String(settings.data.monthlyBudgetUsd) : "");
+    setBudgetText(
+      settings.data.monthlyBudgetUsd != null
+        ? String(Math.round(settings.data.monthlyBudgetUsd * (rate ?? 1) * 100) / 100)
+        : "",
+    );
     setAlertText(String(settings.data.alertAtPercent));
-  }, [settings.data]);
+  }, [settings.data, rate]);
 
   const spend = useMemo(() => totals((month.data?.rows ?? []) as Row[]).cost, [month.data]);
   const budget = settings.data?.monthlyBudgetUsd ?? null;
@@ -61,15 +82,17 @@ export function BudgetStrip() {
   const forecast = dayOfMonth >= 1 ? (spend / dayOfMonth) * daysInMonth : null;
 
   async function save() {
-    const value = budgetText.trim() === "" ? null : Number(budgetText);
+    const typed = budgetText.trim() === "" ? null : Number(budgetText);
     const level = Number(alertText);
-    if (value !== null && (!Number.isFinite(value) || value < 0)) return toast.error("Enter the budget as a number, e.g. 20");
+    if (typed !== null && (!Number.isFinite(typed) || typed < 0))
+      return toast.error(`Enter the budget as a number, e.g. ${rate ? "400" : "20"}`);
+    const value = typed === null ? null : typed / (rate ?? 1);
     if (!Number.isInteger(level) || level < 1 || level > 100) return toast.error("The warning level must be between 1 and 100%.");
     setSaving(true);
     try {
       await saveFn({ data: { monthlyBudgetUsd: value, alertAtPercent: level } });
       await qc.invalidateQueries({ queryKey: ["ledger-settings"] });
-      toast.success(value ? `Budget set to USD ${value.toFixed(2)} a month` : "Budget removed");
+      toast.success(value ? `Budget set to ${usd(value)} a month` : "Budget removed");
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't save the budget");
     } finally {
@@ -99,10 +122,10 @@ export function BudgetStrip() {
 
         <div className="flex flex-wrap items-end gap-2">
           <label className="space-y-1 text-[11px] text-muted-foreground">
-            Monthly budget (USD)
+            Monthly budget ({rate ? "Rand" : "USD"})
             <Input
               inputMode="decimal"
-              placeholder="e.g. 20"
+              placeholder={rate ? "e.g. 400" : "e.g. 20"}
               value={budgetText}
               onChange={(e) => setBudgetText(e.target.value)}
               className="h-8 w-[110px] text-xs"
@@ -177,9 +200,11 @@ export function SavingsCard({ rows }: { rows: Row[] }) {
 
 // ---------- cost per day ----------
 
-const dayConfig: ChartConfig = { cost: { label: "Cost (USD)", color: "var(--primary)" } };
 
 export function DailyCostChart({ rows }: { rows: Row[] }) {
+  const rate = getDisplayRate() ?? 1;
+  const symbol = getDisplayRate() ? "R" : "$";
+  const dayConfig: ChartConfig = { cost: { label: `Cost (${currencyName()})`, color: "var(--primary)" } };
   const data = useMemo(() => {
     const byDay = new Map<string, number>();
     for (const r of rows) byDay.set(dayOf(r.created_at), (byDay.get(dayOf(r.created_at)) ?? 0) + Number(r.cost_usd ?? 0));
@@ -191,21 +216,21 @@ export function DailyCostChart({ rows }: { rows: Row[] }) {
     const end = new Date(`${keys[keys.length - 1]}T00:00:00`);
     while (cur <= end) {
       const k = dayOf(cur.toISOString());
-      out.push({ day: k, cost: Math.round((byDay.get(k) ?? 0) * 10000) / 10000 });
+      out.push({ day: k, cost: Math.round((byDay.get(k) ?? 0) * rate * 10000) / 10000 });
       cur.setDate(cur.getDate() + 1);
     }
     return out;
-  }, [rows]);
+  }, [rows, rate]);
 
   if (!data.length) return null;
   return (
     <div className="rounded-md border border-border bg-card p-3">
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Cost per day</p>
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Cost per day ({currencyName()})</p>
       <ChartContainer config={dayConfig} className="mt-2 h-40 w-full">
         <BarChart data={data}>
           <CartesianGrid vertical={false} />
           <XAxis dataKey="day" tickLine={false} axisLine={false} tickFormatter={(d: string) => d.slice(5)} minTickGap={16} />
-          <YAxis width={44} tickLine={false} axisLine={false} tickFormatter={(v: number) => `$${v}`} />
+          <YAxis width={44} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${symbol}${v}`} />
           <ChartTooltip content={<ChartTooltipContent />} />
           <Bar dataKey="cost" fill="var(--color-cost)" radius={3} />
         </BarChart>

@@ -50,13 +50,16 @@ export async function notifyBudgetThreshold(
     if (emails.length === 0) return;
 
     const over = level >= 100;
+    const { getUsdZarRate } = await import("./fx.server");
+    const fx = await getUsdZarRate();
+    const money = (n: number) => (fx ? `R ${(n * fx.rate).toFixed(2)} (USD ${n.toFixed(2)})` : `USD ${n.toFixed(2)}`);
     const { sendEmail } = await import("./email.server");
     await sendEmail({
       to: emails,
       subject: over ? "Tag · monthly AI budget reached" : `Tag · ${level}% of the monthly AI budget used`,
       html: `<div style="font-family:system-ui,sans-serif;font-size:14px;color:#1F3A5F">
         <h2 style="margin:0 0 12px">${over ? "The monthly AI budget has been reached" : `${level}% of the monthly AI budget is used`}</h2>
-        <p>So far this month Tag has spent about <b>USD ${spend.toFixed(2)}</b> on AI and search, against a budget of <b>USD ${budget.toFixed(2)}</b>.</p>
+        <p>So far this month Tag has spent about <b>${money(spend)}</b> on AI and search, against a budget of <b>${money(budget)}</b>.</p>
         <p>Nothing has been switched off. See what is using it in Admin &rsaquo; Token ledger.</p>
         <p style="color:#666;font-size:12px">These figures are estimates; exact billing is on each provider's account. You'll get this email once per month for each level.</p>
       </div>`,

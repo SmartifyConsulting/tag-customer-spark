@@ -16,6 +16,7 @@ import {
   SavingsCard,
   SpendByRetailer,
   TopProducts,
+  useZarRate,
 } from "./token-ledger-insights";
 import {
   NO_USER,
@@ -27,6 +28,7 @@ import {
   retailerLabel,
   rowsToCsv,
   runLabel,
+  setDisplayRate,
   storeLabel,
   totals,
   usd,
@@ -71,6 +73,10 @@ export function TokenLedger() {
   // By day is the default: each date is its own accordion section, newest first.
   const [groupMode, setGroupMode] = useState<GroupMode>("day");
   const allRows = (data?.rows ?? []) as Row[];
+
+  // Show everything in rand when the live rate is known (set before children render).
+  const zar = useZarRate();
+  setDisplayRate(zar.data?.rate ?? null);
 
   const activityOptions = useMemo(() => Array.from(new Set(allRows.map((r) => r.operation))).sort(), [allRows]);
   const userOptions = useMemo(() => Array.from(new Set(allRows.map(userLabel))).sort(), [allRows]);
@@ -132,6 +138,13 @@ export function TokenLedger() {
           <h3 className="text-sm font-semibold">Token ledger</h3>
           <p className="text-xs text-muted-foreground">
             Every paid AI and search call TAG makes, with tokens used and estimated cost. Exact billing is on each provider's account.
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            {zar.data
+              ? `Amounts are shown in rand at R${zar.data.rate.toFixed(2)} per US dollar (rate of ${zar.data.asOf}). Providers bill in dollars, so these are estimates.`
+              : zar.isLoading
+                ? "Loading the exchange rate…"
+                : "Amounts are in US dollars (the rand exchange rate couldn't be fetched just now)."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

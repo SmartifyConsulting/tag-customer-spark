@@ -48,6 +48,16 @@ export const listTokenLedger = createServerFn({ method: "POST" })
     return { rows: (res.data ?? []) as any[] };
   });
 
+// ---------- exchange rate ----------
+
+export const getZarRate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertSuperAdmin(context.supabase, context.userId);
+    const { getUsdZarRate } = await import("./fx.server");
+    return getUsdZarRate();
+  });
+
 // ---------- monthly budget ----------
 
 export type LedgerSettings = {
