@@ -46,6 +46,11 @@ export const refreshProductImage = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    {
+      const u = await import("./usage-context.server");
+      u.setUsageUser(context.userId);
+      u.setRunLabel("Re-enrich image");
+    }
     const { supabase } = context;
     const { data: cur, error } = await supabase
       .from("products")
@@ -90,6 +95,11 @@ export const refreshProductImage = createServerFn({ method: "POST" })
 export const backfillStaleProductImages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    {
+      const u = await import("./usage-context.server");
+      u.setUsageUser(context.userId);
+      u.setRunLabel("Image backfill");
+    }
     const { supabase } = context;
     const { data: rows, error } = await supabase
       .from("products")

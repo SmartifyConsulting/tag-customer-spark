@@ -20,6 +20,7 @@ async function resolveRetailerId(supabase: any, userId: string): Promise<string 
 // it), so this is the real guard; useTier()/hasFeature() in the UI is
 // what shows the locked state before someone even tries.
 async function requireAiAssistant(supabase: any, userId: string): Promise<void> {
+  (await import("./usage-context.server")).setUsageUser(userId);
   const retailerId = await resolveRetailerId(supabase, userId);
   if (!retailerId) throw new Error("No retailer assigned to your account");
   const { data: retailer } = await supabase

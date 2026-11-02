@@ -1,0 +1,134 @@
+// Shared types and helpers for the Token ledger screens.
+
+export type Row = {
+  id: string;
+  created_at: string;
+  provider?: string;
+  operation: string;
+  model: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  cost_usd: number | string | null;
+  status: number | null;
+  // Which product / store / retailer the call was for. Empty on rows from before this was tracked.
+  product_id?: string | null;
+  product_name?: string | null;
+  store_name?: string | null;
+  retailer_name?: string | null;
+  // Why it failed, which bulk action it belonged to, and who triggered it.
+  error_message?: string | null;
+  run_label?: string | null;
+  user_name?: string | null;
+};
+
+export const usd = (n: number) => `USD ${n.toFixed(n < 1 ? 4 : 2)}`;
+export const num = (n: number) => n.toLocaleString();
+
+export const UNATTRIBUTED = "Not attributed";
+export const NO_USER = "System / scheduled";
+
+/** "Baby Blue Jumper — Checkers Centurion", or a plain label for calls with no product. */
+export const productLabel = (r: Row) =>
+  r.product_name ? (r.store_name ? `${r.product_name} — ${r.store_name}` : r.product_name) : UNATTRIBUTED;
+export const storeLabel = (r: Row) => r.store_name || r.retailer_name || UNATTRIBUTED;
+export const retailerLabel = (r: Row) => r.retailer_name || UNATTRIBUTED;
+export const userLabel = (r: Row) => r.user_name || NO_USER;
+export const isFailed = (r: Row) => !!r.status && r.status >= 400;
+
+const dayKey = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+export const dayOf = dayKey;
+/** A bulk action is one press, but its calls span minutes: label it with the day. */
+export const runLabel = (r: Row) => (r.run_label ? `${r.run_label} · ${dayKey(r.created_at)}` : "Single action");
+
+export function totals(rows: Row[]) {
+  return rows.reduce(
+    (a, r) => ({
+      tokens: a.tokens + (r.total_tokens ?? 0),
+      input: a.input + (r.input_tokens ?? 0),
+      output: a.output + (r.output_tokens ?? 0),
+      cost: a.cost + Number(r.cost_usd ?? 0),
+      failed: a.failed + (isFailed(r) ? 1 : 0),
+    }),
+    { tokens: 0, input: 0, output: 0, cost: 0, failed: 0 },
+  );
+}
+
+// ---------- money saved by reusing what TAG already knows ----------
+
+const PHOTO_REUSE = "Photo reused from catalogue";
+const PASSPORT_REUSE = "Passport reused from catalogue";
+
+/** The paid work a reused photo / passport avoided, estimated from what the same work actually cost in this range. */
+export function estimateSavings(rows: Row[]) {
+  const okCost = (op: string, fallback: number) => {
+    const list = rows.filter((r) => r.operation === op && !isFailed(r));
+    if (!list.length) return fallback;
+    return list.reduce((a, r) => a + Number(r.cost_usd ?? 0), 0) / list.length;
+  };
+  // A photo reuse skips the photo check plus two searches; a passport reuse skips one enrichment plus a search.
+  const perPhoto = okCost("Product photo check", 0.03) + 2 * 0.001;
+  const perPassport = okCost("Passport enrichment", 0.007) + 0.001;
+  const photos = rows.filter((r) => r.operation === PHOTO_REUSE).length;
+  const passports = rows.filter((r) => r.operation === PASSPORT_REUSE).length;
+  return { photos, passports, usd: photos * perPhoto + passports * perPassport };
+}
+
+// ---------- why calls failed ----------
+
+/** Groups failed calls by what they were doing and what the provider said. */
+export function failureReasons(rows: Row[]) {
+  const m = new Map<string, { operation: string; status: number | null; message: string; count: number }>();
+  for (const r of rows.filter(isFailed)) {
+    const message = (r.error_message ?? "").replace(/https?:\/\/\S+/g, "<url>").replace(/\s+/g, " ").trim().slice(0, 140);
+    const key = `${r.operation}|${r.status}|${message}`;
+    const cur = m.get(key) ?? { operation: r.operation, status: r.status, message, count: 0 };
+    cur.count++;
+    m.set(key, cur);
+  }
+  return Array.from(m.values()).sort((a, b) => b.count - a.count);
+}
+
+// ---------- CSV ----------
+
+export function downloadCsv(filename: string, header: string[], lines: (string | number | null | undefined)[][]) {
+  const esc = (v: string | number | null | undefined) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const csv = [header, ...lines].map((l) => l.map(esc).join(",")).join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export function rowsToCsv(rows: Row[]): { header: string[]; lines: (string | number | null)[][] } {
+  return {
+    header: [
+      "When", "Activity", "Product", "Store", "Retailer", "User", "Run", "Model",
+      "Input tokens", "Output tokens", "Total tokens", "Cost USD", "Result", "Error",
+    ],
+    lines: rows.map((r) => [
+      new Date(r.created_at).toISOString(),
+      r.operation,
+      r.product_name ?? "",
+      r.store_name ?? "",
+      r.retailer_name ?? "",
+      r.user_name ?? "",
+      r.run_label ?? "",
+      r.model ?? "",
+      r.input_tokens ?? 0,
+      r.output_tokens ?? 0,
+      r.total_tokens ?? 0,
+      Number(r.cost_usd ?? 0),
+      isFailed(r) ? `Error ${r.status}` : "OK",
+      r.error_message ?? "",
+    ]),
+  };
+}

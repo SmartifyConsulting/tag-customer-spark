@@ -18,6 +18,7 @@ export const Route = createFileRoute("/api/public/hooks/passport-tick")({
           Number(new URL(request.url).searchParams.get("limit") ?? "20"),
           50,
         );
+        (await import("@/lib/usage-context.server")).setRunLabel("Scheduled enrichment");
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { enrichProductPassport } = await import("@/lib/passport.server");
 

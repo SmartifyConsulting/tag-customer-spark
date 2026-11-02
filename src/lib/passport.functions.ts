@@ -26,6 +26,11 @@ export const enrichProductPassportFn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    {
+      const u = await import("./usage-context.server");
+      u.setUsageUser((context as any).userId);
+      u.setRunLabel("Re-enrich product");
+    }
     // gate: caller must belong to retailer that owns this product
     const { data: prod } = await context.supabase
       .from("products")
@@ -54,6 +59,11 @@ export const bulkReenrichPassports = createServerFn({ method: "POST" })
     z.object({ productIds: z.array(z.string().uuid()).min(1).max(50) }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    {
+      const u = await import("./usage-context.server");
+      u.setUsageUser((context as any).userId);
+      u.setRunLabel("Re-enrich all");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { enrichProductPassport } = await import("./passport.server");
     let succeeded = 0;

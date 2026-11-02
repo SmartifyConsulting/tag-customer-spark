@@ -2,6 +2,7 @@
 import { z } from "zod";
 import { generateObject } from "ai";
 import { getOpenAiProvider, openAiModels } from "./openai.server";
+import { setRunLabel } from "./usage-context.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const opportunityListSchema = z.object({
@@ -64,6 +65,7 @@ async function gatherRetailerSnapshot(retailerId: string) {
 }
 
 export async function runDailyBriefForRetailer(retailerId: string) {
+  setRunLabel("Daily brief");
   const snap = await gatherRetailerSnapshot(retailerId);
   const model = getOpenAiProvider({ activity: "Daily briefing" })(openAiModels().fast);
 
@@ -146,6 +148,7 @@ Each opportunity has body of 1 sentence + score (0-100, higher = more valuable) 
 }
 
 export async function runWeeklyReportForRetailer(retailerId: string) {
+  setRunLabel("Weekly report");
   const snap = await gatherRetailerSnapshot(retailerId);
   const model = getOpenAiProvider({ activity: "Weekly report" })(openAiModels().smart);
 

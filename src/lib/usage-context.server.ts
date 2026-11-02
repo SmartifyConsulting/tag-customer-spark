@@ -19,6 +19,31 @@ export type UsageContext = {
 
 const als = new AsyncLocalStorage<UsageContext>();
 
+// Which bulk action or background job a call belongs to ("Re-enrich all",
+// "Scheduled enrichment", ...), so the ledger can show what one press cost.
+// Set once at the start of an entry point; it then applies to everything that
+// entry point awaits, and to nothing else.
+const runAls = new AsyncLocalStorage<string>();
+
+export function setRunLabel(label: string): void {
+  runAls.enterWith(label);
+}
+
+export function currentRunLabel(): string | undefined {
+  return runAls.getStore();
+}
+
+// Who triggered the work. Background jobs never set this, so their calls have no user.
+const userAls = new AsyncLocalStorage<string>();
+
+export function setUsageUser(userId: string | null | undefined): void {
+  if (userId) userAls.enterWith(userId);
+}
+
+export function currentUsageUser(): string | undefined {
+  return userAls.getStore();
+}
+
 export function currentUsageContext(): UsageContext | undefined {
   return als.getStore();
 }

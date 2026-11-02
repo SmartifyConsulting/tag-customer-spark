@@ -386,6 +386,12 @@ export const createProduct = createServerFn({ method: "POST" })
     if (!retailerId) throw new Error("No retailer assigned to your account");
     if (!(await canManage(supabase, userId, retailerId)))
       throw new Error("You don't have permission to add products");
+    {
+      const u = await import("./usage-context.server");
+      u.setUsageUser(userId);
+      u.setRunLabel("Add product");
+    }
+
 
     // Every product belongs to a store: its QR code and scans are attributed
     // to it. A retailer with exactly one store gets it by default.
@@ -874,6 +880,11 @@ export const bulkCompleteDigitalIdentity = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    {
+      const u = await import("./usage-context.server");
+      u.setUsageUser(userId);
+      u.setRunLabel("Digital Identity run");
+    }
     const { generateForProduct, isValidGtin } = await import("./qr.functions");
     const { resolveAndSyncProductImage } = await import("./product-images.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -996,6 +1007,11 @@ export const bulkGenerateQrAndImages = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    {
+      const u = await import("./usage-context.server");
+      u.setUsageUser(userId);
+      u.setRunLabel("Import: QR and images");
+    }
     const { generateForProduct, isValidGtin } = await import("./qr.functions");
     const { resolveAndSyncProductImage } = await import("./product-images.server");
     const { normaliseAndPersist } = await import("./normalisation.functions");

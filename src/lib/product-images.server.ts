@@ -436,7 +436,7 @@ async function serperImageSearch(apiKey: string, query: string): Promise<string 
       // num:20 gives the width/height ranking below more to choose from.
       body: JSON.stringify({ q: query, num: 20, safe: "active", imgSize: "large" }),
     });
-    void logServiceCall("serper", "Product image search", res.status, SERPER_PER_SEARCH_USD);
+    void logServiceCall("serper", "Product image search", res.status, SERPER_PER_SEARCH_USD, res.ok ? null : await res.clone().text().catch(() => ""));
     if (!res.ok) {
       console.warn(`[serper] HTTP ${res.status} for query "${query}"`);
       return null;
@@ -523,7 +523,7 @@ async function serperImageCandidates(apiKey: string, query: string): Promise<Can
       headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({ q: query, num: 20, safe: "active", imgSize: "large" }),
     });
-    void logServiceCall("serper", "Product image search", res.status, SERPER_PER_SEARCH_USD);
+    void logServiceCall("serper", "Product image search", res.status, SERPER_PER_SEARCH_USD, res.ok ? null : await res.clone().text().catch(() => ""));
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       if (res.status === 402 || /credit/i.test(text)) {

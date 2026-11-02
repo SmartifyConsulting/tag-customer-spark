@@ -18,6 +18,54 @@ const SERVICES = {
 
 export type CreditService = keyof typeof SERVICES;
 
+/**
+ * Emails every system administrator when this month's AI/search spend reaches a
+ * level of the monthly budget (the warning percentage, then 100%). Each level is
+ * sent once per month, tracked with a marker row like the credit alert below.
+ */
+export async function notifyBudgetThreshold(
+  monthKey: string,
+  level: number,
+  spend: number,
+  budget: number,
+): Promise<void> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const marker = `budget_alert:${monthKey}:${level}`;
+    const { data: sent } = await supabaseAdmin
+      .from("ai_usage_events")
+      .select("id")
+      .eq("provider", "alert")
+      .eq("operation", marker)
+      .limit(1);
+    if (sent && sent.length > 0) return;
+    await supabaseAdmin.from("ai_usage_events").insert({ provider: "alert", operation: marker, cost_usd: 0 });
+
+    const { data: roles } = await supabaseAdmin.from("user_roles").select("user_id").eq("role", "super_admin");
+    const emails: string[] = [];
+    for (const r of roles ?? []) {
+      const { data } = await supabaseAdmin.auth.admin.getUserById((r as any).user_id);
+      if (data?.user?.email) emails.push(data.user.email);
+    }
+    if (emails.length === 0) return;
+
+    const over = level >= 100;
+    const { sendEmail } = await import("./email.server");
+    await sendEmail({
+      to: emails,
+      subject: over ? "Tag · monthly AI budget reached" : `Tag · ${level}% of the monthly AI budget used`,
+      html: `<div style="font-family:system-ui,sans-serif;font-size:14px;color:#1F3A5F">
+        <h2 style="margin:0 0 12px">${over ? "The monthly AI budget has been reached" : `${level}% of the monthly AI budget is used`}</h2>
+        <p>So far this month Tag has spent about <b>USD ${spend.toFixed(2)}</b> on AI and search, against a budget of <b>USD ${budget.toFixed(2)}</b>.</p>
+        <p>Nothing has been switched off. See what is using it in Admin &rsaquo; Token ledger.</p>
+        <p style="color:#666;font-size:12px">These figures are estimates; exact billing is on each provider's account. You'll get this email once per month for each level.</p>
+      </div>`,
+    });
+  } catch (e) {
+    console.warn("[admin-alerts] could not send budget alert", e);
+  }
+}
+
 export async function notifyAdminCreditExhausted(service: CreditService): Promise<void> {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
