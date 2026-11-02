@@ -4,6 +4,28 @@
 // so the ledger can be reported on by activity.
 import { estimateChatCostUsd, OPENAI_IMAGE_PER_CALL_USD } from "./ai-usage";
 import { notifyAdminCreditExhausted } from "./admin-alerts.server";
+import { currentUsageContext } from "./usage-context.server";
+
+/**
+ * Inserts one ledger row, tagged with the product/store being worked on (if
+ * any). If the attribution columns don't exist yet (SQL not run), retries with
+ * the original columns so logging never breaks.
+ */
+async function insertUsage(row: Record<string, unknown>) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const ctx = currentUsageContext();
+  const legacy = { ...row, product_id: ctx?.productId ?? null, retailer_id: ctx?.retailerId ?? null };
+  const full = {
+    ...legacy,
+    store_id: ctx?.storeId ?? null,
+    product_name: ctx?.productName ?? null,
+    store_name: ctx?.storeName ?? null,
+    retailer_name: ctx?.retailerName ?? null,
+  };
+  const db = supabaseAdmin as any;
+  const { error } = await db.from("ai_usage_events").insert(full);
+  if (error) await db.from("ai_usage_events").insert(legacy);
+}
 
 function operationFromUrl(url: string): string {
   if (url.includes("/images/")) return "Image generation";
@@ -32,8 +54,7 @@ async function record(url: string, activity: string | undefined, res: Response, 
           ? OPENAI_IMAGE_PER_CALL_USD * Number((body as any)?.n ?? 1)
           : 0
         : estimateChatCostUsd(model, input, output);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("ai_usage_events").insert({
+    await insertUsage({
       provider: "openai",
       operation: activity ?? kind,
       model,
@@ -87,8 +108,7 @@ export const SERPER_PER_SEARCH_USD = 0.001;
 /** Log a paid non-OpenAI service call (e.g. Serper search) in the ledger. Best-effort. */
 export async function logServiceCall(provider: string, activity: string, status: number, costUsd: number) {
   try {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("ai_usage_events").insert({
+    await insertUsage({
       provider,
       operation: activity,
       model: provider,

@@ -2,18 +2,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { splitAiMessage } from "@/lib/ai-errors";
-import { ExternalLink, Loader2, Sparkles } from "lucide-react";
+import { ExternalLink, ImageIcon, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   enrichProductPassportFn,
   getProductPassport,
 } from "@/lib/passport.functions";
+import { refreshProductImage } from "@/lib/product-images.functions";
 
 export function PassportTab({ productId, dppId }: { productId: string; dppId?: string | null }) {
   const qc = useQueryClient();
   const getFn = useServerFn(getProductPassport);
   const enrichFn = useServerFn(enrichProductPassportFn);
+  const refreshImageFn = useServerFn(refreshProductImage);
 
   const { data: passport, isLoading } = useQuery({
     queryKey: ["passport", productId],
@@ -34,6 +36,35 @@ export function PassportTab({ productId, dppId }: { productId: string; dppId?: s
       const { title, description } = splitAiMessage(e?.message ?? "Enrichment failed");
       toast.error(title, description ? { description, duration: 10000 } : undefined);
     },
+  });
+
+  // Searches the web afresh for this product's photo (ignores the shared
+  // catalogue). Asks first if it would replace a photo the retailer uploaded.
+  const refreshImage = useMutation({
+    mutationFn: async () => {
+      let r = await refreshImageFn({ data: { productId } });
+      if (!r.ok && r.needsConfirm) {
+        if (!window.confirm("This replaces the photo you uploaded with one found online. Continue?")) return null;
+        r = await refreshImageFn({ data: { productId, replaceRetailerPhoto: true } });
+      }
+      return r;
+    },
+    onSuccess: (r) => {
+      if (!r) return;
+      if (r.ok && r.kept) {
+        toast.info("No better photo found — kept the current one.");
+      } else if (r.ok) {
+        toast.success(
+          r.status === "official"
+            ? "Found a photo from the web."
+            : "No photo found online — showing a fallback image.",
+        );
+      }
+      qc.invalidateQueries({ queryKey: ["product", productId] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["admin-inventory"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Couldn't refresh the photo"),
   });
 
   const publicUrl = dppId ? `/p/${dppId}` : null;
@@ -61,6 +92,19 @@ export function PassportTab({ productId, dppId }: { productId: string; dppId?: s
               </a>
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => refreshImage.mutate()}
+            disabled={refreshImage.isPending}
+            title="Search the web again for this product's photo"
+          >
+            {refreshImage.isPending ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Searching…</>
+            ) : (
+              <><ImageIcon className="mr-2 h-4 w-4" /> Re-enrich image</>
+            )}
+          </Button>
           <Button
             size="sm"
             onClick={() => enrich.mutate(status === "manual" || status === "enriched")}

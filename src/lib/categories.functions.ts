@@ -230,6 +230,30 @@ export async function suggestCategoryForProduct(opts: {
   categories?: CatRow[];
   apply?: boolean;
 }): Promise<{ category_id: string | null; confidence: number; created: boolean }> {
+  // Tag the AI call with the product it is for (new products have an id; a
+  // suggestion for an unsaved product has none and stays unattributed).
+  if (opts.product.id) {
+    const { withProductUsage } = await import("./usage-context.server");
+    return withProductUsage(opts.product.id, () => suggestCategoryForProductInner(opts));
+  }
+  return suggestCategoryForProductInner(opts);
+}
+
+async function suggestCategoryForProductInner(opts: {
+  supabase: any;
+  retailerId: string;
+  userId?: string;
+  product: {
+    id?: string;
+    name: string;
+    brand?: string | null;
+    description?: string | null;
+    gtin?: string | null;
+    category_id?: string | null;
+  };
+  categories?: CatRow[];
+  apply?: boolean;
+}): Promise<{ category_id: string | null; confidence: number; created: boolean }> {
   const { supabase, retailerId, userId, product, apply } = opts;
   let cats = opts.categories;
   if (!cats) {

@@ -1,6 +1,8 @@
 // Server-only helpers for Digital Product Passport enrichment.
 import { z } from "zod";
 import { describeAiFailure, type AiFailureKind } from "@/lib/ai-errors";
+import { findSharedPassport, logReuse, passportFromShared } from "./catalogue-cache.server";
+import { withProductUsage } from "./usage-context.server";
 
 // NOTE: every field here is `.nullable()` rather than `.optional()`, and no
 // field or nested object uses `.default()`. OpenAI's strict structured-output
@@ -198,11 +200,26 @@ Rules:
   }
 }
 
+type EnrichResult = { ok: true; status: string } | { ok: false; error: string; aiKind?: AiFailureKind };
+
+/**
+ * Enriches a product's passport. Unless `overwrite` is set (an explicit
+ * "Re-enrich"), a completed passport already held for the same barcode is
+ * reused instead of paying for another web search and AI call.
+ */
 export async function enrichProductPassport(
   supabaseAdmin: any,
   productId: string,
   opts: { overwrite?: boolean } = {},
-): Promise<{ ok: true; status: string } | { ok: false; error: string; aiKind?: AiFailureKind }> {
+): Promise<EnrichResult> {
+  return withProductUsage(productId, () => enrichProductPassportInner(supabaseAdmin, productId, opts));
+}
+
+async function enrichProductPassportInner(
+  supabaseAdmin: any,
+  productId: string,
+  opts: { overwrite?: boolean } = {},
+): Promise<EnrichResult> {
   const { data: product, error: pErr } = await supabaseAdmin
     .from("products")
     .select(
@@ -228,6 +245,34 @@ export async function enrichProductPassport(
   if (existing?.enrichment_status === "manual" && !opts.overwrite) {
     await supabaseAdmin.from("passport_enrichment_queue").delete().eq("product_id", productId);
     return { ok: true, status: "manual-preserved" };
+  }
+
+  // Reuse: another product with this barcode already has a completed passport.
+  // Only fills in a product that doesn't have its own completed one, and never
+  // on an explicit re-enrich.
+  const hasOwnComplete = ["enriched", "complete"].includes(existing?.enrichment_status);
+  if (!opts.overwrite && product.gtin && !hasOwnComplete) {
+    const shared = await findSharedPassport(product.gtin, productId);
+    if (shared) {
+      const { error: copyErr } = await supabaseAdmin.from("product_passports").upsert(
+        {
+          product_id: productId,
+          retailer_id: product.retailer_id,
+          dpp_id: product.digital_product_passport_id,
+          gtin: product.gtin,
+          ...passportFromShared(shared),
+          enrichment_status: "enriched",
+          version: (existing?.version ?? 0) + 1,
+        },
+        { onConflict: "product_id" },
+      );
+      if (!copyErr) {
+        await supabaseAdmin.from("passport_enrichment_queue").delete().eq("product_id", productId);
+        logReuse("Passport reused from catalogue");
+        return { ok: true, status: "reused" };
+      }
+      // couldn't copy - fall through to a normal enrichment
+    }
   }
 
   try {

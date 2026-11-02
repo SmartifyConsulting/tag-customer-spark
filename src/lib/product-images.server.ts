@@ -6,6 +6,15 @@
 
 import { OPENAI_BASE, openAiFetch, openAiConfigured, openAiHeaders, openAiModels } from "./openai.server";
 import { logServiceCall, SERPER_PER_SEARCH_USD } from "./ai-usage.server";
+import {
+  clearMiss,
+  findSharedImage,
+  isRecentMiss,
+  logReuse,
+  recordMiss,
+  type SharedImage,
+} from "./catalogue-cache.server";
+import { withProductUsage } from "./usage-context.server";
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -40,6 +49,10 @@ type ResolveInput = {
   openFoodFactsImageUrl?: string | null;
   brandLogoUrl?: string | null;
   planTier?: string | null;
+  /** A web-sourced photo another product with this barcode already has. */
+  sharedImage?: SharedImage | null;
+  /** A recent search for this barcode found nothing usable: don't pay to search again. */
+  skipWebSearch?: boolean;
 };
 
 type ResolveOutput = {
@@ -55,6 +68,8 @@ type ResolveOutput = {
     source: string;
     license: string;
   }>;
+  /** Set when the web search ran to completion and found nothing usable. */
+  web_search_miss?: boolean;
 };
 
 function bucketPath(retailerId: string, gtin: string | null, productId: string, file: string) {
@@ -222,6 +237,19 @@ export async function resolveProductImage(input: ResolveInput): Promise<ResolveO
     // fall through
   }
 
+  // 1b) A web-sourced photo another product with this barcode already has:
+  // copy the file into this product's own storage (so it survives if the
+  // original is deleted) and skip every paid step below.
+  if (input.sharedImage) {
+    const dest = bucketPath(input.retailerId, input.gtin, input.productId, "original.jpg");
+    const r = await downloadAndUpload(supabaseAdmin, input.sharedImage.url, dest);
+    if (r.ok) {
+      logReuse("Photo reused from catalogue");
+      return finalize({ primary: r.url, status: "official", source: input.sharedImage.source });
+    }
+    // couldn't copy it - fall through and resolve normally
+  }
+
   // 2) Official image (Open Food Facts, if we already know one)
   if (input.openFoodFactsImageUrl) {
     const dest = bucketPath(input.retailerId, input.gtin, input.productId, `original.jpg`);
@@ -235,18 +263,23 @@ export async function resolveProductImage(input: ResolveInput): Promise<ResolveO
   // then a Vision verification pass to pick the candidate that actually
   // depicts this product (Serper's first result is often the wrong pack
   // size, a category thumbnail, or a watermarked listing).
-  {
-    const candidates = await lookupSerperImageCandidates({
+  let searchMiss = false;
+  if (!input.skipWebSearch) {
+    const search = await lookupSerperImageCandidates({
       gtin: input.gtin,
       name: input.name,
       brand: input.brand,
     });
+    const candidates = search.urls;
     const chosen = await pickBestCandidateWithVision(candidates, {
       name: input.name,
       brand: input.brand,
       gtin: input.gtin,
       categoryName: input.categoryName,
     });
+    // "Nothing found" = the searches fully completed with no results, or the
+    // vision check looked and rejected every candidate. Errors don't count.
+    searchMiss = (search.complete && candidates.length === 0) || (candidates.length > 0 && chosen === null);
     if (chosen) {
       const dest = bucketPath(input.retailerId, input.gtin, input.productId, `original.jpg`);
       const r = await downloadAndUpload(supabaseAdmin, chosen, dest);
@@ -274,7 +307,7 @@ export async function resolveProductImage(input: ResolveInput): Promise<ResolveO
         .from("product-images")
         .upload(dest, ai, { contentType: "image/png", upsert: true });
       if (!up.error) {
-        return finalize({ primary: publicUrl(dest), status: "ai_suggested", source: "ai_gateway" });
+        return withMiss(finalize({ primary: publicUrl(dest), status: "ai_suggested", source: "ai_gateway" }));
       }
     }
   }
@@ -287,7 +320,7 @@ export async function resolveProductImage(input: ResolveInput): Promise<ResolveO
     const dest = bucketPath(input.retailerId, input.gtin, input.productId, "brand-logo.png");
     const r = await downloadAndUpload(supabaseAdmin, input.brandLogoUrl, dest);
     if (r.ok) {
-      return finalize({ primary: r.url, status: "brand_logo", source: "brand_logo" });
+      return withMiss(finalize({ primary: r.url, status: "brand_logo", source: "brand_logo" }));
     }
   }
 
@@ -304,11 +337,17 @@ export async function resolveProductImage(input: ResolveInput): Promise<ResolveO
     "placeholder.svg",
   );
   const placeholderUrl = await uploadPlaceholder(supabaseAdmin, placeholderPath, svg);
-  return finalize({
-    primary: placeholderUrl ?? "",
-    status: "placeholder",
-    source: "placeholder",
-  });
+  return withMiss(
+    finalize({
+      primary: placeholderUrl ?? "",
+      status: "placeholder",
+      source: "placeholder",
+    }),
+  );
+
+  function withMiss(o: ResolveOutput): ResolveOutput {
+    return searchMiss ? { ...o, web_search_miss: true } : o;
+  }
 }
 
 function finalize(args: {
@@ -471,9 +510,13 @@ async function lookupSerperImage(input: {
 // product. This catches wrong pack sizes, unrelated stock photos, and
 // category thumbnails that dominate Google Images.
 
-const MAX_CANDIDATES = 6;
+// Each candidate photo is sent to the vision model and dominates the cost of
+// the check (about 3 cents a call at 6 photos), so keep the shortlist small.
+const MAX_CANDIDATES = 3;
 
-async function serperImageCandidates(apiKey: string, query: string): Promise<string[]> {
+type CandidateSearch = { urls: string[]; ok: boolean };
+
+async function serperImageCandidates(apiKey: string, query: string): Promise<CandidateSearch> {
   try {
     const res = await fetchWithTimeout("https://google.serper.dev/images", {
       method: "POST",
@@ -487,7 +530,7 @@ async function serperImageCandidates(apiKey: string, query: string): Promise<str
         const { notifyAdminCreditExhausted } = await import("./admin-alerts.server");
         await notifyAdminCreditExhausted("serper");
       }
-      return [];
+      return { urls: [], ok: false };
     }
     const json: any = await res.json();
     const items: any[] = Array.isArray(json?.images) ? json.images : [];
@@ -505,25 +548,28 @@ async function serperImageCandidates(apiKey: string, query: string): Promise<str
       .sort((a, b) => b.width * b.height - a.width * a.height);
     const good = ranked.filter((c) => isImageUrl(c.link) && c.width >= MIN_QUALITY_PX);
     const pool = good.length ? good : ranked.filter((c) => isImageUrl(c.link));
-    return (pool.length ? pool : ranked).slice(0, MAX_CANDIDATES).map((c) => c.link);
+    return { urls: (pool.length ? pool : ranked).slice(0, MAX_CANDIDATES).map((c) => c.link), ok: true };
   } catch {
-    return [];
+    return { urls: [], ok: false };
   }
 }
 
+/** `complete` is true only when every search got a real answer (an error is not "nothing found"). */
 async function lookupSerperImageCandidates(input: {
   gtin: string | null;
   name: string;
   brand: string | null;
-}): Promise<string[]> {
+}): Promise<{ urls: string[]; complete: boolean }> {
   const apiKey = process.env.SERPER_API_KEY;
-  if (!apiKey) return [];
+  if (!apiKey) return { urls: [], complete: false };
+  let complete = true;
   const nameQuery = [input.brand, input.name].filter(Boolean).join(" ").trim();
   const cleanGtin = input.gtin?.replace(/\D/g, "") ?? "";
   const seen = new Set<string>();
   const out: string[] = [];
-  const push = (urls: string[]) => {
-    for (const u of urls) {
+  const push = (r: CandidateSearch) => {
+    if (!r.ok) complete = false;
+    for (const u of r.urls) {
       if (out.length >= MAX_CANDIDATES) break;
       if (!seen.has(u)) {
         seen.add(u);
@@ -535,7 +581,7 @@ async function lookupSerperImageCandidates(input: {
   if (out.length < MAX_CANDIDATES && nameQuery.length >= 3) {
     push(await serperImageCandidates(apiKey, nameQuery));
   }
-  return out;
+  return { urls: out, complete };
 }
 
 async function pickBestCandidateWithVision(
@@ -681,9 +727,24 @@ async function lookupOpenFoodFactsImage(
 
 // Helper for callers that need to sync the resolved image into products +
 // passport in one shot.
+/**
+ * Resolves (and saves) the product's image. By default it reuses a web-sourced
+ * photo another product with the same barcode already has, and won't repeat a
+ * web search for a barcode that recently found nothing. `force` (the explicit
+ * "Re-enrich product image" action) skips both and searches afresh.
+ */
 export async function resolveAndSyncProductImage(input: {
   supabase: any;
   productId: string;
+  force?: boolean;
+}): Promise<ResolveOutput | null> {
+  return withProductUsage(input.productId, () => resolveAndSyncProductImageInner(input));
+}
+
+async function resolveAndSyncProductImageInner(input: {
+  supabase: any;
+  productId: string;
+  force?: boolean;
 }): Promise<ResolveOutput | null> {
   const { supabase, productId } = input;
   const { data: product, error: productErr } = await supabase
@@ -712,8 +773,17 @@ export async function resolveAndSyncProductImage(input: {
 
   // Try Open Food Facts across several GTIN normalisations, then fall back
   // to a brand+name search. AI/placeholder only kick in if nothing matches.
+  // Cheapest first: a photo TAG already holds for this barcode, then the
+  // 30-day "nothing found" memory, before anything that costs money.
+  let sharedImage: SharedImage | null = null;
+  let skipWebSearch = false;
+  if (!input.force && product.gtin) {
+    sharedImage = await findSharedImage(product.gtin, product.id);
+    if (!sharedImage) skipWebSearch = await isRecentMiss(product.gtin, "image");
+  }
+
   let offUrl: string | null = null;
-  if (product.gtin) {
+  if (product.gtin && !sharedImage) {
     offUrl = await lookupOpenFoodFactsImage(product.gtin, product.name, product.brand);
   }
 
@@ -738,7 +808,21 @@ export async function resolveAndSyncProductImage(input: {
     openFoodFactsImageUrl: offUrl,
     brandLogoUrl,
     planTier: (sub as any)?.plan ?? null,
+    sharedImage,
+    skipWebSearch,
   });
+
+  // Remember a completed search that found nothing; forget it once something is found.
+  if (product.gtin) {
+    if (result.web_search_miss) await recordMiss(product.gtin, "image");
+    else if (input.force && result.image_status === "official") await clearMiss(product.gtin, "image");
+  }
+
+  // An explicit re-search must never swap a real photo for a worse fallback
+  // (brand logo / placeholder): keep what's there and report nothing changed.
+  if (input.force && product.image_status === "official" && result.image_status !== "official") {
+    return null;
+  }
 
   // Write to products — checked, unlike before: an unchecked failure here
   // (e.g. an RLS policy rejecting the write) left the caller believing

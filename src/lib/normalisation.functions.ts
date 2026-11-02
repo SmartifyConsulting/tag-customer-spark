@@ -120,6 +120,14 @@ export async function normaliseAndPersist(opts: {
   supabase: any;
   productId: string;
 }): Promise<NormalisedProduct | null> {
+  const { withProductUsage } = await import("./usage-context.server");
+  return withProductUsage(opts.productId, () => normaliseAndPersistInner(opts));
+}
+
+async function normaliseAndPersistInner(opts: {
+  supabase: any;
+  productId: string;
+}): Promise<NormalisedProduct | null> {
   const { supabase, productId } = opts;
   const { data: p } = await supabase
     .from("products")

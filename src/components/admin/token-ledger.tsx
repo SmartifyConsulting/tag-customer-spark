@@ -20,7 +20,18 @@ type Row = {
   total_tokens: number | null;
   cost_usd: number | string | null;
   status: number | null;
+  // Which product / store the call was for. Empty on rows from before this was tracked.
+  product_id?: string | null;
+  product_name?: string | null;
+  store_name?: string | null;
+  retailer_name?: string | null;
 };
+
+const UNATTRIBUTED = "Not attributed";
+/** "Baby Blue Jumper — Checkers Centurion", or a plain label for calls with no product. */
+const productLabel = (r: Row) =>
+  r.product_name ? (r.store_name ? `${r.product_name} — ${r.store_name}` : r.product_name) : UNATTRIBUTED;
+const storeLabel = (r: Row) => r.store_name || r.retailer_name || UNATTRIBUTED;
 
 const usd = (n: number) => `USD ${n.toFixed(n < 1 ? 4 : 2)}`;
 const num = (n: number) => n.toLocaleString();
@@ -53,6 +64,7 @@ export function TokenLedger() {
   });
   const [tab, setTab] = useState<"ledger" | "reports">("ledger");
   const [activityFilter, setActivityFilter] = useState("all");
+  const [groupMode, setGroupMode] = useState<"month" | "product">("month");
   const allRows = (data?.rows ?? []) as Row[];
   const activityOptions = useMemo(
     () => Array.from(new Set(allRows.map((r) => r.operation))).sort(),
@@ -66,11 +78,20 @@ export function TokenLedger() {
   const groups = useMemo(() => {
     const m = new Map<string, Row[]>();
     for (const r of rows) {
-      const k = monthKey(r.created_at);
+      const k = groupMode === "product" ? productLabel(r) : monthKey(r.created_at);
       m.set(k, [...(m.get(k) ?? []), r]);
     }
-    return Array.from(m.entries());
-  }, [rows]);
+    const entries = Array.from(m.entries());
+    // By product: the most expensive first, with unattributed calls last.
+    if (groupMode === "product") {
+      return entries.sort((a, b) => {
+        if (a[0] === UNATTRIBUTED) return 1;
+        if (b[0] === UNATTRIBUTED) return -1;
+        return totals(b[1]).cost - totals(a[1]).cost;
+      });
+    }
+    return entries;
+  }, [rows, groupMode]);
   const preset = (days: number) => {
     setFrom(ymd(new Date(Date.now() - days * 86_400_000)));
     setTo(ymd(new Date()));
@@ -145,6 +166,16 @@ export function TokenLedger() {
             ))}
           </SelectContent>
         </Select>
+        <span className="ml-2 text-xs text-muted-foreground">Group by</span>
+        <Select value={groupMode} onValueChange={(v) => setGroupMode(v as "month" | "product")}>
+          <SelectTrigger className="h-8 w-[140px] text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="month">Month</SelectItem>
+            <SelectItem value="product">Product</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[
@@ -188,6 +219,8 @@ export function TokenLedger() {
                           <tr>
                             <th className="px-4 py-2 font-medium">When</th>
                             <th className="px-4 py-2 font-medium">Activity</th>
+                            {groupMode === "month" && <th className="px-4 py-2 font-medium">Product</th>}
+                            {groupMode === "month" && <th className="px-4 py-2 font-medium">Store</th>}
                             <th className="px-4 py-2 font-medium">Model</th>
                             <th className="px-4 py-2 text-right font-medium">In</th>
                             <th className="px-4 py-2 text-right font-medium">Out</th>
@@ -205,6 +238,12 @@ export function TokenLedger() {
                                   {new Date(r.created_at).toLocaleString()}
                                 </td>
                                 <td className="px-4 py-2">{r.operation}</td>
+                                {groupMode === "month" && (
+                                  <td className="px-4 py-2">{r.product_name ?? <span className="text-muted-foreground">—</span>}</td>
+                                )}
+                                {groupMode === "month" && (
+                                  <td className="px-4 py-2">{r.store_name ?? <span className="text-muted-foreground">—</span>}</td>
+                                )}
                                 <td className="px-4 py-2 font-mono">{r.model ?? "—"}</td>
                                 <td className="px-4 py-2 text-right font-mono tabular-nums">{num(r.input_tokens ?? 0)}</td>
                                 <td className="px-4 py-2 text-right font-mono tabular-nums">{num(r.output_tokens ?? 0)}</td>
@@ -238,7 +277,7 @@ function TokenReport({ rows, loading }: { rows: Row[]; loading: boolean }) {
   const [activity, setActivity] = useState("all");
   const [model, setModel] = useState("all");
   const [result, setResult] = useState("all");
-  const [groupBy, setGroupBy] = useState<"activity" | "model" | "day">("activity");
+  const [groupBy, setGroupBy] = useState<"activity" | "model" | "day" | "product" | "store">("activity");
 
   const activities = useMemo(() => Array.from(new Set(rows.map((r) => r.operation))).sort(), [rows]);
   const models = useMemo(() => Array.from(new Set(rows.map((r) => r.model ?? "—"))).sort(), [rows]);
@@ -259,7 +298,15 @@ function TokenReport({ rows, loading }: { rows: Row[]; loading: boolean }) {
 
   const grouped = useMemo(() => {
     const keyOf = (r: Row) =>
-      groupBy === "activity" ? r.operation : groupBy === "model" ? r.model ?? "—" : r.created_at.slice(0, 10);
+      groupBy === "activity"
+        ? r.operation
+        : groupBy === "model"
+          ? r.model ?? "—"
+          : groupBy === "product"
+            ? productLabel(r)
+            : groupBy === "store"
+              ? storeLabel(r)
+              : r.created_at.slice(0, 10);
     const m = new Map<string, Row[]>();
     for (const r of filtered) m.set(keyOf(r), [...(m.get(keyOf(r)) ?? []), r]);
     return Array.from(m.entries())
@@ -291,7 +338,7 @@ function TokenReport({ rows, loading }: { rows: Row[]; loading: boolean }) {
         {picker("Activity", activity, setActivity, [["all", "All activities"], ...activities.map((a) => [a, a] as [string, string])])}
         {picker("Model", model, setModel, [["all", "All models"], ...models.map((a) => [a, a] as [string, string])])}
         {picker("Result", result, setResult, [["all", "All results"], ["ok", "Successful"], ["failed", "Failed"]])}
-        {picker("Group by", groupBy, (v) => setGroupBy(v as any), [["activity", "Activity"], ["model", "Model"], ["day", "Day"]])}
+        {picker("Group by", groupBy, (v) => setGroupBy(v as any), [["activity", "Activity"], ["product", "Product"], ["store", "Store"], ["model", "Model"], ["day", "Day"]])}
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

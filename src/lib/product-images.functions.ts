@@ -33,6 +33,55 @@ export const resetProductImage = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// "Re-enrich product image": searches afresh for this product's photo, ignoring
+// the shared catalogue and the "nothing found" memory (an explicit refresh is
+// the one time we pay to look again). A photo the retailer uploaded themselves
+// is only replaced after they confirm; a real photo is never swapped for a
+// worse fallback.
+export const refreshProductImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({ productId: z.string().uuid(), replaceRetailerPhoto: z.boolean().optional() })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: cur, error } = await supabase
+      .from("products")
+      .select("image_status")
+      .eq("id", data.productId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!cur) throw new Error("Product not found");
+
+    if (cur.image_status === "retailer") {
+      if (!data.replaceRetailerPhoto) return { ok: false as const, needsConfirm: true as const };
+      // Clear the uploaded photo so the resolver doesn't just keep it.
+      const { error: clearErr } = await supabase
+        .from("products")
+        .update({
+          image_url: null,
+          thumbnail_url: null,
+          hero_image: null,
+          image_status: "pending",
+          image_source: null,
+          image_gallery: [],
+        })
+        .eq("id", data.productId);
+      if (clearErr) throw new Error(clearErr.message);
+    }
+
+    const { resolveAndSyncProductImage } = await import("./product-images.server");
+    const result = await resolveAndSyncProductImage({
+      supabase,
+      productId: data.productId,
+      force: true,
+    });
+    if (!result) return { ok: true as const, kept: true as const };
+    return { ok: true as const, kept: false as const, status: result.image_status, source: result.image_source };
+  });
+
 // Silently re-attempts image resolution for a small batch of products still
 // stuck on a fallback image (brand logo or placeholder) — no UI trigger,
 // meant to be called opportunistically (e.g. on Inventory Admin load) so a
