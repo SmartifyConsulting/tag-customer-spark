@@ -20,18 +20,23 @@ function ForgotPasswordPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.functions.invoke("send-password-reset", {
-      body: {
-        email,
-        redirectTo: `${window.location.origin}/reset-password`,
-      },
-    });
-    setLoading(false);
-    if (error) {
-      toast.error("Something went wrong. Please try again.");
-      return;
+    try {
+      const { error } = await supabase.functions.invoke("send-password-reset", {
+        body: {
+          email,
+          redirectTo: `${window.location.origin}/reset-password`,
+        },
+      });
+      if (error) {
+        toast.error("We couldn't send the reset email right now. Please try again in a few minutes.");
+        return;
+      }
+      setSent(true);
+    } catch {
+      toast.error("We couldn't send the reset email right now. Please try again in a few minutes.");
+    } finally {
+      setLoading(false);
     }
-    setSent(true);
   };
 
   return (
