@@ -9,6 +9,7 @@ type Props = {
     image_status?: string | null;
     image_source?: string | null;
     normalised_at?: string | null;
+    store_id?: string | null;
     category_id?: string | null;
     digital_product_passport_id?: string | null;
   };
@@ -46,7 +47,9 @@ export function DigitalIdentityProgress({ product, qr, passport, embedded }: Pro
     // in-store returns/exchanges), so this is never silently skipped.
     {
       key: "store",
-      label: "Store attribution assigned",
+      // With no store on the product there is nothing to attribute to, so say
+      // what's needed instead of leaving the step silently stuck.
+      label: product.store_id || qr?.store_id ? "Store attribution assigned" : "Store attribution — choose a store",
       done: !!qr?.store_id,
       pending: !!qr?.active && !qr?.store_id,
     },

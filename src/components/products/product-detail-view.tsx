@@ -75,6 +75,9 @@ export function ProductDetailView({
       !p.image_status ||
       p.image_status === "pending" ||
       p.qr_status !== "active" ||
+      // A store was chosen after the QR code was made: it still has to be
+      // regenerated with that store (the same rule the Digital Identity chip uses).
+      (!!p.store_id && ((data as any).qr?.store_id ?? null) !== p.store_id) ||
       !["enriched", "complete", "manual"].includes(enrichment);
     if (!incomplete) return;
     autoCompleteRan.current = true;

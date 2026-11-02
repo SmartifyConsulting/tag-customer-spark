@@ -56,7 +56,7 @@ function normalizeTemplateName(name: string): string {
   return name.trim().toLocaleLowerCase("en");
 }
 
-function normalizeTemplateStatus(status: string): string {
+export function normalizeTemplateStatus(status: string): string {
   return status
     .trim()
     .toUpperCase()
@@ -64,8 +64,13 @@ function normalizeTemplateStatus(status: string): string {
     .replace(/\s+/g, " ");
 }
 
-/** Statuses WhatsApp considers sendable ("Active – Quality pending" included). */
-function isSendableStatus(status: string): boolean {
+/**
+ * Statuses WhatsApp considers sendable. Infobip reports an active template's
+ * status as e.g. "Active - Quality pending", not literally "APPROVED" — a
+ * naive `=== "APPROVED"` check (as the Automations template picker used to
+ * do) silently hides every real, usable template.
+ */
+export function isSendableStatus(status: string): boolean {
   const s = normalizeTemplateStatus(status);
   return s === "APPROVED" || s.startsWith("ACTIVE");
 }

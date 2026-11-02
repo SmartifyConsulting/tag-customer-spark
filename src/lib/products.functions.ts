@@ -355,12 +355,36 @@ export const createProduct = createServerFn({ method: "POST" })
     if (!(await canManage(supabase, userId, retailerId)))
       throw new Error("You don't have permission to add products");
     await assertProductCapAvailable(supabase, retailerId, 1);
+
+    // Every product belongs to a store: its QR code and scans are attributed
+    // to it. A retailer with exactly one store gets it by default.
+    let storeId: string | null = (data as any).store_id ?? null;
+    if (storeId) {
+      const { data: st } = await supabase
+        .from("stores")
+        .select("id")
+        .eq("id", storeId)
+        .eq("retailer_id", retailerId)
+        .maybeSingle();
+      if (!st) throw new Error("That store doesn't belong to your account.");
+    } else {
+      const { data: stores } = await supabase
+        .from("stores")
+        .select("id")
+        .eq("retailer_id", retailerId)
+        .limit(2);
+      if (!stores?.length) throw new Error("Add a store first (Admin › Stores), then add the product.");
+      if (stores.length > 1) throw new Error("Choose the store this product is stocked in.");
+      storeId = stores[0]!.id as string;
+    }
+
     const manualGtin = String((data as any).gtin ?? "").replace(/\D/g, "").trim();
     const insertPayload: any = {
       ...data,
       gtin: manualGtin || null,
       barcode_type: manualGtin ? `GTIN-${manualGtin.length}` : null,
       retailer_id: retailerId,
+      store_id: storeId,
       created_by: userId,
       image_url: data.images[0]?.url ?? null,
     };
@@ -397,6 +421,10 @@ export const createProduct = createServerFn({ method: "POST" })
     // created here often starts with no GTIN. Try to complete its Digital
     // Identity non-fatally; it is still only "Tagged" after a customer scan.
     try {
+      // Normalise now: this step used to wait until someone opened the product
+      // page, which left new products one step short in the progress card.
+      const { normaliseAndPersist } = await import("./normalisation.functions");
+      await normaliseAndPersist({ supabase, productId: row.id }).catch(() => null);
       const { assignMissingBarcodesForRetailer } = await import("./barcode-assign.functions");
       await assignMissingBarcodesForRetailer(supabase, retailerId);
       const { generateForProduct } = await import("./qr.functions");
@@ -418,6 +446,11 @@ export const updateProduct = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const patch: any = { ...data.patch };
+    if ("store_id" in patch && !patch.store_id) {
+      const { data: cur } = await supabase.from("products").select("store_id").eq("id", data.id).maybeSingle();
+      if (cur?.store_id) throw new Error("A product must stay assigned to a store. Choose a different store instead.");
+      delete patch.store_id; // legacy product with no store: leave as is
+    }
     if ("images" in patch) {
       if (data.patch.images && data.patch.images.length) {
         patch.image_url = data.patch.images[0].url;
@@ -468,6 +501,18 @@ export const updateProduct = createServerFn({ method: "POST" })
         await generateForProduct(supabase, userId, data.id, false);
       } catch (e: any) {
         console.warn("[updateProduct] QR regeneration failed", e?.message ?? e);
+      }
+    }
+
+    // A store chosen (or changed) after the QR code was made: regenerate the QR
+    // for that store. generateForProduct only does work when the QR's store
+    // differs from the product's, so this is a no-op otherwise.
+    if (!gtinChanged && "store_id" in patch && patch.store_id) {
+      try {
+        const { generateForProduct } = await import("./qr.functions");
+        await generateForProduct(supabase, userId, data.id, false);
+      } catch (e: any) {
+        console.warn("[updateProduct] QR store refresh failed", e?.message ?? e);
       }
     }
 

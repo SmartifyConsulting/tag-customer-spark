@@ -225,6 +225,8 @@ export function ProductFormDialog({
     if (watchKey === lastSavedRef.current) return;
     const name = (watched.name ?? "").trim();
     if (!name) return;
+    // No store yet: don't auto-create (the QR code would be made without one).
+    if (!watched.store_id) return;
     if (save.isPending) return;
 
     const t = setTimeout(async () => {
@@ -322,7 +324,15 @@ export function ProductFormDialog({
         </DialogHeader>
 
         <form
-          onSubmit={form.handleSubmit((v) => save.mutate(v as ProductInput))}
+          onSubmit={form.handleSubmit((v) => {
+            // Every product belongs to a store: its QR code and scans are
+            // attributed to that store, so it can't be left blank.
+            if (!v.store_id) {
+              form.setError("store_id", { message: "Choose the store this product is stocked in." });
+              return;
+            }
+            save.mutate(v as ProductInput);
+          })}
           className="grid gap-4 py-2"
         >
           <Section title="Basics">
@@ -389,16 +399,16 @@ export function ProductFormDialog({
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Store">
+              <Field label="Store *" error={form.formState.errors.store_id?.message as string | undefined}>
                 <Select
-                  value={form.watch("store_id") ?? "none"}
-                  onValueChange={(v) =>
-                    form.setValue("store_id", v === "none" ? null : v)
-                  }
+                  value={form.watch("store_id") ?? ""}
+                  onValueChange={(v) => {
+                    form.setValue("store_id", v, { shouldDirty: true });
+                    form.clearErrors("store_id");
+                  }}
                 >
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Choose a store" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">— None —</SelectItem>
                     {opts?.stores.map((s: any) => (
                       <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                     ))}
