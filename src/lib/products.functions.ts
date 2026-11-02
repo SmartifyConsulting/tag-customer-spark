@@ -27,6 +27,38 @@ function productWriteError(message: string): Error {
   return new Error(message);
 }
 
+// A create that matches a product added moments ago (same store, name, size and
+// colour) is a repeat of that same request - a second browser tab, a retry after
+// a slow response, a double click - not a new product. The database's own
+// duplicate rule can't catch it: it ignores products without a barcode yet.
+const DUPLICATE_WINDOW_MINUTES = 15;
+
+const norm = (v: unknown) => String(v ?? "").trim().toLowerCase().replace(/s+/g, " ");
+
+export async function findRecentTwin(
+  supabase: any,
+  retailerId: string,
+  storeId: string | null,
+  input: { name?: unknown; size?: unknown; color?: unknown },
+): Promise<string | null> {
+  const name = norm(input.name);
+  if (!name || !storeId) return null;
+  const since = new Date(Date.now() - DUPLICATE_WINDOW_MINUTES * 60_000).toISOString();
+  const { data } = await supabase
+    .from("products")
+    .select("id, name, size, color")
+    .eq("retailer_id", retailerId)
+    .eq("store_id", storeId)
+    .neq("status", "archived")
+    .gte("created_at", since)
+    .order("created_at", { ascending: true })
+    .limit(50);
+  const twin = (data ?? []).find(
+    (r: any) => norm(r.name) === name && norm(r.size) === norm(input.size) && norm(r.color) === norm(input.color),
+  );
+  return twin?.id ?? null;
+}
+
 async function canManage(supabase: any, userId: string, retailerId: string) {
   const { data } = await supabase.rpc("can_manage_retailer", {
     _user_id: userId,
@@ -354,7 +386,6 @@ export const createProduct = createServerFn({ method: "POST" })
     if (!retailerId) throw new Error("No retailer assigned to your account");
     if (!(await canManage(supabase, userId, retailerId)))
       throw new Error("You don't have permission to add products");
-    await assertProductCapAvailable(supabase, retailerId, 1);
 
     // Every product belongs to a store: its QR code and scans are attributed
     // to it. A retailer with exactly one store gets it by default.
@@ -377,6 +408,18 @@ export const createProduct = createServerFn({ method: "POST" })
       if (stores.length > 1) throw new Error("Choose the store this product is stocked in.");
       storeId = stores[0]!.id as string;
     }
+
+    // A repeat of a create made moments ago: return that product (carrying over
+    // the newer values) instead of making a second one.
+    const twinId = await findRecentTwin(supabase, retailerId, storeId, data as any);
+    if (twinId) {
+      const { sku: _sku, gtin: _gtin, ...carryOver } = data as any;
+      const { error: twinErr } = await supabase.from("products").update(carryOver).eq("id", twinId);
+      if (twinErr) throw productWriteError(twinErr.message);
+      return { id: twinId as string, existing: true as const };
+    }
+
+    await assertProductCapAvailable(supabase, retailerId, 1);
 
     const manualGtin = String((data as any).gtin ?? "").replace(/\D/g, "").trim();
     const insertPayload: any = {
