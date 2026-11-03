@@ -53,17 +53,10 @@ export function BillingTab() {
   const startPayfast = async () => {
     setPayBusy("payfast");
     try {
-      const origin = window.location.origin;
       const { redirect_url } = await createPayfastCheckout({
-        data: {
-          plan: selectedPlan,
-          cycle,
-          return_url: `${origin}/settings?tab=billing&paid=1`,
-          cancel_url: `${origin}/settings?tab=billing&cancelled=1`,
-          notify_url: `${origin}/api/public/webhooks/payfast-itn`,
-        },
+        data: { plan: selectedPlan, cycle, ...paymentReturnUrls("payfast") },
       });
-      window.location.href = redirect_url;
+      if (!goToGateway(redirect_url)) window.open(redirect_url, "_blank");
     } catch (e) {
       toast.error((e as Error).message);
       setPayBusy(null);
@@ -73,31 +66,12 @@ export function BillingTab() {
   const startPaypal = async () => {
     setPayBusy("paypal");
     try {
-      const origin = window.location.origin;
-      const { order_id, approve_url } = await createPaypalOrder({
-        data: {
-          plan: selectedPlan,
-          cycle,
-          return_url: `${origin}/settings?tab=billing&paypal_order=${encodeURIComponent("")}`,
-          cancel_url: `${origin}/settings?tab=billing&cancelled=1`,
-        },
+      const { return_url, cancel_url } = paymentReturnUrls("paypal");
+      const { approve_url } = await createPaypalOrder({
+        data: { plan: selectedPlan, cycle, return_url, cancel_url },
       });
       if (!approve_url) throw new Error("PayPal did not return an approval URL");
-      const popup = window.open(approve_url, "paypal", "width=520,height=720");
-      const iv = setInterval(async () => {
-        if (popup && popup.closed) {
-          clearInterval(iv);
-          try {
-            await capturePaypalOrder({ data: { order_id } });
-            toast.success("Payment captured — your plan is being upgraded.");
-            setTimeout(() => window.location.reload(), 500);
-          } catch (e) {
-            toast.error((e as Error).message);
-          } finally {
-            setPayBusy(null);
-          }
-        }
-      }, 700);
+      if (!goToGateway(approve_url)) window.open(approve_url, "_blank");
     } catch (e) {
       toast.error((e as Error).message);
       setPayBusy(null);

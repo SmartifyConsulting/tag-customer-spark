@@ -75,6 +75,8 @@ import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_au
 import { Route as AuthenticatedProductsCompareRouteImport } from './routes/_authenticated/products.compare'
 import { Route as AuthenticatedAdminInventoryIndexRouteImport } from './routes/_authenticated/admin.inventory.index'
 import { Route as AuthenticatedAdminInventoryProductIdRouteImport } from './routes/_authenticated/admin.inventory.$productId'
+import { Route as AuthenticatedPaymentPayfastReturnRouteImport } from './routes/_authenticated/payment.payfast.return'
+import { Route as AuthenticatedPaymentPaypalReturnRouteImport } from './routes/_authenticated/payment.paypal.return'
 import { Route as ApiPublic01GtinRouteImport } from './routes/api/public/01.$gtin'
 import { Route as ApiPublicHooksDailySummaryRouteImport } from './routes/api/public/hooks.daily-summary'
 import { Route as ApiPublicHooksInfobipAuthProbeRouteImport } from './routes/api/public/hooks.infobip-auth-probe'
@@ -442,6 +444,18 @@ const AuthenticatedAdminInventoryProductIdRoute =
     path: '/$productId',
     getParentRoute: () => AuthenticatedAdminInventoryRoute,
   } as any)
+const AuthenticatedPaymentPayfastReturnRoute =
+  AuthenticatedPaymentPayfastReturnRouteImport.update({
+    id: '/payment/payfast/return',
+    path: '/payment/payfast/return',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPaymentPaypalReturnRoute =
+  AuthenticatedPaymentPaypalReturnRouteImport.update({
+    id: '/payment/paypal/return',
+    path: '/payment/paypal/return',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublic01GtinRoute = ApiPublic01GtinRouteImport.update({
   id: '/api/public/01/$gtin',
   path: '/api/public/01/$gtin',
@@ -576,6 +590,8 @@ export interface FileRoutesByFullPath {
   '/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
+  '/payment/payfast/return': typeof AuthenticatedPaymentPayfastReturnRoute
+  '/payment/paypal/return': typeof AuthenticatedPaymentPaypalReturnRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
   '/api/public/hooks/infobip-auth-probe': typeof ApiPublicHooksInfobipAuthProbeRoute
@@ -652,6 +668,8 @@ export interface FileRoutesByTo {
   '/intelligence': typeof AuthenticatedIntelligenceIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
   '/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
+  '/payment/payfast/return': typeof AuthenticatedPaymentPayfastReturnRoute
+  '/payment/paypal/return': typeof AuthenticatedPaymentPaypalReturnRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
   '/api/public/hooks/infobip-auth-probe': typeof ApiPublicHooksInfobipAuthProbeRoute
@@ -733,6 +751,8 @@ export interface FileRoutesById {
   '/_authenticated/intelligence/': typeof AuthenticatedIntelligenceIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/admin/inventory/$productId': typeof AuthenticatedAdminInventoryProductIdRoute
+  '/_authenticated/payment/payfast/return': typeof AuthenticatedPaymentPayfastReturnRoute
+  '/_authenticated/payment/paypal/return': typeof AuthenticatedPaymentPaypalReturnRoute
   '/api/public/01/$gtin': typeof ApiPublic01GtinRoute
   '/api/public/hooks/daily-summary': typeof ApiPublicHooksDailySummaryRoute
   '/api/public/hooks/infobip-auth-probe': typeof ApiPublicHooksInfobipAuthProbeRoute
@@ -814,6 +834,8 @@ export interface FileRouteTypes {
     | '/intelligence/'
     | '/products/'
     | '/admin/inventory/$productId'
+    | '/payment/payfast/return'
+    | '/payment/paypal/return'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/daily-summary'
     | '/api/public/hooks/infobip-auth-probe'
@@ -890,6 +912,8 @@ export interface FileRouteTypes {
     | '/intelligence'
     | '/products'
     | '/admin/inventory/$productId'
+    | '/payment/payfast/return'
+    | '/payment/paypal/return'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/daily-summary'
     | '/api/public/hooks/infobip-auth-probe'
@@ -970,6 +994,8 @@ export interface FileRouteTypes {
     | '/_authenticated/intelligence/'
     | '/_authenticated/products/'
     | '/_authenticated/admin/inventory/$productId'
+    | '/_authenticated/payment/payfast/return'
+    | '/_authenticated/payment/paypal/return'
     | '/api/public/01/$gtin'
     | '/api/public/hooks/daily-summary'
     | '/api/public/hooks/infobip-auth-probe'
@@ -1487,6 +1513,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminInventoryProductIdRouteImport
       parentRoute: typeof AuthenticatedAdminInventoryRoute
     }
+    '/_authenticated/payment/payfast/return': {
+      id: '/_authenticated/payment/payfast/return'
+      path: '/payment/payfast/return'
+      fullPath: '/payment/payfast/return'
+      preLoaderRoute: typeof AuthenticatedPaymentPayfastReturnRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/payment/paypal/return': {
+      id: '/_authenticated/payment/paypal/return'
+      path: '/payment/paypal/return'
+      fullPath: '/payment/paypal/return'
+      preLoaderRoute: typeof AuthenticatedPaymentPaypalReturnRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/01/$gtin': {
       id: '/api/public/01/$gtin'
       path: '/api/public/01/$gtin'
@@ -1696,6 +1736,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCommerceRoiRoute: typeof AuthenticatedCommerceRoiRoute
   AuthenticatedOrganisationRolesRoute: typeof AuthenticatedOrganisationRolesRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedPaymentPayfastReturnRoute: typeof AuthenticatedPaymentPayfastReturnRoute
+  AuthenticatedPaymentPaypalReturnRoute: typeof AuthenticatedPaymentPaypalReturnRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1729,6 +1771,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCommerceRoiRoute: AuthenticatedCommerceRoiRoute,
   AuthenticatedOrganisationRolesRoute: AuthenticatedOrganisationRolesRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedPaymentPayfastReturnRoute:
+    AuthenticatedPaymentPayfastReturnRoute,
+  AuthenticatedPaymentPaypalReturnRoute: AuthenticatedPaymentPaypalReturnRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

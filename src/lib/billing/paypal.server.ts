@@ -9,9 +9,9 @@ export function paypalBase(): string {
 
 export async function getPayPalToken(): Promise<string> {
   const id = process.env.PAYPAL_CLIENT_ID;
-  const secret = process.env.PAYPAL_CLIENT_SECRET;
+  const secret = process.env.PAYPAL_CLIENT_SECRET || process.env.PAYPAL_API_KEY;
   if (!id || !secret) throw new Error("PayPal credentials not configured");
-  const auth = Buffer.from(`${id}:${secret}`).toString("base64");
+  const auth = btoa(`${id}:${secret}`);
   const r = await fetch(`${paypalBase()}/v1/oauth2/token`, {
     method: "POST",
     headers: {
