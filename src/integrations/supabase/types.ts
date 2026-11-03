@@ -162,44 +162,68 @@ export type Database = {
         Row: {
           cost_usd: number | null
           created_at: string
+          error_message: string | null
           id: string
           input_tokens: number | null
           model: string | null
           operation: string
           output_tokens: number | null
           product_id: string | null
+          product_name: string | null
           provider: string
           retailer_id: string | null
+          retailer_name: string | null
+          run_label: string | null
           status: number | null
+          store_id: string | null
+          store_name: string | null
           total_tokens: number | null
+          user_id: string | null
+          user_name: string | null
         }
         Insert: {
           cost_usd?: number | null
           created_at?: string
+          error_message?: string | null
           id?: string
           input_tokens?: number | null
           model?: string | null
           operation: string
           output_tokens?: number | null
           product_id?: string | null
+          product_name?: string | null
           provider?: string
           retailer_id?: string | null
+          retailer_name?: string | null
+          run_label?: string | null
           status?: number | null
+          store_id?: string | null
+          store_name?: string | null
           total_tokens?: number | null
+          user_id?: string | null
+          user_name?: string | null
         }
         Update: {
           cost_usd?: number | null
           created_at?: string
+          error_message?: string | null
           id?: string
           input_tokens?: number | null
           model?: string | null
           operation?: string
           output_tokens?: number | null
           product_id?: string | null
+          product_name?: string | null
           provider?: string
           retailer_id?: string | null
+          retailer_name?: string | null
+          run_label?: string | null
           status?: number | null
+          store_id?: string | null
+          store_name?: string | null
           total_tokens?: number | null
+          user_id?: string | null
+          user_name?: string | null
         }
         Relationships: []
       }
@@ -489,6 +513,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      catalogue_misses: {
+        Row: {
+          checked_at: string
+          gtin: string
+          kind: string
+        }
+        Insert: {
+          checked_at?: string
+          gtin: string
+          kind: string
+        }
+        Update: {
+          checked_at?: string
+          gtin?: string
+          kind?: string
+        }
+        Relationships: []
       }
       consumer_tag_ids: {
         Row: {
@@ -1081,6 +1123,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ledger_settings: {
+        Row: {
+          alert_at_percent: number
+          id: boolean
+          monthly_budget_usd: number | null
+          updated_at: string
+        }
+        Insert: {
+          alert_at_percent?: number
+          id?: boolean
+          monthly_budget_usd?: number | null
+          updated_at?: string
+        }
+        Update: {
+          alert_at_percent?: number
+          id?: boolean
+          monthly_budget_usd?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       notification_campaigns: {
         Row: {
