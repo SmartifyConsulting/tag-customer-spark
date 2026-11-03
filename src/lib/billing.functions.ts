@@ -192,6 +192,16 @@ export const capturePaypalOrder = createServerFn({ method: "POST" })
       throw new Error("PayPal capture failed");
     }
 
+    // Verify the captured amount matches what we created (Snappy Sign pattern).
+    const cap = (capJson as { purchase_units?: Array<{ payments?: { captures?: Array<{ amount?: { currency_code?: string; value?: string } }> } }> })
+      .purchase_units?.[0]?.payments?.captures?.[0]?.amount;
+    const capCents = Math.round(Number(cap?.value ?? 0) * 100);
+    if (cap?.currency_code !== purchase.currency || Math.abs(capCents - purchase.amount_cents) > 1) {
+      await supabaseAdmin.from("payment_purchases").update({ status: "failed" }).eq("id", purchase.id);
+      await logBillingEvent(purchase.retailer_id, "paypal", "capture.amount_mismatch", capJson, false);
+      throw new Error("The paid amount doesn't match the plan price. Your plan was not changed.");
+    }
+
     await supabaseAdmin.from("payment_purchases")
       .update({ status: "completed", raw: capJson as never })
       .eq("id", purchase.id);

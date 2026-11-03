@@ -16,7 +16,6 @@ import {
   getMySubscription,
   createPayfastCheckout,
   createPaypalOrder,
-  capturePaypalOrder,
   cancelMySubscription,
   changePlan,
   getMyUsage,
