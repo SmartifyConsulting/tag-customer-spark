@@ -364,7 +364,7 @@ async function probe(spec: IntegrationProvider): Promise<TestResult> {
     }
     case "paypal": {
       const id = readEnv("PAYPAL_CLIENT_ID");
-      const secret = readEnv("PAYPAL_CLIENT_SECRET");
+      const secret = readEnv("PAYPAL_CLIENT_SECRET") || readEnv("PAYPAL_API_KEY");
       if (!id || !secret) return { ok: false, reason: "not_configured", message: "PayPal client ID and secret aren't both set yet." };
       const live = (readEnv("PAYPAL_ENV") || "sandbox").toLowerCase() === "live";
       const res = await fetch(`https://api-m${live ? "" : ".sandbox"}.paypal.com/v1/oauth2/token`, {

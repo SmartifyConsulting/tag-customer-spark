@@ -8,3 +8,6 @@
 - [x] Remove the Platform group from Admin › Integrations.
 - [x] Token ledger records the activity performed (for reporting).
 - [x] Token ledger Reports tab with filters to understand costs.
+- [x] PayPal checkout like Snappy Sign (redirect to PayPal, return page captures payment, amount check).
+- [x] PayFast checkout like Snappy Sign (redirect, return page waits for confirmation).
+- [ ] Add live PayFast Merchant ID, Merchant Key and passphrase — waiting on PayFast.
