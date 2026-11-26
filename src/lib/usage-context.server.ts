@@ -25,23 +25,37 @@ const als = new AsyncLocalStorage<UsageContext>();
 // entry point awaits, and to nothing else.
 const runAls = new AsyncLocalStorage<string>();
 
+// workerd does not implement enterWith(); fall back to best-effort module
+// state there so attribution never breaks the real work (e.g. saving a product).
+let fallbackRunLabel: string | undefined;
+let fallbackUser: string | undefined;
+
+function tryEnter<T>(store: AsyncLocalStorage<T>, value: T): boolean {
+  try {
+    store.enterWith(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function setRunLabel(label: string): void {
-  runAls.enterWith(label);
+  if (!tryEnter(runAls, label)) fallbackRunLabel = label;
 }
 
 export function currentRunLabel(): string | undefined {
-  return runAls.getStore();
+  return runAls.getStore() ?? fallbackRunLabel;
 }
 
 // Who triggered the work. Background jobs never set this, so their calls have no user.
 const userAls = new AsyncLocalStorage<string>();
 
 export function setUsageUser(userId: string | null | undefined): void {
-  if (userId) userAls.enterWith(userId);
+  if (userId && !tryEnter(userAls, userId)) fallbackUser = userId;
 }
 
 export function currentUsageUser(): string | undefined {
-  return userAls.getStore();
+  return userAls.getStore() ?? fallbackUser;
 }
 
 export function currentUsageContext(): UsageContext | undefined {
