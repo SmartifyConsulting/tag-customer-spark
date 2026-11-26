@@ -5,6 +5,9 @@ import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
 const interestSchema = z.object({
   gtin: z.string().min(1).max(20),
   whatsapp: z.string().min(5).max(40),
+  // Multi-scan ("TAG as you shop") sends one confirmation for the whole list,
+  // so the remaining items are submitted silently.
+  silent: z.boolean().optional(),
 });
 
 /** Thrown when the retailer has switched the scan confirmation off. */
@@ -244,7 +247,7 @@ export const Route = createFileRoute("/api/public/scan/barcode-interest")({
             (product as any).retailer_id,
           );
           scanTemplate = scanSetting.templateName;
-          if (!scanSetting.enabled) throw new SkipConfirmation();
+          if (!scanSetting.enabled || parsed.silent) throw new SkipConfirmation();
 
           let headerImage = isPublicMediaUrl(productImage) ? productImage : null;
           if (!headerImage) {

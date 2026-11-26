@@ -25,6 +25,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SetupRouteImport } from './routes/setup'
+import { Route as ShopRouteImport } from './routes/shop'
 import { Route as StartChatRouteImport } from './routes/start-chat'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
@@ -86,6 +87,7 @@ import { Route as ApiPublicHooksPassportTickRouteImport } from './routes/api/pub
 import { Route as ApiPublicSShortCodeRouteImport } from './routes/api/public/s.$shortCode'
 import { Route as ApiPublicScanBarcodeInterestRouteImport } from './routes/api/public/scan.barcode-interest'
 import { Route as ApiPublicScanInterestRouteImport } from './routes/api/public/scan.interest'
+import { Route as ApiPublicScanLookupRouteImport } from './routes/api/public/scan.lookup'
 import { Route as ApiPublicWebhooksInfobipRouteImport } from './routes/api/public/webhooks/infobip'
 import { Route as ApiPublicWebhooksPayfastItnRouteImport } from './routes/api/public/webhooks/payfast-itn'
 import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public/webhooks/paypal'
@@ -167,6 +169,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopRoute = ShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StartChatRoute = StartChatRouteImport.update({
@@ -507,6 +514,11 @@ const ApiPublicScanInterestRoute = ApiPublicScanInterestRouteImport.update({
   path: '/api/public/scan/interest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicScanLookupRoute = ApiPublicScanLookupRouteImport.update({
+  id: '/api/public/scan/lookup',
+  path: '/api/public/scan/lookup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksInfobipRoute =
   ApiPublicWebhooksInfobipRouteImport.update({
     id: '/api/public/webhooks/infobip',
@@ -541,6 +553,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/shop': typeof ShopRoute
   '/start-chat': typeof StartChatRoute
   '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
@@ -601,6 +614,7 @@ export interface FileRoutesByFullPath {
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/barcode-interest': typeof ApiPublicScanBarcodeInterestRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
+  '/api/public/scan/lookup': typeof ApiPublicScanLookupRoute
   '/api/public/webhooks/infobip': typeof ApiPublicWebhooksInfobipRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
@@ -622,6 +636,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/shop': typeof ShopRoute
   '/start-chat': typeof StartChatRoute
   '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
@@ -679,6 +694,7 @@ export interface FileRoutesByTo {
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/barcode-interest': typeof ApiPublicScanBarcodeInterestRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
+  '/api/public/scan/lookup': typeof ApiPublicScanLookupRoute
   '/api/public/webhooks/infobip': typeof ApiPublicWebhooksInfobipRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
@@ -702,6 +718,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/shop': typeof ShopRoute
   '/start-chat': typeof StartChatRoute
   '/terms': typeof TermsRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
@@ -762,6 +779,7 @@ export interface FileRoutesById {
   '/api/public/s/$shortCode': typeof ApiPublicSShortCodeRoute
   '/api/public/scan/barcode-interest': typeof ApiPublicScanBarcodeInterestRoute
   '/api/public/scan/interest': typeof ApiPublicScanInterestRoute
+  '/api/public/scan/lookup': typeof ApiPublicScanLookupRoute
   '/api/public/webhooks/infobip': typeof ApiPublicWebhooksInfobipRoute
   '/api/public/webhooks/payfast-itn': typeof ApiPublicWebhooksPayfastItnRoute
   '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
@@ -785,6 +803,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/setup'
+    | '/shop'
     | '/start-chat'
     | '/terms'
     | '/analytics'
@@ -845,6 +864,7 @@ export interface FileRouteTypes {
     | '/api/public/s/$shortCode'
     | '/api/public/scan/barcode-interest'
     | '/api/public/scan/interest'
+    | '/api/public/scan/lookup'
     | '/api/public/webhooks/infobip'
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
@@ -866,6 +886,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/setup'
+    | '/shop'
     | '/start-chat'
     | '/terms'
     | '/analytics'
@@ -923,6 +944,7 @@ export interface FileRouteTypes {
     | '/api/public/s/$shortCode'
     | '/api/public/scan/barcode-interest'
     | '/api/public/scan/interest'
+    | '/api/public/scan/lookup'
     | '/api/public/webhooks/infobip'
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
@@ -945,6 +967,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/setup'
+    | '/shop'
     | '/start-chat'
     | '/terms'
     | '/_authenticated/analytics'
@@ -1005,6 +1028,7 @@ export interface FileRouteTypes {
     | '/api/public/s/$shortCode'
     | '/api/public/scan/barcode-interest'
     | '/api/public/scan/interest'
+    | '/api/public/scan/lookup'
     | '/api/public/webhooks/infobip'
     | '/api/public/webhooks/payfast-itn'
     | '/api/public/webhooks/paypal'
@@ -1028,6 +1052,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SetupRoute: typeof SetupRoute
+  ShopRoute: typeof ShopRoute
   StartChatRoute: typeof StartChatRoute
   TermsRoute: typeof TermsRoute
   NMessageIdRoute: typeof NMessageIdRoute
@@ -1044,6 +1069,7 @@ export interface RootRouteChildren {
   ApiPublicSShortCodeRoute: typeof ApiPublicSShortCodeRoute
   ApiPublicScanBarcodeInterestRoute: typeof ApiPublicScanBarcodeInterestRoute
   ApiPublicScanInterestRoute: typeof ApiPublicScanInterestRoute
+  ApiPublicScanLookupRoute: typeof ApiPublicScanLookupRoute
   ApiPublicWebhooksInfobipRoute: typeof ApiPublicWebhooksInfobipRoute
   ApiPublicWebhooksPayfastItnRoute: typeof ApiPublicWebhooksPayfastItnRoute
   ApiPublicWebhooksPaypalRoute: typeof ApiPublicWebhooksPaypalRoute
@@ -1161,6 +1187,13 @@ declare module '@tanstack/react-router' {
       path: '/setup'
       fullPath: '/setup'
       preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop': {
+      id: '/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof ShopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/start-chat': {
@@ -1590,6 +1623,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicScanInterestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/scan/lookup': {
+      id: '/api/public/scan/lookup'
+      path: '/api/public/scan/lookup'
+      fullPath: '/api/public/scan/lookup'
+      preLoaderRoute: typeof ApiPublicScanLookupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/infobip': {
       id: '/api/public/webhooks/infobip'
       path: '/api/public/webhooks/infobip'
@@ -1796,6 +1836,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SetupRoute: SetupRoute,
+  ShopRoute: ShopRoute,
   StartChatRoute: StartChatRoute,
   TermsRoute: TermsRoute,
   NMessageIdRoute: NMessageIdRoute,
@@ -1812,6 +1853,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSShortCodeRoute: ApiPublicSShortCodeRoute,
   ApiPublicScanBarcodeInterestRoute: ApiPublicScanBarcodeInterestRoute,
   ApiPublicScanInterestRoute: ApiPublicScanInterestRoute,
+  ApiPublicScanLookupRoute: ApiPublicScanLookupRoute,
   ApiPublicWebhooksInfobipRoute: ApiPublicWebhooksInfobipRoute,
   ApiPublicWebhooksPayfastItnRoute: ApiPublicWebhooksPayfastItnRoute,
   ApiPublicWebhooksPaypalRoute: ApiPublicWebhooksPaypalRoute,
