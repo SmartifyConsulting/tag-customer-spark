@@ -578,7 +578,9 @@ async function lookupSerperImageCandidates(input: {
     }
   };
   if (cleanGtin) push(await serperImageCandidates(apiKey, `"${cleanGtin}"`));
-  if (out.length < MAX_CANDIDATES && nameQuery.length >= 3) {
+  // Cost control: one paid search normally — the name search runs only when
+  // the barcode search found nothing.
+  if (out.length === 0 && nameQuery.length >= 3) {
     push(await serperImageCandidates(apiKey, nameQuery));
   }
   return { urls: out, complete };

@@ -3,7 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Archive, ArrowLeft, Edit, Loader2, Star, Trash2 } from "lucide-react";
+import { Archive, ArrowLeft, Edit, Loader2, RefreshCw, Star, Trash2 } from "lucide-react";
+import { refreshProductImage } from "@/lib/product-images.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { splitAiMessage } from "@/lib/ai-errors";
@@ -60,6 +61,37 @@ export function ProductDetailView({
   const { data, isLoading } = useQuery({
     queryKey: ["product", productId],
     queryFn: () => fn({ data: { id: productId } }),
+    // Keep checking while background steps (enrichment, image) are still
+    // running so the spinners turn into ticks without a page refresh.
+    refetchInterval: (q) => {
+      const d = q.state.data as any;
+      if (!d?.product) return false;
+      const e = d.passport?.enrichment_status ?? "pending";
+      const busy =
+        ["pending", "queued", "running", "enriching"].includes(e) ||
+        !d.product.image_status ||
+        d.product.image_status === "pending";
+      return busy && q.state.dataUpdateCount < 90 ? 2000 : false;
+    },
+  });
+
+  const refreshImageFn = useServerFn(refreshProductImage);
+  const regenImage = useMutation({
+    mutationFn: async () => {
+      let r: any = await refreshImageFn({ data: { productId } });
+      if (r?.needsConfirm) {
+        if (!window.confirm("Replace the photo you uploaded with a new one from the web?")) return null;
+        r = await refreshImageFn({ data: { productId, replaceRetailerPhoto: true } });
+      }
+      return r;
+    },
+    onSuccess: (r: any) => {
+      if (!r) return;
+      qc.invalidateQueries({ queryKey: ["product", productId] });
+      qc.invalidateQueries({ queryKey: ["admin-inventory"] });
+      toast.success(r.kept ? "No better photo found — kept the current one" : "Photo updated");
+    },
+    onError: (e: any) => toast.error(splitAiMessage(e?.message ?? "Couldn't refresh the photo").title),
   });
 
   // Silently finish this product's digital identity if it's stalled.
@@ -158,8 +190,23 @@ export function ProductDetailView({
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="grid gap-5 md:grid-cols-[160px_minmax(0,1fr)_minmax(0,1fr)]">
             {/* Image */}
-            <div className="aspect-square overflow-hidden rounded-xl border border-border bg-muted">
-              <ProductImage product={p as any} variant="hero" alt={p.name} />
+            <div className="grid content-start gap-2">
+              <div className="aspect-square overflow-hidden rounded-xl border border-border bg-muted">
+                <ProductImage product={p as any} variant="hero" alt={p.name} />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={regenImage.isPending}
+                onClick={() => regenImage.mutate()}
+              >
+                {regenImage.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                Regenerate image
+              </Button>
             </div>
 
             {/* Middle: title / price / facts */}

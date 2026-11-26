@@ -143,7 +143,7 @@ function ShopPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           // One WhatsApp confirmation for the whole list (first item).
-          body: JSON.stringify({ gtin: item.gtin, whatsapp: phone.replace(/\s/g, ""), silent: i > 0 }),
+          body: JSON.stringify({ gtin: item.gtin, whatsapp: phone.replace(/\s/g, "") }),
         });
         const json = await res.json();
         if (json.ok) {
