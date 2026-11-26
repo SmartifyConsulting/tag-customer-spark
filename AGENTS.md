@@ -11,3 +11,4 @@
 
 - Keep model-setting normalization in the browser-safe `openai-models` helper, with unit tests, so display labels are translated before provider requests.
 - Every OpenAI request must go through openAiFetch / getOpenAiProvider (openai.server.ts) so it is logged to ai_usage_events for the Admin › Integrations Token Ledger.
+- Route the legacy barcode-reader entry point to `/shop` so printed Reader QR codes use the multi-product scanner; product pages can seed its list with their GTIN.

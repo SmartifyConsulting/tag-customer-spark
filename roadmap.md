@@ -1,4 +1,5 @@
 # Tasks
+- [x] Connect the existing Reader QR to multi-scan and expose TAG another product on shopper screens.
 - [x] Normalize configured OpenAI model display names and test the fallback.
 - [x] Manually enrich MUK from verified sources without AI calls.
 - [x] Verify MUK enrichment through its public product page; the available signed-in account is a shopper and redirects to the scanner.

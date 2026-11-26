@@ -8,7 +8,7 @@ import PhoneInput from "react-phone-number-input";
 // flag take a long time (or fail) to appear on a slow connection.
 import flags from "react-phone-number-input/flags";
 import { isValidPhoneNumber } from "libphonenumber-js";
-import { CheckCircle2, Loader2, MessageCircle, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Loader2, MessageCircle, ScanBarcode, ShieldCheck } from "lucide-react";
 import { ProductImage } from "@/components/products/product-image";
 import { Button } from "@/components/ui/button";
 import "react-phone-number-input/style.css";
@@ -285,6 +285,11 @@ function PublicProduct() {
             )}
 
             <NotifyBar gtin={gtin} productName={product.name} />
+          <Button asChild variant="outline" className="mt-3 w-full">
+            <Link to="/shop" search={{ gtin }}>
+              <ScanBarcode className="mr-2 h-4 w-4" />TAG another product
+            </Link>
+          </Button>
           </div>
         </div>
 

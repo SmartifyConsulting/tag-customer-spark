@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Loader2, MessageCircle, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { CheckCircle2, Loader2, MessageCircle, ScanBarcode, X } from "lucide-react";
 import { toast } from "sonner";
 import { TagLogo } from "@/components/tag-logo";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,10 @@ import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/shop")({
   ssr: false,
+  validateSearch: (search: Record<string, unknown>): { gtin?: string } =>
+    typeof search['gtin'] === "string" && /^\d{8,14}$/.test(search['gtin'])
+      ? { gtin: search['gtin'] }
+      : {},
   head: () => ({
     meta: [
       { title: "TAG as you shop — scan many products at once" },
@@ -29,6 +33,7 @@ function formatPrice(c: number | null) {
 }
 
 function ShopPage() {
+  const { gtin } = Route.useSearch();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const itemsRef = useRef<Item[]>([]);
@@ -42,13 +47,7 @@ function ShopPage() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  useEffect(() => {
-    if (done) return;
-    let cancelled = false;
-    let stop = () => {};
-    let stream: MediaStream | null = null;
-
-    const onCode = async (raw: string) => {
+  const onCode = useCallback(async (raw: string) => {
       const code = raw.replace(/\D/g, "");
       if (!/^\d{8,14}$/.test(code)) return;
       const now = Date.now();
@@ -75,7 +74,17 @@ function ShopPage() {
       } finally {
         pending.current.delete(code);
       }
-    };
+  }, []);
+
+  useEffect(() => {
+    if (gtin) void onCode(gtin);
+  }, [gtin, onCode]);
+
+  useEffect(() => {
+    if (done) return;
+    let cancelled = false;
+    let stop = () => {};
+    let stream: MediaStream | null = null;
 
     (async () => {
       try {
@@ -102,7 +111,9 @@ function ShopPage() {
         } else {
           const { BrowserMultiFormatReader } = await import("@zxing/browser");
           if (cancelled) return;
-          const controls = await new BrowserMultiFormatReader().decodeFromStream(stream, videoRef.current!, (r) => {
+          const video = videoRef.current;
+          if (!video) return;
+          const controls = await new BrowserMultiFormatReader().decodeFromStream(stream, video, (r) => {
             if (r) onCode(r.getText());
           });
           stop = () => controls.stop();
@@ -119,20 +130,20 @@ function ShopPage() {
       try { stop(); } catch {}
       stream?.getTracks().forEach((t) => t.stop());
     };
-  }, [done]);
+  }, [done, onCode]);
 
   const submit = async () => {
     if (!items.length) return;
     setSubmitting(true);
     let ok = 0;
     let warning: string | null = null;
-    for (let i = 0; i < items.length; i++) {
+    for (const [i, item] of items.entries()) {
       try {
         const res = await fetch("/api/public/scan/barcode-interest", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           // One WhatsApp confirmation for the whole list (first item).
-          body: JSON.stringify({ gtin: items[i]!.gtin, whatsapp: phone.replace(/\s/g, ""), silent: i > 0 }),
+          body: JSON.stringify({ gtin: item.gtin, whatsapp: phone.replace(/\s/g, ""), silent: i > 0 }),
         });
         const json = await res.json();
         if (json.ok) {
@@ -158,7 +169,7 @@ function ShopPage() {
           <CheckCircle2 className="mx-auto h-14 w-14 text-primary" />
           <h1 className="mt-4 text-2xl font-bold">You're following {items.length} products</h1>
           <p className="mt-2 text-sm text-muted-foreground">We'll message you on WhatsApp about price drops and stock.</p>
-          <Button className="mt-6" onClick={() => { setItems([]); setDone(false); }}>Scan more</Button>
+          <Button className="mt-6" onClick={() => { itemsRef.current = []; lastRead.current = { code: "", at: 0 }; setItems([]); setDone(false); }}><ScanBarcode className="mr-2 h-4 w-4" />TAG another product</Button>
         </div>
       </div>
     );
@@ -169,11 +180,10 @@ function ShopPage() {
       <div className="mx-auto flex max-w-md flex-col items-center px-4 pt-6 pb-4">
         <TagLogo variant="wordmark" heightClass="h-16" />
         <h1 className="mt-3 text-2xl font-bold tracking-tight">TAG as you shop</h1>
-        <p className="text-center text-sm text-muted-foreground">Scan as many products as you like — the camera keeps going.</p>
       </div>
 
       <div className="mx-auto w-full max-w-md px-4">
-        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-foreground">
+        <div id="scanner" className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-foreground">
           <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
             <div className="h-1/3 w-4/5 rounded-lg border-2 border-primary" />
@@ -189,6 +199,11 @@ function ShopPage() {
         </div>
 
         <h2 className="mt-5 text-lg font-semibold">Your TAG list ({items.length})</h2>
+        {items.length > 0 && (
+          <Button variant="outline" className="mt-3 w-full" onClick={() => videoRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' })}>
+            <ScanBarcode className="mr-2 h-4 w-4" />TAG another product
+          </Button>
+        )}
         {items.length === 0 && <p className="mt-1 text-sm text-muted-foreground">Scanned products will appear here.</p>}
         <ul className="mt-2 space-y-2">
           {items.map((it) => (
@@ -199,9 +214,9 @@ function ShopPage() {
                 <p className="text-sm text-muted-foreground">{formatPrice(it.priceCents)}</p>
               </div>
               <CheckCircle2 className="h-5 w-5 text-primary" />
-              <button aria-label={`Remove ${it.name}`} className="p-1 text-muted-foreground hover:text-foreground" onClick={() => setItems((p) => p.filter((x) => x.gtin !== it.gtin))}>
+              <Button variant="ghost" size="icon" aria-label={`Remove ${it.name}`} onClick={() => setItems((p) => p.filter((x) => x.gtin !== it.gtin))}>
                 <X className="h-4 w-4" />
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
