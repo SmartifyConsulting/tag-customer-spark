@@ -1,5 +1,5 @@
 {
-  "name": "Tag — Retail Intelligence",
+  "name": "Tag \u2014 Retail Intelligence",
   "short_name": "Tag",
   "description": "Follow products, get restock and price-drop alerts on WhatsApp, and track your Tag purchases.",
   "start_url": "/briefing",
@@ -11,20 +11,20 @@
   "theme_color": "#18304F",
   "icons": [
     {
-      "src": "/__l5e/assets-v1/4bec98b3-cde2-4576-bf2b-780077de01b1/tag-favicon.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/__l5e/assets-v1/4bec98b3-cde2-4576-bf2b-780077de01b1/tag-favicon.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/__l5e/assets-v1/4bec98b3-cde2-4576-bf2b-780077de01b1/tag-favicon.png",
-      "sizes": "192x192",
+      "src": "/icon-512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
